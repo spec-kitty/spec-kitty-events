@@ -932,6 +932,30 @@ def test_encode_admits_a_key_at_the_64_char_bound(
     assert attrs["a" * 64] == "v"
 
 
+def test_encode_rejects_a_control_character_in_the_derived_summary_attr() -> None:
+    """issue #146: the two #104 regression tests above only exercise
+    ``actor``/``wp_id``, both assigned before the control-character check
+    loop. ``summary`` is derived and assigned later, from prose fields
+    (``friendly_name``/``purpose_tldr``/``purpose_context``) that never
+    pass through a printable-only field validator of their own — so this
+    pins that the shared check loop still catches a bad ``summary``
+    (issue #80's path) rather than relying on assignment order."""
+    from spec_kitty_events.lifecycle import MissionCreatedPayload
+
+    payload = MissionCreatedPayload(
+        mission_slug="demo-mission",
+        mission_number=12,
+        mission_type="software-dev",
+        target_branch="main",
+        wp_count=3,
+        friendly_name="Roll\x07out",
+        purpose_tldr="Demo",
+        purpose_context="Demo",
+    )
+    with pytest.raises(ZeitgeistAttrsControlCharacterError, match="attr 'summary' value"):
+        to_zeitgeist_attrs(payload, _envelope("MissionCreated"))
+
+
 def test_encode_admits_a_multibyte_value_within_the_stricter_byte_bound() -> None:
     """Encode's byte bound is intentionally stricter than the relay's
     240-character bound (spec-kitty-events#16); a multi-byte value that
