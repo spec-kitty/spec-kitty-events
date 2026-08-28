@@ -61,10 +61,16 @@ decode accepts — the accept/reject boundary moved, which is exactly the
 `6.1.0` new-event-type precedent does *not* cover (a whole new event type
 is additive because no existing contract's boundary moves; this is the
 opposite: an existing family's own boundary moves). `MissionCreatedPayload`
-is excluded from this classification — it already declared `mission_id`
-before this release (prior, unrelated work), so its decode boundary
-already admitted the key and this bump changes nothing about its
-compatibility story.
+is excluded from this classification — it already declared `mission_id`,
+and `zeitgeist_attrs`'s schema-derived key vocabulary
+(`_schema_keys_for_model`) has never skipped it: `8.0.0` is what first
+introduced the whole `zeitgeist_attrs` module, and `MissionCreated`'s entry
+in `UNBROADCAST_FIELDS` has never listed `mission_id`, so `MissionCreated`'s
+decode boundary already admitted the key from that release onward. This
+bump changes nothing about `MissionCreated`'s compatibility story; the only
+new artifact for that family here is the `mission_created_mission_id_present`
+conformance fixture (`min_version: 8.0.0`), which exercises a capability
+that already shipped rather than a new one.
 
 **Producers that omit `mission_id` are unaffected**: the field stays
 optional and is omitted from attrs when absent, so a producer that never

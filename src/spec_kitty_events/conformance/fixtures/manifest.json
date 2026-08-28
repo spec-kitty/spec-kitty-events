@@ -2235,8 +2235,8 @@
       "path": "zeitgeist_attrs/valid/mission_created_mission_id_present.json",
       "expected_result": "valid",
       "event_type": "MissionCreated",
-      "notes": "mission_id present alongside mission_slug: the family's ref field stays mission_slug (REF_FIELD_BY_EVENT_TYPE is unchanged), but mission_id now rides in attrs so a consumer can join this moment against PhaseEntered for the same mission aggregate (spec-kitty-events#69). MissionCreatedPayload already declared mission_id before this issue; this fixture is the first to exercise it with a non-null value.",
-      "min_version": "9.0.0"
+      "notes": "mission_id present alongside mission_slug: the family's ref field stays mission_slug (REF_FIELD_BY_EVENT_TYPE is unchanged). MissionCreatedPayload already declared mission_id, and zeitgeist_attrs's schema-derived key vocabulary has never skipped it, since 8.0.0 first introduced the whole zeitgeist_attrs module (UNBROADCAST_FIELDS[MissionCreated] has never listed mission_id) — this fixture is merely the first to exercise it with a non-null value, added in 9.0.0 as conformance coverage for a capability that already shipped (spec-kitty-events#69, spec-kitty-events#197).",
+      "min_version": "8.0.0"
     },
     {
       "id": "decision_point_opened_value_over_bound",

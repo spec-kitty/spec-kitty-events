@@ -30,5 +30,5 @@
     "summary": "Board approved 40M for the counterparty rollout; Bob Smith (bob@acme.com) is the counterparty contact."
   },
   "expected_ref": "demo-mission",
-  "notes": "mission_id present alongside mission_slug: the family's ref field stays mission_slug (REF_FIELD_BY_EVENT_TYPE is unchanged), but mission_id now rides in attrs so a consumer can join this moment against a PhaseEntered moment for the same mission aggregate (spec-kitty-events#69). MissionCreatedPayload already declared mission_id before this issue; this fixture is the first to exercise it with a non-null value."
+  "notes": "mission_id present alongside mission_slug: the family's ref field stays mission_slug (REF_FIELD_BY_EVENT_TYPE is unchanged), and mission_id rides in attrs so a consumer can join this moment against a PhaseEntered moment for the same mission aggregate (spec-kitty-events#69). MissionCreatedPayload already declared mission_id, and zeitgeist_attrs has never skipped it, since 8.0.0 first introduced the whole zeitgeist_attrs module; this fixture is merely the first to exercise it with a non-null value, added in 9.0.0 as conformance coverage for a capability that already shipped (spec-kitty-events#197)."
 }
