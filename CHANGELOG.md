@@ -53,6 +53,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bullet moves under a dated release heading, in past tense, once #104
   lands.
 
+## [9.0.1] - 2026-08-29
+
+### Fixed
+
+- Corrected `mission_created_mission_id_present`'s conformance floor from
+  `9.0.0` to `8.2.0`, matching the earliest released codec that reproduces the
+  fixture's derived `summary` attribute, and aligned `COMPATIBILITY.md`'s
+  `MissionCreated` history with that floor
+  (EXPERIMENTAL-spec-kitty-events#197).
+
 ## [9.0.0] - 2026-08-28
 
 ### Breaking

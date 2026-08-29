@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `9.0.0`
+**Current package version**: `9.0.1`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -22,6 +22,17 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-events`
 - `spec-kitty-saas`
 - `spec-kitty`
+
+## 9.0.1 — MissionCreated conformance floor correction (non-breaking)
+
+This patch release changes packaged documentation and conformance metadata
+only; it changes no Python runtime behavior, event payloads, wire encoding, or
+wire decoding. The `mission_created_mission_id_present` fixture now declares
+its true capability floor, `8.2.0`, because that release is the first released
+codec whose derived `summary` attribute reproduces the fixture's complete
+`expected_attrs` shape. The compatibility narrative above now distinguishes
+that floor from `mission_id` itself, which `MissionCreated` has decoded since
+`8.0.0`.
 
 ## `9.0.0` — `mission_id` widened onto `WPStatusChanged`/`MissionCreated`/`MissionClosed` for cross-family join (breaking)
 
