@@ -2239,6 +2239,14 @@
       "min_version": "9.0.0"
     },
     {
+      "id": "wp_status_changed_mixed_occurred_at",
+      "path": "zeitgeist_attrs/invalid/wp_status_changed_mixed_occurred_at.json",
+      "expected_result": "invalid",
+      "event_type": "WPStatusChanged",
+      "notes": "A basic date paired with an extended time is not a valid ISO-8601 representation; decode rejects it consistently across supported Python versions.",
+      "min_version": "10.0.0"
+    },
+    {
       "id": "decision_point_opened_value_over_bound",
       "path": "zeitgeist_attrs/invalid/decision_point_opened_value_over_bound.json",
       "expected_result": "invalid",

@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `9.1.5`
+**Current package version**: `10.0.0`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -37,6 +37,23 @@ EXPERIMENTAL-spec-kitty-events#104 and not yet merged to `main`. This
 section is written ahead of that merge so the documentation gap doesn't
 reopen once it lands; it becomes a normal dated-version entry, and this
 "known gap" framing goes away, when #104 merges.
+
+## `10.0.0` — mixed ISO-8601 `occurred_at` spellings rejected (breaking)
+
+`from_zeitgeist_attrs` now rejects an `occurred_at` value that combines
+ISO-8601's basic date with its extended time, or its extended date with its
+basic time (for example, `20260825T09:00:00Z` or `2026-08-25T090000Z`).
+ISO-8601 requires one spelling across the date and time. Python 3.11+
+previously accepted those examples at this decode seam while Python 3.10
+rejected them; this release makes the rejection consistent.
+
+This is a consumer-visible narrowing of the attrs decode boundary, so it is a
+major package bump. Producers that emit `datetime.isoformat()` or otherwise
+keep one spelling across the date and time are unaffected. Producers carrying
+mixed spellings must emit either the extended form
+(`2026-08-25T09:00:00Z`) or the basic form (`20260825T090000Z`) consistently.
+No envelope schema, event type, payload model, or attrs key changes in this
+release.
 
 ## `9.1.5` — decoded detail refs follow canonical event IDs
 

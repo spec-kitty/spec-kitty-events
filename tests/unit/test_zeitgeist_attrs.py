@@ -1044,6 +1044,25 @@ def test_decode_accepts_a_z_suffixed_occurred_at() -> None:
     assert moment.attrs["occurred_at"] == "2026-08-25T09:00:00Z"
 
 
+@pytest.mark.parametrize(
+    "occurred_at",
+    [
+        pytest.param("20260825T09:00:00Z", id="basic-date-extended-time"),
+        pytest.param("2026-08-25T090000Z", id="extended-date-basic-time"),
+    ],
+)
+def test_decode_rejects_a_mixed_basic_and_extended_occurred_at(
+    occurred_at: str,
+) -> None:
+    """ISO-8601 does not permit mixing basic and extended spellings within
+    one timestamp; decode must reject both directions on every supported
+    interpreter (spec-kitty-events#193)."""
+    attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
+    attrs["occurred_at"] = occurred_at
+    with pytest.raises(ZeitgeistAttrsError, match="occurred_at"):
+        from_zeitgeist_attrs("WPStatusChanged", attrs)
+
+
 def test_decode_rejects_malformed_occurred_at_that_merely_ends_in_z() -> None:
     """The Z-suffix normalization must not turn a bogus string ending in
     "Z" into something that spuriously parses."""

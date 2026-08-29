@@ -151,6 +151,7 @@ drift or a version bump, update :data:`ZEITGEIST_FORBIDDEN_KEYS_V1`,
 from __future__ import annotations
 
 import dataclasses
+import re
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timezone
 from enum import Enum
@@ -839,6 +840,16 @@ def _utf8_size(subject: str, value: str) -> int:
         raise ZeitgeistAttrsError(f"{subject} is not UTF-8 encodable") from exc
 
 
+#: Matches only timestamps that mix ISO-8601's basic date with its extended
+#: time, or vice versa. Each alternative keeps one spelling across both
+#: halves; a match is malformed and is rejected before interpreter-specific
+#: ``datetime.fromisoformat`` behavior can accept it.
+_MIXED_OCCURRED_AT_RE = re.compile(
+    r"^(?:\d{4}-\d{2}-\d{2}[T ]\d{6}|\d{8}[T ]\d{2}:\d{2}:\d{2})"
+    r"(?:[.,]\d+)?(?:Z|[+-]\d{2}:?\d{2})?$"
+)
+
+
 def to_zeitgeist_attrs(payload: BaseModel, envelope: Event) -> dict[str, str]:
     """Project one volatile payload and its envelope onto bounded attrs.
 
@@ -1280,6 +1291,8 @@ def from_zeitgeist_attrs(event_type: str, attrs: Mapping[str, str]) -> VolatileM
         decoded_attrs["detail_ref"] = f"{event_type}:{decoded_attrs['event_id']}"
 
     occurred_at = attrs["occurred_at"]
+    if _MIXED_OCCURRED_AT_RE.fullmatch(occurred_at):
+        raise ZeitgeistAttrsError(f"attr 'occurred_at' is not ISO-8601: {occurred_at!r}")
     # datetime.fromisoformat() only accepts the "Z" UTC designator from
     # Python 3.11 on; this repo's declared floor is 3.10 (pyproject.toml),
     # so a textbook Z-suffixed timestamp would otherwise be wrongly
