@@ -5,7 +5,7 @@ All notable changes to spec-kitty-events will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [9.0.1] - 2026-08-29
 
 ### Fixed
 
@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ISO-8601 *and* be timezone-aware, since the encoder only ever emits an
   aware `datetime`'s `isoformat()` and every downstream comparison (the
   72-hour feed window, the staleness guard) is against an aware "now".
+- Restored the zeitgeist-attrs fixture README's next-free id after fixtures
+  119–121 landed, and reformatted one source helper so the repository-wide
+  Ruff formatter gate is clean.
 
 ## [9.0.0] - 2026-08-28
 

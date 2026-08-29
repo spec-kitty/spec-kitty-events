@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `9.0.0`
+**Current package version**: `9.0.1`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -22,6 +22,12 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-events`
 - `spec-kitty-saas`
 - `spec-kitty`
+
+## `9.0.1` — contributor metadata and formatting
+
+This patch release contains no compatibility-boundary changes. It records the
+fixture-allocation README correction and repository formatting required by the
+version-amendment guard. Consumers need no action.
 
 ## `9.0.0` — `mission_id` widened onto `WPStatusChanged`/`MissionCreated`/`MissionClosed` for cross-family join (breaking)
 
