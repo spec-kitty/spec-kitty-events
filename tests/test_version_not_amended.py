@@ -1,4 +1,4 @@
-"""Guard: catch a future in-place amendment of an already-declared package version.
+"""Guard: catch reuse of any package version already declared on main.
 
 See ``contracts/versioning-and-compatibility.md`` and PROGRAM.md §2 ("a shared
 package's version number is spent once"). Issue #170 found ``8.2.0`` declared
@@ -7,16 +7,11 @@ at two distinct trees on ``main`` because a later commit changed
 patch. This is the CI check issue #170 asked for as a follow-up (issue #175).
 
 ``scripts/check_version_not_amended.py`` compares the working tree against
-``origin/main`` (or ``main``): if ``src/`` differs and the package version
-hasn't moved, that's an in-place amendment. Walking the *entire* history of
-every commit that ever touched ``pyproject.toml`` (issue #175's literal
-suggested shape) was tried and rejected — replayed against this repo's own
-history it flags 25 of the 56 commits that have ever touched
-``pyproject.toml``, because a version is legitimately shared by many ordinary
-commits before the next bump; that check would fail on the very next
-unrelated PR. Comparing only against main's tip, gated on whether ``src/``
-actually changed, catches the real defect (behaviour drift under an unchanged
-version) without that noise.
+``origin/main`` (or ``main``): if ``src/`` differs, the package version must
+not equal any version previously declared on main. The historical walk builds
+only that spent-version set; it does not reject ordinary historical commits
+that shared a version before the next bump, avoiding issue #175's noisy
+25-of-56 replay strategy.
 """
 
 from __future__ import annotations
@@ -64,6 +59,27 @@ def test_passes_when_version_bumped(tmp_path, monkeypatch) -> None:
     assert _checker.check() is None
 
 
+def test_passes_fresh_version_after_history_repeats_current_version(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    _init_repo_with_base_commit(root)
+
+    # An ordinary metadata commit legitimately keeps 1.0.0, reproducing the
+    # repeated-version history that made issue #175's replay strategy noisy.
+    (root / "pyproject.toml").write_text(
+        '[project]\nversion = "1.0.0"\ndescription = "metadata change"\n',
+        encoding="utf-8",
+    )
+    _git(root, "add", "pyproject.toml")
+    _git(root, "commit", "-q", "-m", "metadata change at 1.0.0")
+
+    (root / "pyproject.toml").write_text('[project]\nversion = "1.1.0"\n', encoding="utf-8")
+    (root / "src" / "mod.py").write_text("x = 2\n", encoding="utf-8")
+
+    monkeypatch.setattr(_checker, "_REPO_ROOT", root)
+    assert _checker.check() is None
+
+
 def test_fails_on_in_place_amendment(tmp_path, monkeypatch) -> None:
     root = tmp_path / "repo"
     root.mkdir()
@@ -77,6 +93,49 @@ def test_fails_on_in_place_amendment(tmp_path, monkeypatch) -> None:
     assert message is not None
     assert "mod.py" in message
     assert "1.0.0" in message
+
+
+def test_fails_when_stale_historical_version_is_reused(tmp_path, monkeypatch) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    _init_repo_with_base_commit(root)
+
+    (root / "pyproject.toml").write_text('[project]\nversion = "1.1.0"\n', encoding="utf-8")
+    _git(root, "add", "pyproject.toml")
+    _git(root, "commit", "-q", "-m", "bump to 1.1.0")
+
+    # The proposed source change differs from main's tip version, but reuses
+    # 1.0.0 from an older main commit.
+    (root / "pyproject.toml").write_text('[project]\nversion = "1.0.0"\n', encoding="utf-8")
+    (root / "src" / "mod.py").write_text("x = 2\n", encoding="utf-8")
+
+    monkeypatch.setattr(_checker, "_REPO_ROOT", root)
+    message = _checker.check()
+    assert message is not None
+    assert "already declared" in message
+    assert "'1.0.0'" in message
+    assert "tip" in message
+    assert "'1.1.0'" in message
+
+
+def test_fails_closed_when_source_changes_in_shallow_checkout(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "source"
+    source.mkdir()
+    _init_repo_with_base_commit(source)
+    (source / "pyproject.toml").write_text('[project]\nversion = "1.1.0"\n', encoding="utf-8")
+    _git(source, "add", "pyproject.toml")
+    _git(source, "commit", "-q", "-m", "bump to 1.1.0")
+
+    root = tmp_path / "shallow"
+    _git(tmp_path, "clone", "-q", "--depth", "1", source.as_uri(), str(root))
+    (root / "pyproject.toml").write_text('[project]\nversion = "1.0.0"\n', encoding="utf-8")
+    (root / "src" / "mod.py").write_text("x = 2\n", encoding="utf-8")
+
+    monkeypatch.setattr(_checker, "_REPO_ROOT", root)
+    message = _checker.check()
+    assert message is not None
+    assert "shallow checkout" in message
+    assert "fetch the full history" in message
 
 
 def test_passes_when_only_docs_change(tmp_path, monkeypatch) -> None:

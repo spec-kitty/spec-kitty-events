@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail if this checkout keeps main's package version while changing ``src/``.
+"""Fail if this checkout reuses a package version from main while changing ``src/``.
 
 PROGRAM.md §2: "a shared package's version number is spent once — an
 in-place amendment to an already-adopted version is forbidden ... bump the
@@ -10,18 +10,15 @@ bumping the version — this script is the follow-up CI check issue #170 asked
 for (issue #175).
 
 Compares the working tree against ``origin/main`` (or ``main`` if there is no
-``origin`` remote): if anything under ``src/`` differs and the declared
-package version hasn't moved, that is an in-place amendment. Docs-only,
-test-only, or config-only changes are unaffected — the version is free to
-stay put until something under ``src/`` actually changes.
+``origin`` remote): if anything under ``src/`` differs, the proposed package
+version must not have appeared anywhere in that ref's ``pyproject.toml``
+history. Docs-only, test-only, or config-only changes are unaffected — the
+version is free to stay put until something under ``src/`` actually changes.
 
-Deliberately narrower than "walk every commit that ever touched
-``pyproject.toml``" (issue #175's literal suggested shape): replayed against
-this repo's own history, that walk flags 25 of the 56 commits that have ever
-touched ``pyproject.toml``, because a version is legitimately shared by many
-ordinary commits before the next bump. Comparing only the current tree
-against main's tip, gated on whether ``src/`` actually changed, catches the
-real defect without that noise.
+This does walk commits that changed ``pyproject.toml``, but only to build the
+set of versions already declared on main. It does not judge those historical
+commits themselves, so ordinary commits that legitimately share one version
+do not become false positives (the noisy strategy rejected by issue #175).
 """
 
 from __future__ import annotations
@@ -67,6 +64,21 @@ def _version_at(ref: str) -> str:
     return _version_from_text(_run("show", f"{ref}:pyproject.toml"), where=ref)
 
 
+def _declared_versions(ref: str) -> dict[str, str]:
+    """Map every package version declared in ``ref``'s history to one commit."""
+    versions: dict[str, str] = {}
+    commits = _run("log", "--follow", "--format=%H", ref, "--", "pyproject.toml").splitlines()
+    for commit in commits:
+        try:
+            version = _version_at(commit)
+        except (RuntimeError, subprocess.CalledProcessError):
+            # Pre-package history may contain pyproject.toml without a
+            # project version, or a commit where the file is absent.
+            continue
+        versions.setdefault(version, commit)
+    return versions
+
+
 def _current_version() -> str:
     path = _REPO_ROOT / "pyproject.toml"
     return _version_from_text(path.read_text(encoding="utf-8"), where="the working tree")
@@ -85,16 +97,27 @@ def check() -> str | None:
     if not changed:
         return None  # no functional source changed; keeping the version is fine
 
+    if _run("rev-parse", "--is-shallow-repository") == "true":
+        return (
+            "src/ changed, but this is a shallow checkout, so the guard cannot "
+            f"prove that the proposed version is unused across {base_ref}'s full history — "
+            "fetch the full history before validating the package version"
+        )
+
     head_version = _current_version()
     base_version = _version_at(base_sha)
-    if head_version != base_version:
-        return None  # version was bumped
+    declared_versions = _declared_versions(base_sha)
+    declared_versions.setdefault(base_version, base_sha)
+    prior_commit = declared_versions.get(head_version)
+    if prior_commit is None:
+        return None  # a new version was declared
 
     return (
         f"src/ changed ({len(changed)} file(s)) but pyproject.toml's version "
-        f"({head_version!r}) still matches {base_ref}'s tip ({base_sha[:8]}) — "
-        "this amends an already-declared version in place. PROGRAM.md §2: bump "
-        "the patch number. Changed files:\n  " + "\n  ".join(changed)
+        f"({head_version!r}) was already declared on {base_ref} at "
+        f"{prior_commit[:8]} ({base_ref}'s tip {base_sha[:8]} declares "
+        f"{base_version!r}) — this reuses an already-spent version. "
+        "PROGRAM.md §2: declare a new version. Changed files:\n  " + "\n  ".join(changed)
     )
 
 
