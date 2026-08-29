@@ -1049,6 +1049,11 @@ def test_decode_accepts_a_z_suffixed_occurred_at() -> None:
     [
         pytest.param("20260825T09:00:00Z", id="basic-date-extended-time"),
         pytest.param("2026-08-25T090000Z", id="extended-date-basic-time"),
+        pytest.param("20260825T09:00Z", id="basic-date-extended-minute-time"),
+        pytest.param("2026-08-25T0900Z", id="extended-date-basic-minute-time"),
+        pytest.param("20260825_09:00:00Z", id="basic-date-extended-time-other-separator"),
+        pytest.param("2026W342T09:00:00Z", id="basic-week-date-extended-time"),
+        pytest.param("2026-W34-2T090000Z", id="extended-week-date-basic-time"),
     ],
 )
 def test_decode_rejects_a_mixed_basic_and_extended_occurred_at(
@@ -1061,6 +1066,32 @@ def test_decode_rejects_a_mixed_basic_and_extended_occurred_at(
     attrs["occurred_at"] = occurred_at
     with pytest.raises(ZeitgeistAttrsError, match="occurred_at"):
         from_zeitgeist_attrs("WPStatusChanged", attrs)
+
+
+@pytest.mark.parametrize(
+    "occurred_at",
+    [
+        pytest.param("20260825T090000Z", id="basic-full-time"),
+        pytest.param("20260825T0900Z", id="basic-minute-precision"),
+        pytest.param("20260825T09Z", id="basic-hour-precision"),
+        pytest.param("20260825T090000+0000", id="basic-numeric-offset"),
+        pytest.param("2026-08-25T09:00Z", id="extended-minute-precision"),
+        pytest.param("2026-08-25T09Z", id="extended-hour-precision"),
+        pytest.param("2026-08-25T09:00:00,123Z", id="extended-comma-fraction"),
+    ],
+)
+def test_decode_accepts_one_spelling_at_every_supported_time_precision(
+    occurred_at: str,
+) -> None:
+    """Valid basic and reduced-precision timestamps parse identically on 3.10.
+
+    The wire bytes stay in ``attrs``; only the private parse candidate is
+    reshaped, padded, and offset-normalized for ``datetime.fromisoformat``.
+    """
+    attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
+    attrs["occurred_at"] = occurred_at
+    moment = from_zeitgeist_attrs("WPStatusChanged", attrs)
+    assert moment.attrs["occurred_at"] == occurred_at
 
 
 def test_decode_rejects_malformed_occurred_at_that_merely_ends_in_z() -> None:

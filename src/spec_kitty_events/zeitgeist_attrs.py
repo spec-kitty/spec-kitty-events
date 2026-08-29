@@ -840,14 +840,65 @@ def _utf8_size(subject: str, value: str) -> int:
         raise ZeitgeistAttrsError(f"{subject} is not UTF-8 encodable") from exc
 
 
-#: Matches only timestamps that mix ISO-8601's basic date with its extended
-#: time, or vice versa. Each alternative keeps one spelling across both
-#: halves; a match is malformed and is rejected before interpreter-specific
-#: ``datetime.fromisoformat`` behavior can accept it.
-_MIXED_OCCURRED_AT_RE = re.compile(
-    r"^(?:\d{4}-\d{2}-\d{2}[T ]\d{6}|\d{8}[T ]\d{2}:\d{2}:\d{2})"
-    r"(?:[.,]\d+)?(?:Z|[+-]\d{2}:?\d{2})?$"
+#: Matches the two calendar-date spellings this attrs contract accepts. The
+#: alternatives bind date and time together, so a basic date can never pair
+#: with an extended time (or vice versa), week/ordinal dates cannot enter
+#: through an independent alternation, and Python 3.11+'s arbitrary
+#: single-character separator is deliberately outside the contract.
+_OCCURRED_AT_RE = re.compile(
+    r"^(?:(?P<extended_date>\d{4}-\d{2}-\d{2})"
+    r"[T ](?P<extended_time>\d{2}(?::\d{2}(?::\d{2})?)?)"
+    r"|(?P<basic_date>\d{8})"
+    r"[T ](?P<basic_time>\d{2}(?:\d{2}(?:\d{2})?)?))"
+    r"(?P<fraction>[.,]\d+)?"
+    r"(?P<offset>Z|[+-]\d{2}:?\d{2})$"
 )
+
+
+def _occurred_at_candidate(value: str) -> str | None:
+    """Return a Python-3.10-parseable spelling for a contract-valid value.
+
+    The attrs value itself is never rewritten. This private candidate reshapes
+    a valid basic timestamp (and pads reduced precision) into the extended
+    spelling ``datetime.fromisoformat`` accepted on the declared 3.10 floor.
+    A non-match returns ``None`` so the caller can reject the original wire
+    bytes with the same typed error as every other malformed timestamp.
+    """
+    match = _OCCURRED_AT_RE.fullmatch(value)
+    if match is None:
+        return None
+
+    extended_date, basic_date = match.group("extended_date", "basic_date")
+    extended_time, basic_time = match.group("extended_time", "basic_time")
+    date = extended_date
+    if basic_date is not None:
+        date = f"{basic_date[0:4]}-{basic_date[4:6]}-{basic_date[6:8]}"
+
+    time = extended_time
+    if basic_time is not None:
+        if len(basic_time) == 2:
+            time = f"{basic_time}:00:00"
+        elif len(basic_time) == 4:
+            time = f"{basic_time[0:2]}:{basic_time[2:4]}:00"
+        else:
+            time = f"{basic_time[0:2]}:{basic_time[2:4]}:{basic_time[4:6]}"
+    elif time.count(":") == 0:
+        time = f"{time}:00:00"
+    elif time.count(":") == 1:
+        time = f"{time}:00"
+
+    fraction = ""
+    if match["fraction"] is not None:
+        digits = match["fraction"][1:]
+        fraction = f".{digits[:6].ljust(6, '0')}"
+
+    offset = match["offset"]
+    if offset == "Z":
+        offset = "+00:00"
+    elif ":" not in offset:
+        offset = f"{offset[0:3]}:{offset[3:5]}"
+
+    return f"{date}T{time}{fraction}{offset}"
 
 
 def to_zeitgeist_attrs(payload: BaseModel, envelope: Event) -> dict[str, str]:
@@ -1291,30 +1342,9 @@ def from_zeitgeist_attrs(event_type: str, attrs: Mapping[str, str]) -> VolatileM
         decoded_attrs["detail_ref"] = f"{event_type}:{decoded_attrs['event_id']}"
 
     occurred_at = attrs["occurred_at"]
-    if _MIXED_OCCURRED_AT_RE.fullmatch(occurred_at):
+    candidate = _occurred_at_candidate(occurred_at)
+    if candidate is None:
         raise ZeitgeistAttrsError(f"attr 'occurred_at' is not ISO-8601: {occurred_at!r}")
-    # datetime.fromisoformat() only accepts the "Z" UTC designator from
-    # Python 3.11 on; this repo's declared floor is 3.10 (pyproject.toml),
-    # so a textbook Z-suffixed timestamp would otherwise be wrongly
-    # rejected on 3.10 while passing on 3.11+ for the exact same wire
-    # bytes (spec-kitty-events#55). Normalize before parsing so the
-    # accept/reject outcome doesn't depend on the interpreter's minor
-    # version. A well-formed value has at most this one trailing "Z"; if
-    # another "Z" remains after stripping it, the input was already
-    # malformed and must not be laundered into something 3.10's laxer
-    # fromisoformat() would accept (e.g. a doubled "...00ZZ"). The
-    # residual check is case-insensitive: a mixed-case doubled
-    # designator (e.g. "...00zZ") is just as malformed, and Python
-    # 3.11+'s fromisoformat is itself case-insensitive on "Z", so a
-    # case-sensitive guard here would let it through on some
-    # interpreters and not others — the exact split this fix removes.
-    if occurred_at.endswith("Z"):
-        candidate = occurred_at[:-1]
-        if "z" in candidate.lower():
-            raise ZeitgeistAttrsError(f"attr 'occurred_at' is not ISO-8601: {occurred_at!r}")
-        candidate += "+00:00"
-    else:
-        candidate = occurred_at
     try:
         parsed_occurred_at = datetime.fromisoformat(candidate)
     except ValueError as exc:
