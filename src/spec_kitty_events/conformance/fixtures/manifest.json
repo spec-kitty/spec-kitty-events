@@ -2239,6 +2239,46 @@
       "min_version": "9.0.0"
     },
     {
+      "id": "wp_status_changed_utc_designator_offset",
+      "path": "zeitgeist_attrs/valid/wp_status_changed_utc_designator_offset.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Decode accepts the Z UTC designator while preserving the original wire bytes.",
+      "min_version": "10.0.0"
+    },
+    {
+      "id": "wp_status_changed_extended_minute_offset",
+      "path": "zeitgeist_attrs/valid/wp_status_changed_extended_minute_offset.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Decode accepts a colon-separated minute-precision UTC offset.",
+      "min_version": "10.0.0"
+    },
+    {
+      "id": "wp_status_changed_basic_minute_offset",
+      "path": "zeitgeist_attrs/valid/wp_status_changed_basic_minute_offset.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Decode accepts a basic minute-precision UTC offset and preserves the wire bytes.",
+      "min_version": "10.0.0"
+    },
+    {
+      "id": "wp_status_changed_extended_second_offset",
+      "path": "zeitgeist_attrs/valid/wp_status_changed_extended_second_offset.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Decode accepts datetime.isoformat() output carrying a seconds-precision UTC offset.",
+      "min_version": "10.0.0"
+    },
+    {
+      "id": "wp_status_changed_basic_second_offset",
+      "path": "zeitgeist_attrs/valid/wp_status_changed_basic_second_offset.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Decode accepts a basic seconds-precision UTC offset and preserves the wire bytes.",
+      "min_version": "10.0.0"
+    },
+    {
       "id": "wp_status_changed_mixed_occurred_at",
       "path": "zeitgeist_attrs/invalid/wp_status_changed_mixed_occurred_at.json",
       "expected_result": "invalid",

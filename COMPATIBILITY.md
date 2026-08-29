@@ -53,7 +53,8 @@ The accepted spellings are:
 - extended: `YYYY-MM-DD[T ]HH:MM[:SS]`
 - basic: `YYYYMMDD[T ]HH[MM[SS]]`
 
-Both spellings may carry a decimal fraction and `Z`, `±HH:MM`, or `±HHMM`.
+Both spellings may carry a decimal fraction and `Z`, `±HH:MM[:SS]`, or
+`±HHMM[SS]`.
 Decode reshapes only its private parsing candidate, so accepted wire bytes —
 including a valid basic timestamp — remain unchanged in the returned attrs.
 Python 3.11+ previously accepted the malformed examples above while Python
@@ -65,6 +66,9 @@ boundary, so it is a major package bump. Producers that emit
 `datetime.isoformat()` or otherwise keep one spelling across the date and
 time are unaffected. Producers carrying mixed spellings must emit one of the
 forms above consistently.
+Seconds-precision UTC offsets — including those rendered by a historical
+`zoneinfo` timestamp's `datetime.isoformat()` — remain accepted in both the
+colon-separated and basic spellings.
 No envelope schema, event type, payload model, or attrs key changes in this
 release.
 

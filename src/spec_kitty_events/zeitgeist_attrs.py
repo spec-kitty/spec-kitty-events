@@ -851,7 +851,7 @@ _OCCURRED_AT_RE = re.compile(
     r"|(?P<basic_date>\d{8})"
     r"[T ](?P<basic_time>\d{2}(?:\d{2}(?:\d{2})?)?))"
     r"(?P<fraction>[.,]\d+)?"
-    r"(?P<offset>Z|[+-]\d{2}:?\d{2})$"
+    r"(?P<offset>Z|[+-](?:\d{2}:\d{2}(?::\d{2})?|\d{4}(?:\d{2})?))$"
 )
 
 
@@ -895,8 +895,10 @@ def _occurred_at_candidate(value: str) -> str | None:
     offset = match["offset"]
     if offset == "Z":
         offset = "+00:00"
-    elif ":" not in offset:
+    elif len(offset) == 5:
         offset = f"{offset[0:3]}:{offset[3:5]}"
+    elif len(offset) == 7:
+        offset = f"{offset[0:3]}:{offset[3:5]}:{offset[5:7]}"
 
     return f"{date}T{time}{fraction}{offset}"
 

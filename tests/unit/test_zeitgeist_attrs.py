@@ -6,6 +6,7 @@ import dataclasses
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 import pytest
 from pydantic import BaseModel
@@ -1042,6 +1043,38 @@ def test_decode_accepts_a_z_suffixed_occurred_at() -> None:
     attrs["occurred_at"] = "2026-08-25T09:00:00Z"
     moment = from_zeitgeist_attrs("WPStatusChanged", attrs)
     assert moment.attrs["occurred_at"] == "2026-08-25T09:00:00Z"
+
+
+@pytest.mark.parametrize(
+    "occurred_at",
+    [
+        pytest.param("2026-08-25T09:00:00Z", id="utc-designator"),
+        pytest.param("2026-08-25T09:00:00+05:21", id="extended-minute-offset"),
+        pytest.param("2026-08-25T09:00:00+0521", id="basic-minute-offset"),
+        pytest.param("2026-08-25T09:00:00+05:21:10", id="extended-second-offset"),
+        pytest.param("2026-08-25T09:00:00+052110", id="basic-second-offset"),
+    ],
+)
+def test_decode_accepts_every_utc_offset_spelling(occurred_at: str) -> None:
+    """The positive timestamp check admits minute and second offsets in each
+    spelling without reopening the hour-only split from Python 3.11+."""
+    attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
+    attrs["occurred_at"] = occurred_at
+    moment = from_zeitgeist_attrs("WPStatusChanged", attrs)
+    assert moment.attrs["occurred_at"] == occurred_at
+
+
+def test_codec_round_trips_a_zoneinfo_timestamp_with_offset_seconds() -> None:
+    """``datetime.isoformat()`` emits second-precision offsets for historical
+    ``zoneinfo`` zones; the attrs codec must accept its own output."""
+    envelope = _envelope(
+        "WPStatusChanged",
+        timestamp=datetime(1900, 1, 1, 9, 0, 0, tzinfo=ZoneInfo("Asia/Kolkata")),
+    )
+    attrs = to_zeitgeist_attrs(_transition(), envelope)
+    assert attrs["occurred_at"] == "1900-01-01T09:00:00+05:21:10"
+    moment = from_zeitgeist_attrs("WPStatusChanged", attrs)
+    assert moment.attrs == attrs
 
 
 @pytest.mark.parametrize(

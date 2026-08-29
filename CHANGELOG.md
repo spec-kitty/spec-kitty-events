@@ -19,7 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   separators, and week-date mixes that Python 3.11+ could accept while
   Python 3.10 rejected them. Valid basic and reduced-precision one-spelling
   timestamps now decode consistently on every supported interpreter by
-  reshaping only the private parsing candidate (EXPERIMENTAL-spec-kitty-events#193).
+  reshaping only the private parsing candidate. Minute- and seconds-precision
+  UTC offsets remain valid in both their colon-separated and basic spellings,
+  so `datetime.isoformat()` output from historical `zoneinfo` timestamps still
+  round-trips (EXPERIMENTAL-spec-kitty-events#193).
 
 ## [9.1.5] - 2026-08-31
 

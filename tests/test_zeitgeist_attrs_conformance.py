@@ -139,9 +139,9 @@ def zeitgeist_attrs_fixtures():
 
 
 def test_fixtures_loaded(zeitgeist_attrs_fixtures) -> None:
-    """37 valid + 19 invalid fixtures are on disk and manifest-registered."""
-    assert len(zeitgeist_attrs_fixtures) == 56
-    assert len([f for f in zeitgeist_attrs_fixtures if f.expected_valid]) == 37
+    """42 valid + 19 invalid fixtures are on disk and manifest-registered."""
+    assert len(zeitgeist_attrs_fixtures) == 61
+    assert len([f for f in zeitgeist_attrs_fixtures if f.expected_valid]) == 42
     assert len([f for f in zeitgeist_attrs_fixtures if not f.expected_valid]) == 19
 
 
@@ -260,7 +260,7 @@ def test_packaged_event_gate_fixture_entries_match_manifest_expectations() -> No
     [
         f
         for f in load_fixtures("zeitgeist_attrs")
-        if f.expected_valid and f.event_type == "WPStatusChanged"
+        if f.expected_valid and f.event_type == "WPStatusChanged" and "payload" in f.payload
     ],
     ids=lambda f: f.id,
 )
@@ -293,9 +293,19 @@ def test_wp_status_changed_fixtures_pass_strict_domain_validation(
     [f for f in load_fixtures("zeitgeist_attrs") if f.expected_valid],
     ids=lambda f: f.id,
 )
-def test_zeitgeist_attrs_both_directions(fixture: FixtureCase) -> None:
-    """Golden attrs pin the projection; the decode validates them back."""
+def test_zeitgeist_attrs_fixture_directions(fixture: FixtureCase) -> None:
+    """Golden attrs pin the projection and/or the decode boundary."""
     case = fixture.payload
+    if case.get("direction") == "from":
+        moment = from_zeitgeist_attrs(fixture.event_type, case["attrs"])
+        assert isinstance(moment, VolatileMoment)
+        assert moment == VolatileMoment(
+            kind=fixture.event_type,
+            ref=case["expected_ref"],
+            attrs=case["attrs"],
+        )
+        return
+
     payload = _build_payload(fixture.event_type, case["payload"])
     envelope = _fixture_envelope(fixture.event_type, case)
 
