@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [9.1.5] - 2026-08-31
+
+### Fixed
+
+- The Zeitgeist attrs contract now documents that both encode and decode
+  reject unknown Ops Invocation contract versions, and a unit test pins
+  `CONTRACT_VERSIONED_EVENT_TYPES` to the keys of
+  `KNOWN_CONTRACT_VERSIONS_BY_EVENT_TYPE`
+  (EXPERIMENTAL-spec-kitty-events#225).
+
 ## [9.1.4] - 2026-08-30
 
 ### Added
