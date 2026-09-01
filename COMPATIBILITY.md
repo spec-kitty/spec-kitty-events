@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.0.1`
+**Current package version**: `10.0.4`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -38,11 +38,22 @@ section is written ahead of that merge so the documentation gap doesn't
 reopen once it lands; it becomes a normal dated-version entry, and this
 "known gap" framing goes away, when #104 merges.
 
-## `10.0.1` — contract-version table synchronization is pinned
+## `10.0.4` — contract-version table synchronization is pinned
 
-`10.0.1` keeps the contract-version event registration and known-version
+`10.0.4` keeps the contract-version event registration and known-version
 mapping in sync, and clarifies that both projection directions reject an
 unknown Ops Invocation contract version.
+
+## `10.0.3` — MissionCreated conformance floor correction (non-breaking)
+
+This patch release changes packaged documentation and conformance metadata
+only; it changes no Python runtime behavior, event payloads, wire encoding, or
+wire decoding. The `mission_created_mission_id_present` fixture now declares
+its true capability floor, `8.2.0`, because that release is the first released
+codec whose derived `summary` attribute reproduces the fixture's complete
+`expected_attrs` shape. The compatibility narrative above now distinguishes
+that floor from `mission_id` itself, which `MissionCreated` has decoded since
+`8.0.0`.
 
 ## `10.0.0` — mixed ISO-8601 `occurred_at` spellings rejected (breaking)
 
@@ -182,10 +193,20 @@ decode accepts — the accept/reject boundary moved, which is exactly the
 `6.1.0` new-event-type precedent does *not* cover (a whole new event type
 is additive because no existing contract's boundary moves; this is the
 opposite: an existing family's own boundary moves). `MissionCreatedPayload`
-is excluded from this classification — it already declared `mission_id`
-before this release (prior, unrelated work), so its decode boundary
-already admitted the key and this bump changes nothing about its
-compatibility story.
+is excluded from this classification — it already declared `mission_id`,
+and `mission_id` has been in `MissionCreated`'s schema-derived key set
+since `8.0.0`, so `MissionCreated`'s decode boundary already admitted the
+key from that release onward. The broadcast key vocabulary
+itself changed at `8.1.0` (the prose fields `friendly_name`/`purpose_tldr`/
+`purpose_context` were dropped) and `8.2.0` (the derived `summary` attr was
+added, via `_schema_keys_for_model`, which did not exist before `8.2.0`).
+This bump changes nothing about `MissionCreated`'s compatibility story; the
+only new artifact for that family here is the
+`mission_created_mission_id_present` conformance fixture
+(`min_version: 8.2.0` — the fixture pins the derived `summary` attr, which
+no released codec reproduces before `8.2.0`, even though `mission_id`
+itself was decodable since `8.0.0`), which exercises a capability that
+already shipped rather than a new one.
 
 **Producers that omit `mission_id` are unaffected**: the field stays
 optional and is omitted from attrs when absent, so a producer that never
