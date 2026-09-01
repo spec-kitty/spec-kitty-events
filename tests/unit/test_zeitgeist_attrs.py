@@ -6,6 +6,7 @@ import dataclasses
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 import pytest
 from pydantic import BaseModel
@@ -28,6 +29,10 @@ from spec_kitty_events.mission_next import (
     RuntimeActorIdentity,
 )
 from spec_kitty_events.models import Event
+from spec_kitty_events.ops_invocation import (
+    OpsInvocationCompletedPayload,
+    OpsInvocationStartedPayload,
+)
 from spec_kitty_events.status import StatusTransitionPayload
 from spec_kitty_events.zeitgeist_attrs import (
     FORBIDDEN_ATTR_KEYS,
@@ -41,6 +46,7 @@ from spec_kitty_events.zeitgeist_attrs import (
     ZEITGEIST_ATTR_KEY_MAX_CHARS,
     ZEITGEIST_FORBIDDEN_KEYS_V1,
     UnencodableFieldValueError,
+    UnknownContractVersionError,
     UnknownVolatileEventTypeError,
     VolatileMoment,
     ZeitgeistAttrsControlCharacterError,
@@ -122,6 +128,8 @@ def test_volatile_vocabulary_is_the_ephemeral_design_set() -> None:
         "PlanCompleted",
         "TasksStarted",
         "TasksCompleted",
+        "OpsInvocationStarted",
+        "OpsInvocationCompleted",
     }
 
 
@@ -329,6 +337,41 @@ def test_encode_canonicalises_a_naive_timestamp_to_utc() -> None:
 def test_envelope_event_type_must_match_the_payload_family() -> None:
     with pytest.raises(ZeitgeistAttrsError):
         to_zeitgeist_attrs(_transition(), _envelope("MissionCreated"))
+
+
+@pytest.mark.parametrize(
+    ("payload", "event_type"),
+    [
+        (
+            OpsInvocationStartedPayload(
+                invocation_id="inv-01",
+                action="team.provision",
+                actor=_identity(),
+                scope="team-01",
+                contract_version=99,
+            ),
+            "OpsInvocationStarted",
+        ),
+        (
+            OpsInvocationCompletedPayload(
+                invocation_id="inv-01",
+                action="team.provision",
+                actor=_identity(),
+                scope="team-01",
+                outcome="success",
+                contract_version=99,
+            ),
+            "OpsInvocationCompleted",
+        ),
+    ],
+    ids=["started", "completed"],
+)
+def test_encode_rejects_unknown_contract_versions(payload, event_type) -> None:
+    with pytest.raises(
+        UnknownContractVersionError,
+        match="contract_version '99' is not a version this package knows how to interpret",
+    ):
+        to_zeitgeist_attrs(payload, _envelope(event_type))
 
 
 def test_absent_optionals_emit_no_key() -> None:
@@ -819,6 +862,24 @@ def test_ref_derival_rejects_multibyte_over_the_byte_bound_though_under_240_char
         zeitgeist_ref_for("WPStatusChanged", payload)
 
 
+def test_ref_derival_rejects_a_newline_in_the_ref_with_typed_error() -> None:
+    """Mirrors test_decode_rejects_a_newline_in_a_value_with_typed_error:
+    the frame's ref is the one other producer-controlled field this module
+    emits, and a bare LF could forge extra frame lines just as readily
+    there as in an attrs value (issue #106)."""
+    payload = _transition(mission_slug="demo\nrumor: fake status line")
+    with pytest.raises(ZeitgeistAttrsControlCharacterError, match="WPStatusChanged ref"):
+        zeitgeist_ref_for("WPStatusChanged", payload)
+
+
+def test_ref_derival_rejects_an_ansi_escape_in_the_ref_with_typed_error() -> None:
+    """Mirrors test_decode_rejects_an_ansi_escape_in_a_value_with_typed_error
+    for the ref field (issue #106)."""
+    payload = _transition(mission_slug="demo\x1b[0m")
+    with pytest.raises(ZeitgeistAttrsControlCharacterError, match="WPStatusChanged ref"):
+        zeitgeist_ref_for("WPStatusChanged", payload)
+
+
 def test_bounds_constants_match_the_zeitgeist_frame_contract() -> None:
     assert ZEITGEIST_ATTRS_MAX_KEYS == 16
     assert ZEITGEIST_ATTRS_MAX_BYTES == 240
@@ -982,6 +1043,88 @@ def test_decode_accepts_a_z_suffixed_occurred_at() -> None:
     attrs["occurred_at"] = "2026-08-25T09:00:00Z"
     moment = from_zeitgeist_attrs("WPStatusChanged", attrs)
     assert moment.attrs["occurred_at"] == "2026-08-25T09:00:00Z"
+
+
+@pytest.mark.parametrize(
+    "occurred_at",
+    [
+        pytest.param("2026-08-25T09:00:00Z", id="utc-designator"),
+        pytest.param("2026-08-25T09:00:00+05:21", id="extended-minute-offset"),
+        pytest.param("2026-08-25T09:00:00+0521", id="basic-minute-offset"),
+        pytest.param("2026-08-25T09:00:00+05:21:10", id="extended-second-offset"),
+        pytest.param("2026-08-25T09:00:00+052110", id="basic-second-offset"),
+    ],
+)
+def test_decode_accepts_every_utc_offset_spelling(occurred_at: str) -> None:
+    """The positive timestamp check admits minute and second offsets in each
+    spelling without reopening the hour-only split from Python 3.11+."""
+    attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
+    attrs["occurred_at"] = occurred_at
+    moment = from_zeitgeist_attrs("WPStatusChanged", attrs)
+    assert moment.attrs["occurred_at"] == occurred_at
+
+
+def test_codec_round_trips_a_zoneinfo_timestamp_with_offset_seconds() -> None:
+    """``datetime.isoformat()`` emits second-precision offsets for historical
+    ``zoneinfo`` zones; the attrs codec must accept its own output."""
+    envelope = _envelope(
+        "WPStatusChanged",
+        timestamp=datetime(1900, 1, 1, 9, 0, 0, tzinfo=ZoneInfo("Asia/Kolkata")),
+    )
+    attrs = to_zeitgeist_attrs(_transition(), envelope)
+    assert attrs["occurred_at"] == "1900-01-01T09:00:00+05:21:10"
+    moment = from_zeitgeist_attrs("WPStatusChanged", attrs)
+    assert moment.attrs == attrs
+
+
+@pytest.mark.parametrize(
+    "occurred_at",
+    [
+        pytest.param("20260825T09:00:00Z", id="basic-date-extended-time"),
+        pytest.param("2026-08-25T090000Z", id="extended-date-basic-time"),
+        pytest.param("20260825T09:00Z", id="basic-date-extended-minute-time"),
+        pytest.param("2026-08-25T0900Z", id="extended-date-basic-minute-time"),
+        pytest.param("20260825_09:00:00Z", id="basic-date-extended-time-other-separator"),
+        pytest.param("2026W342T09:00:00Z", id="basic-week-date-extended-time"),
+        pytest.param("2026-W34-2T090000Z", id="extended-week-date-basic-time"),
+    ],
+)
+def test_decode_rejects_a_mixed_basic_and_extended_occurred_at(
+    occurred_at: str,
+) -> None:
+    """ISO-8601 does not permit mixing basic and extended spellings within
+    one timestamp; decode must reject both directions on every supported
+    interpreter (spec-kitty-events#193)."""
+    attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
+    attrs["occurred_at"] = occurred_at
+    with pytest.raises(ZeitgeistAttrsError, match="occurred_at"):
+        from_zeitgeist_attrs("WPStatusChanged", attrs)
+
+
+@pytest.mark.parametrize(
+    "occurred_at",
+    [
+        pytest.param("20260825T090000Z", id="basic-full-time"),
+        pytest.param("20260825T0900Z", id="basic-minute-precision"),
+        pytest.param("20260825T09Z", id="basic-hour-precision"),
+        pytest.param("20260825T090000+0000", id="basic-numeric-offset"),
+        pytest.param("2026-08-25T09:00Z", id="extended-minute-precision"),
+        pytest.param("2026-08-25T09Z", id="extended-hour-precision"),
+        pytest.param("2026-08-25T09:00:00,123Z", id="extended-comma-fraction"),
+    ],
+)
+def test_decode_accepts_one_spelling_at_every_supported_time_precision(
+    occurred_at: str,
+) -> None:
+    """Valid basic and reduced-precision timestamps parse identically on 3.10.
+
+    The wire bytes stay in ``attrs``; only the private parse candidate is
+    reshaped, padded, and offset-normalized for ``datetime.fromisoformat``.
+    """
+    attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
+    attrs["occurred_at"] = occurred_at
+    moment = from_zeitgeist_attrs("WPStatusChanged", attrs)
+    assert moment.attrs["occurred_at"] == occurred_at
 
 
 def test_decode_rejects_malformed_occurred_at_that_merely_ends_in_z() -> None:

@@ -1,0 +1,16 @@
+{
+  "event_type": "WPStatusChanged",
+  "attrs": {
+    "event_id": "e2e00000-0000-4000-8000-000000000125",
+    "occurred_at": "20260825_09:00:00Z",
+    "mission_slug": "demo-mission",
+    "wp_id": "WP01",
+    "to_lane": "in_progress",
+    "actor": "robert",
+    "force": "false",
+    "execution_mode": "worktree"
+  },
+  "direction": "from",
+  "expected_error": "ZeitgeistAttrsError",
+  "notes": "The attrs contract allows only T or a space between date and time; Python 3.11+'s arbitrary single-character separator is rejected."
+}
