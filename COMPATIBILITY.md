@@ -189,10 +189,8 @@ is additive because no existing contract's boundary moves; this is the
 opposite: an existing family's own boundary moves). `MissionCreatedPayload`
 is excluded from this classification — it already declared `mission_id`,
 and `mission_id` has been in `MissionCreated`'s schema-derived key set
-since `8.0.0` (`8.0.0` is what first introduced the whole `zeitgeist_attrs`
-module, and `MissionCreated`'s entry in `UNBROADCAST_FIELDS` has never
-listed `mission_id`), so `MissionCreated`'s decode boundary already
-admitted the key from that release onward. The broadcast key vocabulary
+since `8.0.0`, so `MissionCreated`'s decode boundary already admitted the
+key from that release onward. The broadcast key vocabulary
 itself changed at `8.1.0` (the prose fields `friendly_name`/`purpose_tldr`/
 `purpose_context` were dropped) and `8.2.0` (the derived `summary` attr was
 added, via `_schema_keys_for_model`, which did not exist before `8.2.0`).
