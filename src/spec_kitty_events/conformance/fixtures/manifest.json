@@ -2235,8 +2235,8 @@
       "path": "zeitgeist_attrs/valid/mission_created_mission_id_present.json",
       "expected_result": "valid",
       "event_type": "MissionCreated",
-      "notes": "mission_id present alongside mission_slug: the family's ref field stays mission_slug (REF_FIELD_BY_EVENT_TYPE is unchanged), but mission_id now rides in attrs so a consumer can join this moment against PhaseEntered for the same mission aggregate (spec-kitty-events#69). MissionCreatedPayload already declared mission_id before this issue; this fixture is the first to exercise it with a non-null value.",
-      "min_version": "9.0.0"
+      "notes": "mission_id present alongside mission_slug: the family's ref field stays mission_slug (REF_FIELD_BY_EVENT_TYPE is unchanged). MissionCreatedPayload already declared mission_id, and mission_id has been in MissionCreated's schema-derived key set since 8.0.0. But this fixture also pins the derived summary attr, which _mission_created_summary only started deriving in 8.2.0 (before that, at 8.0.0/8.1.0, no released codec reproduces expected_attrs for this exact payload) — this fixture is merely the first to exercise mission_id with a non-null value, added in 9.0.0 as conformance coverage for a capability whose full expected_attrs shape has shipped since 8.2.0 (spec-kitty-events#69, spec-kitty-events#197).",
+      "min_version": "8.2.0"
     },
     {
       "id": "wp_status_changed_utc_designator_offset",

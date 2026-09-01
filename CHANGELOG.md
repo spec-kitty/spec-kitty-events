@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [10.0.2] - 2026-09-01
+## [10.0.4] - 2026-09-01
 
 ### Fixed
 
@@ -18,6 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (EXPERIMENTAL-spec-kitty-events#64, closed by #104). The shipped behavior is
   now recorded once, in past tense, under its dated `8.2.1` entry
   (EXPERIMENTAL-spec-kitty-events#203).
+
+## [10.0.3] - 2026-09-01
+
+### Fixed
+
+- Corrected `mission_created_mission_id_present`'s conformance floor from
+  `9.0.0` to `8.2.0`, matching the earliest released codec that reproduces the
+  fixture's derived `summary` attribute, and aligned `COMPATIBILITY.md`'s
+  `MissionCreated` history with that floor
+  (EXPERIMENTAL-spec-kitty-events#197).
 
 ## [10.0.0] - 2026-08-29
 
