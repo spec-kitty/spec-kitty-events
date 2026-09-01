@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `9.1.6`
+**Current package version**: `10.0.1`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -38,11 +38,45 @@ section is written ahead of that merge so the documentation gap doesn't
 reopen once it lands; it becomes a normal dated-version entry, and this
 "known gap" framing goes away, when #104 merges.
 
-## `9.1.6` — contract-version table synchronization is pinned
+## `10.0.1` — contract-version table synchronization is pinned
 
-`9.1.6` keeps the contract-version event registration and known-version
+`10.0.1` keeps the contract-version event registration and known-version
 mapping in sync, and clarifies that both projection directions reject an
 unknown Ops Invocation contract version.
+
+## `10.0.0` — mixed ISO-8601 `occurred_at` spellings rejected (breaking)
+
+`from_zeitgeist_attrs` now rejects an `occurred_at` value that combines
+ISO-8601's basic date with its extended time, or its extended date with its
+basic time (for example, `20260825T09:00:00Z` or `2026-08-25T090000Z`).
+ISO-8601 requires one spelling across the date and time. The check is a
+positive calendar-date shape match, so it also rejects reduced-precision
+mixed spellings, arbitrary single-character separators that Python 3.11+
+`fromisoformat` accepts, and week-date mixes.
+
+The accepted spellings are:
+
+- extended: `YYYY-MM-DD[T ]HH:MM[:SS]`
+- basic: `YYYYMMDD[T ]HH[MM[SS]]`
+
+Both spellings may carry a decimal fraction and `Z`, `±HH:MM[:SS]`, or
+`±HHMM[SS]`.
+Decode reshapes only its private parsing candidate, so accepted wire bytes —
+including a valid basic timestamp — remain unchanged in the returned attrs.
+Python 3.11+ previously accepted the malformed examples above while Python
+3.10 rejected them; Python 3.10 also rejected valid basic timestamps. This
+release makes both outcomes consistent across supported Python versions.
+
+This is a consumer-visible narrowing and widening of the attrs decode
+boundary, so it is a major package bump. Producers that emit
+`datetime.isoformat()` or otherwise keep one spelling across the date and
+time are unaffected. Producers carrying mixed spellings must emit one of the
+forms above consistently.
+Seconds-precision UTC offsets — including those rendered by a historical
+`zoneinfo` timestamp's `datetime.isoformat()` — remain accepted in both the
+colon-separated and basic spellings.
+No envelope schema, event type, payload model, or attrs key changes in this
+release.
 
 ## `9.1.5` — decoded detail refs follow canonical event IDs
 
