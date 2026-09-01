@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `9.1.7`
+**Current package version**: `10.0.2`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,13 +23,48 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
-## `9.1.7` — contributor metadata and release hygiene
 
-`9.1.7` contains no compatibility-boundary changes. It retires the "known gap"
+## `10.0.2` — contributor metadata and release hygiene
+
+`10.0.2` contains no compatibility-boundary changes. It retires the "known gap"
 framing for the encode-side control-character rejection now that
 EXPERIMENTAL-spec-kitty-events#104 has shipped, recording that behavior once as a
 dated `8.2.1` entry, and carries the repository formatting the version-amendment
 guard requires. Consumers need no action.
+
+## `10.0.0` — mixed ISO-8601 `occurred_at` spellings rejected (breaking)
+
+`from_zeitgeist_attrs` now rejects an `occurred_at` value that combines
+ISO-8601's basic date with its extended time, or its extended date with its
+basic time (for example, `20260825T09:00:00Z` or `2026-08-25T090000Z`).
+ISO-8601 requires one spelling across the date and time. The check is a
+positive calendar-date shape match, so it also rejects reduced-precision
+mixed spellings, arbitrary single-character separators that Python 3.11+
+`fromisoformat` accepts, and week-date mixes.
+
+The accepted spellings are:
+
+- extended: `YYYY-MM-DD[T ]HH:MM[:SS]`
+- basic: `YYYYMMDD[T ]HH[MM[SS]]`
+
+Both spellings may carry a decimal fraction and `Z`, `±HH:MM[:SS]`, or
+`±HHMM[SS]`.
+Decode reshapes only its private parsing candidate, so accepted wire bytes —
+including a valid basic timestamp — remain unchanged in the returned attrs.
+Python 3.11+ previously accepted the malformed examples above while Python
+3.10 rejected them; Python 3.10 also rejected valid basic timestamps. This
+release makes both outcomes consistent across supported Python versions.
+
+This is a consumer-visible narrowing and widening of the attrs decode
+boundary, so it is a major package bump. Producers that emit
+`datetime.isoformat()` or otherwise keep one spelling across the date and
+time are unaffected. Producers carrying mixed spellings must emit one of the
+forms above consistently.
+Seconds-precision UTC offsets — including those rendered by a historical
+`zoneinfo` timestamp's `datetime.isoformat()` — remain accepted in both the
+colon-separated and basic spellings.
+No envelope schema, event type, payload model, or attrs key changes in this
+release.
 
 ## `9.1.5` — decoded detail refs follow canonical event IDs
 

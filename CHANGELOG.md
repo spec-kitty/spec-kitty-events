@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [9.1.7] - 2026-09-01
+## [10.0.2] - 2026-09-01
 
 ### Fixed
 
@@ -18,6 +18,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (EXPERIMENTAL-spec-kitty-events#64, closed by #104). The shipped behavior is
   now recorded once, in past tense, under its dated `8.2.1` entry
   (EXPERIMENTAL-spec-kitty-events#203).
+
+## [10.0.0] - 2026-08-29
+
+### Breaking
+
+- `from_zeitgeist_attrs` now rejects an `occurred_at` timestamp that mixes
+  ISO-8601's basic and extended spellings (for example,
+  `20260825T09:00:00Z` or `2026-08-25T090000Z`). ISO-8601 requires one
+  spelling across the date and time. A positive calendar-date shape check
+  also rejects reduced-precision mixes, arbitrary single-character
+  separators, and week-date mixes that Python 3.11+ could accept while
+  Python 3.10 rejected them. Valid basic and reduced-precision one-spelling
+  timestamps now decode consistently on every supported interpreter by
+  reshaping only the private parsing candidate. Minute- and seconds-precision
+  UTC offsets remain valid in both their colon-separated and basic spellings,
+  so `datetime.isoformat()` output from historical `zoneinfo` timestamps still
+  round-trips (EXPERIMENTAL-spec-kitty-events#193).
 
 ## [9.1.5] - 2026-08-31
 
