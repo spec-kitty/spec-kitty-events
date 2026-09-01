@@ -25,6 +25,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Union
 
+from spec_kitty_events._iso8601 import normalize_iso8601_shape as _normalize_iso8601_shape
 from spec_kitty_events.models import Event
 
 __all__ = [
@@ -92,9 +93,11 @@ def _extract_envelope_timestamp(envelope: Union[Mapping[str, Any], Event]) -> da
     if isinstance(raw, datetime):
         return _to_utc(raw)
     if isinstance(raw, str):
-        # datetime.fromisoformat in Python 3.10 does not accept trailing 'Z'.
-        # Normalise to '+00:00' before parsing.
-        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        # datetime.fromisoformat in Python 3.10 does not accept trailing
+        # 'Z', a fractional-second part outside 0/3/6 digits, or basic
+        # (no '-'/':') format; 3.11+ accepts all three for the same wire
+        # bytes (spec-kitty-events#122, #135). Reshape before parsing.
+        parsed = datetime.fromisoformat(_normalize_iso8601_shape(raw))
         return _to_utc(parsed)
     raise TypeError(
         f"envelope['timestamp'] must be a datetime or ISO-8601 string; got {type(raw).__name__}"
