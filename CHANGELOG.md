@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [10.0.5] - 2026-09-02
+## [10.0.6] - 2026-09-02
 
 ### Fixed
 
@@ -16,6 +16,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `CONTRACT_VERSIONED_EVENT_TYPES` to the keys of
   `KNOWN_CONTRACT_VERSIONS_BY_EVENT_TYPE`
   (EXPERIMENTAL-spec-kitty-events#225).
+
+## [10.0.5] - 2026-09-02
+
+### Fixed
+
+- Removed the stale duplicate of the `to_zeitgeist_attrs` control-character
+  known-issue text. It survived both as a "known gap, not yet closed" bullet
+  under `9.0.2` and as an `8.2.1 > Known issues` section, while the encode-side
+  rejection it describes has in fact shipped
+  (EXPERIMENTAL-spec-kitty-events#64, closed by #104). The shipped behavior is
+  now recorded once, in past tense, under its dated `8.2.1` entry
+  (EXPERIMENTAL-spec-kitty-events#203).
 
 ## [10.0.4] - 2026-09-01
 
@@ -200,18 +212,6 @@ here.
   ISO-8601 *and* be timezone-aware, since the encoder only ever emits an
   aware `datetime`'s `isoformat()` and every downstream comparison (the
   72-hour feed window, the staleness guard) is against an aware "now".
-- **Known gap, not yet closed**: `to_zeitgeist_attrs` does not yet reject a
-  value carrying a non-printable character (`not str.isprintable()`) on
-  encode, even though `from_zeitgeist_attrs` already rejects one on decode
-  (EXPERIMENTAL-spec-kitty-events#64). Until this closes, a producer whose
-  `actor`/`review_ref`/id field carries a stray control character can
-  broadcast successfully while a consumer's decode raises, silently
-  dropping the moment. The fix — encode failing closed with the same
-  `ZeitgeistAttrsControlCharacterError` decode already raises, before that
-  attrs dict reaches the relay — is open as
-  EXPERIMENTAL-spec-kitty-events#104 and not yet merged to `main`; this
-  bullet moves under a dated release heading, in past tense, once #104
-  lands.
 
 ## [9.0.1] - 2026-08-29
 
@@ -324,16 +324,18 @@ Per `PROGRAM.md` §2: bump the pinned rev/version in every consumer that adopts
   `8.2.0` keeps its single adopted meaning at `c93dbfbf`; every tree from
   `b67b7e0` onward is `8.2.1` (EXPERIMENTAL-spec-kitty-events#170).
 
-### Known issues
+### Fixed
 
-- **Not yet closed**: `to_zeitgeist_attrs` does not reject a value
-  carrying a non-printable character (`not str.isprintable()`) on encode,
-  even though `from_zeitgeist_attrs` already rejects one on decode
-  (EXPERIMENTAL-spec-kitty-events#64). Until this closes, a producer whose
-  `actor`/`review_ref`/id field carries a stray control character can
-  broadcast successfully while a consumer's decode raises, silently
-  dropping the moment. This bullet moves to `### Fixed`, in past tense,
-  once #64's encode-side check lands.
+- `to_zeitgeist_attrs` now rejects a value carrying a non-printable
+  character (`not str.isprintable()`) on encode — the same check
+  `from_zeitgeist_attrs` already enforced on decode
+  (EXPERIMENTAL-spec-kitty-events#64, closed by PR #104). Previously only
+  decode rejected control characters, so a producer whose
+  `actor`/`review_ref`/id field carried a stray control character could
+  broadcast successfully while a consumer's decode raised, silently
+  dropping the moment; encode now fails closed with the same
+  `ZeitgeistAttrsControlCharacterError` before that attrs dict ever
+  reaches the relay.
 
 ## [8.2.0] - 2026-08-27
 
