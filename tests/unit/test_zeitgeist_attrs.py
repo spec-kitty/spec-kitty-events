@@ -35,7 +35,9 @@ from spec_kitty_events.ops_invocation import (
 )
 from spec_kitty_events.status import StatusTransitionPayload
 from spec_kitty_events.zeitgeist_attrs import (
+    CONTRACT_VERSIONED_EVENT_TYPES,
     FORBIDDEN_ATTR_KEYS,
+    KNOWN_CONTRACT_VERSIONS_BY_EVENT_TYPE,
     PAYLOAD_MODEL_BY_EVENT_TYPE,
     PROJECTED_FIELD_BY_EVENT_TYPE,
     REF_FIELD_BY_EVENT_TYPE,
@@ -131,6 +133,10 @@ def test_volatile_vocabulary_is_the_ephemeral_design_set() -> None:
         "OpsInvocationStarted",
         "OpsInvocationCompleted",
     }
+
+
+def test_contract_version_registration_tables_are_in_sync() -> None:
+    assert CONTRACT_VERSIONED_EVENT_TYPES == KNOWN_CONTRACT_VERSIONS_BY_EVENT_TYPE.keys()
 
 
 def test_dispatch_table_covers_exactly_the_volatile_types() -> None:

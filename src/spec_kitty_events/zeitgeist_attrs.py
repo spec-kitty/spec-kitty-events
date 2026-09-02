@@ -552,10 +552,11 @@ DETAIL_REF_SOURCE_EVENT_TYPES: frozenset[str] = frozenset(
 #: Event types whose projection carries an explicit ``contract_version``
 #: attr — a version of the *payload shape*, distinct from the envelope's
 #: fixed ``schema_version`` (see :mod:`spec_kitty_events.ops_invocation`'s
-#: "Contract versioning" section). :func:`from_zeitgeist_attrs` rejects a
-#: ``contract_version`` outside :data:`KNOWN_CONTRACT_VERSIONS_BY_EVENT_TYPE`
-#: with :class:`UnknownContractVersionError` instead of silently decoding a
-#: future revision's attrs under today's assumptions.
+#: "Contract versioning" section). :func:`to_zeitgeist_attrs` and
+#: :func:`from_zeitgeist_attrs` both reject a ``contract_version`` outside
+#: :data:`KNOWN_CONTRACT_VERSIONS_BY_EVENT_TYPE` with
+#: :class:`UnknownContractVersionError` instead of silently encoding or
+#: decoding a future revision's attrs under today's assumptions.
 CONTRACT_VERSIONED_EVENT_TYPES: frozenset[str] = frozenset(
     {
         OPS_INVOCATION_STARTED,

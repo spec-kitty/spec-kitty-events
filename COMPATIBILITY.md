@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.0.5`
+**Current package version**: `10.0.6`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,12 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `10.0.6` — contract-version table synchronization is pinned
+
+`10.0.6` keeps the contract-version event registration and known-version
+mapping in sync, and clarifies that both projection directions reject an
+unknown Ops Invocation contract version.
 
 ## `10.0.5` — contributor metadata and release hygiene
 
