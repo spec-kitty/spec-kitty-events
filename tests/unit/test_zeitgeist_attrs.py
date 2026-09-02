@@ -1006,25 +1006,28 @@ def test_decode_canonicalizes_event_id_case() -> None:
     assert moment.attrs["event_id"] == _EVENT_ID
 
 
-def test_decode_rejects_a_timezone_naive_occurred_at() -> None:
-    """spec-kitty-events#62: the encoder only ever emits an aware
-    ``datetime``'s ``isoformat()``; a naive value would make every
-    comparison against an aware "now" (the 72-hour feed window, the
-    staleness guard) raise ``TypeError`` at render time instead of being
-    rejected here at the codec seam."""
+def test_decode_rejects_an_occurred_at_without_a_utc_offset() -> None:
+    """spec-kitty-events#62: the accepted timestamp shape always carries
+    a UTC offset, so a naive timestamp is rejected before parsing instead
+    of reaching render-time comparisons against an aware "now"."""
     attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
     attrs["occurred_at"] = "2026-08-25T09:00:00"
-    with pytest.raises(ZeitgeistAttrsError, match="occurred_at"):
+    with pytest.raises(
+        ZeitgeistAttrsError,
+        match="attr 'occurred_at' is not ISO-8601: '2026-08-25T09:00:00'",
+    ):
         from_zeitgeist_attrs("WPStatusChanged", attrs)
 
 
 def test_decode_rejects_a_bare_date_occurred_at() -> None:
-    """A date-only string parses via ``datetime.fromisoformat`` but is
-    timezone-naive, so it is rejected same as any other naive value
-    (spec-kitty-events#62 — this supersedes the prior deliberate accept)."""
+    """A date-only string has neither a time nor a UTC offset, so the
+    timestamp shape check rejects it (spec-kitty-events#62)."""
     attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
     attrs["occurred_at"] = "2026-08-25"
-    with pytest.raises(ZeitgeistAttrsError, match="occurred_at"):
+    with pytest.raises(
+        ZeitgeistAttrsError,
+        match="attr 'occurred_at' is not ISO-8601: '2026-08-25'",
+    ):
         from_zeitgeist_attrs("WPStatusChanged", attrs)
 
 

@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.0.4`
+**Current package version**: `10.0.5`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -24,13 +24,20 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty`
 
 
-## `10.0.4` — contributor metadata and release hygiene
+## `10.0.5` — contributor metadata and release hygiene
 
-`10.0.4` contains no compatibility-boundary changes. It retires the "known gap"
+`10.0.5` contains no compatibility-boundary changes. It retires the "known gap"
 framing for the encode-side control-character rejection now that
 EXPERIMENTAL-spec-kitty-events#104 has shipped, recording that behavior once as a
 dated `8.2.1` entry, and carries the repository formatting the version-amendment
 guard requires. Consumers need no action.
+
+## `10.0.4` — timezone guard cleanup (non-breaking)
+
+This patch release changes no contract, wire encoding, or wire decoding. The
+timestamp shape check already requires a UTC offset, so the previously
+separate timezone-awareness branch in `from_zeitgeist_attrs` was unreachable;
+it is removed without changing any accepted or rejected timestamp.
 
 ## `10.0.3` — MissionCreated conformance floor correction (non-breaking)
 
