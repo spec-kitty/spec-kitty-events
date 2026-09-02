@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.0.4`
+**Current package version**: `10.0.5`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -38,11 +38,18 @@ section is written ahead of that merge so the documentation gap doesn't
 reopen once it lands; it becomes a normal dated-version entry, and this
 "known gap" framing goes away, when #104 merges.
 
-## `10.0.4` — contract-version table synchronization is pinned
+## `10.0.5` — contract-version table synchronization is pinned
 
-`10.0.4` keeps the contract-version event registration and known-version
+`10.0.5` keeps the contract-version event registration and known-version
 mapping in sync, and clarifies that both projection directions reject an
 unknown Ops Invocation contract version.
+
+## `10.0.4` — timezone guard cleanup (non-breaking)
+
+This patch release changes no contract, wire encoding, or wire decoding. The
+timestamp shape check already requires a UTC offset, so the previously
+separate timezone-awareness branch in `from_zeitgeist_attrs` was unreachable;
+it is removed without changing any accepted or rejected timestamp.
 
 ## `10.0.3` — MissionCreated conformance floor correction (non-breaking)
 

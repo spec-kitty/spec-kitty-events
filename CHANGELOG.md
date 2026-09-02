@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [10.0.4] - 2026-09-01
+## [10.0.5] - 2026-09-02
 
 ### Fixed
 
@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `CONTRACT_VERSIONED_EVENT_TYPES` to the keys of
   `KNOWN_CONTRACT_VERSIONS_BY_EVENT_TYPE`
   (EXPERIMENTAL-spec-kitty-events#225).
+
+## [10.0.4] - 2026-09-01
+
+### Changed
+
+- Removed an unreachable timezone-awareness branch from
+  `from_zeitgeist_attrs`: the timestamp shape check already requires a UTC
+  offset before `datetime.fromisoformat` is called. The unit tests for naive
+  timestamps now pin the shape-check rejection explicitly. No runtime
+  behavior changes (EXPERIMENTAL-spec-kitty-events#216).
 
 ## [10.0.3] - 2026-09-01
 
