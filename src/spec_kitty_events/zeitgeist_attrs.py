@@ -1247,9 +1247,9 @@ def from_zeitgeist_attrs(event_type: str, attrs: Mapping[str, str]) -> VolatileM
     exception: ``event_id`` is reparsed and canonicalized via
     :func:`~spec_kitty_events.models.normalize_event_id`, a derived
     ``detail_ref`` is rewritten to that canonical spelling, and
-    ``occurred_at`` is reparsed via :func:`datetime.fromisoformat` and
-    rejected if timezone-naive. An inbound mapping missing an *optional*
-    payload key
+    ``occurred_at`` is reparsed via :func:`datetime.fromisoformat` after
+    its shape check requires a UTC offset. An inbound mapping missing an
+    *optional* payload key
     (one whose annotation admits ``None``) decodes with that key absent,
     since rebuilding the journal payload remains impossible by design
     ("Projection, not reconstruction").
@@ -1263,8 +1263,8 @@ def from_zeitgeist_attrs(event_type: str, attrs: Mapping[str, str]) -> VolatileM
             malformed — ``event_id`` does not match one of the three shapes
             :func:`~spec_kitty_events.models.normalize_event_id` accepts
             (26-char Crockford-base32 ULID, 36-char hyphenated UUID, 32-char
-            bare hex UUID), ``occurred_at`` does not parse as ISO-8601 or
-            parses but is timezone-naive, or a derived ``detail_ref`` does
+            bare hex UUID), ``occurred_at`` does not parse as ISO-8601
+            with a UTC offset, or a derived ``detail_ref`` does
             not resolve to the same moment.
         ZeitgeistAttrsControlCharacterError: a value carries a non-printable
             character (``not str.isprintable()``).
@@ -1348,11 +1348,9 @@ def from_zeitgeist_attrs(event_type: str, attrs: Mapping[str, str]) -> VolatileM
     if candidate is None:
         raise ZeitgeistAttrsError(f"attr 'occurred_at' is not ISO-8601: {occurred_at!r}")
     try:
-        parsed_occurred_at = datetime.fromisoformat(candidate)
+        datetime.fromisoformat(candidate)
     except ValueError as exc:
         raise ZeitgeistAttrsError(f"attr 'occurred_at' is not ISO-8601: {occurred_at!r}") from exc
-    if parsed_occurred_at.tzinfo is None:
-        raise ZeitgeistAttrsError(f"attr 'occurred_at' must be timezone-aware: {occurred_at!r}")
 
     if event_type in CONTRACT_VERSIONED_EVENT_TYPES:
         # contract_version is in _REQUIRED_KEYS_BY_EVENT_TYPE for every
