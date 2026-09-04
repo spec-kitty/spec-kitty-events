@@ -33,6 +33,19 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'squad:exhausted')
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 90
+    # planning#1876: the pre-suite workflow-integrity check (bin/ci-run.sh ->
+    # check_workflow_integrity.py) reads live workflow registrations via gh api
+    # using the Actions JOB token — SK_CI_TOKEN deliberately carries no Actions
+    # scope (docs/BLACKSMITH-CI.md). The checker only remaps GITHUB_TOKEN ->
+    # GH_TOKEN when GITHUB_TOKEN is present in its environment, so the job
+    # token must be exported AND carry an explicit actions: read grant (the
+    # default token set does not cover the Actions API — proven on spec-kitty
+    # by dispatch runs 33874130455 / 33874487465).
+    permissions:
+      actions: read
+      contents: read
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Require SK_CI_TOKEN
         run: |
