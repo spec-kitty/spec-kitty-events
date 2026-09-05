@@ -413,8 +413,6 @@ def test_mission_level_actor_rides_as_an_opaque_identifier() -> None:
     """The mission-level moments can say WHO: the optional plain-string
     ``actor`` rides under the same ``actor`` key every other family uses,
     and an absent actor emits no key (pre-8.0 producers stay valid)."""
-    from spec_kitty_events.lifecycle import MissionCreatedPayload
-
     created = MissionCreatedPayload(
         mission_slug="demo-mission",
         mission_number=12,
@@ -522,8 +520,6 @@ def test_prose_never_reaches_the_broadcast() -> None:
     bounded moment-attribute projection this module now owns (issue #77)
     folds a deterministic, truncated slice of specific prose fields into
     that one key, and nowhere else."""
-    from spec_kitty_events.lifecycle import MissionCreatedPayload
-
     payload = MissionCreatedPayload(
         mission_slug="demo-mission",
         mission_number=12,
@@ -940,8 +936,6 @@ def test_encode_rejects_a_control_character_in_the_derived_summary_attr() -> Non
     pass through a printable-only field validator of their own — so this
     pins that the shared check loop still catches a bad ``summary``
     (issue #80's path) rather than relying on assignment order."""
-    from spec_kitty_events.lifecycle import MissionCreatedPayload
-
     payload = MissionCreatedPayload(
         mission_slug="demo-mission",
         mission_number=12,
