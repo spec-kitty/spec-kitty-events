@@ -192,10 +192,14 @@ def test_mission_run_strict_since_is_pinned_to_the_e2_marker_and_postdates_intro
     equal the module marker, not a coincidentally-matching literal, and the
     marker must postdate each row's ``introduced_in`` — the semantics
     ``strict.py`` documents ("first strict-admitted later than their 2.3.0
-    introduction"). Before this test, changing the marker without updating
-    every row (or vice versa) kept ``test_mission_run_rows_pin_min_consumer_
-    to_strict_since`` above green as long as both happened to still equal
-    the hardcoded ``"8.0.0"`` literal.
+    introduction"). This test catches two gaps the pre-existing
+    ``test_mission_run_rows_pin_min_consumer_to_strict_since`` misses: that
+    test never checks ordering, so bumping a row's ``introduced_in`` past
+    its ``strict_since`` leaves it green while this test's ``Version(...)
+    >`` assertion catches it; and pinning to ``_E2_STRICT_SINCE`` directly,
+    rather than the hardcoded ``"8.0.0"`` literal the other test uses,
+    means a future marker bump is caught here without also requiring a
+    manual literal update in that second test file.
     """
     rows = [row for row in SUPPORT_MATRIX if row.family == "mission_run"]
     assert len(rows) == 6
