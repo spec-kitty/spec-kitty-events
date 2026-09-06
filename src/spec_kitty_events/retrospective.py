@@ -15,6 +15,7 @@ from typing import FrozenSet, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from spec_kitty_events._iso8601 import normalize_iso8601_shape as _normalize_iso8601_shape
 from spec_kitty_events.dossier import ProvenanceRef
 
 # ── Section 1: Schema Version ─────────────────────────────────────────────────
@@ -82,14 +83,15 @@ ProposalRejectedReasonT = Literal[
 def _assert_iso8601_timestamp(value: object) -> object:
     """Validate an ISO 8601 timestamp across supported Python runtimes.
 
-    Python 3.10's ``datetime.fromisoformat`` rejects a trailing ``Z`` even
-    though the fixtures and contract use the RFC 3339 UTC form. Normalize that
-    case to ``+00:00`` before parsing.
+    Python 3.10's ``datetime.fromisoformat`` rejects a trailing ``Z``, a
+    fractional-second part outside 0/3/6 digits, and basic (no ``-``/``:``)
+    format, all accepted on 3.11+ for the same wire bytes. Normalize before
+    parsing so the same input is accepted identically on every supported
+    interpreter (spec-kitty-events#122, #135).
     """
 
     if isinstance(value, str):
-        normalized = f"{value[:-1]}+00:00" if value.endswith("Z") else value
-        datetime.fromisoformat(normalized)
+        datetime.fromisoformat(_normalize_iso8601_shape(value))
     return value
 
 

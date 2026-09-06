@@ -23,6 +23,7 @@ from typing import Any, Literal, Mapping, Optional, Tuple
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic import ValidationError as PydanticValidationError
 
+from spec_kitty_events._iso8601 import normalize_iso8601_shape as _normalize_iso8601_shape
 from spec_kitty_events.conformance.validators import validate_event
 from spec_kitty_events.forbidden_keys import FORBIDDEN_LEGACY_KEYS, find_forbidden_keys
 from spec_kitty_events.harness_observation import (
@@ -499,19 +500,15 @@ def _envelope_shape_error(**details: object) -> ValidationError:
 def _parse_iso8601(value: str) -> datetime | None:
     """Best-effort ISO-8601 parse. Returns None when unparsable.
 
-    A well-formed value has at most one trailing ``Z``; if another ``Z``
-    remains after stripping it, the input was already malformed and must not
-    be laundered into something Python 3.10's laxer ``fromisoformat`` would
-    accept (e.g. a doubled ``...00ZZ``) (spec-kitty-events#55/#107/#115).
+    A well-formed value has at most one trailing ``Z``; a doubled/mixed-case
+    trailing designator (e.g. ``...00ZZ``/``...00zZ``) is rejected by
+    ``_normalize_iso8601_shape``'s case-folded residual guard before the
+    reshape regex ever runs, so it is never laundered into something Python
+    3.11+'s laxer ``fromisoformat`` would otherwise accept while 3.10 rejects
+    it (spec-kitty-events#55/#107/#115/#122/#135).
     """
-    text = value
-    if text.endswith("Z"):
-        text = text[:-1]
-        if "Z" in text:
-            return None
-        text += "+00:00"
     try:
-        return datetime.fromisoformat(text)
+        return datetime.fromisoformat(_normalize_iso8601_shape(value))
     except ValueError:
         return None
 

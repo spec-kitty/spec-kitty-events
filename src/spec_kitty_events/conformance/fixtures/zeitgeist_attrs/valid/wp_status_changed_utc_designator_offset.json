@@ -1,0 +1,16 @@
+{
+  "event_type": "WPStatusChanged",
+  "attrs": {
+    "event_id": "e2e00000-0000-4000-8000-000000000128",
+    "occurred_at": "2026-08-25T09:00:00Z",
+    "mission_slug": "demo-mission",
+    "wp_id": "WP01",
+    "to_lane": "in_progress",
+    "actor": "robert",
+    "force": "false",
+    "execution_mode": "worktree"
+  },
+  "direction": "from",
+  "expected_ref": "demo-mission",
+  "notes": "Decode accepts the Z UTC designator while preserving the original wire bytes."
+}

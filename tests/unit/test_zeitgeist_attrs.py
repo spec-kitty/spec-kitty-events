@@ -6,6 +6,7 @@ import dataclasses
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 import pytest
 from pydantic import BaseModel
@@ -28,9 +29,15 @@ from spec_kitty_events.mission_next import (
     RuntimeActorIdentity,
 )
 from spec_kitty_events.models import Event
+from spec_kitty_events.ops_invocation import (
+    OpsInvocationCompletedPayload,
+    OpsInvocationStartedPayload,
+)
 from spec_kitty_events.status import StatusTransitionPayload
 from spec_kitty_events.zeitgeist_attrs import (
+    CONTRACT_VERSIONED_EVENT_TYPES,
     FORBIDDEN_ATTR_KEYS,
+    KNOWN_CONTRACT_VERSIONS_BY_EVENT_TYPE,
     PAYLOAD_MODEL_BY_EVENT_TYPE,
     PROJECTED_FIELD_BY_EVENT_TYPE,
     REF_FIELD_BY_EVENT_TYPE,
@@ -41,6 +48,7 @@ from spec_kitty_events.zeitgeist_attrs import (
     ZEITGEIST_ATTR_KEY_MAX_CHARS,
     ZEITGEIST_FORBIDDEN_KEYS_V1,
     UnencodableFieldValueError,
+    UnknownContractVersionError,
     UnknownVolatileEventTypeError,
     VolatileMoment,
     ZeitgeistAttrsControlCharacterError,
@@ -122,7 +130,13 @@ def test_volatile_vocabulary_is_the_ephemeral_design_set() -> None:
         "PlanCompleted",
         "TasksStarted",
         "TasksCompleted",
+        "OpsInvocationStarted",
+        "OpsInvocationCompleted",
     }
+
+
+def test_contract_version_registration_tables_are_in_sync() -> None:
+    assert CONTRACT_VERSIONED_EVENT_TYPES == KNOWN_CONTRACT_VERSIONS_BY_EVENT_TYPE.keys()
 
 
 def test_dispatch_table_covers_exactly_the_volatile_types() -> None:
@@ -331,6 +345,41 @@ def test_envelope_event_type_must_match_the_payload_family() -> None:
         to_zeitgeist_attrs(_transition(), _envelope("MissionCreated"))
 
 
+@pytest.mark.parametrize(
+    ("payload", "event_type"),
+    [
+        (
+            OpsInvocationStartedPayload(
+                invocation_id="inv-01",
+                action="team.provision",
+                actor=_identity(),
+                scope="team-01",
+                contract_version=99,
+            ),
+            "OpsInvocationStarted",
+        ),
+        (
+            OpsInvocationCompletedPayload(
+                invocation_id="inv-01",
+                action="team.provision",
+                actor=_identity(),
+                scope="team-01",
+                outcome="success",
+                contract_version=99,
+            ),
+            "OpsInvocationCompleted",
+        ),
+    ],
+    ids=["started", "completed"],
+)
+def test_encode_rejects_unknown_contract_versions(payload, event_type) -> None:
+    with pytest.raises(
+        UnknownContractVersionError,
+        match="contract_version '99' is not a version this package knows how to interpret",
+    ):
+        to_zeitgeist_attrs(payload, _envelope(event_type))
+
+
 def test_absent_optionals_emit_no_key() -> None:
     attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
     assert "from_lane" not in attrs
@@ -364,8 +413,6 @@ def test_mission_level_actor_rides_as_an_opaque_identifier() -> None:
     """The mission-level moments can say WHO: the optional plain-string
     ``actor`` rides under the same ``actor`` key every other family uses,
     and an absent actor emits no key (pre-8.0 producers stay valid)."""
-    from spec_kitty_events.lifecycle import MissionCreatedPayload
-
     created = MissionCreatedPayload(
         mission_slug="demo-mission",
         mission_number=12,
@@ -473,8 +520,6 @@ def test_prose_never_reaches_the_broadcast() -> None:
     bounded moment-attribute projection this module now owns (issue #77)
     folds a deterministic, truncated slice of specific prose fields into
     that one key, and nowhere else."""
-    from spec_kitty_events.lifecycle import MissionCreatedPayload
-
     payload = MissionCreatedPayload(
         mission_slug="demo-mission",
         mission_number=12,
@@ -819,6 +864,24 @@ def test_ref_derival_rejects_multibyte_over_the_byte_bound_though_under_240_char
         zeitgeist_ref_for("WPStatusChanged", payload)
 
 
+def test_ref_derival_rejects_a_newline_in_the_ref_with_typed_error() -> None:
+    """Mirrors test_decode_rejects_a_newline_in_a_value_with_typed_error:
+    the frame's ref is the one other producer-controlled field this module
+    emits, and a bare LF could forge extra frame lines just as readily
+    there as in an attrs value (issue #106)."""
+    payload = _transition(mission_slug="demo\nrumor: fake status line")
+    with pytest.raises(ZeitgeistAttrsControlCharacterError, match="WPStatusChanged ref"):
+        zeitgeist_ref_for("WPStatusChanged", payload)
+
+
+def test_ref_derival_rejects_an_ansi_escape_in_the_ref_with_typed_error() -> None:
+    """Mirrors test_decode_rejects_an_ansi_escape_in_a_value_with_typed_error
+    for the ref field (issue #106)."""
+    payload = _transition(mission_slug="demo\x1b[0m")
+    with pytest.raises(ZeitgeistAttrsControlCharacterError, match="WPStatusChanged ref"):
+        zeitgeist_ref_for("WPStatusChanged", payload)
+
+
 def test_bounds_constants_match_the_zeitgeist_frame_contract() -> None:
     assert ZEITGEIST_ATTRS_MAX_KEYS == 16
     assert ZEITGEIST_ATTRS_MAX_BYTES == 240
@@ -863,6 +926,28 @@ def test_encode_admits_a_key_at_the_64_char_bound(
     monkeypatch.setattr(zeitgeist_attrs, "_encode_fields", lambda *a, **k: {"a" * 64: "v"})
     attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
     assert attrs["a" * 64] == "v"
+
+
+def test_encode_rejects_a_control_character_in_the_derived_summary_attr() -> None:
+    """issue #146: the two #104 regression tests above only exercise
+    ``actor``/``wp_id``, both assigned before the control-character check
+    loop. ``summary`` is derived and assigned later, from prose fields
+    (``friendly_name``/``purpose_tldr``/``purpose_context``) that never
+    pass through a printable-only field validator of their own — so this
+    pins that the shared check loop still catches a bad ``summary``
+    (issue #80's path) rather than relying on assignment order."""
+    payload = MissionCreatedPayload(
+        mission_slug="demo-mission",
+        mission_number=12,
+        mission_type="software-dev",
+        target_branch="main",
+        wp_count=3,
+        friendly_name="Roll\x07out",
+        purpose_tldr="Demo",
+        purpose_context="Demo",
+    )
+    with pytest.raises(ZeitgeistAttrsControlCharacterError, match="attr 'summary' value"):
+        to_zeitgeist_attrs(payload, _envelope("MissionCreated"))
 
 
 def test_encode_admits_a_multibyte_value_within_the_stricter_byte_bound() -> None:
@@ -945,25 +1030,28 @@ def test_decode_canonicalizes_event_id_case() -> None:
     assert moment.attrs["event_id"] == _EVENT_ID
 
 
-def test_decode_rejects_a_timezone_naive_occurred_at() -> None:
-    """spec-kitty-events#62: the encoder only ever emits an aware
-    ``datetime``'s ``isoformat()``; a naive value would make every
-    comparison against an aware "now" (the 72-hour feed window, the
-    staleness guard) raise ``TypeError`` at render time instead of being
-    rejected here at the codec seam."""
+def test_decode_rejects_an_occurred_at_without_a_utc_offset() -> None:
+    """spec-kitty-events#62: the accepted timestamp shape always carries
+    a UTC offset, so a naive timestamp is rejected before parsing instead
+    of reaching render-time comparisons against an aware "now"."""
     attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
     attrs["occurred_at"] = "2026-08-25T09:00:00"
-    with pytest.raises(ZeitgeistAttrsError, match="occurred_at"):
+    with pytest.raises(
+        ZeitgeistAttrsError,
+        match="attr 'occurred_at' is not ISO-8601: '2026-08-25T09:00:00'",
+    ):
         from_zeitgeist_attrs("WPStatusChanged", attrs)
 
 
 def test_decode_rejects_a_bare_date_occurred_at() -> None:
-    """A date-only string parses via ``datetime.fromisoformat`` but is
-    timezone-naive, so it is rejected same as any other naive value
-    (spec-kitty-events#62 — this supersedes the prior deliberate accept)."""
+    """A date-only string has neither a time nor a UTC offset, so the
+    timestamp shape check rejects it (spec-kitty-events#62)."""
     attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
     attrs["occurred_at"] = "2026-08-25"
-    with pytest.raises(ZeitgeistAttrsError, match="occurred_at"):
+    with pytest.raises(
+        ZeitgeistAttrsError,
+        match="attr 'occurred_at' is not ISO-8601: '2026-08-25'",
+    ):
         from_zeitgeist_attrs("WPStatusChanged", attrs)
 
 
@@ -982,6 +1070,88 @@ def test_decode_accepts_a_z_suffixed_occurred_at() -> None:
     attrs["occurred_at"] = "2026-08-25T09:00:00Z"
     moment = from_zeitgeist_attrs("WPStatusChanged", attrs)
     assert moment.attrs["occurred_at"] == "2026-08-25T09:00:00Z"
+
+
+@pytest.mark.parametrize(
+    "occurred_at",
+    [
+        pytest.param("2026-08-25T09:00:00Z", id="utc-designator"),
+        pytest.param("2026-08-25T09:00:00+05:21", id="extended-minute-offset"),
+        pytest.param("2026-08-25T09:00:00+0521", id="basic-minute-offset"),
+        pytest.param("2026-08-25T09:00:00+05:21:10", id="extended-second-offset"),
+        pytest.param("2026-08-25T09:00:00+052110", id="basic-second-offset"),
+    ],
+)
+def test_decode_accepts_every_utc_offset_spelling(occurred_at: str) -> None:
+    """The positive timestamp check admits minute and second offsets in each
+    spelling without reopening the hour-only split from Python 3.11+."""
+    attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
+    attrs["occurred_at"] = occurred_at
+    moment = from_zeitgeist_attrs("WPStatusChanged", attrs)
+    assert moment.attrs["occurred_at"] == occurred_at
+
+
+def test_codec_round_trips_a_zoneinfo_timestamp_with_offset_seconds() -> None:
+    """``datetime.isoformat()`` emits second-precision offsets for historical
+    ``zoneinfo`` zones; the attrs codec must accept its own output."""
+    envelope = _envelope(
+        "WPStatusChanged",
+        timestamp=datetime(1900, 1, 1, 9, 0, 0, tzinfo=ZoneInfo("Asia/Kolkata")),
+    )
+    attrs = to_zeitgeist_attrs(_transition(), envelope)
+    assert attrs["occurred_at"] == "1900-01-01T09:00:00+05:21:10"
+    moment = from_zeitgeist_attrs("WPStatusChanged", attrs)
+    assert moment.attrs == attrs
+
+
+@pytest.mark.parametrize(
+    "occurred_at",
+    [
+        pytest.param("20260825T09:00:00Z", id="basic-date-extended-time"),
+        pytest.param("2026-08-25T090000Z", id="extended-date-basic-time"),
+        pytest.param("20260825T09:00Z", id="basic-date-extended-minute-time"),
+        pytest.param("2026-08-25T0900Z", id="extended-date-basic-minute-time"),
+        pytest.param("20260825_09:00:00Z", id="basic-date-extended-time-other-separator"),
+        pytest.param("2026W342T09:00:00Z", id="basic-week-date-extended-time"),
+        pytest.param("2026-W34-2T090000Z", id="extended-week-date-basic-time"),
+    ],
+)
+def test_decode_rejects_a_mixed_basic_and_extended_occurred_at(
+    occurred_at: str,
+) -> None:
+    """ISO-8601 does not permit mixing basic and extended spellings within
+    one timestamp; decode must reject both directions on every supported
+    interpreter (spec-kitty-events#193)."""
+    attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
+    attrs["occurred_at"] = occurred_at
+    with pytest.raises(ZeitgeistAttrsError, match="occurred_at"):
+        from_zeitgeist_attrs("WPStatusChanged", attrs)
+
+
+@pytest.mark.parametrize(
+    "occurred_at",
+    [
+        pytest.param("20260825T090000Z", id="basic-full-time"),
+        pytest.param("20260825T0900Z", id="basic-minute-precision"),
+        pytest.param("20260825T09Z", id="basic-hour-precision"),
+        pytest.param("20260825T090000+0000", id="basic-numeric-offset"),
+        pytest.param("2026-08-25T09:00Z", id="extended-minute-precision"),
+        pytest.param("2026-08-25T09Z", id="extended-hour-precision"),
+        pytest.param("2026-08-25T09:00:00,123Z", id="extended-comma-fraction"),
+    ],
+)
+def test_decode_accepts_one_spelling_at_every_supported_time_precision(
+    occurred_at: str,
+) -> None:
+    """Valid basic and reduced-precision timestamps parse identically on 3.10.
+
+    The wire bytes stay in ``attrs``; only the private parse candidate is
+    reshaped, padded, and offset-normalized for ``datetime.fromisoformat``.
+    """
+    attrs = to_zeitgeist_attrs(_transition(), _envelope("WPStatusChanged"))
+    attrs["occurred_at"] = occurred_at
+    moment = from_zeitgeist_attrs("WPStatusChanged", attrs)
+    assert moment.attrs["occurred_at"] == occurred_at
 
 
 def test_decode_rejects_malformed_occurred_at_that_merely_ends_in_z() -> None:
@@ -1305,6 +1475,27 @@ def test_every_current_family_guarantees_its_ref_field() -> None:
             f"{event_type}'s ref field {ref_field!r} is not required; "
             "zeitgeist_ref_for/from_zeitgeist_attrs could now decode ref=None"
         )
+
+
+@pytest.mark.parametrize("event_type", sorted(PAYLOAD_MODEL_BY_EVENT_TYPE))
+@pytest.mark.parametrize("omitted", sorted(zeitgeist_attrs.ENVELOPE_ATTR_KEYS))
+def test_every_kind_requires_both_envelope_attrs(event_type: str, omitted: str) -> None:
+    """events#158: PR #110 replaced ``from_zeitgeist_attrs``'s
+    ``attrs.get(...)`` + ``is not None`` envelope guards with direct
+    ``attrs["event_id"]``/``attrs["occurred_at"]`` indexing. That is only
+    safe while ENVELOPE_ATTR_KEYS is required for every kind (today, via the
+    union at ``_REQUIRED_KEYS_BY_EVENT_TYPE``). Pin the static invariant and
+    its decode-level consequence together: omitting either envelope key must
+    raise the documented ``ZeitgeistAttrsError`` from the missing-keys check
+    before the indexing is ever reached, never an undocumented ``KeyError``
+    a future per-kind override could otherwise expose to a consumer that
+    only catches the types this function documents."""
+    required = zeitgeist_attrs._REQUIRED_KEYS_BY_EVENT_TYPE[event_type]
+    assert zeitgeist_attrs.ENVELOPE_ATTR_KEYS <= required
+
+    attrs = {key: "v" for key in required if key != omitted}
+    with pytest.raises(ZeitgeistAttrsError, match="missing keys"):
+        from_zeitgeist_attrs(event_type, attrs)
 
 
 def test_moment_is_frozen() -> None:

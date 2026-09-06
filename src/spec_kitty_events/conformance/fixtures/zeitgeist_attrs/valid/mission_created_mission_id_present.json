@@ -5,7 +5,7 @@
     "timestamp": "2026-08-25T09:00:00+00:00"
   },
   "payload": {
-    "mission_id": "01J9Z8Q4K7X3M2N5P6R7S8T9V0",
+    "mission_id": "mission-demo",
     "mission_slug": "demo-mission",
     "mission_number": 12,
     "mission_type": "software-dev",
@@ -21,7 +21,7 @@
     "event_id": "e2e00000-0000-4000-8000-000000000121",
     "occurred_at": "2026-08-25T09:00:00+00:00",
     "mission_slug": "demo-mission",
-    "mission_id": "01J9Z8Q4K7X3M2N5P6R7S8T9V0",
+    "mission_id": "mission-demo",
     "mission_number": "12",
     "mission_type": "software-dev",
     "target_branch": "main",
@@ -30,5 +30,5 @@
     "summary": "Board approved 40M for the counterparty rollout; Bob Smith (bob@acme.com) is the counterparty contact."
   },
   "expected_ref": "demo-mission",
-  "notes": "mission_id present alongside mission_slug: the family's ref field stays mission_slug (REF_FIELD_BY_EVENT_TYPE is unchanged), but mission_id now rides in attrs so a consumer can join this moment against a PhaseEntered moment for the same mission aggregate (spec-kitty-events#69). MissionCreatedPayload already declared mission_id before this issue; this fixture is the first to exercise it with a non-null value."
+  "notes": "mission_id present alongside mission_slug: the family's ref field stays mission_slug (REF_FIELD_BY_EVENT_TYPE is unchanged), and mission_id rides in attrs so a consumer can join this moment against a PhaseEntered moment for the same mission aggregate (spec-kitty-events#69). MissionCreatedPayload already declared mission_id, and zeitgeist_attrs has never skipped it, since 8.0.0 first introduced the whole zeitgeist_attrs module; but this fixture also pins the derived summary attr, which no released codec before 8.2.0 reproduces for this payload (_mission_created_summary first shipped in 8.2.0) — this fixture is merely the first to exercise mission_id with a non-null value, added in 9.0.0 as conformance coverage for a capability whose full expected_attrs shape has shipped since 8.2.0 (spec-kitty-events#197)."
 }
