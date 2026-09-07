@@ -188,18 +188,23 @@ def test_mission_run_rows_pin_min_consumer_to_strict_since() -> None:
 
 def test_mission_run_strict_since_is_pinned_to_the_e2_marker_and_postdates_introduction() -> None:
     """Pin ``_E2_STRICT_SINCE`` (strict.py) itself as the row.strict_since
-    authority for the six mission_run rows (#23): each row must literally
-    equal the module marker, not a coincidentally-matching literal, and the
-    marker must postdate each row's ``introduced_in`` — the semantics
-    ``strict.py`` documents ("first strict-admitted later than their 2.3.0
-    introduction"). This test catches two gaps the pre-existing
+    authority for the six mission_run rows (#23): each row must equal the
+    module marker's value, and the marker must postdate each row's
+    ``introduced_in`` — the semantics ``strict.py`` documents ("first
+    strict-admitted later than their 2.3.0 introduction"). This test
+    catches two gaps the pre-existing
     ``test_mission_run_rows_pin_min_consumer_to_strict_since`` misses: that
     test never checks ordering, so bumping a row's ``introduced_in`` past
     its ``strict_since`` leaves it green while this test's ``Version(...)
     >`` assertion catches it; and pinning to ``_E2_STRICT_SINCE`` directly,
-    rather than the hardcoded ``"8.0.0"`` literal the other test uses,
-    means a future marker bump is caught here without also requiring a
-    manual literal update in that second test file.
+    rather than the hardcoded ``"8.0.0"`` literal that other test uses,
+    means a future marker bump needs no edit here, while the other test —
+    in this same file, above — needs its literal updated by hand. The
+    equality check is on values, not source references: it fails on drift
+    (a row hardcoding a ``strict_since`` that disagrees with the marker),
+    not on a row whose marker reference is swapped for an identical
+    literal, and not on a marker bump with all six rows still referencing
+    the marker.
     """
     rows = [row for row in SUPPORT_MATRIX if row.family == "mission_run"]
     assert len(rows) == 6
