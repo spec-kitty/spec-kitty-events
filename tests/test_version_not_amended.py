@@ -11,7 +11,12 @@ patch. This is the CI check issue #170 asked for as a follow-up (issue #175).
 not equal any version previously declared on main. The historical walk builds
 only that spent-version set; it does not reject ordinary historical commits
 that shared a version before the next bump, avoiding issue #175's noisy
-25-of-56 replay strategy.
+25-of-56 replay strategy (56 = the ``--follow`` ``pyproject.toml`` commit
+count at issue #179's filing, where that figure was recorded). The synthetic
+regressions below cover the walk's decision branches, and — per issue #213 —
+the real repository's own history is exercised too: worktree-based tests
+force a ``src/`` diff so the complete walk actually runs against this repo,
+and every merge-declared version must be found in the spent-version set.
 """
 
 from __future__ import annotations
@@ -258,3 +263,125 @@ def test_script_passes_against_this_repo() -> None:
         [sys.executable, str(_SCRIPT)], capture_output=True, text=True, cwd=_REPO_ROOT
     )
     assert result.returncode == 0, result.stderr
+
+
+def _real_repo_base_ref() -> str:
+    base_ref = _checker._resolve_base_ref()
+    assert base_ref is not None, "these tests run inside this repo's own checkout"
+    return base_ref
+
+
+def _add_real_repo_worktree(tmp_path: Path) -> Path:
+    worktree = tmp_path / "real-repo-worktree"
+    _git(_REPO_ROOT, "worktree", "add", "-q", "--detach", str(worktree), "HEAD")
+    return worktree
+
+
+def _remove_real_repo_worktree(worktree: Path) -> None:
+    _git(_REPO_ROOT, "worktree", "remove", "--force", str(worktree))
+
+
+def _touch_tracked_src_file(worktree: Path) -> None:
+    """Leave an uncommitted modification under ``src/`` (a new, untracked file
+    would be invisible to ``git diff``, so an existing tracked file is edited)."""
+    target = sorted((worktree / "src" / "spec_kitty_events").glob("*.py"))[0]
+    target.write_text(
+        target.read_text(encoding="utf-8") + "\n# version-not-amended real-repo probe\n",
+        encoding="utf-8",
+    )
+
+
+def _set_worktree_version(worktree: Path, version: str) -> None:
+    pyproject = worktree / "pyproject.toml"
+    text = pyproject.read_text(encoding="utf-8")
+    assert _checker._VERSION_RE.search(text) is not None, (
+        "pyproject.toml must carry a version line to rewrite"
+    )
+    pyproject.write_text(
+        _checker._VERSION_RE.sub(f'version = "{version}"', text, count=1),
+        encoding="utf-8",
+    )
+
+
+def test_real_repo_src_change_reusing_tip_version_fails(tmp_path, monkeypatch) -> None:
+    """Issue #213: force a real ``src/`` diff so ``check()`` runs the complete
+    history walk against this repository's own history, not just the early
+    "nothing under src/ changed" exit the plain smoke test takes.
+
+    The base tip's version is by construction already declared, so the guard
+    must fail — deterministically, regardless of what this branch itself did
+    to ``pyproject.toml``.
+    """
+    base_ref = _real_repo_base_ref()
+    base_sha = _git(_REPO_ROOT, "rev-parse", base_ref)
+    tip_version = _checker._version_at(base_sha)
+
+    worktree = _add_real_repo_worktree(tmp_path)
+    try:
+        _touch_tracked_src_file(worktree)
+        _set_worktree_version(worktree, tip_version)
+
+        monkeypatch.setattr(_checker, "_REPO_ROOT", worktree)
+        message = _checker.check()
+        assert message is not None
+        assert "already declared" in message
+        assert f"'{tip_version}'" in message
+    finally:
+        _remove_real_repo_worktree(worktree)
+
+
+def test_real_repo_src_change_with_never_declared_version_passes(tmp_path, monkeypatch) -> None:
+    """The pass leg of the real-history walk: a version absent from every
+    version-bearing ``pyproject.toml`` commit reachable from the base ref lets
+    a real ``src/`` change through. The sentinel is derived from the walk's own
+    output, so it can never collide with history as the repo grows."""
+    base_ref = _real_repo_base_ref()
+    declared = _checker._declared_versions(base_ref)
+    assert declared, "this repo's history declares package versions"
+    fresh = next(f"0.213.{i}" for i in range(1000) if f"0.213.{i}" not in declared)
+
+    worktree = _add_real_repo_worktree(tmp_path)
+    try:
+        _touch_tracked_src_file(worktree)
+        _set_worktree_version(worktree, fresh)
+
+        monkeypatch.setattr(_checker, "_REPO_ROOT", worktree)
+        assert _checker.check() is None
+    finally:
+        _remove_real_repo_worktree(worktree)
+
+
+def test_real_history_walk_includes_merge_declared_versions() -> None:
+    """Every version declared at a merge commit that touched ``pyproject.toml``
+    must be in the walk's spent-version set — the exact gap PR #212's squad
+    pass 2 found when the walk used ``--follow`` (merge commits pruned, seven
+    declared versions invisible). The merge list is derived independently via
+    ``--merges --full-history``, so a walk that regresses to pruning merges
+    fails here against the real repository history."""
+    base_ref = _real_repo_base_ref()
+    merges = _git(
+        _REPO_ROOT,
+        "log",
+        "--merges",
+        "--full-history",
+        "--format=%H",
+        base_ref,
+        "--",
+        "pyproject.toml",
+    ).split()
+    assert merges, "this repo's history has merge commits touching pyproject.toml"
+
+    declared = _checker._declared_versions(base_ref)
+    missing = []
+    for commit in merges:
+        try:
+            version = _checker._version_at(commit)
+        except (RuntimeError, subprocess.CalledProcessError):
+            continue  # pre-package history may lack a version line
+        if version not in declared:
+            missing.append(f"{version!r} at merge {commit[:8]}")
+    assert not missing, (
+        "versions declared at merge commits are missing from the walk's "
+        f"spent-version set: {', '.join(missing)} — the walk is again "
+        "pruning merge commits"
+    )
