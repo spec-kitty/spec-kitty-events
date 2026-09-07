@@ -67,7 +67,11 @@ def _version_at(ref: str) -> str:
 def _declared_versions(ref: str) -> dict[str, str]:
     """Map every package version declared in ``ref``'s history to one commit."""
     versions: dict[str, str] = {}
-    commits = _run("log", "--follow", "--format=%H", ref, "--", "pyproject.toml").splitlines()
+    # --full-history, not --follow: --follow prunes merge commits, and a merge
+    # resolution can itself declare a version (or revert a side branch's bump)
+    # that no non-merge commit ever carries — the "re-spend as X.Y.Z" shapes
+    # this repo's history is full of.
+    commits = _run("log", "--full-history", "--format=%H", ref, "--", "pyproject.toml").splitlines()
     for commit in commits:
         try:
             version = _version_at(commit)
