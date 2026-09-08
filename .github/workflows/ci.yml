@@ -22,7 +22,6 @@ concurrency:
 env:
   REPO: spec-kitty-events
   SK_HOME: ${{ github.workspace }}/work
-  GH_TOKEN: ${{ secrets.SK_CI_TOKEN }}
 
 jobs:
   suite:
@@ -35,23 +34,49 @@ jobs:
     timeout-minutes: 90
     # planning#1876: the pre-suite workflow-integrity check (bin/ci-run.sh ->
     # check_workflow_integrity.py) reads live workflow registrations via gh api
-    # using the Actions JOB token — SK_CI_TOKEN deliberately carries no Actions
-    # scope (docs/BLACKSMITH-CI.md). The checker only remaps GITHUB_TOKEN ->
+    # using the Actions JOB token — the checker only remaps GITHUB_TOKEN ->
     # GH_TOKEN when GITHUB_TOKEN is present in its environment, so the job
     # token must be exported AND carry an explicit actions: read grant (the
     # default token set does not cover the Actions API — proven on spec-kitty
-    # by dispatch runs 33874130455 / 33874487465).
+    # by dispatch runs 33874130455 / 33874487465). Kept as-is after
+    # planning#1878: even though the App installation token now carries
+    # Actions:read, the job-token path is the independent one this check keeps.
     permissions:
       actions: read
       contents: read
     env:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
-      - name: Require SK_CI_TOKEN
+      # planning#1878: the CI credential is a short-lived (~1h) installation token of the
+      # first-party GitHub App spec-kitty-factory-ci, minted per run — never the long-lived
+      # SK_CI_TOKEN PAT, whose static org-wide scopes turned a missing Actions permission into
+      # a 26h org-wide verdict outage (planning#1876). Org secrets SK_CI_APP_ID +
+      # SK_CI_APP_PRIVATE_KEY must exist (owner step: create + org-wide install + key vaulting,
+      # docs/BLACKSMITH-CI.md §One-time setup); until they do this lane posts no verdict and
+      # the wiring PRs self-gate on it.
+      - name: Require the CI App secrets (planning#1878)
+        env:
+          APP_ID: ${{ secrets.SK_CI_APP_ID }}
+          APP_KEY: ${{ secrets.SK_CI_APP_PRIVATE_KEY }}
         run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "::error::org secret SK_CI_TOKEN is missing (fine-grained PAT: contents read on spec-kitty/spec-kitty-events and the EXPERIMENTAL-* repos, write on planning; issues+pull-requests write). See planning docs/BLACKSMITH-CI.md." ; exit 1
+          if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
+            echo "::error::org secrets SK_CI_APP_ID and/or SK_CI_APP_PRIVATE_KEY are missing (GitHub App spec-kitty-factory-ci, installed org-wide and granted to spec-kitty/spec-kitty-events). Scope the App per the planning#1878 permission matrix — it includes Actions read/write and Contents write on the planning repo for the main-baseline refresh push — and see planning docs/BLACKSMITH-CI.md §One-time setup." ; exit 1
           fi
+      - name: Mint the CI credential (App installation token, planning#1878)
+        uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
+        id: mint
+        with:
+          app-id: ${{ secrets.SK_CI_APP_ID }}
+          private-key: ${{ secrets.SK_CI_APP_PRIVATE_KEY }}
+      - name: Export the CI credential
+        env:
+          TOKEN: ${{ steps.mint.outputs.token }}
+        run: |
+          [ -n "$TOKEN" ] || { echo "::error::App installation token mint returned empty (planning#1878)."; exit 1; }
+          export GH_TOKEN="$TOKEN"
+          # Force-remint pattern (planning#1878): the token is written for later steps only;
+          # the post-verdict step re-mints, so a stale token is never served there.
+          echo "GH_TOKEN=$TOKEN" >> "$GITHUB_ENV"
           # System-wide, not --global: the suites' clean-venv install tests run subprocesses with an isolated
           # HOME (pip pulling the private spec-kitty-events git dependency), so a per-user helper is invisible
           # to them. exe VMs get the same effect from /etc/gitconfig's insteadOf rewrite onto the proxy.
@@ -79,9 +104,23 @@ jobs:
       - name: Run the suite (bin/ci-run.sh --sync)
         working-directory: ${{ env.SK_HOME }}/spec-kitty-planning
         run: bin/ci-run.sh --sync "$REPO" "${{ steps.t.outputs.sha }}" "${{ steps.t.outputs.pr }}"
+      - name: Re-mint the CI credential (force-remint, planning#1878)
+        # Installation tokens live ~1h and the job timeout is 90 min — never serve
+        # a stale token to the verdict post. Falls back to the initial mint when
+        # the re-mint itself fails (a possibly-expired token beats no attempt).
+        if: always() && steps.t.outcome == 'success'
+        uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
+        id: remint
+        with:
+          app-id: ${{ secrets.SK_CI_APP_ID }}
+          private-key: ${{ secrets.SK_CI_APP_PRIVATE_KEY }}
       - name: Post the verdict (bin/ci-post.sh)
         if: always() && steps.t.outcome == 'success'
         working-directory: ${{ env.SK_HOME }}/spec-kitty-planning
+        env:
+          # The '!gh auth git-credential' helper reads GH_TOKEN at call time, so
+          # the baseline git push picks the re-minted token up automatically.
+          GH_TOKEN: ${{ steps.remint.outputs.token || steps.mint.outputs.token }}
         run: |
           run="$SK_HOME/ci-runs/$REPO/${{ steps.t.outputs.sha }}"
           [ -f "$run/exit" ] || { echo "::error::no run dir/exit file — suite never completed; not posting a verdict"; exit 1; }
