@@ -1,0 +1,16 @@
+{
+  "event_type": "WPStatusChanged",
+  "attrs": {
+    "event_id": "e2e00000-0000-4000-8000-000000000127",
+    "occurred_at": "2026-W34-2T090000Z",
+    "mission_slug": "demo-mission",
+    "wp_id": "WP01",
+    "to_lane": "in_progress",
+    "actor": "robert",
+    "force": "false",
+    "execution_mode": "worktree"
+  },
+  "direction": "from",
+  "expected_error": "ZeitgeistAttrsError",
+  "notes": "An extended week date cannot be paired with a basic time; the attrs calendar-date contract rejects the mixed spelling before parsing."
+}

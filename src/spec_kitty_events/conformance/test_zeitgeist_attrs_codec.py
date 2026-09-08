@@ -121,9 +121,19 @@ def test_zeitgeist_attrs_fixtures_present() -> None:
     [f for f in load_fixtures("zeitgeist_attrs") if f.expected_valid],
     ids=lambda f: f.id,
 )
-def test_zeitgeist_attrs_both_directions(fixture: FixtureCase) -> None:
-    """Golden attrs pin the projection; the decode validates them back."""
+def test_zeitgeist_attrs_fixture_directions(fixture: FixtureCase) -> None:
+    """Golden attrs pin the projection and/or the decode boundary."""
     case = fixture.payload
+    if case.get("direction") == "from":
+        moment = from_zeitgeist_attrs(fixture.event_type, case["attrs"])
+        assert isinstance(moment, VolatileMoment)
+        assert moment == VolatileMoment(
+            kind=fixture.event_type,
+            ref=case["expected_ref"],
+            attrs=case["attrs"],
+        )
+        return
+
     payload = _build_payload(fixture.event_type, case["payload"])
     envelope = _fixture_envelope(fixture.event_type, case)
 

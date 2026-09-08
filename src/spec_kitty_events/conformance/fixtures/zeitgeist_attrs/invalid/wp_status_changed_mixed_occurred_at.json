@@ -1,0 +1,16 @@
+{
+  "event_type": "WPStatusChanged",
+  "attrs": {
+    "event_id": "e2e00000-0000-4000-8000-000000000122",
+    "occurred_at": "20260825T09:00:00Z",
+    "mission_slug": "demo-mission",
+    "wp_id": "WP01",
+    "to_lane": "in_progress",
+    "actor": "robert",
+    "force": "false",
+    "execution_mode": "worktree"
+  },
+  "direction": "from",
+  "expected_error": "ZeitgeistAttrsError",
+  "notes": "ISO-8601 forbids mixing a basic date with an extended time; decode rejects the mixed spelling on every supported interpreter."
+}

@@ -188,14 +188,23 @@ def test_mission_run_rows_pin_min_consumer_to_strict_since() -> None:
 
 def test_mission_run_strict_since_is_pinned_to_the_e2_marker_and_postdates_introduction() -> None:
     """Pin ``_E2_STRICT_SINCE`` (strict.py) itself as the row.strict_since
-    authority for the six mission_run rows (#23): each row must literally
-    equal the module marker, not a coincidentally-matching literal, and the
-    marker must postdate each row's ``introduced_in`` — the semantics
-    ``strict.py`` documents ("first strict-admitted later than their 2.3.0
-    introduction"). Before this test, changing the marker without updating
-    every row (or vice versa) kept ``test_mission_run_rows_pin_min_consumer_
-    to_strict_since`` above green as long as both happened to still equal
-    the hardcoded ``"8.0.0"`` literal.
+    authority for the six mission_run rows (#23): each row must equal the
+    module marker's value, and the marker must postdate each row's
+    ``introduced_in`` — the semantics ``strict.py`` documents ("first
+    strict-admitted later than their 2.3.0 introduction"). This test
+    catches two gaps the pre-existing
+    ``test_mission_run_rows_pin_min_consumer_to_strict_since`` misses: that
+    test never checks ordering, so bumping a row's ``introduced_in`` past
+    its ``strict_since`` leaves it green while this test's ``Version(...)
+    >`` assertion catches it; and pinning to ``_E2_STRICT_SINCE`` directly,
+    rather than the hardcoded ``"8.0.0"`` literal that other test uses,
+    means a future marker bump needs no edit here, while the other test —
+    in this same file, above — needs its literal updated by hand. The
+    equality check is on values, not source references: it fails on drift
+    (a row hardcoding a ``strict_since`` that disagrees with the marker),
+    not on a row whose marker reference is swapped for an identical
+    literal, and not on a marker bump with all six rows still referencing
+    the marker.
     """
     rows = [row for row in SUPPORT_MATRIX if row.family == "mission_run"]
     assert len(rows) == 6
@@ -376,6 +385,38 @@ def test_phase_entered_ref_derivation_fixtures_share_one_min_version() -> None:
     assert ref_derivation_ids <= by_id.keys()
     min_versions = {by_id[fixture_id]["min_version"] for fixture_id in ref_derivation_ids}
     assert min_versions == {"8.2.0"}
+
+
+def test_mission_created_mission_id_present_fixture_pins_one_min_version() -> None:
+    """``mission_created_mission_id_present`` pins the derived ``summary``
+    attr, not just ``mission_id`` itself: ``mission_id`` has been in
+    ``MissionCreated``'s schema-derived key set since ``8.0.0``, but no
+    released codec reproduces this fixture's ``expected_attrs`` before
+    ``8.2.0`` -- at ``8.0.0`` the payload does not even construct
+    (``MissionCreatedPayload`` had no ``actor`` field yet) and at ``8.1.0``
+    it constructs but the projection omits ``summary``, which
+    ``_mission_created_summary`` only started deriving in released
+    ``8.2.0``. The floor drifted to a provably-false ``8.0.0`` once already
+    (spec-kitty-events#197); this pins the corrected floor across the three
+    places that each independently claim it -- the manifest entry, the
+    fixture's own ``notes``, and ``COMPATIBILITY.md``'s prose -- so a future
+    edit to one without the other two is caught here rather than shipping
+    silently green."""
+    manifest = json.loads(_FIXTURE_MANIFEST_PATH.read_text(encoding="utf-8"))
+    by_id = {entry["id"]: entry for entry in manifest["fixtures"]}
+    entry = by_id["mission_created_mission_id_present"]
+    assert entry["min_version"] == "8.2.0"
+
+    fixture_path = _FIXTURE_MANIFEST_PATH.parent / entry["path"]
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    assert "8.2.0" in fixture["notes"]
+    assert "8.0.0 first introduced the whole zeitgeist_attrs module" in fixture["notes"]
+
+    compatibility_path = Path(__file__).resolve().parent.parent / "COMPATIBILITY.md"
+    compatibility_text = compatibility_path.read_text(encoding="utf-8")
+    assert "mission_created_mission_id_present` conformance fixture" in compatibility_text
+    assert "min_version: 8.2.0" in compatibility_text
+    assert "min_version: 8.0.0" not in compatibility_text
 
 
 # ---------------------------------------------------------------------------
