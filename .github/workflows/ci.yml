@@ -68,6 +68,13 @@ jobs:
         with:
           app-id: ${{ secrets.SK_CI_APP_ID }}
           private-key: ${{ secrets.SK_CI_APP_PRIVATE_KEY }}
+          # Squad MAJOR on zeitgeist#288: with neither `owner` nor `repositories` set the action
+          # scopes the token to THIS repository only, and the planning clone + baseline push 403.
+          # `owner` alone = every repo the org-wide installation reaches.
+          owner: ${{ github.repository_owner }}
+      # The initial token also serves mid-suite git/gh calls; it expires ~1h after mint, so a
+      # suite running past the hour would start failing those calls before the re-mint. Current
+      # runtime is well under that; documented bound only (zeitgeist#288 MINOR).
       - name: Export the CI credential
         env:
           TOKEN: ${{ steps.mint.outputs.token }}
@@ -111,9 +118,14 @@ jobs:
         if: always() && steps.t.outcome == 'success'
         uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
         id: remint
+        continue-on-error: true  # the post step falls back to the initial mint (zeitgeist#288 MINOR)
         with:
           app-id: ${{ secrets.SK_CI_APP_ID }}
           private-key: ${{ secrets.SK_CI_APP_PRIVATE_KEY }}
+          # Squad MAJOR on zeitgeist#288: with neither `owner` nor `repositories` set the action
+          # scopes the token to THIS repository only, and the planning clone + baseline push 403.
+          # `owner` alone = every repo the org-wide installation reaches.
+          owner: ${{ github.repository_owner }}
       - name: Post the verdict (bin/ci-post.sh)
         if: always() && steps.t.outcome == 'success'
         working-directory: ${{ env.SK_HOME }}/spec-kitty-planning
