@@ -68,6 +68,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          # tests/test_version_not_amended.py walks origin/main's full history
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5

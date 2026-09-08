@@ -39,7 +39,7 @@ jobs:
       - name: Checkout spec-kitty-end-to-end-testing (pinned SHA)
         uses: actions/checkout@v4
         with:
-          repository: Priivacy-ai/spec-kitty-end-to-end-testing
+          repository: spec-kitty/EXPERIMENTAL-spec-kitty-end-to-end-testing
           ref: 193f5c0eb07c8fdb6943d91d205ab892b98d6dfc
           path: e2e
           ssh-key: ${{ secrets.SK_E2E_READ_DEPLOY_KEY }}
