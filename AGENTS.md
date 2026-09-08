@@ -1,6 +1,10 @@
-# Agent Guide: EXPERIMENTAL-spec-kitty-events
+# Agent Guide: spec-kitty/spec-kitty-events
 
-This repo is part of the `EXPERIMENTAL-spec-kitty-*` programme. There is no pre-programme
+This repo is `spec-kitty/spec-kitty-events`, the only development line for the package.
+The former `EXPERIMENTAL-spec-kitty-events` fork is fully merged here and archived
+read-only; its issue and PR numbers cited in the changelog, docs, and docstrings still
+refer to that archive. The repo follows the `EXPERIMENTAL-spec-kitty-*` programme
+process. There is no pre-programme
 branch ladder here: **`main` IS the integration branch** — every PR targets `main`,
 nothing deploys on merge, and nothing on GitHub enforces anything (no branch protection,
 no required reviews; GitHub Actions are limited to `.github/workflows/ci.yml`, the

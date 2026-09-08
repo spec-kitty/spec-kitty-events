@@ -19,8 +19,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Priivacy-ai/spec-kitty-events"
-Changelog = "https://github.com/Priivacy-ai/spec-kitty-events/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/spec-kitty/spec-kitty-events"
+Changelog = "https://github.com/spec-kitty/spec-kitty-events/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

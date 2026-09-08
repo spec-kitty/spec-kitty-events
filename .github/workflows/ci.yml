@@ -50,7 +50,7 @@ jobs:
       - name: Require SK_CI_TOKEN
         run: |
           if [ -z "$GH_TOKEN" ]; then
-            echo "::error::org secret SK_CI_TOKEN is missing (fine-grained PAT: contents read on the EXPERIMENTAL-* repos, write on planning; issues+pull-requests write). See planning docs/BLACKSMITH-CI.md." ; exit 1
+            echo "::error::org secret SK_CI_TOKEN is missing (fine-grained PAT: contents read on spec-kitty/spec-kitty-events and the EXPERIMENTAL-* repos, write on planning; issues+pull-requests write). See planning docs/BLACKSMITH-CI.md." ; exit 1
           fi
           # System-wide, not --global: the suites' clean-venv install tests run subprocesses with an isolated
           # HOME (pip pulling the private spec-kitty-events git dependency), so a per-user helper is invisible
