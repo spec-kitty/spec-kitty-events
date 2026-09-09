@@ -1172,6 +1172,7 @@ dev = [
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "pyyaml" },
 ]
 
 [package.dev-dependencies]
@@ -1193,6 +1194,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "python-ulid", specifier = ">=1.1.0" },
+    { name = "pyyaml", marker = "extra == 'dev'", specifier = ">=6.0,<7" },
 ]
 provides-extras = ["dev", "conformance"]
 
