@@ -158,4 +158,5 @@ dev = [
     "hypothesis>=6.0.0",
     "jsonschema>=4.21.0,<5.0.0",
     "ruff>=0.16,<0.17",
+    "pyyaml>=6.0,<7",
 ]
