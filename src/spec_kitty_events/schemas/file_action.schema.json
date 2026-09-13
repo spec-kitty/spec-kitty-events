@@ -1,0 +1,47 @@
+{
+  "$id": "spec-kitty-events/file_action",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A file edit, as metadata only (LW-04/LW-11): path and size deltas.\nThere is deliberately no ``contents`` field \u2014 file contents are never\nobservable work, and ``contents`` is a :data:`FORBIDDEN_WORK_KEYS`\nmember enforced at the envelope level as defense in depth.",
+  "properties": {
+    "bytes_added": {
+      "minimum": 0,
+      "title": "Bytes Added",
+      "type": "integer"
+    },
+    "bytes_removed": {
+      "minimum": 0,
+      "title": "Bytes Removed",
+      "type": "integer"
+    },
+    "language": {
+      "anyOf": [
+        {
+          "maxLength": 32,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Language"
+    },
+    "path": {
+      "maxLength": 240,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}$",
+      "title": "Path",
+      "type": "string"
+    }
+  },
+  "required": [
+    "path",
+    "bytes_added",
+    "bytes_removed"
+  ],
+  "title": "FileAction",
+  "type": "object"
+}

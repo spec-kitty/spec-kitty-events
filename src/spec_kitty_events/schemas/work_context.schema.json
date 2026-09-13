@@ -1,0 +1,85 @@
+{
+  "$id": "spec-kitty-events/work_context",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Optional work context slots \u2014 all optional, all presentation/scoping,\nnone of them identity (identity is mission/session/repository above).",
+  "properties": {
+    "branch": {
+      "anyOf": [
+        {
+          "maxLength": 240,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Branch"
+    },
+    "operation": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Operation"
+    },
+    "run_id": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Run Id"
+    },
+    "worktree": {
+      "anyOf": [
+        {
+          "maxLength": 240,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Worktree"
+    },
+    "wp_id": {
+      "anyOf": [
+        {
+          "maxLength": 32,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Wp Id"
+    }
+  },
+  "title": "WorkContext",
+  "type": "object"
+}

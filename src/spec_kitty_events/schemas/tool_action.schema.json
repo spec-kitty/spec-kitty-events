@@ -1,0 +1,49 @@
+{
+  "$defs": {
+    "ActionOutcome": {
+      "description": "Explicit outcome for every observed action \u2014 failure and skip are\nfirst-class observations, never laundered into success or silence\n(LW-03/LW-10).",
+      "enum": [
+        "success",
+        "failure",
+        "skipped"
+      ],
+      "title": "ActionOutcome",
+      "type": "string"
+    }
+  },
+  "$id": "spec-kitty-events/tool_action",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A tool invocation. Tool *name*, outcome, duration \u2014 never the raw\ncommand environment or tool output (those are privacy keys).",
+  "properties": {
+    "duration_ms": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Duration Ms"
+    },
+    "outcome": {
+      "$ref": "#/$defs/ActionOutcome"
+    },
+    "tool": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+      "title": "Tool",
+      "type": "string"
+    }
+  },
+  "required": [
+    "tool",
+    "outcome"
+  ],
+  "title": "ToolAction",
+  "type": "object"
+}

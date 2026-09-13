@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.1.0] - 2026-09-13
+
+Durable live-work contracts (spec-kitty/spec-kitty-events#55, planning#2268
+"Zeitgeist Live Work"): one versioned typed work-observation contract shared
+by CLI, SaaS and Zeitgeist, landing before any producer enablement. Durable
+work never rides the lossy volatile codec (`zeitgeist_attrs`); it reuses the
+standard `Event` envelope's event_id/correlation/causation/schema semantics
+with `event_type="WorkObservation"`, `aggregate_id="mission/<id>"`, and all
+identity in the payload. Contract: `contracts/durable-work-observation.md`.
+
+### Added
+
+- **`spec_kitty_events.work_observation`** — the closed 25-kind
+  `WorkKind` vocabulary across six families (lifecycle incl. mission
+  review/retrospective captured/failed/skipped; session/delegation/binding;
+  tool/file/test actions with explicit outcomes; the nine narrative kinds;
+  durable peer messages; recorded coverage gaps), the identity sub-models
+  (producer/instance/monotonic sequence, stable logical session surviving
+  reconnect and credential rotation, actor with distinct agent profile and
+  factory attempt, rename-safe canonical mission and repository identity,
+  cross-repo programme links), metadata-only file capture, artifact
+  references (content hash, byte length, media type, completeness),
+  source provenance with honest limitations, `FORBIDDEN_WORK_KEYS`
+  (server-owned fields and the privacy set), safe `x-`-namespaced
+  extensions, `canonical_work_hash`, typed `WorkRejectionReason`/`TypedRejection`,
+  and `negotiate_work_contract` (same-major semver rule per
+  `contracts/versioning-and-compatibility.md`).
+- **`spec_kitty_events.work_replay`** — the machine-tested stream semantics
+  every consumer agrees on: exact duplicate (idempotent), same event ID with
+  a different canonical hash (typed `ID_PAYLOAD_CONFLICT`, first observation
+  stands), late/out-of-order arrival (accepted and flagged), sequence gaps
+  (recorded as data), and `replay_order_key` — `(lamport_clock, node_id,
+  sequence, event_id)`; no client timestamp ever establishes authoritative
+  total order.
+- Conformance fixtures `work_observation/{valid,invalid,replay}` (29 valid,
+  15 invalid, two replay streams with golden classifications) covering the
+  acceptance scenarios: one human + two concurrent agents, delegated
+  session, credential rotation, retry attempt, same-name missions,
+  mission/repo rename, cross-repo programme linkage, full narrative,
+  failed/skipped retrospective, redaction, and missing coverage. Registered
+  in the manifest and the `work_observation` loader category.
+- 19 new JSON schemas (payload + identity/action/provenance sub-models) —
+  the TS/OpenAPI inputs for browser consumers — and 25 durable
+  `SupportRow`s in `SUPPORT_MATRIX` (one per kind, `family="work"`,
+  `durability="durable"`), published in `support_matrix.json`.
+- `WorkObservation` admitted to the strict profile: `STRICT_EVENT_TYPES`
+  and `validate_strict_envelope`'s forbidden-key walk now union
+  `FORBIDDEN_WORK_KEYS` for the type.
+- Contract document `contracts/durable-work-observation.md`, including the
+  producer-owner map for LW-01–LW-05, LW-08, LW-10, LW-11.
+
+### Compatibility
+
+- Additive: every existing event contract keeps its accept/reject boundary
+  (minor bump per `contracts/versioning-and-compatibility.md`). Producers
+  MUST capability-gate `WorkObservation` emission until each intended
+  consumer (saas#1814 ingestion, zeitgeist#304 relay, saas#1816
+  projections) can validate it — the `10.1.0` `min_consumer_package` on the
+  25 new support-matrix rows is that floor.
+
 ## [10.0.6] - 2026-09-02
 
 ### Fixed

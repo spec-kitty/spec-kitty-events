@@ -148,6 +148,27 @@ from spec_kitty_events.retrospective import (
     RetrospectiveSkippedPayload,
     RetrospectiveStartedPayload,
 )
+from spec_kitty_events.work_observation import (
+    ActorIdentity,
+    ActivityRef,
+    AgentProfileRef,
+    ArtifactReference,
+    CoverageGap,
+    FactoryAttemptRef,
+    FileAction,
+    MissionIdentity,
+    PrincipalRef,
+    ProducerIdentity,
+    ProgrammeLink,
+    RepositoryIdentity,
+    SessionIdentity,
+    SourceProvenance,
+    TestAction,
+    ToolAction,
+    TypedRejection,
+    WorkContext,
+    WorkObservationPayload,
+)
 
 
 # Schema directory (same directory as this script)
@@ -277,6 +298,28 @@ PYDANTIC_MODELS: List[tuple[str, Type[BaseModel]]] = [
     # Legacy retrospective terminal contracts (3.1.0)
     ("retrospective_completed_payload", RetrospectiveCompletedPayload),
     ("retrospective_skipped_payload", RetrospectiveSkippedPayload),
+    # Durable live-work contracts (spec-kitty-events#55, 10.1.0) — the
+    # identity sub-models are published individually so TS/OpenAPI consumers
+    # can reference them ($ref) without reparsing the payload union.
+    ("producer_identity", ProducerIdentity),
+    ("session_identity", SessionIdentity),
+    ("agent_profile_ref", AgentProfileRef),
+    ("factory_attempt_ref", FactoryAttemptRef),
+    ("actor_identity", ActorIdentity),
+    ("principal_ref", PrincipalRef),
+    ("mission_identity", MissionIdentity),
+    ("repository_identity", RepositoryIdentity),
+    ("programme_link", ProgrammeLink),
+    ("work_context", WorkContext),
+    ("activity_ref", ActivityRef),
+    ("artifact_reference", ArtifactReference),
+    ("tool_action", ToolAction),
+    ("file_action", FileAction),
+    ("test_action", TestAction),
+    ("coverage_gap", CoverageGap),
+    ("source_provenance", SourceProvenance),
+    ("work_observation_payload", WorkObservationPayload),
+    ("typed_rejection", TypedRejection),
 ]
 
 # Enums (use TypeAdapter)

@@ -1,0 +1,54 @@
+{
+  "$defs": {
+    "ActionOutcome": {
+      "description": "Explicit outcome for every observed action \u2014 failure and skip are\nfirst-class observations, never laundered into success or silence\n(LW-03/LW-10).",
+      "enum": [
+        "success",
+        "failure",
+        "skipped"
+      ],
+      "title": "ActionOutcome",
+      "type": "string"
+    }
+  },
+  "$id": "spec-kitty-events/test_action",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A test execution: selector plus explicit counts. Never raw output.",
+  "properties": {
+    "failed": {
+      "minimum": 0,
+      "title": "Failed",
+      "type": "integer"
+    },
+    "outcome": {
+      "$ref": "#/$defs/ActionOutcome"
+    },
+    "passed": {
+      "minimum": 0,
+      "title": "Passed",
+      "type": "integer"
+    },
+    "selector": {
+      "maxLength": 240,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}$",
+      "title": "Selector",
+      "type": "string"
+    },
+    "skipped": {
+      "minimum": 0,
+      "title": "Skipped",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "selector",
+    "passed",
+    "failed",
+    "skipped",
+    "outcome"
+  ],
+  "title": "TestAction",
+  "type": "object"
+}

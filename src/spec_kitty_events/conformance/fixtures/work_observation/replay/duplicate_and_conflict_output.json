@@ -1,0 +1,17 @@
+{
+  "accepted_event_ids": [
+    "01J0000000000000000000WRK1",
+    "01J0000000000000000000WRK2"
+  ],
+  "conflicts": [
+    {
+      "event_id": "01J0000000000000000000WRK1",
+      "reason": "id_payload_conflict"
+    }
+  ],
+  "duplicates": [
+    "01J0000000000000000000WRK1"
+  ],
+  "gaps": [],
+  "late": []
+}

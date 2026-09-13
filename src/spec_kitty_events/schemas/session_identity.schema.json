@@ -1,0 +1,47 @@
+{
+  "$id": "spec-kitty-events/session_identity",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The stable logical session that produced this observation.\n\nIdentity survives reconnect (``reconnect_epoch`` bumps) and credential\nrotation (``credential_epoch`` bumps) \u2014 the session is the *logical*\nconversation, not the transport connection and not the credential\n(LW-01: two same-account agents stay distinct through reconnect and\nrotation because they hold distinct ``session_id``s).\n\n``delegated_from`` names the delegating session's ``session_id`` when\nthis session was spawned by a delegation (LW-05 delegated sessions).",
+  "properties": {
+    "credential_epoch": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Credential Epoch",
+      "type": "integer"
+    },
+    "delegated_from": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Delegated From"
+    },
+    "reconnect_epoch": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Reconnect Epoch",
+      "type": "integer"
+    },
+    "session_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+      "title": "Session Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id"
+  ],
+  "title": "SessionIdentity",
+  "type": "object"
+}

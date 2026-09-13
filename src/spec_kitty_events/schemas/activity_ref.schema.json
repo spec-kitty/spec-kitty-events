@@ -1,0 +1,35 @@
+{
+  "$id": "spec-kitty-events/activity_ref",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Activity grouping: an observation may belong to a logical activity\nand an activity may name its parent \u2014 the durable analogue of the\nvolatile focus/activity signal in :mod:`spec_kitty_events.harness_observation`.",
+  "properties": {
+    "activity_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+      "title": "Activity Id",
+      "type": "string"
+    },
+    "parent_activity_id": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parent Activity Id"
+    }
+  },
+  "required": [
+    "activity_id"
+  ],
+  "title": "ActivityRef",
+  "type": "object"
+}

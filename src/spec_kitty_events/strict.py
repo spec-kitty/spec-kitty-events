@@ -54,6 +54,12 @@ from spec_kitty_events.project_lifecycle import (
 )
 from spec_kitty_events.status import WP_STATUS_CHANGED
 from spec_kitty_events.validation_errors import ValidationError, ValidationErrorCode
+from spec_kitty_events.work_observation import (
+    FORBIDDEN_WORK_KEYS,
+    PAYLOAD_ID_BY_KIND as WORK_PAYLOAD_ID_BY_KIND,
+    WORK_OBSERVATION,
+    WorkKind,
+)
 
 __all__ = [
     "STRICT_PROFILE_ID",
@@ -94,9 +100,10 @@ STRICT_ENVELOPE_KEYS: frozenset[str] = frozenset(
 )
 
 # 9 mission + 6 mission-run (volatile, E2) + 1 WP-lane + 8 project/artifact
-# + 1 observation = 25 (exhaustive; excluded names are listed in the draft's
-# prose). ``NextStepPlanned`` stays excluded: its payload contract is
-# reserved, so a strict envelope of that type could not be payload-validated.
+# + 1 observation + 1 durable work = 26 (exhaustive; excluded names are
+# listed in the draft's prose). ``NextStepPlanned`` stays excluded: its
+# payload contract is reserved, so a strict envelope of that type could not
+# be payload-validated.
 STRICT_EVENT_TYPES: frozenset[str] = frozenset(
     MISSION_EVENT_TYPES
     | {
@@ -119,6 +126,7 @@ STRICT_EVENT_TYPES: frozenset[str] = frozenset(
         TASKS_COMPLETED,
     }
     | {HARNESS_OBSERVATION}
+    | {WORK_OBSERVATION}
 )
 
 STRICT_TIMESTAMP_RULES: str = "iso8601-tz-aware"
@@ -174,8 +182,8 @@ class SupportRow(BaseModel):
     event_type: str
     kind: Optional[str] = None
     payload_id: Optional[str] = None
-    family: Literal["lifecycle", "wp", "project", "mission_run", "harness"]
-    durability: Literal["journal", "volatile"]
+    family: Literal["lifecycle", "wp", "project", "mission_run", "harness", "work"]
+    durability: Literal["journal", "volatile", "durable"]
     model: str
     schema_: str = Field(alias="schema")
     strict: Literal[True] = True
@@ -256,6 +264,30 @@ def _observation_row(kind: ObservationKind) -> SupportRow:
         strict_since="7.0.0",
         status="supported",
         min_consumer_package=_STRICT_PROFILE_MIN_CONSUMER_PACKAGE,
+    )
+
+
+def _work_row(kind: WorkKind) -> SupportRow:
+    """A durable live-work row (spec-kitty-events#55, planning#2268).
+
+    Durable, unlike the volatile harness/mission-run rows: these enter the
+    durable journal (saas#1814), fan out with recoverable cursors
+    (zeitgeist#304), and replay with explicit gaps (saas#1818). Introduced
+    by this package's 10.1.0, the first version carrying the contract.
+    """
+    return SupportRow(
+        event_type=WORK_OBSERVATION,
+        kind=kind.value,
+        payload_id=WORK_PAYLOAD_ID_BY_KIND[kind],
+        family="work",
+        durability="durable",
+        model="spec_kitty_events.work_observation.WorkObservationPayload",
+        schema="work_observation_payload.schema.json",
+        strict=True,
+        introduced_in="10.1.0",
+        strict_since="10.1.0",
+        status="supported",
+        min_consumer_package="10.1.0",
     )
 
 
@@ -464,10 +496,17 @@ SUPPORT_MATRIX: Tuple[SupportRow, ...] = (
         strict_since=_E2_STRICT_SINCE,
     ),
     *(_observation_row(kind) for kind in ObservationKind),
+    # Durable live-work vocabulary (spec-kitty-events#55, planning#2268):
+    # one row per WorkKind — the machine-readable answer to "which durable
+    # observations can this package validate", pinned by the ingestion
+    # (saas#1814), relay (zeitgeist#304), and projection (saas#1816)
+    # consumers. 25 kinds across 6 families, all durable.
+    *(_work_row(kind) for kind in WorkKind),
 )
-"""30 rows: 14 journal + 16 volatile (draft §3.4 as amended by E2). Order is
-fixed (source order above) so `support_matrix_digest()` and the generated
-`support_matrix.json` are byte-stable across runs without an explicit sort."""
+"""55 rows: 14 journal + 16 volatile + 25 durable live-work (spec-kitty-events#55).
+Order is fixed (source order above) so `support_matrix_digest()` and the
+generated `support_matrix.json` are byte-stable across runs without an
+explicit sort."""
 
 
 def _support_matrix_canonical_json() -> str:
@@ -523,7 +562,8 @@ def validate_strict_envelope(record: Any) -> Tuple[ValidationError, ...]:
     2. every STRICT_ENVELOPE_KEYS member present (explicit null counts)
     3. no key outside STRICT_ENVELOPE_KEYS
     4. forbidden keys anywhere (recursive walk; FORBIDDEN_LEGACY_KEYS,
-       plus FORBIDDEN_OBSERVATION_KEYS when event_type == HarnessObservation)
+       plus FORBIDDEN_OBSERVATION_KEYS when event_type == HarnessObservation,
+       or FORBIDDEN_WORK_KEYS when event_type == WorkObservation)
     5. aggregate_id does not use a forbidden legacy name prefix
        (FORBIDDEN_LEGACY_AGGREGATE_NAMES)
     6. schema_version present, str, == "3.0.0"
@@ -561,6 +601,8 @@ def validate_strict_envelope(record: Any) -> Tuple[ValidationError, ...]:
     forbidden_set = FORBIDDEN_LEGACY_KEYS
     if record.get("event_type") == HARNESS_OBSERVATION:
         forbidden_set = FORBIDDEN_LEGACY_KEYS | FORBIDDEN_OBSERVATION_KEYS
+    elif record.get("event_type") == WORK_OBSERVATION:
+        forbidden_set = FORBIDDEN_LEGACY_KEYS | FORBIDDEN_WORK_KEYS
     errors.extend(find_forbidden_keys(record, forbidden=forbidden_set))
 
     # Step 5: no forbidden legacy aggregate-name prefix (issue #10). Like

@@ -123,8 +123,10 @@ def test_strict_envelope_keys_are_exactly_the_14_event_fields() -> None:
     )
 
 
-def test_strict_event_types_has_exactly_25_members() -> None:
-    assert len(STRICT_EVENT_TYPES) == 25
+def test_strict_event_types_has_exactly_26_members() -> None:
+    # 25 members through 10.0.x (see the expected set below) + WorkObservation
+    # (#55, 10.1.0) = 26.
+    assert len(STRICT_EVENT_TYPES) == 26
     assert STRICT_EVENT_TYPES == frozenset(
         {
             "MissionCreated",
@@ -153,6 +155,7 @@ def test_strict_event_types_has_exactly_25_members() -> None:
             "TasksStarted",
             "TasksCompleted",
             "HarnessObservation",
+            "WorkObservation",
         }
     )
 

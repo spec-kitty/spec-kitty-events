@@ -1,0 +1,45 @@
+{
+  "$id": "spec-kitty-events/artifact_reference",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A reference to authenticated artifact content \u2014 long content is\nnever inlined (LW-11): it is referenced by content hash, byte length,\nmedia type, and completeness. ``complete=False`` marks a partial\ncapture (e.g. truncated log tail) so consumers never mistake a\nfragment for the whole.",
+  "properties": {
+    "artifact_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+      "title": "Artifact Id",
+      "type": "string"
+    },
+    "byte_length": {
+      "minimum": 0,
+      "title": "Byte Length",
+      "type": "integer"
+    },
+    "complete": {
+      "default": true,
+      "title": "Complete",
+      "type": "boolean"
+    },
+    "content_hash": {
+      "description": "SHA-256 of the referenced content",
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "media_type": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Media Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "artifact_id",
+    "content_hash",
+    "byte_length",
+    "media_type"
+  ],
+  "title": "ArtifactReference",
+  "type": "object"
+}
