@@ -25,7 +25,11 @@ Durable vs volatile (the line this module draws):
 
 Envelope conventions (validated by ``spec_kitty_events.strict``, same shape
 as HarnessObservation's): ``event_type="WorkObservation"``,
-``aggregate_id="mission/<mission_id>"``, ``schema_version="3.0.0"``,
+``aggregate_id`` = :func:`work_aggregate_id` — ``mission/<mission_id>``
+when the observation is mission-bound, ``repo/<repository_id>`` for
+repository-bound work with no mission yet (LW-02: repo-bound sessions
+before a mission exists keep a real aggregate identity, never an invented
+mission), ``schema_version="3.0.0"``,
 ``timestamp`` = producer occurrence time (R-T-01), ``correlation_id`` /
 ``causation_id`` = the standard Event causal semantics, ``node_id`` = the
 producer instance, ``lamport_clock`` = the journal clock at emission. The
@@ -65,6 +69,7 @@ __all__ = [
     "FORBIDDEN_WORK_KEYS_VERSION",
     "SERVER_OWNED_FIELDS",
     "ActionOutcome",
+    "ActionState",
     "ActorIdentity",
     "ActivityRef",
     "AgentProfileRef",
@@ -72,6 +77,7 @@ __all__ = [
     "CoverageGap",
     "FactoryAttemptRef",
     "FileAction",
+    "FileOperation",
     "MissionIdentity",
     "PrincipalRef",
     "ProducerIdentity",
@@ -87,6 +93,7 @@ __all__ = [
     "TypedRejection",
     "NegotiationResult",
     "canonical_work_hash",
+    "work_aggregate_id",
     "negotiate_work_contract",
 ]
 
@@ -308,7 +315,12 @@ class SessionIdentity(BaseModel):
 class AgentProfileRef(BaseModel):
     """The agent profile a principal acted through — distinct from the
     principal itself (LW-01: principal, agent profile, session, and factory
-    attempt are four different identities, never collapsed into one)."""
+    attempt are four different identities, never collapsed into one). Valid
+    for every ``principal_kind``: they are independent identity dimensions,
+    not exclusive modes — a factory worker retains both its profile/harness
+    identity and its job/attempt attribution, and a human may act through
+    an agent profile. Only ``principal_kind='agent'`` *requires* one (a
+    bare agent principal is ambiguous)."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -354,11 +366,10 @@ class ActorIdentity(BaseModel):
                 "principal_kind='agent' requires agent_profile (the profile is "
                 "the agent's identity; a bare agent principal is ambiguous)"
             )
-        if self.agent_profile is not None and self.principal_kind not in ("agent", "human"):
-            raise ValueError(
-                "agent_profile is only meaningful for 'agent' or 'human' "
-                "principals acting through an agent profile"
-            )
+        # agent_profile is valid for EVERY principal_kind: profile/harness
+        # identity and factory job/attempt attribution are distinct
+        # dimensions, never exclusive identity modes — a real factory worker
+        # carries both at once (#55 review P1).
         if self.factory_attempt is not None and self.principal_kind != "factory":
             raise ValueError("factory_attempt is only meaningful for principal_kind='factory'")
         return self
@@ -463,50 +474,182 @@ class ArtifactReference(BaseModel):
 
 
 class ActionOutcome(str, Enum):
-    """Explicit outcome for every observed action — failure and skip are
+    """Explicit outcome for every concluded action — failure and skip are
     first-class observations, never laundered into success or silence
-    (LW-03/LW-10)."""
+    (LW-03/LW-10). Only carried once the action has actually concluded
+    (``state='result'``): an observation emitted while a tool/test is still
+    running must not be forced to invent one."""
 
     SUCCESS = "success"
     FAILURE = "failure"
     SKIPPED = "skipped"
 
 
+class ActionState(str, Enum):
+    """Lifecycle state of an observed tool/test activity (LW-04/LW-09: the
+    live dashboard shows work *while it happens*, then correlates the
+    conclusion to that same activity).
+
+    ``STARTED``/``RUNNING`` are the pre-result states — no outcome, no test
+    counts (nothing has concluded yet; forcing one would launder a live
+    activity into a completed-work feed). ``RESULT`` is the terminal state
+    that carries the :class:`ActionOutcome` (and test counts). ``CANCELLED``
+    records the abandonment of a previously started activity — an honest
+    terminal observation in its own right, never a missing result.
+
+    Start→result/cancel correlation is the observation *pair* sharing one
+    ``activity`` (:class:`ActivityRef`): the start observation and the
+    terminal observation name the same ``activity_id`` (the terminal one
+    may also ``reply_to`` the start observation's event ID).
+    """
+
+    STARTED = "started"
+    RUNNING = "running"
+    RESULT = "result"
+    CANCELLED = "cancelled"
+
+
 class ToolAction(BaseModel):
-    """A tool invocation. Tool *name*, outcome, duration — never the raw
-    command environment or tool output (those are privacy keys)."""
+    """A tool invocation at any lifecycle state. Tool *name*, state,
+    outcome (terminal only), duration — never the raw command environment
+    or tool output (those are privacy keys)."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     tool: str = Field(..., min_length=1, max_length=64, pattern=_IDENT)
-    outcome: ActionOutcome
+    state: ActionState
+    outcome: Optional[ActionOutcome] = None
     duration_ms: Optional[int] = Field(None, ge=0)
+
+    @model_validator(mode="after")
+    def _state_outcome_agreement(self) -> "ToolAction":
+        if self.state == ActionState.RESULT and self.outcome is None:
+            raise ValueError("state='result' requires an outcome")
+        if self.state != ActionState.RESULT and self.outcome is not None:
+            raise ValueError(
+                "outcome is only carried at state='result' — a started/running/"
+                "cancelled tool observation must not invent a concluded outcome"
+            )
+        return self
+
+
+class FileOperation(str, Enum):
+    """The operation a file observation records (LW-04: read/edit/create/
+    delete/rename are all supported observations — a byte-delta alone
+    cannot distinguish them)."""
+
+    READ = "read"
+    EDIT = "edit"
+    CREATE = "create"
+    DELETE = "delete"
+    RENAME = "rename"
+
+
+_FILE_PATH_MAX = 240
+
+
+def _validate_repository_relative_path(value: Optional[str]) -> Optional[str]:
+    """Validate one repository-relative file path (FileAction fields).
+
+    Accepts any bounded relative path a real repository can contain —
+    POSIX-style ``/`` separators, spaces, and Unicode included
+    (``docs/design notes.md``, ``docs/Über 设计.md``). Fails closed on
+    everything that is not a safe in-repo name: absolute paths, backslash
+    separators, control characters, and empty/``.``/``..`` segments
+    (traversal). This grammar is deliberately *not* the ``_REF`` grammar:
+    real filenames contain spaces and non-ASCII characters, and a contract
+    that rejects them rejects real work (#55 review P1).
+    """
+    if value is None:
+        return value
+    if value.startswith("/") or value.endswith("/"):
+        raise ValueError(f"path {value!r} must be repository-relative (no leading or trailing '/')")
+    if "\\" in value:
+        raise ValueError(
+            f"path {value!r} must use '/' separators (backslash is not a repository path separator)"
+        )
+    for char in value:
+        if ord(char) < 0x20 or ord(char) == 0x7F:
+            raise ValueError(f"path {value!r} contains a control character")
+    bad = [seg for seg in value.split("/") if seg in ("", ".", "..")]
+    if bad:
+        raise ValueError(
+            f"path {value!r} must not contain empty, '.', or '..' segments "
+            f"(repository traversal is never a valid file observation)"
+        )
+    return value
 
 
 class FileAction(BaseModel):
-    """A file edit, as metadata only (LW-04/LW-11): path and size deltas.
-    There is deliberately no ``contents`` field — file contents are never
-    observable work, and ``contents`` is a :data:`FORBIDDEN_WORK_KEYS`
-    member enforced at the envelope level as defense in depth."""
+    """A file operation, as metadata only (LW-04/LW-11): operation, path
+    (and rename destination), size deltas. There is deliberately no
+    ``contents`` field — file contents are never observable work, and
+    ``contents`` is a :data:`FORBIDDEN_WORK_KEYS` member enforced at the
+    envelope level as defense in depth.
+
+    ``operation`` names what happened (read/edit/create/delete/rename);
+    ``destination_path`` carries the rename's destination and is valid only
+    for ``operation='rename'``. ``path``/``destination_path`` are
+    repository-relative and may contain spaces and Unicode — validated by
+    :func:`_validate_repository_relative_path`, not the ``_REF`` grammar.
+    """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    path: str = Field(..., min_length=1, max_length=240, pattern=_REF)
+    operation: FileOperation
+    path: str = Field(..., min_length=1, max_length=_FILE_PATH_MAX)
+    destination_path: Optional[str] = Field(None, min_length=1, max_length=_FILE_PATH_MAX)
     bytes_added: int = Field(..., ge=0)
     bytes_removed: int = Field(..., ge=0)
     language: Optional[str] = Field(None, min_length=1, max_length=32, pattern=_IDENT)
 
+    @field_validator("path", "destination_path")
+    @classmethod
+    def _repository_relative(cls, v: Optional[str]) -> Optional[str]:
+        return _validate_repository_relative_path(v)
+
+    @model_validator(mode="after")
+    def _rename_agreement(self) -> "FileAction":
+        if self.operation == FileOperation.RENAME and self.destination_path is None:
+            raise ValueError("operation='rename' requires destination_path (the rename target)")
+        if self.operation != FileOperation.RENAME and self.destination_path is not None:
+            raise ValueError("destination_path is only carried at operation='rename'")
+        return self
+
 
 class TestAction(BaseModel):
-    """A test execution: selector plus explicit counts. Never raw output."""
+    """A test execution at any lifecycle state: selector plus explicit
+    counts (carried only once the run concludes, ``state='result'``).
+    Never raw output."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     selector: str = Field(..., min_length=1, max_length=240, pattern=_REF)
-    passed: int = Field(..., ge=0)
-    failed: int = Field(..., ge=0)
-    skipped: int = Field(..., ge=0)
-    outcome: ActionOutcome
+    state: ActionState
+    passed: Optional[int] = Field(None, ge=0)
+    failed: Optional[int] = Field(None, ge=0)
+    skipped: Optional[int] = Field(None, ge=0)
+    outcome: Optional[ActionOutcome] = None
+
+    @model_validator(mode="after")
+    def _state_terminal_agreement(self) -> "TestAction":
+        if self.state == ActionState.RESULT:
+            if self.outcome is None:
+                raise ValueError("state='result' requires an outcome")
+            if self.passed is None or self.failed is None or self.skipped is None:
+                raise ValueError("state='result' requires the passed/failed/skipped counts")
+        elif (
+            self.outcome is not None
+            or self.passed is not None
+            or self.failed is not None
+            or self.skipped is not None
+        ):
+            raise ValueError(
+                "outcome and counts are only carried at state='result' — a "
+                "started/running/cancelled test observation must not invent "
+                "concluded results"
+            )
+        return self
 
 
 class CoverageGap(BaseModel):
@@ -540,8 +683,12 @@ _ExtensionValue = Union[str, int, float, bool, None]
 # ── Per-kind field matrix ────────────────────────────────────────────────────
 #
 # Only the conditionally-varying fields are listed. `producer`, `session`,
-# `actor`, `mission`, `repository`, `kind`, and `provenance` are required for
-# every kind (enforced by their Field(...) definitions); `context`,
+# `actor`, `repository`, `kind`, and `provenance` are required for every
+# kind (enforced by their Field(...) definitions). `mission` is required
+# only for the lifecycle kinds — an actual mission lifecycle record
+# (review/retrospective) names a canonical mission — and optional for every
+# other kind: repository-bound sessions and work exist before (and outside)
+# any mission, and never invent one (LW-02, #55 review P1). `context`,
 # `activity`, `programme`, `artifact`, and `extensions` are optional for
 # every kind (never constrained here).
 #
@@ -553,9 +700,11 @@ _FORBIDDEN = "F"
 _KIND_FIELD_RULES: Mapping[WorkKind, Mapping[str, str]] = MappingProxyType(
     {
         # lifecycle: outcome note optional; action/coverage never ride a
-        # lifecycle observation.
+        # lifecycle observation. A mission lifecycle record is exactly that —
+        # it requires the canonical mission it records.
         WorkKind.MISSION_REVIEW_CAPTURED: MappingProxyType(
             {
+                "mission": _REQUIRED,
                 "text": _OPTIONAL,
                 "action": _FORBIDDEN,
                 "coverage": _FORBIDDEN,
@@ -566,6 +715,7 @@ _KIND_FIELD_RULES: Mapping[WorkKind, Mapping[str, str]] = MappingProxyType(
         ),
         WorkKind.MISSION_REVIEW_FAILED: MappingProxyType(
             {
+                "mission": _REQUIRED,
                 "text": _REQUIRED,
                 "action": _FORBIDDEN,
                 "coverage": _FORBIDDEN,
@@ -576,6 +726,7 @@ _KIND_FIELD_RULES: Mapping[WorkKind, Mapping[str, str]] = MappingProxyType(
         ),
         WorkKind.MISSION_REVIEW_SKIPPED: MappingProxyType(
             {
+                "mission": _REQUIRED,
                 "text": _REQUIRED,
                 "action": _FORBIDDEN,
                 "coverage": _FORBIDDEN,
@@ -586,6 +737,7 @@ _KIND_FIELD_RULES: Mapping[WorkKind, Mapping[str, str]] = MappingProxyType(
         ),
         WorkKind.RETROSPECTIVE_CAPTURED: MappingProxyType(
             {
+                "mission": _REQUIRED,
                 "text": _OPTIONAL,
                 "action": _FORBIDDEN,
                 "coverage": _FORBIDDEN,
@@ -596,6 +748,7 @@ _KIND_FIELD_RULES: Mapping[WorkKind, Mapping[str, str]] = MappingProxyType(
         ),
         WorkKind.RETROSPECTIVE_FAILED: MappingProxyType(
             {
+                "mission": _REQUIRED,
                 "text": _REQUIRED,
                 "action": _FORBIDDEN,
                 "coverage": _FORBIDDEN,
@@ -606,6 +759,7 @@ _KIND_FIELD_RULES: Mapping[WorkKind, Mapping[str, str]] = MappingProxyType(
         ),
         WorkKind.RETROSPECTIVE_SKIPPED: MappingProxyType(
             {
+                "mission": _REQUIRED,
                 "text": _REQUIRED,
                 "action": _FORBIDDEN,
                 "coverage": _FORBIDDEN,
@@ -830,16 +984,20 @@ _ACTION_MODEL_BY_KIND: Mapping[WorkKind, type[BaseModel]] = MappingProxyType(
 class WorkObservationPayload(BaseModel):
     """Typed payload for the 25 durable WorkObservation kinds.
 
-    Envelope conventions (validated by ``spec_kitty_events.strict``, see the
-    module docstring): ``event_type="WorkObservation"``,
-    ``aggregate_id="mission/<mission_id>"``, ``schema_version="3.0.0"``,
-    ``timestamp`` = producer occurrence time, ``correlation_id`` /
-    ``causation_id`` = standard Event causal semantics (a retry attempt
-    causally follows the observation it retries), ``node_id`` = producer
-    instance, ``lamport_clock`` = journal clock at emission. No time field
-    in the payload (R-T-02, same as F1); no server-owned field (the
-    principal/team binding, admitted-repo generation, ``received_at``, and
-    committed cursor are ingestion-owned and forbidden here).
+        Envelope conventions (validated by ``spec_kitty_events.strict``, see the
+        module docstring): ``event_type="WorkObservation"``,
+        ``aggregate_id`` = :func:`work_aggregate_id` — ``mission/<mission_id>``
+    when the observation is mission-bound, ``repo/<repository_id>`` for
+    repository-bound work with no mission yet (LW-02: repo-bound sessions
+    before a mission exists keep a real aggregate identity, never an invented
+    mission), ``schema_version="3.0.0"``,
+        ``timestamp`` = producer occurrence time, ``correlation_id`` /
+        ``causation_id`` = standard Event causal semantics (a retry attempt
+        causally follows the observation it retries), ``node_id`` = producer
+        instance, ``lamport_clock`` = journal clock at emission. No time field
+        in the payload (R-T-02, same as F1); no server-owned field (the
+        principal/team binding, admitted-repo generation, ``received_at``, and
+        committed cursor are ingestion-owned and forbidden here).
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -848,9 +1006,18 @@ class WorkObservationPayload(BaseModel):
     producer: ProducerIdentity
     session: SessionIdentity
     actor: ActorIdentity
-    mission: MissionIdentity
     repository: RepositoryIdentity
     provenance: SourceProvenance
+
+    mission: Optional[MissionIdentity] = Field(
+        None,
+        description=(
+            "Canonical mission identity when this observation is mission-bound. "
+            "Required only for the lifecycle kinds (mission review/retrospective); "
+            "repository-bound sessions and work exist before (and outside) any "
+            "mission and leave it unset rather than inventing one (LW-02)."
+        ),
+    )
 
     context: Optional[WorkContext] = None
     activity: Optional[ActivityRef] = None
@@ -948,6 +1115,22 @@ def canonical_work_hash(payload: Union[WorkObservationPayload, Dict[str, Any]]) 
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def work_aggregate_id(payload: WorkObservationPayload) -> str:
+    """The envelope ``aggregate_id`` for a work observation.
+
+    ``mission/<mission_id>`` when the observation is mission-bound;
+    ``repo/<repository_id>`` for repository-bound work with no mission yet
+    (LW-02, #55 review P1): a repo-bound session that starts before any
+    mission exists keeps a real, stable aggregate identity — the repository
+    it is bound to — instead of an invented mission. When the session later
+    binds to a mission (``session.binding_changed``), the aggregate moves
+    to that mission with the session's provenance preserved.
+    """
+    if payload.mission is not None:
+        return f"mission/{payload.mission.mission_id}"
+    return f"repo/{payload.repository.repository_id}"
+
+
 # ── Typed rejection and schema negotiation ──────────────────────────────────
 
 
@@ -1043,6 +1226,8 @@ def negotiate_work_contract(
             rejection=TypedRejection(
                 reason=WorkRejectionReason.UNSUPPORTED_CONTRACT_VERSION,
                 detail=f"producer version {producer_version!r} is not semver",
+                event_id=None,
+                contract=None,
             ),
         )
 
@@ -1065,6 +1250,8 @@ def negotiate_work_contract(
                     f"consumer supports [{supported}], which does not cover "
                     f"producer work-contract {producer_version}"
                 ),
+                event_id=None,
+                contract=None,
             ),
         )
 

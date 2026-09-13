@@ -28,7 +28,15 @@ This document is the public compatibility policy for consumers of:
 
 `10.1.0` adds the `WorkObservation` event type (25 durable kinds,
 `contracts/durable-work-observation.md`) — an additive change: every
-existing event contract keeps its accept/reject boundary. Producers MUST
+existing event contract keeps its accept/reject boundary. Tool/test
+actions carry a typed lifecycle `state` (started/running/result/cancelled;
+outcome and counts only at `result`), file actions carry a typed
+`operation` (read/edit/create/delete/rename, with rename
+`destination_path` and a repository-relative path grammar accepting spaces
+and Unicode), mission binding is conditional on semantic kind (required
+for the six lifecycle kinds only), and an `agent_profile` combines with a
+`factory_attempt` — all within the still-unreleased 10.1.0 contract, so no
+adopted version is amended. Producers MUST
 capability-gate `WorkObservation` emission until each intended consumer
 (SaaS durable ingestion, Zeitgeist relay fan-out, SaaS projections) can
 validate it; the `10.1.0` `min_consumer_package` on the 25 new

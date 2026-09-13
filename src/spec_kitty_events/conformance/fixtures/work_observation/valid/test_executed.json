@@ -4,7 +4,8 @@
     "outcome": "failure",
     "passed": 41,
     "selector": "tests/test_refresh.py",
-    "skipped": 2
+    "skipped": 2,
+    "state": "result"
   },
   "activity": null,
   "actor": {

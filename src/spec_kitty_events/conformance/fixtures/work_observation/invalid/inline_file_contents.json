@@ -3,6 +3,7 @@
     "bytes_added": 10,
     "bytes_removed": 0,
     "contents": "def refresh(): ...",
+    "operation": "edit",
     "path": "src/auth/refresh.py"
   },
   "actor": {

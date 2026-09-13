@@ -2985,6 +2985,166 @@
       "expected_result": "valid",
       "notes": "Golden classify_work_stream output for late_and_gap_stream.jsonl.",
       "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-valid-tool-started",
+      "path": "work_observation/valid/tool_started.json",
+      "expected_result": "valid",
+      "event_type": "WorkObservation",
+      "notes": "Tool invocation observed at state=started (live activity before any result).",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-valid-tool-running",
+      "path": "work_observation/valid/tool_running.json",
+      "expected_result": "valid",
+      "event_type": "WorkObservation",
+      "notes": "Tool invocation observed at state=running, correlated by activity id.",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-valid-tool-cancelled",
+      "path": "work_observation/valid/tool_cancelled.json",
+      "expected_result": "valid",
+      "event_type": "WorkObservation",
+      "notes": "Tool invocation cancelled before a result, correlated to its start via activity and reply_to.",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-valid-test-running",
+      "path": "work_observation/valid/test_running.json",
+      "expected_result": "valid",
+      "event_type": "WorkObservation",
+      "notes": "Test execution observed at state=running with no invented counts.",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-valid-session-repo-bound-without-mission",
+      "path": "work_observation/valid/session_repo_bound_without_mission.json",
+      "expected_result": "valid",
+      "event_type": "WorkObservation",
+      "notes": "Repository-bound session started before any mission exists (no invented mission identity).",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-valid-binding-changed-binds-mission",
+      "path": "work_observation/valid/binding_changed_binds_mission.json",
+      "expected_result": "valid",
+      "event_type": "WorkObservation",
+      "notes": "Session later bound to a canonical mission; session/producer provenance preserved.",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-valid-factory-profile-and-attempt",
+      "path": "work_observation/valid/factory_profile_and_attempt.json",
+      "expected_result": "valid",
+      "event_type": "WorkObservation",
+      "notes": "Factory principal retaining agent profile/harness and factory job/attempt identity together.",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-valid-file-renamed",
+      "path": "work_observation/valid/file_renamed.json",
+      "expected_result": "valid",
+      "event_type": "WorkObservation",
+      "notes": "File rename observation with destination_path (metadata only).",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-valid-file-read-spaces-path",
+      "path": "work_observation/valid/file_read_spaces_path.json",
+      "expected_result": "valid",
+      "event_type": "WorkObservation",
+      "notes": "File read of a valid repository-relative path containing spaces.",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-valid-file-created-unicode-path",
+      "path": "work_observation/valid/file_created_unicode_path.json",
+      "expected_result": "valid",
+      "event_type": "WorkObservation",
+      "notes": "File created at a valid repository-relative Unicode path.",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-valid-file-deleted",
+      "path": "work_observation/valid/file_deleted.json",
+      "expected_result": "valid",
+      "event_type": "WorkObservation",
+      "notes": "File deletion observation (metadata only).",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-invalid-tool-result-missing-outcome",
+      "path": "work_observation/invalid/tool_result_missing_outcome.json",
+      "expected_result": "invalid",
+      "event_type": "WorkObservation",
+      "notes": "Tool action at state=result without an outcome.",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-invalid-tool-running-with-outcome",
+      "path": "work_observation/invalid/tool_running_with_outcome.json",
+      "expected_result": "invalid",
+      "event_type": "WorkObservation",
+      "notes": "Tool action carrying a concluded outcome while still running.",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-invalid-test-result-missing-counts",
+      "path": "work_observation/invalid/test_result_missing_counts.json",
+      "expected_result": "invalid",
+      "event_type": "WorkObservation",
+      "notes": "Test action at state=result without the passed/failed/skipped counts.",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-invalid-test-running-with-counts",
+      "path": "work_observation/invalid/test_running_with_counts.json",
+      "expected_result": "invalid",
+      "event_type": "WorkObservation",
+      "notes": "Test action carrying counts while still running.",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-invalid-file-rename-missing-destination",
+      "path": "work_observation/invalid/file_rename_missing_destination.json",
+      "expected_result": "invalid",
+      "event_type": "WorkObservation",
+      "notes": "Rename operation without destination_path.",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-invalid-file-rename-destination-on-edit",
+      "path": "work_observation/invalid/file_rename_destination_on_edit.json",
+      "expected_result": "invalid",
+      "event_type": "WorkObservation",
+      "notes": "destination_path carried on a non-rename operation.",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-invalid-file-path-traversal",
+      "path": "work_observation/invalid/file_path_traversal.json",
+      "expected_result": "invalid",
+      "event_type": "WorkObservation",
+      "notes": "File path containing '..' traversal segments.",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-invalid-file-path-absolute",
+      "path": "work_observation/invalid/file_path_absolute.json",
+      "expected_result": "invalid",
+      "event_type": "WorkObservation",
+      "notes": "Absolute file path (not repository-relative).",
+      "min_version": "10.1.0"
+    },
+    {
+      "id": "work-observation-invalid-lifecycle-missing-mission",
+      "path": "work_observation/invalid/lifecycle_missing_mission.json",
+      "expected_result": "invalid",
+      "event_type": "WorkObservation",
+      "notes": "Mission lifecycle record without a canonical mission.",
+      "min_version": "10.1.0"
     }
   ],
   "classes": {

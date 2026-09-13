@@ -12,10 +12,13 @@ spec-kitty/spec-kitty-events#55 (planning#2268 "Zeitgeist Live Work")
 ## 1. Envelope
 
 Every durable work observation is a standard `Event` envelope with
-`event_type="WorkObservation"`, `aggregate_id="mission/<mission_id>"`,
-`schema_version="3.0.0"`, and the payload validated by
-`WorkObservationPayload`. The envelope keeps exactly the `Event`
-semantics it already has:
+`event_type="WorkObservation"`, `aggregate_id` = `work_aggregate_id(payload)`
+(`mission/<mission_id>` when the observation is mission-bound;
+`repo/<repository_id>` for repository-bound work with no mission yet — LW-02:
+repo-bound sessions before a mission exists keep a real aggregate identity,
+never an invented mission), `schema_version="3.0.0"`, and the payload
+validated by `WorkObservationPayload`. The envelope keeps exactly the
+`Event` semantics it already has:
 
 - `event_id` / `correlation_id` / `causation_id` — the existing causal
   semantics. A **retry attempt** is a new `event_id` whose envelope
@@ -45,11 +48,24 @@ Five distinct identities, never collapsed (LW-01):
 | Factory attempt | `FactoryAttemptRef` (attempt/job) | sessions coming and going |
 | Producer | `ProducerIdentity` (producer/instance/monotonic sequence) | — |
 
+These are independent dimensions, not exclusive identity modes: an
+`agent_profile` is valid for every `principal_kind` — a factory worker
+retains its profile/harness identity *and* its job/attempt attribution at
+once, and only `principal_kind='agent'` *requires* a profile (a bare agent
+principal is ambiguous). `factory_attempt` remains factory-only.
+
 `display_name`, `display_label`, and `display_slug` are mutable
 presentation, never identity. Mission identity (`MissionIdentity`) is the
 canonical opaque `mission_id` — it exists from the first specify activity,
 before any Git push, and survives label changes, worktree moves, PRs and
-merges (LW-02). Repository identity (`RepositoryIdentity`) is
+merges (LW-02). **Mission binding is conditional on semantic kind**: an
+actual mission lifecycle record (the six `lifecycle.*` kinds) requires the
+canonical mission it records; every other kind — session start, actions,
+narrative, messages, coverage — may be repository-bound with no mission,
+and a producer never invents mission identity to satisfy the field. A
+session that later binds to a mission emits `session.binding_changed`
+carrying that mission, with its session/producer provenance preserved.
+Repository identity (`RepositoryIdentity`) is
 `provider` + the provider-canonical `repository_id`; a provider rename
 changes `display_slug` only. Cross-repo programmes (`ProgrammeLink`)
 relate distinct missions without merging their identities.
@@ -68,10 +84,22 @@ capture coverage.
   they are first-class observations, never laundered into silence (LW-03).
 - **session (5)** — started/ended, delegation started/ended (a delegation
   always names its counterpart), binding changed (LW-01/LW-02).
-- **action (3)** — tool invoked, file edited (metadata only: path and
-  byte deltas — there is no `contents` field, and `contents` is a
-  forbidden key), test executed. Every action carries an explicit outcome:
-  success/failure/skipped (LW-04).
+- **action (3)** — tool invoked, file edited (metadata only: operation,
+  path, byte deltas — there is no `contents` field, and `contents` is a
+  forbidden key), test executed. Tool/test actions carry a typed lifecycle
+  `state` — `started`/`running`/`result`/`cancelled` (LW-04/LW-09): the
+  live dashboard shows real activity *while it happens*, and the
+  conclusion correlates to that same activity through a shared
+  `ActivityRef` (the terminal observation may also `reply_to` the start's
+  event ID). The explicit outcome (success/failure/skipped) — and the
+  test's passed/failed/skipped counts — are carried only at
+  `state='result'`; a pre-result observation never invents a conclusion,
+  and `cancelled` is a first-class terminal state, never a missing result.
+  File actions name their `operation` — read/edit/create/delete/rename —
+  and a rename carries `destination_path` (valid only for renames). Paths
+  are repository-relative and bounded (240 chars): spaces and Unicode are
+  valid filenames; absolute paths, backslash separators, control
+  characters, and empty/`.`/`..` segments fail closed.
 - **narrative (9)** — intent, progress, question, answer (requires
   `reply_to`), decision, handoff (requires `recipient`), blocker raised,
   blocker resolved (requires `ref`), next (LW-05/LW-09).

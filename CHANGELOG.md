@@ -14,24 +14,37 @@ Durable live-work contracts (spec-kitty/spec-kitty-events#55, planning#2268
 by CLI, SaaS and Zeitgeist, landing before any producer enablement. Durable
 work never rides the lossy volatile codec (`zeitgeist_attrs`); it reuses the
 standard `Event` envelope's event_id/correlation/causation/schema semantics
-with `event_type="WorkObservation"`, `aggregate_id="mission/<id>"`, and all
-identity in the payload. Contract: `contracts/durable-work-observation.md`.
+with `event_type="WorkObservation"`, `aggregate_id` from `work_aggregate_id`
+(`mission/<id>` when mission-bound, `repo/<id>` for repository-bound work
+before any mission), and all identity in the payload. Contract:
+`contracts/durable-work-observation.md`.
 
 ### Added
 
 - **`spec_kitty_events.work_observation`** — the closed 25-kind
   `WorkKind` vocabulary across six families (lifecycle incl. mission
   review/retrospective captured/failed/skipped; session/delegation/binding;
-  tool/file/test actions with explicit outcomes; the nine narrative kinds;
-  durable peer messages; recorded coverage gaps), the identity sub-models
-  (producer/instance/monotonic sequence, stable logical session surviving
-  reconnect and credential rotation, actor with distinct agent profile and
-  factory attempt, rename-safe canonical mission and repository identity,
-  cross-repo programme links), metadata-only file capture, artifact
+  tool/file/test actions with a typed lifecycle `ActionState`
+  (started/running/result/cancelled — outcome and test counts only at
+  `result`, correlated to the live activity through a shared `ActivityRef`);
+  the nine narrative kinds; durable peer messages; recorded coverage gaps),
+  the identity sub-models (producer/instance/monotonic sequence, stable
+  logical session surviving reconnect and credential rotation, actor with
+  distinct agent profile and factory attempt — independent dimensions that
+  combine, so a factory worker carries profile and attempt together,
+  rename-safe canonical mission and repository identity, cross-repo
+  programme links), mission binding conditional on semantic kind (required
+  for the lifecycle kinds; repository-bound work exists without inventing
+  one, and `session.binding_changed` records the later binding),
+  metadata-only file capture with a typed `FileOperation`
+  (read/edit/create/delete/rename, rename `destination_path`, and a
+  repository-relative path grammar that accepts spaces and Unicode while
+  failing closed on traversal/absolute/control-character paths), artifact
   references (content hash, byte length, media type, completeness),
   source provenance with honest limitations, `FORBIDDEN_WORK_KEYS`
   (server-owned fields and the privacy set), safe `x-`-namespaced
-  extensions, `canonical_work_hash`, typed `WorkRejectionReason`/`TypedRejection`,
+  extensions, `canonical_work_hash`, `work_aggregate_id`, typed
+  `WorkRejectionReason`/`TypedRejection`,
   and `negotiate_work_contract` (same-major semver rule per
   `contracts/versioning-and-compatibility.md`).
 - **`spec_kitty_events.work_replay`** — the machine-tested stream semantics
@@ -41,13 +54,18 @@ identity in the payload. Contract: `contracts/durable-work-observation.md`.
   (recorded as data), and `replay_order_key` — `(lamport_clock, node_id,
   sequence, event_id)`; no client timestamp ever establishes authoritative
   total order.
-- Conformance fixtures `work_observation/{valid,invalid,replay}` (29 valid,
-  15 invalid, two replay streams with golden classifications) covering the
+- Conformance fixtures `work_observation/{valid,invalid,replay}` (40 valid,
+  24 invalid, two replay streams with golden classifications) covering the
   acceptance scenarios: one human + two concurrent agents, delegated
   session, credential rotation, retry attempt, same-name missions,
   mission/repo rename, cross-repo programme linkage, full narrative,
-  failed/skipped retrospective, redaction, and missing coverage. Registered
-  in the manifest and the `work_observation` loader category.
+  failed/skipped retrospective, redaction, and missing coverage — plus the
+  #56 fix-round scenarios: started/running/cancelled tool activity with
+  activity correlation, a running test with no invented counts, a
+  repository-bound session before any mission and its later binding, a
+  factory principal retaining profile and attempt identity, and the full
+  file-operation set incl. rename destination and spaces/Unicode paths.
+  Registered in the manifest and the `work_observation` loader category.
 - 19 new JSON schemas (payload + identity/action/provenance sub-models) —
   the TS/OpenAPI inputs for browser consumers — and 25 durable
   `SupportRow`s in `SUPPORT_MATRIX` (one per kind, `family="work"`,

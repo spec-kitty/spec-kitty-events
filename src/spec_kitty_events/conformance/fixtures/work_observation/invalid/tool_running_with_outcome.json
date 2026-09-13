@@ -1,8 +1,8 @@
 {
   "action": {
-    "duration_ms": 41000,
+    "duration_ms": null,
     "outcome": "success",
-    "state": "result",
+    "state": "running",
     "tool": "pytest"
   },
   "activity": null,
@@ -25,7 +25,7 @@
   "producer": {
     "instance_id": "proc-001",
     "producer_id": "cli-install-r1",
-    "sequence": 4
+    "sequence": 0
   },
   "programme": null,
   "provenance": {
@@ -35,7 +35,7 @@
   },
   "recipient": null,
   "ref": null,
-  "reply_to": "01J0000000000000000000WRK0",
+  "reply_to": null,
   "repository": {
     "display_slug": "spec-kitty/spec-kitty-saas",
     "provider": "github",

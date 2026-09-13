@@ -181,6 +181,7 @@ def classify_work_stream(items: Sequence[WorkStreamItem]) -> WorkStreamReport:
                             f"the first observation stands"
                         ),
                         event_id=item.event_id,
+                        contract=None,
                     )
                 )
             continue

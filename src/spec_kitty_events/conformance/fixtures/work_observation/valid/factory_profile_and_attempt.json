@@ -1,23 +1,25 @@
 {
-  "action": {
-    "duration_ms": 41000,
-    "outcome": "success",
-    "state": "result",
-    "tool": "pytest"
-  },
+  "action": null,
   "activity": null,
   "actor": {
-    "agent_profile": null,
-    "display_name": "Robert",
-    "factory_attempt": null,
-    "principal_id": "acct-robert",
-    "principal_kind": "human"
+    "agent_profile": {
+      "harness": "claude-code",
+      "model": "glm-5p3",
+      "profile_id": null
+    },
+    "display_name": "Implementer VM",
+    "factory_attempt": {
+      "attempt_id": "attempt-0031",
+      "job_ref": "job-issue-55"
+    },
+    "principal_id": "factory-impl",
+    "principal_kind": "factory"
   },
   "artifact": null,
   "context": null,
   "coverage": null,
   "extensions": null,
-  "kind": "action.tool_invoked",
+  "kind": "narrative.progress_reported",
   "mission": {
     "display_label": "Fix auth flow",
     "mission_id": "m-alpha-001"
@@ -25,7 +27,7 @@
   "producer": {
     "instance_id": "proc-001",
     "producer_id": "cli-install-r1",
-    "sequence": 4
+    "sequence": 0
   },
   "programme": null,
   "provenance": {
@@ -35,7 +37,7 @@
   },
   "recipient": null,
   "ref": null,
-  "reply_to": "01J0000000000000000000WRK0",
+  "reply_to": null,
   "repository": {
     "display_slug": "spec-kitty/spec-kitty-saas",
     "provider": "github",
@@ -47,5 +49,5 @@
     "reconnect_epoch": 0,
     "session_id": "sess-human-1"
   },
-  "text": null
+  "text": "Fix round underway on the durable work contract."
 }

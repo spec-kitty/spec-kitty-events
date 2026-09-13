@@ -3,6 +3,7 @@
     "bytes_added": 120,
     "bytes_removed": 34,
     "language": "python",
+    "operation": "edit",
     "path": "src/auth/refresh.py"
   },
   "activity": null,

@@ -2,6 +2,7 @@
   "action": {
     "duration_ms": 12000,
     "outcome": "failure",
+    "state": "result",
     "tool": "pytest"
   },
   "activity": null,

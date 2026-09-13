@@ -1,8 +1,11 @@
 """Unit tests for the durable live-work contract (spec-kitty-events#55).
 
 Covers the identity invariants (LW-01/LW-02), the per-kind field matrix,
-the privacy/server-owned forbidden-key sets, the safe-extension rule,
-canonical payload hashing, typed rejections, and schema negotiation.
+the live tool/test action lifecycle (started/running/result/cancelled),
+repository-bound work before a mission and its later binding, file
+operations incl. rename destinations and spaces/Unicode paths, the
+privacy/server-owned forbidden-key sets, the safe-extension rule, canonical
+payload hashing, typed rejections, and schema negotiation.
 """
 
 from __future__ import annotations
@@ -21,11 +24,14 @@ from spec_kitty_events.work_observation import (
     WORK_OBSERVATION,
     WORK_OBSERVATION_CONTRACT_VERSION,
     WORK_OBSERVATION_PAYLOAD_IDS,
+    ActionState,
+    FileOperation,
     WorkKind,
     WorkObservationPayload,
     WorkRejectionReason,
     canonical_work_hash,
     negotiate_work_contract,
+    work_aggregate_id,
 )
 
 # ── shared builders ──────────────────────────────────────────────────────────
@@ -115,10 +121,16 @@ def test_every_kind_constructs_and_validates() -> None:
         elif kind.value.startswith("action."):
             payload.pop("text", None)
             payload["action"] = {
-                "tool_invoked": {"tool": "pytest", "outcome": "success"},
-                "file_edited": {"path": "src/a.py", "bytes_added": 1, "bytes_removed": 0},
+                "tool_invoked": {"tool": "pytest", "state": "result", "outcome": "success"},
+                "file_edited": {
+                    "operation": "edit",
+                    "path": "src/a.py",
+                    "bytes_added": 1,
+                    "bytes_removed": 0,
+                },
                 "test_executed": {
                     "selector": "tests/",
+                    "state": "result",
                     "passed": 1,
                     "failed": 0,
                     "skipped": 0,
@@ -224,7 +236,11 @@ def test_cross_repo_programme_keeps_both_identities() -> None:
     assert linked.repository.repository_id == "99002"
 
 
-def test_agent_requires_profile_and_factory_attempt_requires_factory_kind() -> None:
+def test_agent_profile_and_factory_attempt_identity_dimensions() -> None:
+    """LW-01: 'agent' principals must name a profile (a bare agent
+    principal is ambiguous); factory_attempt stays factory-only; and the
+    two identity dimensions combine — a real factory worker retains its
+    profile/harness AND its job/attempt attribution (#56 fix round)."""
     with pytest.raises(ValidationError):
         WorkObservationPayload.model_validate(
             build(
@@ -241,6 +257,19 @@ def test_agent_requires_profile_and_factory_attempt_requires_factory_kind() -> N
                 },
             )
         )
+    factory_worker = build(
+        actor={
+            "principal_kind": "factory",
+            "principal_id": "factory-impl",
+            "agent_profile": {"harness": "claude-code", "model": "glm-5p3"},
+            "factory_attempt": {"attempt_id": "attempt-0031", "job_ref": "job-issue-55"},
+        }
+    )
+    payload = WorkObservationPayload.model_validate(factory_worker)
+    assert payload.actor.agent_profile is not None
+    assert payload.actor.agent_profile.harness == "claude-code"
+    assert payload.actor.factory_attempt is not None
+    assert payload.actor.factory_attempt.attempt_id == "attempt-0031"
 
 
 # ── per-kind field matrix ────────────────────────────────────────────────────
@@ -273,7 +302,7 @@ def test_action_kinds_forbid_text_and_require_typed_action() -> None:
         WorkObservationPayload.model_validate(
             build(
                 kind=WorkKind.TOOL_INVOKED,
-                action={"tool": "pytest", "outcome": "success"},
+                action={"tool": "pytest", "state": "result", "outcome": "success"},
             )
         )
     no_text = build(kind=WorkKind.FILE_EDITED)
@@ -285,7 +314,12 @@ def test_action_kinds_forbid_text_and_require_typed_action() -> None:
 def test_action_kind_binds_to_one_action_subtype() -> None:
     wrong_subtype = build(
         kind=WorkKind.TOOL_INVOKED,
-        action={"path": "src/a.py", "bytes_added": 1, "bytes_removed": 0},
+        action={
+            "operation": "edit",
+            "path": "src/a.py",
+            "bytes_added": 1,
+            "bytes_removed": 0,
+        },
     )
     wrong_subtype.pop("text", None)
     with pytest.raises(ValidationError, match="ToolAction"):
@@ -310,6 +344,315 @@ def test_lifecycle_failure_and_skip_require_honest_text() -> None:
         payload.pop("text", None)
         with pytest.raises(ValidationError, match="required"):
             WorkObservationPayload.model_validate(payload)
+
+
+# ── live action lifecycle (LW-04/LW-09, #56 fix round) ───────────────────────
+
+
+def _tool(state: str, **extra: object) -> dict:
+    action: dict = {"tool": "pytest", "state": state}
+    action.update(extra)
+    return action
+
+
+def test_tool_and_test_activity_is_observable_while_it_happens() -> None:
+    """started/running tool and test observations validate with no
+    invented outcome — the live dashboard can show real work before any
+    result exists, never a completed-work feed."""
+    for state in ("started", "running"):
+        built = build(kind=WorkKind.TOOL_INVOKED, action=_tool(state))
+        built.pop("text", None)
+        payload = WorkObservationPayload.model_validate(built)
+        assert payload.action is not None
+        assert payload.action.state is ActionState(state)
+        assert payload.action.outcome is None
+    running_test = build(
+        kind=WorkKind.TEST_EXECUTED,
+        action={"selector": "tests/", "state": "running"},
+    )
+    running_test.pop("text", None)
+    payload = WorkObservationPayload.model_validate(running_test)
+    assert payload.action is not None
+    assert payload.action.outcome is None
+
+
+def test_cancelled_tool_is_a_first_class_terminal_observation() -> None:
+    cancelled = build(
+        kind=WorkKind.TOOL_INVOKED,
+        action=_tool("cancelled", duration_ms=42000),
+    )
+    cancelled.pop("text", None)
+    payload = WorkObservationPayload.model_validate(cancelled)
+    assert payload.action is not None
+    assert payload.action.state is ActionState.CANCELLED
+    assert payload.action.outcome is None
+    assert payload.action.duration_ms == 42000
+
+
+def test_start_result_and_cancel_correlate_via_activity() -> None:
+    """The start observation and its conclusion name the same activity —
+    the dashboard correlates the live activity to its result/cancellation,
+    not a narrative string."""
+    activity = {"activity_id": "act-tool-1"}
+
+    def activity_payload(**action_extra: object) -> WorkObservationPayload:
+        built = build(
+            kind=WorkKind.TOOL_INVOKED,
+            action=_tool(**action_extra),
+            activity=activity,
+        )
+        built.pop("text", None)
+        return WorkObservationPayload.model_validate(built)
+
+    start = activity_payload(state="started")
+    result = activity_payload(state="result", outcome="success", duration_ms=12000)
+    cancel = WorkObservationPayload.model_validate(
+        {
+            **build(
+                kind=WorkKind.TOOL_INVOKED,
+                action=_tool("cancelled"),
+                activity=activity,
+                reply_to="01J0000000000000000000WST1",
+            ),
+            "text": None,
+        }
+    )
+    for payload in (start, result, cancel):
+        assert payload.activity is not None
+        assert payload.activity.activity_id == "act-tool-1"
+
+
+def test_result_state_requires_an_outcome() -> None:
+    tool_payload = build(kind=WorkKind.TOOL_INVOKED, action=_tool("result"))
+    tool_payload.pop("text", None)
+    with pytest.raises(ValidationError, match="outcome"):
+        WorkObservationPayload.model_validate(tool_payload)
+    test_payload = build(
+        kind=WorkKind.TEST_EXECUTED, action={"selector": "tests/", "state": "result"}
+    )
+    test_payload.pop("text", None)
+    with pytest.raises(ValidationError, match="outcome"):
+        WorkObservationPayload.model_validate(test_payload)
+
+
+def test_non_result_states_reject_invented_conclusions() -> None:
+    """A running tool must not carry an outcome; a running test must not
+    carry counts — pre-result observations never invent conclusions."""
+    running_tool = build(kind=WorkKind.TOOL_INVOKED, action=_tool("running", outcome="success"))
+    running_tool.pop("text", None)
+    with pytest.raises(ValidationError, match="only carried"):
+        WorkObservationPayload.model_validate(running_tool)
+    running_test = build(
+        kind=WorkKind.TEST_EXECUTED,
+        action={"selector": "tests/", "state": "running", "passed": 1, "failed": 0, "skipped": 0},
+    )
+    running_test.pop("text", None)
+    with pytest.raises(ValidationError, match="only carried"):
+        WorkObservationPayload.model_validate(running_test)
+
+
+def test_test_counts_are_only_carried_at_result() -> None:
+    with pytest.raises(ValidationError, match="counts"):
+        WorkObservationPayload.model_validate(
+            build(
+                kind=WorkKind.TEST_EXECUTED,
+                action={"selector": "tests/", "state": "result", "outcome": "success"},
+            )
+        )
+    concluded = build(
+        kind=WorkKind.TEST_EXECUTED,
+        action={
+            "selector": "tests/",
+            "state": "result",
+            "outcome": "failure",
+            "passed": 41,
+            "failed": 1,
+            "skipped": 2,
+        },
+    )
+    concluded.pop("text", None)
+    payload = WorkObservationPayload.model_validate(concluded)
+    assert payload.action is not None
+    assert payload.action.outcome is not None
+
+
+# ── repository-bound work without a mission (LW-02, #56 fix round) ───────────
+
+
+def test_repository_bound_session_exists_before_any_mission() -> None:
+    """A repo-bound session with no mission validates — no invented
+    mission identity — and keeps its repository/session identity."""
+    payload = build(kind=WorkKind.SESSION_STARTED, mission=None, text="Session start.")
+    observed = WorkObservationPayload.model_validate(payload)
+    assert observed.mission is None
+    assert observed.repository.repository_id == "99001"
+    assert observed.session.session_id == "sess-1"
+
+
+def test_lifecycle_kinds_still_require_a_canonical_mission() -> None:
+    for kind in (
+        WorkKind.MISSION_REVIEW_CAPTURED,
+        WorkKind.MISSION_REVIEW_FAILED,
+        WorkKind.MISSION_REVIEW_SKIPPED,
+        WorkKind.RETROSPECTIVE_CAPTURED,
+        WorkKind.RETROSPECTIVE_FAILED,
+        WorkKind.RETROSPECTIVE_SKIPPED,
+    ):
+        payload = build(kind=kind, mission=None)
+        # captured kinds may drop the optional note; failed/skipped keep
+        # theirs so the mission rule is the only thing failing.
+        if kind.value.endswith("_captured"):
+            payload.pop("text", None)
+        with pytest.raises(ValidationError, match="mission"):
+            WorkObservationPayload.model_validate(payload)
+
+
+def test_later_mission_binding_preserves_provenance() -> None:
+    """session.binding_changed binds the same session/producer to a
+    mission later — the unbound start and the binding share identity."""
+    unbound = WorkObservationPayload.model_validate(
+        build(kind=WorkKind.SESSION_STARTED, mission=None, text="Session start.")
+    )
+    bound = WorkObservationPayload.model_validate(
+        build(kind=WorkKind.BINDING_CHANGED, text="Bound to mission.")
+    )
+    assert unbound.mission is None
+    assert bound.mission is not None
+    assert bound.mission.mission_id == "m-1"
+    assert bound.session.session_id == unbound.session.session_id
+    assert bound.producer.producer_id == unbound.producer.producer_id
+
+
+def test_work_aggregate_id_is_repo_when_unbound_and_mission_when_bound() -> None:
+    unbound = WorkObservationPayload.model_validate(
+        build(kind=WorkKind.SESSION_STARTED, mission=None, text="Session start.")
+    )
+    bound = WorkObservationPayload.model_validate(build())
+    assert work_aggregate_id(unbound) == "repo/99001"
+    assert work_aggregate_id(bound) == "mission/m-1"
+
+
+# ── file operations and valid filenames (LW-04, #56 fix round) ───────────────
+
+
+def test_every_file_operation_is_representable() -> None:
+    for operation, path in (
+        (FileOperation.READ, "docs/design notes.md"),
+        (FileOperation.EDIT, "src/auth/refresh.py"),
+        (FileOperation.CREATE, "docs/Entwürfe/Überblick.md"),
+        (FileOperation.DELETE, "src/auth/legacy_refresh.py"),
+    ):
+        payload = build(
+            kind=WorkKind.FILE_EDITED,
+            action={
+                "operation": operation.value,
+                "path": path,
+                "bytes_added": 8,
+                "bytes_removed": 0,
+            },
+        )
+        payload.pop("text", None)
+        observed = WorkObservationPayload.model_validate(payload)
+        assert observed.action is not None
+        assert observed.action.operation is operation
+
+
+def test_rename_records_its_destination() -> None:
+    payload = build(
+        kind=WorkKind.FILE_EDITED,
+        action={
+            "operation": "rename",
+            "path": "docs/architecture-draft.md",
+            "destination_path": "docs/architecture.md",
+            "bytes_added": 0,
+            "bytes_removed": 0,
+        },
+    )
+    payload.pop("text", None)
+    observed = WorkObservationPayload.model_validate(payload)
+    assert observed.action is not None
+    assert observed.action.destination_path == "docs/architecture.md"
+    # a rename without its destination is rejected…
+    missing = build(
+        kind=WorkKind.FILE_EDITED,
+        action={
+            "operation": "rename",
+            "path": "docs/old.md",
+            "bytes_added": 0,
+            "bytes_removed": 0,
+        },
+    )
+    missing.pop("text", None)
+    with pytest.raises(ValidationError, match="destination_path"):
+        WorkObservationPayload.model_validate(missing)
+    # …and a destination on a non-rename operation is rejected too
+    stray = build(
+        kind=WorkKind.FILE_EDITED,
+        action={
+            "operation": "edit",
+            "path": "docs/a.md",
+            "destination_path": "docs/b.md",
+            "bytes_added": 1,
+            "bytes_removed": 0,
+        },
+    )
+    stray.pop("text", None)
+    with pytest.raises(ValidationError, match="rename"):
+        WorkObservationPayload.model_validate(stray)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "docs/design notes.md",
+        "docs/Über 设计 notes.md",
+        "deep/nesting/with spaces/and-unicode-ü.md",
+        "a" + "b" * 236 + ".md",  # exactly the 240-char bound
+    ],
+)
+def test_file_paths_accept_spaces_and_unicode(path: str) -> None:
+    payload = build(
+        kind=WorkKind.FILE_EDITED,
+        action={
+            "operation": "read",
+            "path": path,
+            "bytes_added": 0,
+            "bytes_removed": 0,
+        },
+    )
+    payload.pop("text", None)
+    observed = WorkObservationPayload.model_validate(payload)
+    assert observed.action is not None
+    assert observed.action.path == path
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "../secrets/tokens.txt",  # traversal
+        "docs/../../etc/passwd",  # nested traversal
+        "/etc/passwd",  # absolute
+        "docs/",  # trailing separator
+        "docs//a.md",  # empty segment
+        "docs/./a.md",  # '.' segment
+        "docs\\a.md",  # backslash separator
+        "docs/a\x00.md",  # control character
+        "docs/a\x7f.md",  # DEL
+    ],
+)
+def test_file_paths_fail_closed_on_unsafe_names(path: str) -> None:
+    payload = build(
+        kind=WorkKind.FILE_EDITED,
+        action={
+            "operation": "read",
+            "path": path,
+            "bytes_added": 0,
+            "bytes_removed": 0,
+        },
+    )
+    payload.pop("text", None)
+    with pytest.raises(ValidationError):
+        WorkObservationPayload.model_validate(payload)
 
 
 # ── privacy and server-owned fields (LW-10/LW-11) ────────────────────────────
@@ -345,7 +688,12 @@ def test_file_capture_is_metadata_only() -> None:
     """FileAction has no contents field at all — metadata by construction."""
     file_edit = build(
         kind=WorkKind.FILE_EDITED,
-        action={"path": "src/a.py", "bytes_added": 10, "bytes_removed": 2},
+        action={
+            "operation": "edit",
+            "path": "src/a.py",
+            "bytes_added": 10,
+            "bytes_removed": 2,
+        },
     )
     file_edit.pop("text", None)
     action = WorkObservationPayload.model_validate(file_edit).action

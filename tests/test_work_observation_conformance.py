@@ -42,11 +42,11 @@ def work_observation_fixtures():
 
 
 def test_fixtures_loaded(work_observation_fixtures) -> None:
-    """29 valid + 15 invalid fixtures are on disk and manifest-registered."""
+    """40 valid + 24 invalid fixtures are on disk and manifest-registered."""
     valid = [f for f in work_observation_fixtures if f.expected_valid]
     invalid = [f for f in work_observation_fixtures if not f.expected_valid]
-    assert len(valid) == 29
-    assert len(invalid) == 15
+    assert len(valid) == 40
+    assert len(invalid) == 24
 
 
 @pytest.mark.parametrize(
@@ -80,7 +80,10 @@ def test_acceptance_scenario_fixtures_exist() -> None:
     """The #55 acceptance scenarios are each pinned by a named fixture:
     one human + two concurrent agents, delegated session, credential
     rotation, retry attempt, same-name missions, mission/repo rename,
-    cross-repo programme linkage."""
+    cross-repo programme linkage — plus, from the #56 fix round, the six
+    review scenarios (running/cancelled tool, repo-bound session without
+    mission, factory profile+attempt, rename, spaces/Unicode paths) and
+    the later mission binding."""
     by_id = {f.id: f for f in load_fixtures("work_observation")}
     required = {
         "work-observation-valid-human-session-started",
@@ -94,6 +97,21 @@ def test_acceptance_scenario_fixtures_exist() -> None:
         "work-observation-valid-mission-rename",
         "work-observation-valid-repo-rename",
         "work-observation-valid-cross-repo-programme",
+        # #56 fix round: live tool/test activity and correlated conclusions.
+        "work-observation-valid-tool-started",
+        "work-observation-valid-tool-running",
+        "work-observation-valid-tool-cancelled",
+        "work-observation-valid-test-running",
+        # repo-bound work before a mission, then the later binding.
+        "work-observation-valid-session-repo-bound-without-mission",
+        "work-observation-valid-binding-changed-binds-mission",
+        # factory profile/harness identity retained with job/attempt.
+        "work-observation-valid-factory-profile-and-attempt",
+        # full file-operation coverage: rename destination, spaces, Unicode.
+        "work-observation-valid-file-renamed",
+        "work-observation-valid-file-read-spaces-path",
+        "work-observation-valid-file-created-unicode-path",
+        "work-observation-valid-file-deleted",
     }
     assert required <= by_id.keys(), sorted(required - by_id.keys())
 

@@ -1,11 +1,14 @@
 {
   "action": {
-    "duration_ms": 41000,
-    "outcome": "success",
-    "state": "result",
+    "duration_ms": 42000,
+    "outcome": null,
+    "state": "cancelled",
     "tool": "pytest"
   },
-  "activity": null,
+  "activity": {
+    "activity_id": "act-tool-1",
+    "parent_activity_id": null
+  },
   "actor": {
     "agent_profile": null,
     "display_name": "Robert",
@@ -25,7 +28,7 @@
   "producer": {
     "instance_id": "proc-001",
     "producer_id": "cli-install-r1",
-    "sequence": 4
+    "sequence": 0
   },
   "programme": null,
   "provenance": {
@@ -35,7 +38,7 @@
   },
   "recipient": null,
   "ref": null,
-  "reply_to": "01J0000000000000000000WRK0",
+  "reply_to": "01J0000000000000000000WST1",
   "repository": {
     "display_slug": "spec-kitty/spec-kitty-saas",
     "provider": "github",

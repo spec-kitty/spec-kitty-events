@@ -1,9 +1,11 @@
 {
   "action": {
-    "duration_ms": 41000,
-    "outcome": "success",
-    "state": "result",
-    "tool": "pytest"
+    "bytes_added": 0,
+    "bytes_removed": 240,
+    "destination_path": null,
+    "language": "python",
+    "operation": "delete",
+    "path": "src/auth/legacy_refresh.py"
   },
   "activity": null,
   "actor": {
@@ -17,7 +19,7 @@
   "context": null,
   "coverage": null,
   "extensions": null,
-  "kind": "action.tool_invoked",
+  "kind": "action.file_edited",
   "mission": {
     "display_label": "Fix auth flow",
     "mission_id": "m-alpha-001"
@@ -25,7 +27,7 @@
   "producer": {
     "instance_id": "proc-001",
     "producer_id": "cli-install-r1",
-    "sequence": 4
+    "sequence": 0
   },
   "programme": null,
   "provenance": {
@@ -35,7 +37,7 @@
   },
   "recipient": null,
   "ref": null,
-  "reply_to": "01J0000000000000000000WRK0",
+  "reply_to": null,
   "repository": {
     "display_slug": "spec-kitty/spec-kitty-saas",
     "provider": "github",

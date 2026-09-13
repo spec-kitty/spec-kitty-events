@@ -1,8 +1,22 @@
 {
+  "$defs": {
+    "FileOperation": {
+      "description": "The operation a file observation records (LW-04: read/edit/create/\ndelete/rename are all supported observations \u2014 a byte-delta alone\ncannot distinguish them).",
+      "enum": [
+        "read",
+        "edit",
+        "create",
+        "delete",
+        "rename"
+      ],
+      "title": "FileOperation",
+      "type": "string"
+    }
+  },
   "$id": "spec-kitty-events/file_action",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "A file edit, as metadata only (LW-04/LW-11): path and size deltas.\nThere is deliberately no ``contents`` field \u2014 file contents are never\nobservable work, and ``contents`` is a :data:`FORBIDDEN_WORK_KEYS`\nmember enforced at the envelope level as defense in depth.",
+  "description": "A file operation, as metadata only (LW-04/LW-11): operation, path\n(and rename destination), size deltas. There is deliberately no\n``contents`` field \u2014 file contents are never observable work, and\n``contents`` is a :data:`FORBIDDEN_WORK_KEYS` member enforced at the\nenvelope level as defense in depth.\n\n``operation`` names what happened (read/edit/create/delete/rename);\n``destination_path`` carries the rename's destination and is valid only\nfor ``operation='rename'``. ``path``/``destination_path`` are\nrepository-relative and may contain spaces and Unicode \u2014 validated by\n:func:`_validate_repository_relative_path`, not the ``_REF`` grammar.",
   "properties": {
     "bytes_added": {
       "minimum": 0,
@@ -13,6 +27,20 @@
       "minimum": 0,
       "title": "Bytes Removed",
       "type": "integer"
+    },
+    "destination_path": {
+      "anyOf": [
+        {
+          "maxLength": 240,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Destination Path"
     },
     "language": {
       "anyOf": [
@@ -29,15 +57,18 @@
       "default": null,
       "title": "Language"
     },
+    "operation": {
+      "$ref": "#/$defs/FileOperation"
+    },
     "path": {
       "maxLength": 240,
       "minLength": 1,
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}$",
       "title": "Path",
       "type": "string"
     }
   },
   "required": [
+    "operation",
     "path",
     "bytes_added",
     "bytes_removed"

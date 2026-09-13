@@ -2,7 +2,7 @@
   "$defs": {
     "AgentProfileRef": {
       "additionalProperties": false,
-      "description": "The agent profile a principal acted through \u2014 distinct from the\nprincipal itself (LW-01: principal, agent profile, session, and factory\nattempt are four different identities, never collapsed into one).",
+      "description": "The agent profile a principal acted through \u2014 distinct from the\nprincipal itself (LW-01: principal, agent profile, session, and factory\nattempt are four different identities, never collapsed into one). Valid\nfor every ``principal_kind``: they are independent identity dimensions,\nnot exclusive modes \u2014 a factory worker retains both its profile/harness\nidentity and its job/attempt attribution, and a human may act through\nan agent profile. Only ``principal_kind='agent'`` *requires* one (a\nbare agent principal is ambiguous).",
       "properties": {
         "harness": {
           "maxLength": 32,

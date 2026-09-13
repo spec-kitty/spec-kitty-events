@@ -4,6 +4,7 @@
       "HOME": "/home/agent"
     },
     "outcome": "success",
+    "state": "result",
     "tool": "pytest"
   },
   "actor": {

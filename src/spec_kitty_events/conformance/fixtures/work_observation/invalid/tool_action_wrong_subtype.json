@@ -2,6 +2,7 @@
   "action": {
     "bytes_added": 10,
     "bytes_removed": 0,
+    "operation": "edit",
     "path": "src/auth/refresh.py"
   },
   "actor": {
