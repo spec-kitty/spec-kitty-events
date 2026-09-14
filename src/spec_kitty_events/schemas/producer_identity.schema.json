@@ -1,0 +1,32 @@
+{
+  "$id": "spec-kitty-events/producer_identity",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Who produced this observation, at which instance, at which sequence.\n\n``producer_id`` is the stable logical producer (a CLI install identity,\nan agent identity) \u2014 NOT the authenticated principal (server-owned) and\nNOT the person. ``instance_id`` is one process/run of that producer.\n``sequence`` is the producer's monotonic per-instance sequence number:\nconsumers use it (with the envelope's ``node_id``/``lamport_clock``) for\nduplicate, late, and gap detection \u2014 never the client ``timestamp``\n(LW-10: no client timestamp establishes authoritative total order).",
+  "properties": {
+    "instance_id": {
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+      "title": "Instance Id",
+      "type": "string"
+    },
+    "producer_id": {
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+      "title": "Producer Id",
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 0,
+      "title": "Sequence",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "producer_id",
+    "instance_id",
+    "sequence"
+  ],
+  "title": "ProducerIdentity",
+  "type": "object"
+}

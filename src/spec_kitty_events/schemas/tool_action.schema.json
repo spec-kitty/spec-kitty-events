@@ -1,0 +1,71 @@
+{
+  "$defs": {
+    "ActionOutcome": {
+      "description": "Explicit outcome for every concluded action \u2014 failure and skip are\nfirst-class observations, never laundered into success or silence\n(LW-03/LW-10). Only carried once the action has actually concluded\n(``state='result'``): an observation emitted while a tool/test is still\nrunning must not be forced to invent one.",
+      "enum": [
+        "success",
+        "failure",
+        "skipped"
+      ],
+      "title": "ActionOutcome",
+      "type": "string"
+    },
+    "ActionState": {
+      "description": "Lifecycle state of an observed tool/test activity (LW-04/LW-09: the\nlive dashboard shows work *while it happens*, then correlates the\nconclusion to that same activity).\n\n``STARTED``/``RUNNING`` are the pre-result states \u2014 no outcome, no test\ncounts (nothing has concluded yet; forcing one would launder a live\nactivity into a completed-work feed). ``RESULT`` is the terminal state\nthat carries the :class:`ActionOutcome` (and test counts). ``CANCELLED``\nrecords the abandonment of a previously started activity \u2014 an honest\nterminal observation in its own right, never a missing result.\n\nStart\u2192result/cancel correlation is the observation *pair* sharing one\n``activity`` (:class:`ActivityRef`): the start observation and the\nterminal observation name the same ``activity_id`` (the terminal one\nmay also ``reply_to`` the start observation's event ID).",
+      "enum": [
+        "started",
+        "running",
+        "result",
+        "cancelled"
+      ],
+      "title": "ActionState",
+      "type": "string"
+    }
+  },
+  "$id": "spec-kitty-events/tool_action",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A tool invocation at any lifecycle state. Tool *name*, state,\noutcome (terminal only), duration \u2014 never the raw command environment\nor tool output (those are privacy keys).",
+  "properties": {
+    "duration_ms": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Duration Ms"
+    },
+    "outcome": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ActionOutcome"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "state": {
+      "$ref": "#/$defs/ActionState"
+    },
+    "tool": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+      "title": "Tool",
+      "type": "string"
+    }
+  },
+  "required": [
+    "tool",
+    "state"
+  ],
+  "title": "ToolAction",
+  "type": "object"
+}

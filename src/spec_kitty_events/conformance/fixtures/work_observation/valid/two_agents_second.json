@@ -1,0 +1,50 @@
+{
+  "action": null,
+  "activity": null,
+  "actor": {
+    "agent_profile": {
+      "harness": "codex",
+      "model": "gpt-6",
+      "profile_id": "review-profile"
+    },
+    "display_name": "Robert (via agent B)",
+    "factory_attempt": null,
+    "principal_id": "acct-robert",
+    "principal_kind": "agent"
+  },
+  "artifact": null,
+  "context": null,
+  "coverage": null,
+  "extensions": null,
+  "kind": "narrative.progress_reported",
+  "mission": {
+    "display_label": "Fix auth flow",
+    "mission_id": "m-alpha-001"
+  },
+  "producer": {
+    "instance_id": "proc-014",
+    "producer_id": "cli-install-r2",
+    "sequence": 0
+  },
+  "programme": null,
+  "provenance": {
+    "capability": "work-observation",
+    "limitation": null,
+    "source": "cli_wrapper"
+  },
+  "recipient": null,
+  "ref": null,
+  "reply_to": null,
+  "repository": {
+    "display_slug": "spec-kitty/spec-kitty-saas",
+    "provider": "github",
+    "repository_id": "99001"
+  },
+  "session": {
+    "credential_epoch": 0,
+    "delegated_from": null,
+    "reconnect_epoch": 0,
+    "session_id": "sess-agent-b"
+  },
+  "text": "Agent B: started reading the token refresh path."
+}

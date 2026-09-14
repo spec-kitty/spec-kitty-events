@@ -1,0 +1,31 @@
+{
+  "$id": "spec-kitty-events/principal_ref",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A lightweight reference to a principal (message recipient, handoff\ntarget) \u2014 the full identity is carried by the sender's ActorIdentity.",
+  "properties": {
+    "principal_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+      "title": "Principal Id",
+      "type": "string"
+    },
+    "principal_kind": {
+      "enum": [
+        "human",
+        "agent",
+        "service",
+        "factory"
+      ],
+      "title": "Principal Kind",
+      "type": "string"
+    }
+  },
+  "required": [
+    "principal_kind",
+    "principal_id"
+  ],
+  "title": "PrincipalRef",
+  "type": "object"
+}

@@ -1,0 +1,66 @@
+{
+  "$defs": {
+    "WorkRejectionReason": {
+      "description": "Closed vocabulary for typed rejections of durable work observations.\n\nRejections are typed data, never dropped-on-the-floor and never a\ngeneric 400: the producer can distinguish \"my contract version is too\nold\" (renegotiate) from \"this event ID already exists with different\nbytes\" (investigate) from \"I set a server-owned field\" (fix my emitter).",
+      "enum": [
+        "id_payload_conflict",
+        "unsupported_contract_version",
+        "unknown_kind",
+        "server_owned_field",
+        "forbidden_key",
+        "invalid_payload"
+      ],
+      "title": "WorkRejectionReason",
+      "type": "string"
+    }
+  },
+  "$id": "spec-kitty-events/typed_rejection",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A typed rejection returned by a consumer that could not accept a\ndurable work observation. ``contract`` names the payload-ID lineage the\nconsumer judged against (e.g. ``work.narrative.intent_declared.v1``).",
+  "properties": {
+    "contract": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Contract"
+    },
+    "detail": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Detail",
+      "type": "string"
+    },
+    "event_id": {
+      "anyOf": [
+        {
+          "maxLength": 36,
+          "minLength": 26,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Event Id"
+    },
+    "reason": {
+      "$ref": "#/$defs/WorkRejectionReason"
+    }
+  },
+  "required": [
+    "reason",
+    "detail"
+  ],
+  "title": "TypedRejection",
+  "type": "object"
+}

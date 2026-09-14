@@ -129,6 +129,10 @@ from spec_kitty_events.retrospective import (
     RetrospectiveSkippedPayload,
     RetrospectiveStartedPayload,
 )
+from spec_kitty_events.work_observation import (
+    WORK_OBSERVATION,
+    WorkObservationPayload,
+)
 
 
 @dataclass(frozen=True)
@@ -278,6 +282,9 @@ _EVENT_TYPE_TO_MODEL: Dict[str, Any] = {
     # HarnessObservation vocabulary (F1-T1, 7.0.0). F1 is the single owner
     # of this vocabulary; see spec_kitty_events.harness_observation.
     HARNESS_OBSERVATION: HarnessObservationPayload,
+    # Durable live-work vocabulary (spec-kitty-events#55, planning#2268).
+    # spec_kitty_events.work_observation is the single owner of it.
+    WORK_OBSERVATION: WorkObservationPayload,
 }
 
 # Event type to JSON Schema name mapping (used with load_schema())
@@ -375,6 +382,8 @@ _EVENT_TYPE_TO_SCHEMA: Dict[str, str] = {
     "RetrospectiveSkipped": "retrospective_skipped_payload",
     # HarnessObservation vocabulary (F1-T1, 7.0.0).
     HARNESS_OBSERVATION: "harness_observation_payload",
+    # Durable live-work vocabulary (spec-kitty-events#55).
+    WORK_OBSERVATION: "work_observation_payload",
 }
 
 

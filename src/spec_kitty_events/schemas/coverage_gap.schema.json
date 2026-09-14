@@ -1,0 +1,34 @@
+{
+  "$id": "spec-kitty-events/coverage_gap",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "An explicitly recorded capture gap (LW-08/LW-10): an area of work\nthis producer could not observe, with the honest reason \u2014 gaps are\nrecorded as data, never silently dropped.",
+  "properties": {
+    "area": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+      "title": "Area",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "maxLength": 240,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    }
+  },
+  "required": [
+    "area"
+  ],
+  "title": "CoverageGap",
+  "type": "object"
+}

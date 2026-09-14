@@ -1,0 +1,34 @@
+{
+  "$id": "spec-kitty-events/programme_link",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Cross-repo programme linkage (LW-02): distinct missions in distinct\nrepositories that belong to one programme. Each linked mission keeps its\nown repository identity \u2014 the link relates missions, it never merges\ntheir identities.",
+  "properties": {
+    "programme_id": {
+      "maxLength": 120,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+      "title": "Programme Id",
+      "type": "string"
+    },
+    "role": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Role"
+    }
+  },
+  "required": [
+    "programme_id"
+  ],
+  "title": "ProgrammeLink",
+  "type": "object"
+}

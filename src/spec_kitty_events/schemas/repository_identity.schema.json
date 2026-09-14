@@ -1,0 +1,41 @@
+{
+  "$id": "spec-kitty-events/repository_identity",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Admitted repository identity \u2014 stable across provider renames.\n\n``provider`` namespaces the forge (closed set; github today).\n``repository_id`` is the provider-canonical stable repository id (e.g.\nthe numeric GitHub repository id) \u2014 the admitted-repo *generation* that\nvets this id against the team's installation is server-owned (saas#1814).\n``display_slug`` is the mutable ``owner/name`` presentation: a rename\nchanges it, never the id (LW-02).",
+  "properties": {
+    "display_slug": {
+      "anyOf": [
+        {
+          "maxLength": 240,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Display Slug"
+    },
+    "provider": {
+      "const": "github",
+      "title": "Provider",
+      "type": "string"
+    },
+    "repository_id": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+      "title": "Repository Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "provider",
+    "repository_id"
+  ],
+  "title": "RepositoryIdentity",
+  "type": "object"
+}

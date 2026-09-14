@@ -1,0 +1,1040 @@
+{
+  "$defs": {
+    "ActionOutcome": {
+      "description": "Explicit outcome for every concluded action \u2014 failure and skip are\nfirst-class observations, never laundered into success or silence\n(LW-03/LW-10). Only carried once the action has actually concluded\n(``state='result'``): an observation emitted while a tool/test is still\nrunning must not be forced to invent one.",
+      "enum": [
+        "success",
+        "failure",
+        "skipped"
+      ],
+      "title": "ActionOutcome",
+      "type": "string"
+    },
+    "ActionState": {
+      "description": "Lifecycle state of an observed tool/test activity (LW-04/LW-09: the\nlive dashboard shows work *while it happens*, then correlates the\nconclusion to that same activity).\n\n``STARTED``/``RUNNING`` are the pre-result states \u2014 no outcome, no test\ncounts (nothing has concluded yet; forcing one would launder a live\nactivity into a completed-work feed). ``RESULT`` is the terminal state\nthat carries the :class:`ActionOutcome` (and test counts). ``CANCELLED``\nrecords the abandonment of a previously started activity \u2014 an honest\nterminal observation in its own right, never a missing result.\n\nStart\u2192result/cancel correlation is the observation *pair* sharing one\n``activity`` (:class:`ActivityRef`): the start observation and the\nterminal observation name the same ``activity_id`` (the terminal one\nmay also ``reply_to`` the start observation's event ID).",
+      "enum": [
+        "started",
+        "running",
+        "result",
+        "cancelled"
+      ],
+      "title": "ActionState",
+      "type": "string"
+    },
+    "ActivityRef": {
+      "additionalProperties": false,
+      "description": "Activity grouping: an observation may belong to a logical activity\nand an activity may name its parent \u2014 the durable analogue of the\nvolatile focus/activity signal in :mod:`spec_kitty_events.harness_observation`.",
+      "properties": {
+        "activity_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "title": "Activity Id",
+          "type": "string"
+        },
+        "parent_activity_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Activity Id"
+        }
+      },
+      "required": [
+        "activity_id"
+      ],
+      "title": "ActivityRef",
+      "type": "object"
+    },
+    "ActorIdentity": {
+      "additionalProperties": false,
+      "description": "The acting principal, with optional agent/factory framing.\n\n``principal_id`` is the stable principal (a person account, an agent\nidentity, a service, a factory role) \u2014 the *server* resolves it to the\nauthenticated principal at ingestion; this field is producer-side\nattribution only. ``display_name`` is mutable presentation, never\nidentity: renames change it, identity does not (LW-01).",
+      "properties": {
+        "agent_profile": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AgentProfileRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "display_name": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Name"
+        },
+        "factory_attempt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FactoryAttemptRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "principal_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "title": "Principal Id",
+          "type": "string"
+        },
+        "principal_kind": {
+          "enum": [
+            "human",
+            "agent",
+            "service",
+            "factory"
+          ],
+          "title": "Principal Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "principal_kind",
+        "principal_id"
+      ],
+      "title": "ActorIdentity",
+      "type": "object"
+    },
+    "AgentProfileRef": {
+      "additionalProperties": false,
+      "description": "The agent profile a principal acted through \u2014 distinct from the\nprincipal itself (LW-01: principal, agent profile, session, and factory\nattempt are four different identities, never collapsed into one). Valid\nfor every ``principal_kind``: they are independent identity dimensions,\nnot exclusive modes \u2014 a factory worker retains both its profile/harness\nidentity and its job/attempt attribution, and a human may act through\nan agent profile. Only ``principal_kind='agent'`` *requires* one (a\nbare agent principal is ambiguous).",
+      "properties": {
+        "harness": {
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "title": "Harness",
+          "type": "string"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "profile_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profile Id"
+        }
+      },
+      "required": [
+        "harness"
+      ],
+      "title": "AgentProfileRef",
+      "type": "object"
+    },
+    "ArtifactReference": {
+      "additionalProperties": false,
+      "description": "A reference to authenticated artifact content \u2014 long content is\nnever inlined (LW-11): it is referenced by content hash, byte length,\nmedia type, and completeness. ``complete=False`` marks a partial\ncapture (e.g. truncated log tail) so consumers never mistake a\nfragment for the whole.",
+      "properties": {
+        "artifact_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "byte_length": {
+          "minimum": 0,
+          "title": "Byte Length",
+          "type": "integer"
+        },
+        "complete": {
+          "default": true,
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "content_hash": {
+          "description": "SHA-256 of the referenced content",
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "media_type": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Media Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "content_hash",
+        "byte_length",
+        "media_type"
+      ],
+      "title": "ArtifactReference",
+      "type": "object"
+    },
+    "CoverageGap": {
+      "additionalProperties": false,
+      "description": "An explicitly recorded capture gap (LW-08/LW-10): an area of work\nthis producer could not observe, with the honest reason \u2014 gaps are\nrecorded as data, never silently dropped.",
+      "properties": {
+        "area": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "title": "Area",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 240,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "area"
+      ],
+      "title": "CoverageGap",
+      "type": "object"
+    },
+    "FactoryAttemptRef": {
+      "additionalProperties": false,
+      "description": "The factory job/attempt an observation was produced under (planning\n#2270 binds these into continuous missions). Distinct from the session\nand the principal: one attempt may span sessions and one session may\noutlive several attempts.",
+      "properties": {
+        "attempt_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "job_ref": {
+          "anyOf": [
+            {
+              "maxLength": 240,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Ref"
+        }
+      },
+      "required": [
+        "attempt_id"
+      ],
+      "title": "FactoryAttemptRef",
+      "type": "object"
+    },
+    "FileAction": {
+      "additionalProperties": false,
+      "description": "A file operation, as metadata only (LW-04/LW-11): operation, path\n(and rename destination), size deltas. There is deliberately no\n``contents`` field \u2014 file contents are never observable work, and\n``contents`` is a :data:`FORBIDDEN_WORK_KEYS` member enforced at the\nenvelope level as defense in depth.\n\n``operation`` names what happened (read/edit/create/delete/rename);\n``destination_path`` carries the rename's destination and is valid only\nfor ``operation='rename'``. ``path``/``destination_path`` are\nrepository-relative and may contain spaces and Unicode \u2014 validated by\n:func:`_validate_repository_relative_path`, not the ``_REF`` grammar.",
+      "properties": {
+        "bytes_added": {
+          "minimum": 0,
+          "title": "Bytes Added",
+          "type": "integer"
+        },
+        "bytes_removed": {
+          "minimum": 0,
+          "title": "Bytes Removed",
+          "type": "integer"
+        },
+        "destination_path": {
+          "anyOf": [
+            {
+              "maxLength": 240,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Destination Path"
+        },
+        "language": {
+          "anyOf": [
+            {
+              "maxLength": 32,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Language"
+        },
+        "operation": {
+          "$ref": "#/$defs/FileOperation"
+        },
+        "path": {
+          "maxLength": 240,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation",
+        "path",
+        "bytes_added",
+        "bytes_removed"
+      ],
+      "title": "FileAction",
+      "type": "object"
+    },
+    "FileOperation": {
+      "description": "The operation a file observation records (LW-04: read/edit/create/\ndelete/rename are all supported observations \u2014 a byte-delta alone\ncannot distinguish them).",
+      "enum": [
+        "read",
+        "edit",
+        "create",
+        "delete",
+        "rename"
+      ],
+      "title": "FileOperation",
+      "type": "string"
+    },
+    "MissionIdentity": {
+      "additionalProperties": false,
+      "description": "Canonical mission identity \u2014 stable before, through, and after rename.\n\n``mission_id`` is the canonical opaque identity: it exists from the\nfirst specify activity, before any Git push, and survives label changes,\nworktree moves, PRs, and merges (LW-02). ``display_label`` is mutable\npresentation only \u2014 two concurrent missions may share a label and remain\ndistinct missions, and a rename changes the label, never the id.",
+      "properties": {
+        "display_label": {
+          "anyOf": [
+            {
+              "maxLength": 240,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Label"
+        },
+        "mission_id": {
+          "maxLength": 120,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+          "title": "Mission Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mission_id"
+      ],
+      "title": "MissionIdentity",
+      "type": "object"
+    },
+    "PrincipalRef": {
+      "additionalProperties": false,
+      "description": "A lightweight reference to a principal (message recipient, handoff\ntarget) \u2014 the full identity is carried by the sender's ActorIdentity.",
+      "properties": {
+        "principal_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "title": "Principal Id",
+          "type": "string"
+        },
+        "principal_kind": {
+          "enum": [
+            "human",
+            "agent",
+            "service",
+            "factory"
+          ],
+          "title": "Principal Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "principal_kind",
+        "principal_id"
+      ],
+      "title": "PrincipalRef",
+      "type": "object"
+    },
+    "ProducerIdentity": {
+      "additionalProperties": false,
+      "description": "Who produced this observation, at which instance, at which sequence.\n\n``producer_id`` is the stable logical producer (a CLI install identity,\nan agent identity) \u2014 NOT the authenticated principal (server-owned) and\nNOT the person. ``instance_id`` is one process/run of that producer.\n``sequence`` is the producer's monotonic per-instance sequence number:\nconsumers use it (with the envelope's ``node_id``/``lamport_clock``) for\nduplicate, late, and gap detection \u2014 never the client ``timestamp``\n(LW-10: no client timestamp establishes authoritative total order).",
+      "properties": {
+        "instance_id": {
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "title": "Instance Id",
+          "type": "string"
+        },
+        "producer_id": {
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "title": "Producer Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "producer_id",
+        "instance_id",
+        "sequence"
+      ],
+      "title": "ProducerIdentity",
+      "type": "object"
+    },
+    "ProgrammeLink": {
+      "additionalProperties": false,
+      "description": "Cross-repo programme linkage (LW-02): distinct missions in distinct\nrepositories that belong to one programme. Each linked mission keeps its\nown repository identity \u2014 the link relates missions, it never merges\ntheir identities.",
+      "properties": {
+        "programme_id": {
+          "maxLength": 120,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+          "title": "Programme Id",
+          "type": "string"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role"
+        }
+      },
+      "required": [
+        "programme_id"
+      ],
+      "title": "ProgrammeLink",
+      "type": "object"
+    },
+    "RepositoryIdentity": {
+      "additionalProperties": false,
+      "description": "Admitted repository identity \u2014 stable across provider renames.\n\n``provider`` namespaces the forge (closed set; github today).\n``repository_id`` is the provider-canonical stable repository id (e.g.\nthe numeric GitHub repository id) \u2014 the admitted-repo *generation* that\nvets this id against the team's installation is server-owned (saas#1814).\n``display_slug`` is the mutable ``owner/name`` presentation: a rename\nchanges it, never the id (LW-02).",
+      "properties": {
+        "display_slug": {
+          "anyOf": [
+            {
+              "maxLength": 240,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Slug"
+        },
+        "provider": {
+          "const": "github",
+          "title": "Provider",
+          "type": "string"
+        },
+        "repository_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+          "title": "Repository Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "repository_id"
+      ],
+      "title": "RepositoryIdentity",
+      "type": "object"
+    },
+    "SessionIdentity": {
+      "additionalProperties": false,
+      "description": "The stable logical session that produced this observation.\n\nIdentity survives reconnect (``reconnect_epoch`` bumps) and credential\nrotation (``credential_epoch`` bumps) \u2014 the session is the *logical*\nconversation, not the transport connection and not the credential\n(LW-01: two same-account agents stay distinct through reconnect and\nrotation because they hold distinct ``session_id``s).\n\n``delegated_from`` names the delegating session's ``session_id`` when\nthis session was spawned by a delegation (LW-05 delegated sessions).",
+      "properties": {
+        "credential_epoch": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Credential Epoch",
+          "type": "integer"
+        },
+        "delegated_from": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Delegated From"
+        },
+        "reconnect_epoch": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Reconnect Epoch",
+          "type": "integer"
+        },
+        "session_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "title": "Session Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "session_id"
+      ],
+      "title": "SessionIdentity",
+      "type": "object"
+    },
+    "SourceProvenance": {
+      "additionalProperties": false,
+      "description": "How this observation was captured (LW-04's capability matrix): the\ncapture source, the named capability that produced it, and \u2014 when\ncapture is partial \u2014 the honest limitation. ``limitation`` is the\nmachine-readable home of the \"record real capture/source limitations\"\nrequirement: a producer that cannot see something says so here.",
+      "properties": {
+        "capability": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "title": "Capability",
+          "type": "string"
+        },
+        "limitation": {
+          "anyOf": [
+            {
+              "maxLength": 240,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Limitation"
+        },
+        "source": {
+          "enum": [
+            "harness_hook",
+            "cli_wrapper",
+            "emitter",
+            "manual",
+            "factory"
+          ],
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "capability"
+      ],
+      "title": "SourceProvenance",
+      "type": "object"
+    },
+    "TestAction": {
+      "additionalProperties": false,
+      "description": "A test execution at any lifecycle state: selector plus explicit\ncounts (carried only once the run concludes, ``state='result'``).\nNever raw output.",
+      "properties": {
+        "failed": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Failed"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActionOutcome"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "passed": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Passed"
+        },
+        "selector": {
+          "maxLength": 240,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}$",
+          "title": "Selector",
+          "type": "string"
+        },
+        "skipped": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Skipped"
+        },
+        "state": {
+          "$ref": "#/$defs/ActionState"
+        }
+      },
+      "required": [
+        "selector",
+        "state"
+      ],
+      "title": "TestAction",
+      "type": "object"
+    },
+    "ToolAction": {
+      "additionalProperties": false,
+      "description": "A tool invocation at any lifecycle state. Tool *name*, state,\noutcome (terminal only), duration \u2014 never the raw command environment\nor tool output (those are privacy keys).",
+      "properties": {
+        "duration_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duration Ms"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActionOutcome"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "state": {
+          "$ref": "#/$defs/ActionState"
+        },
+        "tool": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "title": "Tool",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool",
+        "state"
+      ],
+      "title": "ToolAction",
+      "type": "object"
+    },
+    "WorkContext": {
+      "additionalProperties": false,
+      "description": "Optional work context slots \u2014 all optional, all presentation/scoping,\nnone of them identity (identity is mission/session/repository above).",
+      "properties": {
+        "branch": {
+          "anyOf": [
+            {
+              "maxLength": 240,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Branch"
+        },
+        "operation": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Operation"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "worktree": {
+          "anyOf": [
+            {
+              "maxLength": 240,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Worktree"
+        },
+        "wp_id": {
+          "anyOf": [
+            {
+              "maxLength": 32,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Wp Id"
+        }
+      },
+      "title": "WorkContext",
+      "type": "object"
+    },
+    "WorkKind": {
+      "description": "Closed set of durable work-observation kinds \u2014 25 members, 6 families.\n\n``lifecycle`` (6) closes the LW-03 gap: mission review and retrospective\noutcomes are captured/failed/skipped, not just completed \u2014 failure and\nskip are first-class, never laundered into silence.\n``session`` (5) covers session lifecycle, delegation, and mission/repo\nbinding changes (LW-01/LW-02). ``action`` (3) covers tool/file/test\nobservation with explicit outcomes (LW-04). ``narrative`` (9) covers the\nauthored intent/progress/question/answer/decision/handoff/blocker/\nresolution/next vocabulary (LW-05/LW-09). ``message`` (1) is the durable\npeer message. ``coverage`` (1) makes capture gaps explicit (LW-08/LW-10).",
+      "enum": [
+        "lifecycle.mission_review_captured",
+        "lifecycle.mission_review_failed",
+        "lifecycle.mission_review_skipped",
+        "lifecycle.retrospective_captured",
+        "lifecycle.retrospective_failed",
+        "lifecycle.retrospective_skipped",
+        "session.started",
+        "session.ended",
+        "session.delegation_started",
+        "session.delegation_ended",
+        "session.binding_changed",
+        "action.tool_invoked",
+        "action.file_edited",
+        "action.test_executed",
+        "narrative.intent_declared",
+        "narrative.progress_reported",
+        "narrative.question_asked",
+        "narrative.question_answered",
+        "narrative.decision_recorded",
+        "narrative.handoff_performed",
+        "narrative.blocker_raised",
+        "narrative.blocker_resolved",
+        "narrative.next_proposed",
+        "message.peer_sent",
+        "coverage.gap_recorded"
+      ],
+      "title": "WorkKind",
+      "type": "string"
+    }
+  },
+  "$id": "spec-kitty-events/work_observation_payload",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Typed payload for the 25 durable WorkObservation kinds.\n\n    Envelope conventions (validated by ``spec_kitty_events.strict``, see the\n    module docstring): ``event_type=\"WorkObservation\"``,\n    ``aggregate_id`` = :func:`work_aggregate_id` \u2014 ``mission/<mission_id>``\nwhen the observation is mission-bound, ``repo/<repository_id>`` for\nrepository-bound work with no mission yet (LW-02: repo-bound sessions\nbefore a mission exists keep a real aggregate identity, never an invented\nmission), ``schema_version=\"3.0.0\"``,\n    ``timestamp`` = producer occurrence time, ``correlation_id`` /\n    ``causation_id`` = standard Event causal semantics (a retry attempt\n    causally follows the observation it retries), ``node_id`` = producer\n    instance, ``lamport_clock`` = journal clock at emission. No time field\n    in the payload (R-T-02, same as F1); no server-owned field (the\n    principal/team binding, admitted-repo generation, ``received_at``, and\n    committed cursor are ingestion-owned and forbidden here).",
+  "properties": {
+    "action": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ToolAction"
+        },
+        {
+          "$ref": "#/$defs/FileAction"
+        },
+        {
+          "$ref": "#/$defs/TestAction"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Action"
+    },
+    "activity": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ActivityRef"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "actor": {
+      "$ref": "#/$defs/ActorIdentity"
+    },
+    "artifact": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ArtifactReference"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "context": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/WorkContext"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "coverage": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CoverageGap"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "extensions": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Safe optional extensions: keys MUST be x- prefixed; unknown un-namespaced keys are rejected by extra='forbid'.",
+      "title": "Extensions"
+    },
+    "kind": {
+      "$ref": "#/$defs/WorkKind"
+    },
+    "mission": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MissionIdentity"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Canonical mission identity when this observation is mission-bound. Required only for the lifecycle kinds (mission review/retrospective); repository-bound sessions and work exist before (and outside) any mission and leave it unset rather than inventing one (LW-02)."
+    },
+    "producer": {
+      "$ref": "#/$defs/ProducerIdentity"
+    },
+    "programme": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProgrammeLink"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "provenance": {
+      "$ref": "#/$defs/SourceProvenance"
+    },
+    "recipient": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PrincipalRef"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "ref": {
+      "anyOf": [
+        {
+          "maxLength": 240,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Opaque reference to the entity this observation resolves or records (blocker ref, decision record link).",
+      "title": "Ref"
+    },
+    "reply_to": {
+      "anyOf": [
+        {
+          "maxLength": 36,
+          "minLength": 26,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Event ID of the observation this one answers or retries.",
+      "title": "Reply To"
+    },
+    "repository": {
+      "$ref": "#/$defs/RepositoryIdentity"
+    },
+    "session": {
+      "$ref": "#/$defs/SessionIdentity"
+    },
+    "text": {
+      "anyOf": [
+        {
+          "maxLength": 2000,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Inline authored text (narrative/message kinds). Long content is an artifact reference, never inline.",
+      "title": "Text"
+    }
+  },
+  "required": [
+    "kind",
+    "producer",
+    "session",
+    "actor",
+    "repository",
+    "provenance"
+  ],
+  "title": "WorkObservationPayload",
+  "type": "object"
+}

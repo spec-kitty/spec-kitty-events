@@ -1,0 +1,20 @@
+{
+  "accepted_event_ids": [
+    "01J0000000000000000000WRK5",
+    "01J0000000000000000000WRK6",
+    "01J0000000000000000000WRK7"
+  ],
+  "conflicts": [],
+  "duplicates": [],
+  "gaps": [
+    {
+      "expected": 3,
+      "instance_id": "proc-002",
+      "observed": 5,
+      "producer_id": "cli-install-r1"
+    }
+  ],
+  "late": [
+    "01J0000000000000000000WRK6"
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "action": null,
+  "activity": null,
+  "actor": {
+    "agent_profile": {
+      "harness": "claude",
+      "model": "opus-5",
+      "profile_id": "dev-profile"
+    },
+    "display_name": "Robert (via agent A)",
+    "factory_attempt": null,
+    "principal_id": "acct-robert",
+    "principal_kind": "agent"
+  },
+  "artifact": null,
+  "context": null,
+  "coverage": null,
+  "extensions": null,
+  "kind": "session.delegation_started",
+  "mission": {
+    "display_label": "Fix auth flow",
+    "mission_id": "m-alpha-001"
+  },
+  "producer": {
+    "instance_id": "proc-001",
+    "producer_id": "cli-install-r1",
+    "sequence": 0
+  },
+  "programme": null,
+  "provenance": {
+    "capability": "work-observation",
+    "limitation": null,
+    "source": "cli_wrapper"
+  },
+  "recipient": {
+    "principal_id": "acct-robert",
+    "principal_kind": "human"
+  },
+  "ref": null,
+  "reply_to": null,
+  "repository": {
+    "display_slug": "spec-kitty/spec-kitty-saas",
+    "provider": "github",
+    "repository_id": "99001"
+  },
+  "session": {
+    "credential_epoch": 0,
+    "delegated_from": "sess-human-1",
+    "reconnect_epoch": 0,
+    "session_id": "sess-agent-b"
+  },
+  "text": "Delegating the token refresh review to agent B."
+}

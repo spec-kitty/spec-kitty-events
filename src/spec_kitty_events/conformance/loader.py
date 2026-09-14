@@ -32,6 +32,7 @@ _VALID_CATEGORIES = frozenset(
         "harness_observation",  # F1-T1 (7.0.0)
         "zeitgeist_attrs",  # E2: volatile mission/WP moment codecs
         "status_diary",  # 8.1.0: status.events.jsonl diary reducer (issue #41)
+        "work_observation",  # durable live-work contracts (#55, 10.1.0)
     }
 )
 

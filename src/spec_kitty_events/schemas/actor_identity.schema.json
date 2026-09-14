@@ -1,0 +1,146 @@
+{
+  "$defs": {
+    "AgentProfileRef": {
+      "additionalProperties": false,
+      "description": "The agent profile a principal acted through \u2014 distinct from the\nprincipal itself (LW-01: principal, agent profile, session, and factory\nattempt are four different identities, never collapsed into one). Valid\nfor every ``principal_kind``: they are independent identity dimensions,\nnot exclusive modes \u2014 a factory worker retains both its profile/harness\nidentity and its job/attempt attribution, and a human may act through\nan agent profile. Only ``principal_kind='agent'`` *requires* one (a\nbare agent principal is ambiguous).",
+      "properties": {
+        "harness": {
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "title": "Harness",
+          "type": "string"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "profile_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profile Id"
+        }
+      },
+      "required": [
+        "harness"
+      ],
+      "title": "AgentProfileRef",
+      "type": "object"
+    },
+    "FactoryAttemptRef": {
+      "additionalProperties": false,
+      "description": "The factory job/attempt an observation was produced under (planning\n#2270 binds these into continuous missions). Distinct from the session\nand the principal: one attempt may span sessions and one session may\noutlive several attempts.",
+      "properties": {
+        "attempt_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "job_ref": {
+          "anyOf": [
+            {
+              "maxLength": 240,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Ref"
+        }
+      },
+      "required": [
+        "attempt_id"
+      ],
+      "title": "FactoryAttemptRef",
+      "type": "object"
+    }
+  },
+  "$id": "spec-kitty-events/actor_identity",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The acting principal, with optional agent/factory framing.\n\n``principal_id`` is the stable principal (a person account, an agent\nidentity, a service, a factory role) \u2014 the *server* resolves it to the\nauthenticated principal at ingestion; this field is producer-side\nattribution only. ``display_name`` is mutable presentation, never\nidentity: renames change it, identity does not (LW-01).",
+  "properties": {
+    "agent_profile": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AgentProfileRef"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "display_name": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Display Name"
+    },
+    "factory_attempt": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FactoryAttemptRef"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "principal_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+      "title": "Principal Id",
+      "type": "string"
+    },
+    "principal_kind": {
+      "enum": [
+        "human",
+        "agent",
+        "service",
+        "factory"
+      ],
+      "title": "Principal Kind",
+      "type": "string"
+    }
+  },
+  "required": [
+    "principal_kind",
+    "principal_id"
+  ],
+  "title": "ActorIdentity",
+  "type": "object"
+}

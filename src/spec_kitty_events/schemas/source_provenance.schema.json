@@ -1,0 +1,46 @@
+{
+  "$id": "spec-kitty-events/source_provenance",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "How this observation was captured (LW-04's capability matrix): the\ncapture source, the named capability that produced it, and \u2014 when\ncapture is partial \u2014 the honest limitation. ``limitation`` is the\nmachine-readable home of the \"record real capture/source limitations\"\nrequirement: a producer that cannot see something says so here.",
+  "properties": {
+    "capability": {
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+      "title": "Capability",
+      "type": "string"
+    },
+    "limitation": {
+      "anyOf": [
+        {
+          "maxLength": 240,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Limitation"
+    },
+    "source": {
+      "enum": [
+        "harness_hook",
+        "cli_wrapper",
+        "emitter",
+        "manual",
+        "factory"
+      ],
+      "title": "Source",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source",
+    "capability"
+  ],
+  "title": "SourceProvenance",
+  "type": "object"
+}

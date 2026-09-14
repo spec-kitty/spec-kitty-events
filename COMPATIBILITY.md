@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.0.6`
+**Current package version**: `10.1.0`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,26 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `10.1.0` — durable live-work contracts land before producer enablement
+
+`10.1.0` adds the `WorkObservation` event type (25 durable kinds,
+`contracts/durable-work-observation.md`) — an additive change: every
+existing event contract keeps its accept/reject boundary. Tool/test
+actions carry a typed lifecycle `state` (started/running/result/cancelled;
+outcome and counts only at `result`), file actions carry a typed
+`operation` (read/edit/create/delete/rename, with rename
+`destination_path` and a repository-relative path grammar accepting spaces
+and Unicode), mission binding is conditional on semantic kind (required
+for the six lifecycle kinds only), and an `agent_profile` combines with a
+`factory_attempt` — all within the still-unreleased 10.1.0 contract, so no
+adopted version is amended. Producers MUST
+capability-gate `WorkObservation` emission until each intended consumer
+(SaaS durable ingestion, Zeitgeist relay fan-out, SaaS projections) can
+validate it; the `10.1.0` `min_consumer_package` on the 25 new
+support-matrix rows is that floor. Consumers that pin
+`declared_dependency_contracts` by digest must re-pin against the new
+`support_matrix.json` deliberately, not silently.
 
 ## `10.0.6` — contract-version table synchronization is pinned
 

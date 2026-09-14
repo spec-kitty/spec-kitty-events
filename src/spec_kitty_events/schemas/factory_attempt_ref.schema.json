@@ -1,0 +1,34 @@
+{
+  "$id": "spec-kitty-events/factory_attempt_ref",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The factory job/attempt an observation was produced under (planning\n#2270 binds these into continuous missions). Distinct from the session\nand the principal: one attempt may span sessions and one session may\noutlive several attempts.",
+  "properties": {
+    "attempt_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}$",
+      "title": "Attempt Id",
+      "type": "string"
+    },
+    "job_ref": {
+      "anyOf": [
+        {
+          "maxLength": 240,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Job Ref"
+    }
+  },
+  "required": [
+    "attempt_id"
+  ],
+  "title": "FactoryAttemptRef",
+  "type": "object"
+}

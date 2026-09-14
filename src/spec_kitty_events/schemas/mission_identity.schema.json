@@ -1,0 +1,34 @@
+{
+  "$id": "spec-kitty-events/mission_identity",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Canonical mission identity \u2014 stable before, through, and after rename.\n\n``mission_id`` is the canonical opaque identity: it exists from the\nfirst specify activity, before any Git push, and survives label changes,\nworktree moves, PRs, and merges (LW-02). ``display_label`` is mutable\npresentation only \u2014 two concurrent missions may share a label and remain\ndistinct missions, and a rename changes the label, never the id.",
+  "properties": {
+    "display_label": {
+      "anyOf": [
+        {
+          "maxLength": 240,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Display Label"
+    },
+    "mission_id": {
+      "maxLength": 120,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+      "title": "Mission Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "mission_id"
+  ],
+  "title": "MissionIdentity",
+  "type": "object"
+}
