@@ -1,0 +1,50 @@
+{
+  "event_type": "WPStatusChanged",
+  "envelope": {
+    "event_id": "e2e00000-0000-4000-8000-000000000211",
+    "timestamp": "2026-08-25T09:00:00+00:00"
+  },
+  "payload": {
+    "mission_slug": "demo-mission",
+    "wp_id": "WP04",
+    "from_lane": "in_review",
+    "to_lane": "approved",
+    "actor": "reviewer",
+    "force": false,
+    "reason": "Approved after the focus-time fix.\nSecond review pass re-ran the full blast radius: 88 passed / 0 failed,\nruff clean, and the guard suites are green.",
+    "execution_mode": "worktree",
+    "review_ref": "review-cycle://demo-mission/WP04/2026-09-14a",
+    "summary": "Approved after the focus-time fix\n   and a    second review pass",
+    "evidence": {
+      "repos": [
+        {
+          "repo": "demo-repo",
+          "branch": "mission/demo-mission",
+          "commit": "cccccccccccccccccccccccccccccccccccccccc",
+          "files_touched": null
+        }
+      ],
+      "verification": [],
+      "review": {
+        "reviewer": "robert",
+        "verdict": "approved",
+        "reference": null
+      }
+    }
+  },
+  "expected_attrs": {
+    "event_id": "e2e00000-0000-4000-8000-000000000211",
+    "occurred_at": "2026-08-25T09:00:00+00:00",
+    "mission_slug": "demo-mission",
+    "wp_id": "WP04",
+    "from_lane": "in_review",
+    "to_lane": "approved",
+    "actor": "reviewer",
+    "force": "false",
+    "execution_mode": "worktree",
+    "review_ref": "review-cycle://demo-mission/WP04/2026-09-14a",
+    "summary": "Approved after the focus-time fix and a second review pass"
+  },
+  "expected_ref": "demo-mission",
+  "notes": "spec-kitty/spec-kitty#4327: the producer-supplied one-line summary rides as the bounded derived summary attr (whitespace collapsed to one line), the multi-line reason stays local (never broadcast), and review_ref stays a pointer — never prose."
+}

@@ -443,7 +443,25 @@ class StatusTransitionPayload(BaseModel):
         None, description="Reason for the transition (required when force=True)"
     )
     execution_mode: ExecutionMode = Field(..., description="How the work-package is being executed")
-    review_ref: Optional[str] = Field(None, description="Reference to an external review")
+    review_ref: Optional[str] = Field(
+        None,
+        description=(
+            "Reference to an external review — a pointer (review-cycle://…, "
+            "feedback://…, auto-approval:…, a PR ref), never prose (#3954: the "
+            "240-byte relay attr bound drops a prose-carrying ref whole)"
+        ),
+    )
+    summary: Optional[str] = Field(
+        None,
+        description=(
+            "One-line, human-readable gist of this transition for the NOW view "
+            "(spec-kitty/spec-kitty#4327). Producer-supplied and producer-validated "
+            "(the CLI bounds it to one printable line of at most 240 UTF-8 bytes "
+            "at creation); the zeitgeist codec projects it as the bounded "
+            "``summary`` attr and never broadcasts this raw field. The full "
+            "note stays in ``reason``."
+        ),
+    )
     evidence: Optional[DoneEvidence] = Field(
         None, description="Evidence bundle (required when to_lane=DONE)"
     )

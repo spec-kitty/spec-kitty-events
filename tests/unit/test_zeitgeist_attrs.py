@@ -649,6 +649,60 @@ def test_unbroadcast_evidence_never_appears_in_attrs() -> None:
     assert not any(key.startswith("evidence") for key in attrs)
 
 
+def test_wp_status_changed_summary_rides_as_the_bounded_attr() -> None:
+    """spec-kitty/spec-kitty#4327: WPStatusChanged's optional producer-
+    supplied ``summary`` projects as the bounded derived ``summary`` attr —
+    the same pattern the ``*Completed`` kinds use for their own summary
+    fields — while the raw field and the full ``reason`` note never ride
+    under their own keys, and ``review_ref`` stays a pointer."""
+    from spec_kitty_events.status import DoneEvidence, RepoEvidence, ReviewVerdict
+
+    payload = _transition(
+        to_lane="approved",
+        from_lane="in_review",
+        reason="Full multi-line note stays local.\nSecond line, 88 passed / 0 failed.",
+        review_ref="review-cycle://demo-mission/WP01/2026-09-14a",
+        summary="Approved after the focus-time fix\n   and a    second pass",
+        evidence=DoneEvidence(
+            repos=[RepoEvidence(repo="r", branch="b", commit="c" * 40)],
+            verification=[],
+            review=ReviewVerdict(reviewer="robert", verdict="approved"),
+        ),
+    )
+    attrs = to_zeitgeist_attrs(payload, _envelope("WPStatusChanged"))
+    assert attrs["summary"] == "Approved after the focus-time fix and a second pass"
+    assert "reason" not in attrs
+    assert attrs["review_ref"] == "review-cycle://demo-mission/WP01/2026-09-14a"
+    # decode admits the new key on the kind's closed vocabulary
+    moment = from_zeitgeist_attrs("WPStatusChanged", attrs)
+    assert moment.attrs["summary"] == attrs["summary"]
+
+
+def test_wp_status_changed_summary_absent_when_producer_supplies_none() -> None:
+    """Deterministic omission: no ``summary`` attr when the producer
+    supplied none, and pre-#4327 frames (which never carried the key)
+    still decode unchanged."""
+    payload = _transition(to_lane="in_review", from_lane="doing")
+    attrs = to_zeitgeist_attrs(payload, _envelope("WPStatusChanged"))
+    assert "summary" not in attrs
+    from_zeitgeist_attrs("WPStatusChanged", attrs)
+
+
+def test_wp_status_changed_summary_is_bounded_like_every_derived_summary() -> None:
+    """The codec bounds the derived ``summary`` independently of whatever
+    the producer validated: an oversize or multi-line gist still yields one
+    bounded line (visibly truncated), never a raised moment and never an
+    over-bound attr."""
+    payload = _transition(
+        to_lane="in_review",
+        from_lane="doing",
+        summary="é" * 300,
+    )
+    attrs = to_zeitgeist_attrs(payload, _envelope("WPStatusChanged"))
+    assert len(attrs["summary"].encode("utf-8")) <= ZEITGEIST_ATTRS_MAX_BYTES
+    assert attrs["summary"].endswith("…")
+
+
 def test_value_types_without_an_encoding_fail_closed() -> None:
     """The encoder handles str/int/bool/str-Enum/nested models only. If a
     future field introduces any other scalar (float, datetime, ...), emit
