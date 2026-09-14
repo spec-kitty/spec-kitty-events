@@ -80,8 +80,12 @@ Bounded moment summaries
 :data:`SUMMARY_SOURCE_EVENT_TYPES` names the kinds whose moment needs a
 short, human-readable gist alongside its identifiers: decision points
 (question/answer plus a bounded slice of the rationale), mission creation
-(friendly name plus purpose), and the three artifact-lifecycle ``*Completed``
-kinds (their own producer-supplied ``summary`` field). For these kinds only,
+(friendly name plus purpose), the three artifact-lifecycle ``*Completed``
+kinds and ``WPStatusChanged`` (their own producer-supplied ``summary``
+field — for a WP transition, a one-line gist validated by the CLI producer
+at creation, spec-kitty/spec-kitty#4327, while the full note stays local in
+``reason`` and the external-review pointer rides ``review_ref``). For these
+kinds only,
 :func:`to_zeitgeist_attrs` derives a single extra ``summary`` attr by joining
 a fixed, per-kind, deterministic sequence of source fields with ``"; "``,
 collapsing whitespace to one line. Unlike every other attr, ``summary`` is
@@ -451,7 +455,7 @@ def _payload_types(event_type: str) -> tuple[type[BaseModel], ...]:
 #: keeps the ADR-Resolved projection (the tightest of the four variants)
 #: inside the 16-key bound.
 UNBROADCAST_FIELDS: Mapping[str, frozenset[str]] = {
-    WP_STATUS_CHANGED: frozenset({"evidence", "reason"}),
+    WP_STATUS_CHANGED: frozenset({"evidence", "reason", "summary"}),
     MISSION_CREATED: frozenset({"friendly_name", "purpose_tldr", "purpose_context"}),
     DECISION_INPUT_REQUESTED: frozenset({"options", "question"}),
     DECISION_INPUT_ANSWERED: frozenset({"answer"}),
@@ -507,13 +511,18 @@ ENVELOPE_ATTR_KEYS: frozenset[str] = frozenset({"event_id", "occurred_at"})
 #: Event types whose projection carries a derived ``summary`` attr: a
 #: bounded, single-line, human-readable projection built from prose fields
 #: that :data:`UNBROADCAST_FIELDS` would otherwise drop outright (see
-#: "Bounded moment summaries" below). ``WPStatusChanged`` is deliberately
-#: absent — ``StatusTransitionPayload`` carries no title/objective/purpose
-#: field at all (that data lives only on the separate ``WPCreated`` event,
-#: local to the CLI producer at emit time), and this contract only ever
-#: derives a summary from data the *payload itself* carries.
+#: "Bounded moment summaries" below). ``WPStatusChanged`` derives its
+#: summary from the payload's own optional ``summary`` field — a
+#: producer-supplied, producer-validated one-line gist
+#: (spec-kitty/spec-kitty#4327); ``StatusTransitionPayload`` still carries
+#: no title/objective/purpose field (that data lives only on the separate
+#: ``WPCreated`` event, local to the CLI producer at emit time), and this
+#: contract only ever derives a summary from data the *payload itself*
+#: carries — which ``summary`` now is. ``reason`` (the full note) stays
+#: local: only the bounded gist rides.
 SUMMARY_SOURCE_EVENT_TYPES: frozenset[str] = frozenset(
     {
+        WP_STATUS_CHANGED,
         MISSION_CREATED,
         DECISION_POINT_OPENED,
         DECISION_POINT_RESOLVED,
@@ -681,10 +690,14 @@ def _mission_created_summary(payload: BaseModel) -> str | None:
     )
 
 
-def _artifact_completed_summary(payload: BaseModel) -> str | None:
-    """Derive an artifact-lifecycle ``*Completed`` payload's bounded
-    ``summary`` from its own optional ``summary: str | None`` field —
-    absent when the producer supplied none (deterministic omission)."""
+def _producer_summary(payload: BaseModel) -> str | None:
+    """Derive a payload's bounded ``summary`` from its own optional
+    ``summary: str | None`` field — absent when the producer supplied none
+    (deterministic omission). Shared by the artifact-lifecycle ``*Completed``
+    kinds and ``WPStatusChanged`` (spec-kitty/spec-kitty#4327): the producer
+    validates the gist at creation (one printable line, ≤240 UTF-8 bytes);
+    this codec still bounds and one-lines it independently, because the
+    codec is the only authority over the wire."""
     return _bounded_summary([getattr(payload, "summary", None) or ""])
 
 
@@ -704,12 +717,13 @@ def _ops_invocation_completed_summary(payload: BaseModel) -> str | None:
 
 #: Per-type summary builder, keyed the same as :data:`SUMMARY_SOURCE_EVENT_TYPES`.
 _SUMMARY_BUILDER_BY_EVENT_TYPE: Mapping[str, Any] = {
+    WP_STATUS_CHANGED: _producer_summary,
     MISSION_CREATED: _mission_created_summary,
     DECISION_POINT_OPENED: _decision_summary,
     DECISION_POINT_RESOLVED: _decision_summary,
-    SPECIFY_COMPLETED: _artifact_completed_summary,
-    PLAN_COMPLETED: _artifact_completed_summary,
-    TASKS_COMPLETED: _artifact_completed_summary,
+    SPECIFY_COMPLETED: _producer_summary,
+    PLAN_COMPLETED: _producer_summary,
+    TASKS_COMPLETED: _producer_summary,
     OPS_INVOCATION_STARTED: _ops_invocation_started_summary,
     OPS_INVOCATION_COMPLETED: _ops_invocation_completed_summary,
 }

@@ -272,8 +272,21 @@
         }
       ],
       "default": null,
-      "description": "Reference to an external review",
+      "description": "Reference to an external review \u2014 a pointer (review-cycle://\u2026, feedback://\u2026, auto-approval:\u2026, a PR ref), never prose (#3954: the 240-byte relay attr bound drops a prose-carrying ref whole)",
       "title": "Review Ref"
+    },
+    "summary": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "One-line, human-readable gist of this transition for the NOW view (spec-kitty/spec-kitty#4327). Producer-supplied and producer-validated (the CLI bounds it to one printable line of at most 240 UTF-8 bytes at creation); the zeitgeist codec projects it as the bounded ``summary`` attr and never broadcasts this raw field. The full note stays in ``reason``.",
+      "title": "Summary"
     },
     "to_lane": {
       "$ref": "#/$defs/Lane",

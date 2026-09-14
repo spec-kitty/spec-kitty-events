@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.2.0] - 2026-09-14
+
+Dedicated inline `summary` attr for `WPStatusChanged` moments
+(spec-kitty/spec-kitty#4327, resolving its Required 1; issue #60). Robert's
+2026-09-14 decision: prose may travel on the relay inside a dedicated,
+producer-validated attr; the 240-byte per-attr bound stays. 10.2.0 rather
+than an in-place 10.1.0 amendment because `scripts/check_version_not_amended.py`
+spends a version once it has been declared on main, adopted or not.
+
+### Added
+
+- **`StatusTransitionPayload.summary`** — an optional, producer-supplied
+  one-line gist of a WP transition for the NOW view. `WPStatusChanged`
+  joins `SUMMARY_SOURCE_EVENT_TYPES`, so `to_zeitgeist_attrs` projects the
+  field as the bounded derived `summary` attr (the same pattern the
+  `*Completed` and Ops invocation kinds use), while the raw field is
+  `UNBROADCAST_FIELDS`-local alongside `reason`: the full note stays in the
+  journal, `review_ref` stays a pointer, and prose reaches the relay only
+  through the bounded summary attr. Decode accepts frames with and without
+  the key.
+
 ## [10.1.0] - 2026-09-13
 
 Durable live-work contracts (spec-kitty/spec-kitty-events#55, planning#2268

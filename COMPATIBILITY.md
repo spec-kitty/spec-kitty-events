@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.1.0`
+**Current package version**: `10.2.0`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,28 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `10.2.0` — dedicated inline `summary` attr for `WPStatusChanged`
+
+`10.2.0` (spec-kitty/spec-kitty#4327, events#60) gives a WP transition's
+moment a bounded, human-readable gist: `StatusTransitionPayload` gains an
+optional `summary` field — a producer-supplied one-line gist of the
+transition — and `WPStatusChanged` joins `SUMMARY_SOURCE_EVENT_TYPES`, so
+its zeitgeist projection carries the bounded derived `summary` attr (the
+same pattern the `*Completed` and Ops invocation kinds already use).
+Additive in both directions: old producers omit the field and old frames
+still decode (the attr key is optional on decode, like every derived
+summary; the payload field is optional, `extra="forbid"` unchanged). The
+raw `summary` field is `UNBROADCAST_FIELDS`-local alongside `reason`, so
+no frame shape that was accepted or rejected before changes behavior.
+Producers (the CLI) MUST validate the gist at creation (one printable
+line, at most 240 UTF-8 bytes) and keep `review_ref` a pointer; the codec
+still bounds the derived attr independently of whatever the producer
+validated. SaaS consumers that reject unknown attr keys must adopt this
+version (or later) before the CLI sends the field — see
+spec-kitty/spec-kitty-saas#1863. `10.2.0` rather than an in-place `10.1.0`
+amendment because `scripts/check_version_not_amended.py` spends a version
+once it has been declared on main, adopted or not.
 
 ## `10.1.0` — durable live-work contracts land before producer enablement
 
