@@ -30,11 +30,24 @@ jobs:
     name: cross-repo-harness-tests
     runs-on: ubuntu-latest
     timeout-minutes: 6
+    permissions:
+      contents: read
     steps:
       - name: Checkout spec-kitty-events (PR head)
         uses: actions/checkout@v4
         with:
           path: events
+          persist-credentials: false
+
+      - name: Mint read-only access to the pinned harness repository
+        id: harness-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        with:
+          app-id: ${{ secrets.SK_CI_APP_ID }}
+          private-key: ${{ secrets.SK_CI_APP_PRIVATE_KEY }}
+          owner: spec-kitty
+          repositories: EXPERIMENTAL-spec-kitty-end-to-end-testing
+          permission-contents: read
 
       - name: Checkout spec-kitty-end-to-end-testing (pinned SHA)
         uses: actions/checkout@v4
@@ -42,7 +55,15 @@ jobs:
           repository: spec-kitty/EXPERIMENTAL-spec-kitty-end-to-end-testing
           ref: 193f5c0eb07c8fdb6943d91d205ab892b98d6dfc
           path: e2e
-          ssh-key: ${{ secrets.SK_E2E_READ_DEPLOY_KEY }}
+          token: ${{ steps.harness-token.outputs.token }}
+          persist-credentials: false
+
+      # Fail closed before installs; the action post hook remains a cleanup fallback.
+      - name: Revoke harness token before executing source code
+        if: always() && steps.harness-token.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ steps.harness-token.outputs.token }}
+        run: gh api --method DELETE /installation/token
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
