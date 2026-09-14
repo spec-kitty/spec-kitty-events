@@ -77,7 +77,12 @@ jobs:
           [ -n "$TOKEN" ] || { echo "::error::App installation token mint returned empty (planning#1878)."; exit 1; }
           echo "GH_TOKEN=$TOKEN" >> "$GITHUB_ENV"
           # per-user helper is enough here (the canary runs no isolated-HOME test
-          # subprocesses, unlike ci.yml's suites); it reads GH_TOKEN at call time
+          # subprocesses, unlike ci.yml's suites); it reads GH_TOKEN at call time —
+          # exported into THIS shell too (the $GITHUB_ENV write above only reaches
+          # later steps, and `gh auth setup-git` with no token in its own
+          # environment exits 1, killing the canary before it ever runs; squad
+          # MAJOR pass 2, sk-squad-spec-kitty-events-58 — ci.yml:83's line, verbatim)
+          export GH_TOKEN="$TOKEN"
           gh auth setup-git
           echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
       - name: Sibling checkout (planning)
