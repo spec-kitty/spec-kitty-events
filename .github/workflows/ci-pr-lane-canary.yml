@@ -1,0 +1,91 @@
+# PR-lane canary for the Blacksmith CI lane (planning#2290).
+#
+# The spec-kitty-factory-ci App token's registered permission set carried pull_requests:
+# read-only, so every PR-thread verdict post 403'd from 2026-09-06 while main kept
+# looking healthy (a main verdict is a *commit* comment — contents: write): "suite green
+# + verdict-less run", silent in every census bucket for 4+ days. Nothing on the happy
+# path ever exercises the PR thread, so this scheduled workflow does, on purpose, every
+# day: it runs bin/ci_pr_lane_canary.py from the planning repo (same clone ci.yml makes),
+# which keeps a standing draft canary PR at main's head, dispatches the ci workflow at it
+# as a PR-shaped workflow_dispatch target, and asserts a `[ci]` verdict comment lands on
+# that PR thread within its wait bound. On failure it exits nonzero (78 = the
+# capability-mismatch class itself) and files a "CI PR-lane canary failing" issue in this
+# repo, which the groom sweep and the controller see — the failure lands somewhere
+# watched even when PR-thread writes are the thing that is broken.
+#
+# Governed by spec-kitty-planning PROGRAM.md §2 and docs/BLACKSMITH-CI.md §PR-lane
+# canary. Copy this workflow per-repo (change REPO) when another lane migrates to the
+# App token, exactly like ci.yml's per-repo rollout.
+name: ci-pr-lane-canary
+
+on:
+  schedule:
+    # daily at 05:23 UTC — off the :00/:30 marks
+    - cron: "23 5 * * *"
+  workflow_dispatch: {}
+
+# one canary at a time; a slow run never stacks onto the next day's
+concurrency:
+  group: ci-pr-lane-canary
+  cancel-in-progress: false
+
+env:
+  REPO: spec-kitty-events
+  SK_HOME: ${{ github.workspace }}/work
+
+jobs:
+  canary:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    # mint + clone + a wait bound of 40 min for a suite that runs ~25 min (see the
+    # --max-wait-minutes comment below)
+    timeout-minutes: 55
+    # every GitHub call goes through the minted App token; the job's own GITHUB_TOKEN
+    # is unused
+    permissions: {}
+    steps:
+      # planning#1878: same credential and secrets gate as ci.yml — the canary must
+      # exercise the SAME token class the verdict posts use, or it proves nothing.
+      - name: Require the CI App secrets (planning#1878)
+        env:
+          APP_ID: ${{ secrets.SK_CI_APP_ID }}
+          APP_KEY: ${{ secrets.SK_CI_APP_PRIVATE_KEY }}
+        run: |
+          if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
+            echo "::error::org secrets SK_CI_APP_ID and/or SK_CI_APP_PRIVATE_KEY are missing (GitHub App spec-kitty-factory-ci, installed org-wide and granted to spec-kitty/spec-kitty-events). See planning docs/BLACKSMITH-CI.md §One-time setup." ; exit 1
+          fi
+      - name: Mint the CI credential (App installation token, planning#1878)
+        uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
+        id: mint
+        with:
+          app-id: ${{ secrets.SK_CI_APP_ID }}
+          private-key: ${{ secrets.SK_CI_APP_PRIVATE_KEY }}
+          # owner alone = every repo the org-wide installation reaches (the planning
+          # clone below is private; a this-repo-only token cannot read it — zeitgeist#288)
+          owner: ${{ github.repository_owner }}
+      - name: Export the CI credential
+        env:
+          TOKEN: ${{ steps.mint.outputs.token }}
+        run: |
+          [ -n "$TOKEN" ] || { echo "::error::App installation token mint returned empty (planning#1878)."; exit 1; }
+          echo "GH_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+          # per-user helper is enough here (the canary runs no isolated-HOME test
+          # subprocesses, unlike ci.yml's suites); it reads GH_TOKEN at call time
+          gh auth setup-git
+          echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
+      - name: Sibling checkout (planning)
+        run: |
+          mkdir -p "$SK_HOME"
+          git clone -q https://github.com/spec-kitty/spec-kitty-planning.git "$SK_HOME/spec-kitty-planning"
+      - name: Run the PR-lane canary (bin/ci_pr_lane_canary.py, planning#2290)
+        working-directory: ${{ env.SK_HOME }}/spec-kitty-planning
+        env:
+          # the canary's own gh/git calls read GH_TOKEN (exported above); repeated
+          # here so the step's env is self-describing
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: |
+          # --max-wait-minutes 40, not the script's 45 default: installation tokens
+          # live ~1h after mint, and the canary's own polls and failure-issue writes
+          # must still be inside that life at the far end of the wait (a documented
+          # bound only, same class as ci.yml's re-mint note — the suite itself runs
+          # ~25 min, so 40 min is generous headroom for runner queueing).
+          bin/ci_pr_lane_canary.py "$REPO" --max-wait-minutes 40
