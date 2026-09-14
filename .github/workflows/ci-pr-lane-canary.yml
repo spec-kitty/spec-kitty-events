@@ -13,6 +13,14 @@
 # repo, which the groom sweep and the controller see — the failure lands somewhere
 # watched even when PR-thread writes are the thing that is broken.
 #
+# The failure issue is filed with labels[]=from:ci, so this repo must carry that label:
+# an issue-create naming an unknown label is a 422 for a write-capable token, which would
+# swallow the alarm in exactly the broken state it exists to detect (squad MAJOR,
+# sk-squad-spec-kitty-events-58). The label was created here 2026-09-14 copying the
+# planning repo's reference definition (006B75, "Filed by the CI agent"), and the invoked
+# bin/ci_pr_lane_canary.py re-ensures it create-if-missing before every filing anyway
+# (ensure_failure_label, planning#2296) — belt and braces, so the claim above holds.
+#
 # Governed by spec-kitty-planning PROGRAM.md §2 and docs/BLACKSMITH-CI.md §PR-lane
 # canary. Copy this workflow per-repo (change REPO) when another lane migrates to the
 # App token, exactly like ci.yml's per-repo rollout.
