@@ -49,7 +49,7 @@ def _envelope(
     event_id: str = _EVENT_ID,
     timestamp: datetime = datetime(2026, 9, 18, 12, 0, 0, tzinfo=timezone.utc),
 ) -> Event:
-    return Event(
+    return Event(  # type: ignore[call-arg]  # Optional Field(None, ...) defaults; runtime-verified
         event_id=event_id,
         event_type=COORDINATION_MESSAGE,
         aggregate_id="coordination/repo/99001",
@@ -62,8 +62,8 @@ def _envelope(
     )
 
 
-def _message(**overrides) -> CoordinationMessagePayload:
-    fields: dict = {
+def _message(**overrides: object) -> CoordinationMessagePayload:
+    fields: dict[str, object] = {
         "message_id": "cm-unit-0001",
         "kind": CoordinationMessageKind.FACT,
         "sender_agent_id": "agent-a",
@@ -71,7 +71,7 @@ def _message(**overrides) -> CoordinationMessagePayload:
         "body": "The /tokens API contract changed today.",
     }
     fields.update(overrides)
-    return CoordinationMessagePayload(**fields)
+    return CoordinationMessagePayload(**fields)  # type: ignore[arg-type]
 
 
 # ── closed vocabularies ──────────────────────────────────────────────────────
@@ -278,7 +278,7 @@ def test_identifier_fields_reject_malformed_values(field: str) -> None:
         "reply_to": "bad value",
         "mission_ref": "also bad",
     }
-    overrides: dict = {field: value_by_field[field]}
+    overrides: dict[str, object] = {field: value_by_field[field]}
     if field != "reply_to":
         # reply_to is optional on the fact kind; the other fields ride
         # alongside a legal reply_to so only the target field is malformed.
