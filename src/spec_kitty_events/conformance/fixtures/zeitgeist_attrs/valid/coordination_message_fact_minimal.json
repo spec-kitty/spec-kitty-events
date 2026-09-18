@@ -1,0 +1,27 @@
+{
+  "event_type": "CoordinationMessage",
+  "envelope": {
+    "event_id": "e2e00000-0000-4000-8000-000000000212",
+    "timestamp": "2026-08-25T09:00:00+00:00"
+  },
+  "payload": {
+    "message_id": "cm-00000001",
+    "kind": "fact",
+    "sender_agent_id": "agent-a",
+    "scope": "mission/m-alpha-001",
+    "body": "The /tokens API contract changed today; old fields are gone."
+  },
+  "expected_attrs": {
+    "event_id": "e2e00000-0000-4000-8000-000000000212",
+    "occurred_at": "2026-08-25T09:00:00+00:00",
+    "message_id": "cm-00000001",
+    "kind": "fact",
+    "sender_agent_id": "agent-a",
+    "scope": "mission/m-alpha-001",
+    "body": "The /tokens API contract changed today; old fields are gone.",
+    "ttl_s": "86400",
+    "contract_version": "1"
+  },
+  "expected_ref": "mission/m-alpha-001",
+  "notes": "The minimal coordination message: identity, kind, logical sender, scope, bounded body; ttl_s and contract_version default (86400 / 1) and still ride as explicit attrs, the OpsInvocation pattern. The frame ref is the publishing scope."
+}

@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.3.0] - 2026-09-18
+
+Bounded cross-mission coordination messages (issue #54, design spike
+planning#2163, policy decision planning#2188 resolved by the Live Work
+ADR's standing team-scoped publish authorization): one new volatile event
+type, `CoordinationMessage`, carried through the existing
+`zeitgeist_attrs` transport — the smallest shared contract that makes one
+published frame a *message* another agent can act on. Payload contract
+only; the CLI send wrapper (spec-kitty#4269) is the future producer and
+nothing here advertises a runtime tool.
+
+### Added
+
+- **`spec_kitty_events.coordination_message`** —
+  `CoordinationMessagePayload` with the closed
+  fact/proposal/question/answer/closure `kind` vocabulary; a stable scoped
+  `message_id`; an untrusted logical-agent `sender_agent_id` label (the
+  authenticated principal is server-derived, never a payload field); a
+  required publishing `scope` (the frame ref and the
+  `coordination/<scope>` aggregate); a mention-shaped `addressed_to` whose
+  bare-ident grammar makes a cross-scope target unexpressible; authored
+  `body` prose (one printable line, <=240 UTF-8 bytes, error not
+  truncation, per HIC-TEAM-TRUST-BOUNDARY-BOUNDED-PROSE-2026-09-14);
+  1-3 comma-free `evidence_refs` joined onto one bounded attr; a closed
+  `requested_action` enum (review/answer/unblock/decide); `ttl_s` expiry
+  (1 s - 7 d, default one day); `reply_to` thread linkage required for
+  answer/closure and never self-referential; `contract_version` gated on
+  both codec directions; `FORBIDDEN_COORDINATION_KEYS` (server-owned
+  identity, authority, and delivery-outcome claims, plus privacy) enforced
+  inside the payload model.
+- **`zeitgeist_attrs` wiring** — the family joins `VOLATILE_EVENT_TYPES`,
+  `PAYLOAD_MODEL_BY_EVENT_TYPE` (`scope` as the frame ref), and the
+  contract-version tables; `_encode_scalar` gains a `tuple[str, ...]`
+  comma-join arm (the `evidence_refs` wire form; decode treats the joined
+  value as opaque like every payload value).
+- **16 conformance fixtures** (8 valid, 8 invalid) in the
+  `zeitgeist_attrs` category covering the issue's required list —
+  oversized body, false sender, cross-scope target, stale reply, unknown
+  version, malicious prose (shape-level and shape-valid-data cases),
+  answer/closure matching, duplicate-intent republication, and the
+  multibyte 240-byte boundary — plus the unit suite
+  `tests/unit/test_coordination_message.py`. The "to"-direction rejection
+  runners (in-repo and packaged) now build the payload inside the raises
+  block so creation-time payload rejections are nameable fixture outcomes.
+- **Contract doc** `contracts/coordination-message.md`: server-derived vs
+  untrusted claims, sender-vs-account identity, target semantics (a
+  mention is not privacy), outcome semantics (acceptance is not delivery),
+  idempotency/expiry/reply matching, and the prose-framing mitigations.
+
 ## [10.2.0] - 2026-09-14
 
 Dedicated inline `summary` attr for `WPStatusChanged` moments

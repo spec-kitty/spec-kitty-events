@@ -1,0 +1,17 @@
+{
+  "event_type": "CoordinationMessage",
+  "attrs": {
+    "event_id": "e2e00000-0000-4000-8000-000000000226",
+    "occurred_at": "2026-08-25T09:00:00+00:00",
+    "message_id": "cm-00000014",
+    "kind": "fact",
+    "sender_agent_id": "agent-a",
+    "scope": "repo/99001",
+    "body": "A message from a future revision.",
+    "ttl_s": "86400",
+    "contract_version": "2"
+  },
+  "direction": "from",
+  "expected_error": "UnknownContractVersionError",
+  "notes": "Unknown version (issue #54's fixture list): contract_version 2 names a payload-shape revision this decoder does not know (KNOWN_CONTRACT_VERSIONS_BY_EVENT_TYPE lists only '1' today); decode fails closed with a named error rather than silently misinterpreting a future revision's attrs. Encode applies the identical check, so this package can never emit a frame its own decoder rejects."
+}

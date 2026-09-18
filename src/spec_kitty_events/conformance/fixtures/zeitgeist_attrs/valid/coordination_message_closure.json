@@ -1,0 +1,29 @@
+{
+  "event_type": "CoordinationMessage",
+  "envelope": {
+    "event_id": "e2e00000-0000-4000-8000-000000000215",
+    "timestamp": "2026-08-25T09:00:00+00:00"
+  },
+  "payload": {
+    "message_id": "cm-00000004",
+    "kind": "closure",
+    "sender_agent_id": "agent-b",
+    "scope": "repo/99001",
+    "body": "Resolved: the auth flake is closed by the retry tag.",
+    "reply_to": "cm-00000002"
+  },
+  "expected_attrs": {
+    "event_id": "e2e00000-0000-4000-8000-000000000215",
+    "occurred_at": "2026-08-25T09:00:00+00:00",
+    "message_id": "cm-00000004",
+    "kind": "closure",
+    "sender_agent_id": "agent-b",
+    "scope": "repo/99001",
+    "body": "Resolved: the auth flake is closed by the retry tag.",
+    "reply_to": "cm-00000002",
+    "ttl_s": "86400",
+    "contract_version": "1"
+  },
+  "expected_ref": "repo/99001",
+  "notes": "A closure concludes the thread the referenced question opened. Whether the referenced message was a question or proposal, and whether it had already expired (occurred_at + ttl_s), is consumer-side thread state: this contract guarantees only that a closure names the message it closes."
+}

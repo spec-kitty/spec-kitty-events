@@ -21,11 +21,13 @@ fixtures that travel in the wheel are exercised where consumers run them.
 
 from __future__ import annotations
 
+import importlib
 from datetime import datetime
 from typing import Any, Callable, cast
 from uuid import UUID
 
 import pytest
+from pydantic import ValidationError as PydanticValidationError
 
 from spec_kitty_events.conformance.loader import FixtureCase, load_fixtures
 from spec_kitty_events.decisionpoint import (
@@ -79,6 +81,17 @@ _ERROR_CLASSES: dict[str, type[Exception]] = {
     "UnknownVolatileEventTypeError": UnknownVolatileEventTypeError,
     "ZeitgeistAttrsError": ZeitgeistAttrsError,
     "ZeitgeistAttrsOverflowError": ZeitgeistAttrsOverflowError,
+    # events#54: a "to"-direction fixture may pin a payload that creation-time
+    # validation rejects (a false sender claim, a cross-scope target value, a
+    # self-referential reply, an over-bound body) — the rejection happens at
+    # payload construction, before the codec is ever reached, so the runner
+    # builds the payload inside the raises block (see
+    # test_zeitgeist_attrs_rejections) and pydantic's ValidationError is a
+    # nameable expected error exactly like the codec's typed errors.
+    "ValidationError": PydanticValidationError,
+    "ZeitgeistAttrsControlCharacterError": importlib.import_module(
+        "spec_kitty_events.zeitgeist_attrs"
+    ).ZeitgeistAttrsControlCharacterError,
 }
 
 # Envelope fields the fixture documents do not vary: only event_id and
@@ -161,9 +174,14 @@ def test_zeitgeist_attrs_rejections(fixture: FixtureCase) -> None:
     case = fixture.payload
     expected_error = _ERROR_CLASSES[case["expected_error"]]
     if case["direction"] == "to":
-        payload = _build_payload(fixture.event_type, case["payload"])
-        envelope = _fixture_envelope(fixture.event_type, case)
+        # The payload is built INSIDE the raises block: a "to" fixture may
+        # pin a payload that creation-time validation rejects (events#54 —
+        # the contract's own field rules fire before the codec does), and a
+        # fixture whose payload constructs fine still exercises the encode
+        # rejection exactly as before.
         with pytest.raises(expected_error):
+            payload = _build_payload(fixture.event_type, case["payload"])
+            envelope = _fixture_envelope(fixture.event_type, case)
             to_zeitgeist_attrs(payload, envelope)
     else:
         assert case["direction"] == "from"

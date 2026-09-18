@@ -2455,6 +2455,134 @@
       "min_version": "9.1.2"
     },
     {
+      "id": "coordination_message_fact_minimal",
+      "path": "zeitgeist_attrs/valid/coordination_message_fact_minimal.json",
+      "expected_result": "valid",
+      "event_type": "CoordinationMessage",
+      "notes": "The minimal coordination message: identity, kind, logical sender, scope, bounded body; ttl_s/contract_version defaults ride as explicit attrs; the frame ref is the publishing scope.",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_question_addressed",
+      "path": "zeitgeist_attrs/valid/coordination_message_question_addressed.json",
+      "expected_result": "valid",
+      "event_type": "CoordinationMessage",
+      "notes": "A question opening a thread with a mention; a mention cannot provide privacy and requested_action=answer is a request, never an instruction with authority.",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_answer_with_reply_and_evidence",
+      "path": "zeitgeist_attrs/valid/coordination_message_answer_with_reply_and_evidence.json",
+      "expected_result": "valid",
+      "event_type": "CoordinationMessage",
+      "notes": "An answer must name the message it answers (reply_to); evidence_refs ride as one comma-joined attr from a bounded comma-free tuple.",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_closure",
+      "path": "zeitgeist_attrs/valid/coordination_message_closure.json",
+      "expected_result": "valid",
+      "event_type": "CoordinationMessage",
+      "notes": "A closure concludes the thread the referenced question opened; expiry/thread-kind matching is consumer-side state.",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_proposal_decide",
+      "path": "zeitgeist_attrs/valid/coordination_message_proposal_decide.json",
+      "expected_result": "valid",
+      "event_type": "CoordinationMessage",
+      "notes": "A proposal with the optional sender mission binding and requested_action=decide; decision requests route to the decision surface, this frame only asks.",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_body_multibyte_max_boundary",
+      "path": "zeitgeist_attrs/valid/coordination_message_body_multibyte_max_boundary.json",
+      "expected_result": "valid",
+      "event_type": "CoordinationMessage",
+      "notes": "The prose bound is 240 UTF-8 bytes: 120 x 'e-acute' is 120 characters and exactly 240 bytes, inside the bound in both units.",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_fact_republished",
+      "path": "zeitgeist_attrs/valid/coordination_message_fact_republished.json",
+      "expected_result": "valid",
+      "event_type": "CoordinationMessage",
+      "notes": "Duplicate intent: the same message_id as coordination_message_fact_minimal under a new event_id is a valid republication; consumers deduplicate on (scope, message_id).",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_malicious_prose_is_data",
+      "path": "zeitgeist_attrs/valid/coordination_message_malicious_prose_is_data.json",
+      "expected_result": "valid",
+      "event_type": "CoordinationMessage",
+      "notes": "Malicious prose is shape-valid on purpose: creation-time validation limits shape, never intent; prose framing is not authority and agent surfaces render body only in the nonce-framed untrusted block.",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_body_over_bound",
+      "path": "zeitgeist_attrs/invalid/coordination_message_body_over_bound.json",
+      "expected_result": "invalid",
+      "event_type": "CoordinationMessage",
+      "notes": "Oversized body: a 241-byte body exceeds the 240-byte per-attr bound and decode raises rather than truncating.",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_body_control_character",
+      "path": "zeitgeist_attrs/invalid/coordination_message_body_control_character.json",
+      "expected_result": "invalid",
+      "event_type": "CoordinationMessage",
+      "notes": "Malicious prose at the shape level: a U+202E bidi override in body is not str.isprintable() and decode rejects it.",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_false_sender_account_claim",
+      "path": "zeitgeist_attrs/invalid/coordination_message_false_sender_account_claim.json",
+      "expected_result": "invalid",
+      "event_type": "CoordinationMessage",
+      "notes": "False sender: the payload claims the user account behind the credential; the account is server-derived and never a payload field.",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_cross_scope_target_value",
+      "path": "zeitgeist_attrs/invalid/coordination_message_cross_scope_target_value.json",
+      "expected_result": "invalid",
+      "event_type": "CoordinationMessage",
+      "notes": "Cross-scope target: an addressee cannot carry a scope qualification, so no cross-scope target is expressible on this wire.",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_answer_reply_to_self",
+      "path": "zeitgeist_attrs/invalid/coordination_message_answer_reply_to_self.json",
+      "expected_result": "invalid",
+      "event_type": "CoordinationMessage",
+      "notes": "Stale/self-referential reply: reply_to must name another message, never its own.",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_answer_missing_reply_to",
+      "path": "zeitgeist_attrs/invalid/coordination_message_answer_missing_reply_to.json",
+      "expected_result": "invalid",
+      "event_type": "CoordinationMessage",
+      "notes": "Answer/closure matching: an answer with no reply_to names nothing.",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_unknown_contract_version",
+      "path": "zeitgeist_attrs/invalid/coordination_message_unknown_contract_version.json",
+      "expected_result": "invalid",
+      "event_type": "CoordinationMessage",
+      "notes": "Unknown version: contract_version 2 fails closed with a named error on both codec directions.",
+      "min_version": "10.3.0"
+    },
+    {
+      "id": "coordination_message_delivery_outcome_claim",
+      "path": "zeitgeist_attrs/invalid/coordination_message_delivery_outcome_claim.json",
+      "expected_result": "invalid",
+      "event_type": "CoordinationMessage",
+      "notes": "Acceptance is not delivery: a producer-asserted acknowledgement is a forbidden outcome claim.",
+      "min_version": "10.3.0"
+    },
+    {
       "id": "cutover-boundary-accept-schema-version-missing",
       "path": "cutover_boundary/accepted_by_validate_event/schema_version_missing.json",
       "expected_result": "valid",

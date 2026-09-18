@@ -132,6 +132,7 @@ def test_volatile_vocabulary_is_the_ephemeral_design_set() -> None:
         "TasksCompleted",
         "OpsInvocationStarted",
         "OpsInvocationCompleted",
+        "CoordinationMessage",
     }
 
 

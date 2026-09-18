@@ -1,0 +1,18 @@
+{
+  "event_type": "CoordinationMessage",
+  "envelope": {
+    "event_id": "e2e00000-0000-4000-8000-000000000223",
+    "timestamp": "2026-08-25T09:00:00+00:00"
+  },
+  "payload": {
+    "message_id": "cm-00000011",
+    "kind": "question",
+    "sender_agent_id": "agent-a",
+    "scope": "repo/99001",
+    "body": "Does team B's relay carry this too?",
+    "addressed_to": "team-b:agent-9"
+  },
+  "direction": "to",
+  "expected_error": "ValidationError",
+  "notes": "Cross-scope target (issue #54's fixture list): an addressee cannot carry its own scope qualification - the ident grammar rejects 'team-b:agent-9', so no cross-scope target is expressible on this wire at all. The frame publishes to exactly one authorized scope; a mention narrows nothing, and narrow delivery would need service-side enforcement that is a separate issue only if integration demonstrates a gap."
+}

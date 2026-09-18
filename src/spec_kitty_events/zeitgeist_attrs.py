@@ -68,6 +68,20 @@ declared in :data:`UNBROADCAST_FIELDS` and stay local:
   stakeholder-facing text that would otherwise live on the team relay for
   the whole retention window.
 
+Two sanctioned exceptions carry prose on the wire, both under
+``HIC-TEAM-TRUST-BOUNDARY-BOUNDED-PROSE-2026-09-14.md`` (a team is a trust
+boundary; bounded one-line prose may ride the relay inline):
+
+* the derived ``summary`` attr (see "Bounded moment summaries" below) —
+  a deterministic, truncated projection of otherwise-dropped prose, the
+  pattern the summary-source families use;
+* ``CoordinationMessagePayload.body`` (events#54) — a coordination
+  message's content *is* the prose, so it rides under its own ``body``
+  attr key rather than a derived summary: it is validated at creation to
+  one printable line within the 240-byte bound (error, never truncation —
+  a truncated message would corrupt meaning), and the codec's generic
+  per-attr bound re-checks it on both directions.
+
 Everything else the family declares rides in attrs; any carried value over
 the bound raises rather than truncates: an oversize payload simply does not
 broadcast (the CLI fan-out seam is fire-and-forget; a dropped moment is
@@ -164,6 +178,11 @@ from typing import Any, Union, get_args, get_origin
 
 from pydantic import BaseModel
 
+from spec_kitty_events.coordination_message import (
+    COORDINATION_MESSAGE,
+    COORDINATION_MESSAGE_CONTRACT_VERSION,
+    CoordinationMessagePayload,
+)
 from spec_kitty_events.decisionpoint import (
     DECISION_POINT_OPENED,
     DECISION_POINT_RESOLVED,
@@ -370,6 +389,10 @@ class UnknownContractVersionError(ZeitgeistAttrsError):
 #: ``OpsInvocationCompleted`` (Ops/Invocation moments;
 #: EXPERIMENTAL-spec-kitty-events#78) joined the vocabulary in 8.3.0 — their
 #: own family, so Ops shares this timeline without reusing a mission kind.
+#: ``CoordinationMessage`` (bounded cross-mission messages, events#54) joined
+#: in 10.3.0 — one event type whose payload ``kind`` field carries the
+#: fact/proposal/question/answer/closure vocabulary, its own family so
+#: authored communication never reuses a lifecycle event kind.
 VOLATILE_EVENT_TYPES: frozenset[str] = frozenset(
     {
         WP_STATUS_CHANGED,
@@ -392,6 +415,7 @@ VOLATILE_EVENT_TYPES: frozenset[str] = frozenset(
         TASKS_COMPLETED,
         OPS_INVOCATION_STARTED,
         OPS_INVOCATION_COMPLETED,
+        COORDINATION_MESSAGE,
     }
 )
 
@@ -428,6 +452,7 @@ PAYLOAD_MODEL_BY_EVENT_TYPE: Mapping[str, type[BaseModel] | tuple[type[BaseModel
     TASKS_COMPLETED: TasksCompletedPayload,
     OPS_INVOCATION_STARTED: OpsInvocationStartedPayload,
     OPS_INVOCATION_COMPLETED: OpsInvocationCompletedPayload,
+    COORDINATION_MESSAGE: CoordinationMessagePayload,
 }
 
 
@@ -570,6 +595,7 @@ CONTRACT_VERSIONED_EVENT_TYPES: frozenset[str] = frozenset(
     {
         OPS_INVOCATION_STARTED,
         OPS_INVOCATION_COMPLETED,
+        COORDINATION_MESSAGE,
     }
 )
 
@@ -578,6 +604,7 @@ CONTRACT_VERSIONED_EVENT_TYPES: frozenset[str] = frozenset(
 KNOWN_CONTRACT_VERSIONS_BY_EVENT_TYPE: Mapping[str, frozenset[str]] = {
     OPS_INVOCATION_STARTED: frozenset({"1"}),
     OPS_INVOCATION_COMPLETED: frozenset({"1"}),
+    COORDINATION_MESSAGE: frozenset({str(COORDINATION_MESSAGE_CONTRACT_VERSION)}),
 }
 
 
@@ -733,11 +760,27 @@ _SUMMARY_BUILDER_BY_EVENT_TYPE: Mapping[str, Any] = {
 
 
 def _encode_scalar(field: str, value: Any) -> str:
-    """Encode one leaf value as its bounded string form."""
+    """Encode one leaf value as its bounded string form.
+
+    A ``tuple[str, ...]`` joins its elements with ``","`` into one bounded
+    string — the wire form for a payload's bounded reference list (first
+    used by ``CoordinationMessagePayload.evidence_refs``, events#54). The
+    family contract owns comma-freedom of the elements (the coordination
+    message's evidence grammar is ASCII and comma-free by pattern, and its
+    1..3 × ≤72-char bound keeps the join inside the 240-byte attr bound);
+    decode treats the joined value as opaque like every other payload
+    value, never splitting it back.
+    """
     if isinstance(value, bool):  # before int: bool subclasses int
         return "true" if value else "false"
     if isinstance(value, datetime):
         return value.isoformat()
+    if isinstance(value, tuple):
+        if not all(isinstance(element, str) for element in value):
+            raise UnencodableFieldValueError(
+                f"field {field!r}: only tuple[str, ...] has a bounded flat-string encoding"
+            )
+        return ",".join(value)
     if isinstance(value, Enum):
         raw = value.value
         encoded = raw if isinstance(raw, str) else str(raw)
@@ -1061,6 +1104,7 @@ REF_FIELD_BY_EVENT_TYPE: Mapping[str, str] = {
     TASKS_COMPLETED: "mission_slug",
     OPS_INVOCATION_STARTED: "invocation_id",
     OPS_INVOCATION_COMPLETED: "invocation_id",
+    COORDINATION_MESSAGE: "scope",
 }
 
 
