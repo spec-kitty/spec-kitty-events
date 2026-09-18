@@ -1,0 +1,17 @@
+{
+  "event_type": "CoordinationMessage",
+  "attrs": {
+    "event_id": "e2e00000-0000-4000-8000-000000000220",
+    "occurred_at": "2026-08-25T09:00:00+00:00",
+    "message_id": "cm-00000008",
+    "kind": "fact",
+    "sender_agent_id": "agent-a",
+    "scope": "repo/99001",
+    "body": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "ttl_s": "86400",
+    "contract_version": "1"
+  },
+  "direction": "from",
+  "expected_error": "ZeitgeistAttrsOverflowError",
+  "notes": "Oversized body (issue #54's fixture list): a 241-byte body exceeds the 240-UTF-8-byte per-attr bound and decode raises rather than truncating. Encode cannot produce this frame - the payload's creation-time validation rejects a 241-byte body first - so the oversized-body shape is pinned from the inbound side, exactly like the OpsInvocation value-over-bound fixture."
+}

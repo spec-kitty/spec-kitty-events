@@ -1,0 +1,31 @@
+{
+  "event_type": "CoordinationMessage",
+  "envelope": {
+    "event_id": "e2e00000-0000-4000-8000-000000000213",
+    "timestamp": "2026-08-25T09:00:00+00:00"
+  },
+  "payload": {
+    "message_id": "cm-00000002",
+    "kind": "question",
+    "sender_agent_id": "agent-b",
+    "scope": "repo/99001",
+    "body": "Can anyone unblock the flaky auth test on main before the cut?",
+    "addressed_to": "agent-a",
+    "requested_action": "answer"
+  },
+  "expected_attrs": {
+    "event_id": "e2e00000-0000-4000-8000-000000000213",
+    "occurred_at": "2026-08-25T09:00:00+00:00",
+    "message_id": "cm-00000002",
+    "kind": "question",
+    "sender_agent_id": "agent-b",
+    "scope": "repo/99001",
+    "body": "Can anyone unblock the flaky auth test on main before the cut?",
+    "addressed_to": "agent-a",
+    "requested_action": "answer",
+    "ttl_s": "86400",
+    "contract_version": "1"
+  },
+  "expected_ref": "repo/99001",
+  "notes": "A question opening a thread, with a mention (addressed_to). A mention cannot provide privacy: the frame publishes to the whole scope and every subscriber may read the body. requested_action=answer is a request, never an instruction with authority."
+}

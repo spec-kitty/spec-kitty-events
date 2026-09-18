@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.2.0`
+**Current package version**: `10.3.0`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,28 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `10.3.0` — bounded cross-mission coordination messages (new volatile family)
+
+`10.3.0` (spec-kitty/spec-kitty-events#54) adds one volatile event type,
+`CoordinationMessage`, to the `zeitgeist_attrs` vocabulary: the bounded
+cross-mission message contract the planning#2163 spike demonstrated, over
+the existing relay transport. Additive for every existing consumer: no
+existing event type, payload field, or frame shape changes, and consumers
+that do not know the new type treat it exactly as they treat any
+`UnknownVolatileEventTypeError` today. Consumers that pin the volatile
+vocabulary by name (SaaS attr-key validation, Slack rendering) must adopt
+this version (or later) before any producer sends the type — the same
+rollout order rule as `10.2.0`'s `summary` attr. `contract_version` rides
+as an explicit attr and both codec directions reject an unknown version
+with a named error, so a future revision of this payload shape can never
+be silently misinterpreted. `sender_agent_id` is an untrusted
+logical-agent label; the authenticated principal stays server-derived and
+`FORBIDDEN_COORDINATION_KEYS` fails closed on any payload that claims it.
+Payload contract only — no runtime send tool exists or is advertised
+(spec-kitty#4269 is the future producer). `10.3.0` rather than an
+in-place `10.2.0` amendment because `scripts/check_version_not_amended.py`
+spends a version once it has been declared on main, adopted or not.
 
 ## `10.2.0` — dedicated inline `summary` attr for `WPStatusChanged`
 

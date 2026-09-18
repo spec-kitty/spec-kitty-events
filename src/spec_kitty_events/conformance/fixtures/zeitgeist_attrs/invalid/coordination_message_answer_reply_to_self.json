@@ -1,0 +1,18 @@
+{
+  "event_type": "CoordinationMessage",
+  "envelope": {
+    "event_id": "e2e00000-0000-4000-8000-000000000224",
+    "timestamp": "2026-08-25T09:00:00+00:00"
+  },
+  "payload": {
+    "message_id": "cm-00000012",
+    "kind": "answer",
+    "sender_agent_id": "agent-a",
+    "scope": "repo/99001",
+    "body": "Answering myself.",
+    "reply_to": "cm-00000012"
+  },
+  "direction": "to",
+  "expected_error": "ValidationError",
+  "notes": "Stale/self-referential reply (issue #54's fixture list): reply_to must name ANOTHER message, never its own. This is the mechanical half of stale-reply rejection; the timing half (a reply arriving after the referenced message's occurred_at + ttl_s) needs thread state this contract deliberately does not keep and is consumer-side guidance."
+}

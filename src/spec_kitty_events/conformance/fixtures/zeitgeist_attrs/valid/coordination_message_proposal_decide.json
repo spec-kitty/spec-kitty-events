@@ -1,0 +1,31 @@
+{
+  "event_type": "CoordinationMessage",
+  "envelope": {
+    "event_id": "e2e00000-0000-4000-8000-000000000216",
+    "timestamp": "2026-08-25T09:00:00+00:00"
+  },
+  "payload": {
+    "message_id": "cm-00000005",
+    "kind": "proposal",
+    "sender_agent_id": "agent-c",
+    "scope": "mission/m-beta-002",
+    "body": "Propose pinning spec-kitty-events to the 10.3.0 contract before launch.",
+    "mission_ref": "mission/m-beta-002",
+    "requested_action": "decide"
+  },
+  "expected_attrs": {
+    "event_id": "e2e00000-0000-4000-8000-000000000216",
+    "occurred_at": "2026-08-25T09:00:00+00:00",
+    "message_id": "cm-00000005",
+    "kind": "proposal",
+    "sender_agent_id": "agent-c",
+    "scope": "mission/m-beta-002",
+    "body": "Propose pinning spec-kitty-events to the 10.3.0 contract before launch.",
+    "mission_ref": "mission/m-beta-002",
+    "requested_action": "decide",
+    "ttl_s": "86400",
+    "contract_version": "1"
+  },
+  "expected_ref": "mission/m-beta-002",
+  "notes": "A proposal with the sender's optional mission binding and requested_action=decide. A decision request routes humans/agents to the decision ledger (DecisionPoint moments stay the decision surface); this frame only asks."
+}

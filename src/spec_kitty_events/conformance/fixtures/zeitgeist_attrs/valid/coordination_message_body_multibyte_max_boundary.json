@@ -1,0 +1,27 @@
+{
+  "event_type": "CoordinationMessage",
+  "envelope": {
+    "event_id": "e2e00000-0000-4000-8000-000000000217",
+    "timestamp": "2026-08-25T09:00:00+00:00"
+  },
+  "payload": {
+    "message_id": "cm-00000006",
+    "kind": "fact",
+    "sender_agent_id": "agent-a",
+    "scope": "repo/99001",
+    "body": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+  },
+  "expected_attrs": {
+    "event_id": "e2e00000-0000-4000-8000-000000000217",
+    "occurred_at": "2026-08-25T09:00:00+00:00",
+    "message_id": "cm-00000006",
+    "kind": "fact",
+    "sender_agent_id": "agent-a",
+    "scope": "repo/99001",
+    "body": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé",
+    "ttl_s": "86400",
+    "contract_version": "1"
+  },
+  "expected_ref": "repo/99001",
+  "notes": "The prose bound is 240 UTF-8 BYTES, not characters (the relay's maxUtf8Bytes clause is the binding one): 120 x 'é' is 120 characters and exactly 240 bytes, inside the bound in both units. Creation-time validation and the codec's generic per-attr bound agree on the byte count."
+}

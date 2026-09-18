@@ -1,0 +1,17 @@
+{
+  "event_type": "CoordinationMessage",
+  "envelope": {
+    "event_id": "e2e00000-0000-4000-8000-000000000225",
+    "timestamp": "2026-08-25T09:00:00+00:00"
+  },
+  "payload": {
+    "message_id": "cm-00000013",
+    "kind": "answer",
+    "sender_agent_id": "agent-b",
+    "scope": "repo/99001",
+    "body": "Yes, but keep it quiet."
+  },
+  "direction": "to",
+  "expected_error": "ValidationError",
+  "notes": "Answer/closure matching (issue #54): an answer with no reply_to is not an answer - it names nothing. The same rule holds for closure."
+}

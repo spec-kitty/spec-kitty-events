@@ -1,0 +1,27 @@
+{
+  "event_type": "CoordinationMessage",
+  "envelope": {
+    "event_id": "e2e00000-0000-4000-8000-000000000218",
+    "timestamp": "2026-08-25T09:00:00+00:00"
+  },
+  "payload": {
+    "message_id": "cm-00000001",
+    "kind": "fact",
+    "sender_agent_id": "agent-a",
+    "scope": "mission/m-alpha-001",
+    "body": "The /tokens API contract changed today; old fields are gone."
+  },
+  "expected_attrs": {
+    "event_id": "e2e00000-0000-4000-8000-000000000218",
+    "occurred_at": "2026-08-25T09:00:00+00:00",
+    "message_id": "cm-00000001",
+    "kind": "fact",
+    "sender_agent_id": "agent-a",
+    "scope": "mission/m-alpha-001",
+    "body": "The /tokens API contract changed today; old fields are gone.",
+    "ttl_s": "86400",
+    "contract_version": "1"
+  },
+  "expected_ref": "mission/m-alpha-001",
+  "notes": "Duplicate intent / idempotency: the same message_id as coordination_message_fact_minimal under a new event_id is a valid republication (a retry after a relay outage, or a re-assert). The codec never deduplicates; consumers deduplicate on (scope, message_id), the same shape Team Kitty applies on (team, event_id)."
+}

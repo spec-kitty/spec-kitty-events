@@ -24,6 +24,18 @@ This release publishes:
   vocabulary so operations can share the Team Kitty timeline with missions
   without reusing mission event kinds. Post-MVP; the CLI emitter, SaaS view,
   and detail service are not implemented here.
+- Bounded cross-mission coordination messages (``spec_kitty_events.coordination_message``,
+  events#54): the ``CoordinationMessage`` volatile moment — one event type
+  whose payload ``kind`` carries the fact/proposal/question/answer/closure
+  vocabulary, a stable scoped ``message_id``, an untrusted logical-agent
+  sender label, a mention-shaped ``addressed_to``, bounded authored prose
+  (``body``, one printable line, <=240 UTF-8 bytes, error not truncation),
+  comma-free evidence refs, a requested-action enum, ``ttl_s`` expiry and
+  ``reply_to`` thread linkage, riding the existing ``zeitgeist_attrs``
+  transport. The payload contract only: the CLI send wrapper
+  (spec-kitty#4269) is the future producer and nothing here advertises a
+  runtime tool. Standing team-scoped publish authorization per the Live
+  Work ADR (planning#2188); received prose never overrides task authority.
 - Durable live-work contracts (``spec_kitty_events.work_observation``,
   ``spec_kitty_events.work_replay``): the ``WorkObservation`` event type —
   25 kinds across lifecycle/session/action/narrative/message/coverage
@@ -40,7 +52,7 @@ The offline sync/cutover surfaces (``spec_kitty_events.sync``, ``legacy``,
 lives in ``spec_kitty_events.strict.validate_strict_envelope``.
 """
 
-__version__ = "10.2.0"
+__version__ = "10.3.0"
 
 # Core data models
 from spec_kitty_events.models import (
@@ -172,6 +184,21 @@ from spec_kitty_events.ops_invocation import (
     OpsInvocationOutcome,
     OpsInvocationStartedPayload,
     OpsInvocationCompletedPayload,
+)
+
+# Bounded cross-mission coordination-message contract (events#54): one
+# volatile event type over zeitgeist_attrs; payload contract only, no
+# runtime send tool (the CLI wrapper spec-kitty#4269 is the future producer).
+from spec_kitty_events.coordination_message import (
+    COORDINATION_MESSAGE,
+    COORDINATION_MESSAGE_EVENT_TYPES,
+    COORDINATION_MESSAGE_CONTRACT_VERSION,
+    FORBIDDEN_COORDINATION_KEYS,
+    FORBIDDEN_COORDINATION_KEYS_VERSION,
+    CoordinationMessageKind,
+    RequestedAction,
+    CoordinationMessagePayload,
+    coordination_aggregate_id,
 )
 
 # Build-aggregate event contracts (shipped by mission
@@ -712,6 +739,13 @@ __all__ = [
     "OPS_INVOCATION_CONTRACT_VERSION",
     "OpsInvocationOutcome",
     "OpsInvocationStartedPayload",
+    "COORDINATION_MESSAGE",
+    "COORDINATION_MESSAGE_EVENT_TYPES",
+    "COORDINATION_MESSAGE_CONTRACT_VERSION",
+    "FORBIDDEN_COORDINATION_KEYS",
+    "FORBIDDEN_COORDINATION_KEYS_VERSION",
+    "CoordinationMessageKind",
+    "RequestedAction",
     # Durable live-work contracts (#55)
     "WORK_OBSERVATION",
     "WORK_OBSERVATION_CONTRACT_VERSION",
@@ -757,6 +791,8 @@ __all__ = [
     "replay_order_key",
     "classify_work_stream",
     "OpsInvocationCompletedPayload",
+    "CoordinationMessagePayload",
+    "coordination_aggregate_id",
     # Collaboration event contracts
     "PARTICIPANT_INVITED",
     "PARTICIPANT_JOINED",

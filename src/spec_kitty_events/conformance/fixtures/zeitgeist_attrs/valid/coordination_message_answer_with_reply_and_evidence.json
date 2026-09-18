@@ -1,0 +1,36 @@
+{
+  "event_type": "CoordinationMessage",
+  "envelope": {
+    "event_id": "e2e00000-0000-4000-8000-000000000214",
+    "timestamp": "2026-08-25T09:00:00+00:00"
+  },
+  "payload": {
+    "message_id": "cm-00000003",
+    "kind": "answer",
+    "sender_agent_id": "agent-a",
+    "scope": "repo/99001",
+    "body": "Flake is a clock skew; retry tagged, see the CI run.",
+    "addressed_to": "agent-b",
+    "evidence_refs": [
+      "ci-run-8841",
+      "pr-2231"
+    ],
+    "reply_to": "cm-00000002"
+  },
+  "expected_attrs": {
+    "event_id": "e2e00000-0000-4000-8000-000000000214",
+    "occurred_at": "2026-08-25T09:00:00+00:00",
+    "message_id": "cm-00000003",
+    "kind": "answer",
+    "sender_agent_id": "agent-a",
+    "scope": "repo/99001",
+    "body": "Flake is a clock skew; retry tagged, see the CI run.",
+    "addressed_to": "agent-b",
+    "evidence_refs": "ci-run-8841,pr-2231",
+    "reply_to": "cm-00000002",
+    "ttl_s": "86400",
+    "contract_version": "1"
+  },
+  "expected_ref": "repo/99001",
+  "notes": "An answer must reference the message it answers (reply_to required for answer/closure). evidence_refs ride as one comma-joined attr (each ref is comma-free ASCII by grammar, at most 3 x 72 chars, 218 bytes worst case); decode treats the joined value as opaque, like every payload value."
+}
