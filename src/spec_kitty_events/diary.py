@@ -1042,18 +1042,28 @@ _REPLACE_SLOTS: tuple[str, ...] = (
 _CLAIM_RELEASE_SLOTS: tuple[str, ...] = ("agent", "shell_pid", "shell_pid_created_at")
 
 
+#: Pre-review lanes a reviewer rejection rolls a WP back to. `in_review -> planned`
+#: is the canonical `move-task --to planned` rejection (#69); `-> in_progress` is
+#: the legacy #1475 shape; `-> claimed` is the remaining pre-review pipeline lane.
+#: APPROVED/DONE/BLOCKED/CANCELED are deliberately excluded (not rework rollbacks).
+_REJECTION_ROLLBACK_TARGETS: frozenset[Lane] = frozenset(
+    {Lane.PLANNED, Lane.CLAIMED, Lane.IN_PROGRESS}
+)
+
+
 def _is_rollback_event(event: StatusEvent) -> bool:
     """Check if an event represents a reviewer rollback.
 
-    Current review rejection rolls back from in_review to in_progress.
-    Legacy logs represented the same outcome as for_review to in_progress
-    with a review reference.
+    Current review rejection rolls back from in_review to one of the
+    pre-review pipeline lanes (canonically `planned`, #69; legacy logs also
+    used `in_progress`). Legacy logs represented the same outcome as
+    for_review to a pre-review lane with a review reference.
     """
-    if event.to_lane != Lane.IN_PROGRESS:
-        return False
     if event.from_lane == Lane.IN_REVIEW:
-        return True
-    return event.from_lane == Lane.FOR_REVIEW and event.review_ref is not None
+        return event.to_lane in _REJECTION_ROLLBACK_TARGETS
+    if event.from_lane == Lane.FOR_REVIEW and event.review_ref is not None:
+        return event.to_lane in _REJECTION_ROLLBACK_TARGETS
+    return False
 
 
 def _wp_state_from_event(
@@ -1257,6 +1267,13 @@ def _dedup_preserve_order(refs: list[str]) -> list[str]:
     return result
 
 
+def _find_event_by_id(event_id: str | None, all_events: list[StatusEvent]) -> StatusEvent | None:
+    """Look up an event by ``event_id`` in ``all_events``, or ``None`` if unset/absent."""
+    if event_id is None:
+        return None
+    return next((ev for ev in all_events if ev.event_id == event_id), None)
+
+
 def _should_apply_event(
     current_state: dict[str, Any] | None,
     new_event: StatusEvent,
@@ -1264,48 +1281,65 @@ def _should_apply_event(
 ) -> bool:
     """Determine whether new_event should be applied given the current state.
 
-    Implements rollback-aware precedence: if the current state was set by
-    a forward transition and a concurrent rollback event exists for the
-    same WP, the rollback wins.
+    Implements rollback-aware precedence, in two arms:
 
-    If there is no current state, the event always applies.
-    If events are not concurrent (different timestamps), the later one
-    wins naturally through sort order.
+    (i) **Same-timestamp concurrency.** If the current state was set by a
+        forward transition and a concurrent (equal-``at``) rollback event
+        exists for the same WP, the rollback wins; conversely a concurrent
+        forward transition never overrides a rollback.
+
+    (ii) **Causal-concurrency precedence (#69), independent of ``at``.** A
+         rollback is never overwritten by a *later* forward transition that
+         did not causally follow it -- i.e. whose ``from_lane`` is not the
+         lane the rollback left the WP in. A stale approval carries
+         ``from_lane=in_review`` while the applied rollback already moved
+         the WP to ``planned``/``in_progress``/``claimed``; that mismatch
+         means the approval branched off the same pre-rollback ``in_review``
+         state rather than following the rollback, so it is causally
+         concurrent with it and is dropped regardless of wall-clock order.
+         A genuine rework transition (e.g. ``planned -> claimed`` after a
+         ``in_review -> planned`` rejection) has a matching ``from_lane`` and
+         is unaffected.
+
+    If there is no current state, the event always applies. If neither arm
+    fires, the later event wins naturally through sort order.
     """
     if current_state is None:
         return True
 
     current_event_id = current_state.get("last_event_id")
     current_timestamp = current_state.get("last_transition_at")
+    current_lane = current_state.get("lane")
+    current_setter = _find_event_by_id(current_event_id, all_events)
 
-    # If this event has the same timestamp as the current state's event,
-    # they are concurrent. Check rollback precedence.
+    # (i) Same-timestamp concurrency: check rollback precedence.
     if current_timestamp == new_event.at:
-        # If the new event is a rollback, it beats a forward transition
-        if _is_rollback_event(new_event):
-            # Check if the current state was set by a non-rollback event
-            current_setter = None
-            for ev in all_events:
-                if ev.event_id == current_event_id:
-                    current_setter = ev
-                    break
-            if current_setter is not None and not _is_rollback_event(current_setter):
-                return True  # Rollback beats forward
+        if (
+            _is_rollback_event(new_event)
+            and current_setter is not None
+            and not _is_rollback_event(current_setter)
+        ):
+            return True  # Rollback beats forward
 
-        # If the current state was set by a rollback, don't let a
-        # concurrent forward event override it
-        if current_event_id is not None:
-            current_setter = None
-            for ev in all_events:
-                if ev.event_id == current_event_id:
-                    current_setter = ev
-                    break
-            if (
-                current_setter is not None
-                and _is_rollback_event(current_setter)
-                and not _is_rollback_event(new_event)
-            ):
-                return False  # Forward does not beat rollback
+        if (
+            current_setter is not None
+            and _is_rollback_event(current_setter)
+            and not _is_rollback_event(new_event)
+        ):
+            return False  # Forward does not beat rollback
+
+    # (ii) A rollback is never overwritten by a forward transition that did
+    # not causally follow it (its from_lane != the lane the rollback set).
+    # #69: the stale approval carries from_lane=in_review while the applied
+    # rollback left the WP in planned/in_progress, so it is causally
+    # concurrent and dropped regardless of `at`.
+    if (
+        current_setter is not None
+        and _is_rollback_event(current_setter)
+        and not _is_rollback_event(new_event)
+        and str(new_event.from_lane) != current_lane
+    ):
+        return False
 
     # Default: apply the event (later in sort order wins)
     return True

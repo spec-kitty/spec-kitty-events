@@ -328,6 +328,156 @@ class TestReduceConcurrentRollbackPrecedence:
         assert state.work_packages["WP01"]["lane"] == "in_progress"
         assert state.work_packages["WP01"]["last_event_id"] == _ulid(1)
 
+    def test_planned_rejection_beats_later_stale_approval(self) -> None:
+        """#69: a committed ``in_review -> planned`` rejection is never
+        overwritten by a causally-concurrent approval that carries a LATER
+        wall-clock ``at``. The approval's ``from_lane`` (``in_review``) does
+        not match the lane the rejection left the WP in (``planned``), so it
+        never causally followed the rejection -- it must be dropped
+        regardless of timestamp ordering (defect B: the old arbitration only
+        checked EQUAL timestamps)."""
+        events = [
+            _row(_ulid(1), from_lane="planned", to_lane="claimed", at="2026-02-08T12:00:00+00:00"),
+            _row(
+                _ulid(2),
+                from_lane="claimed",
+                to_lane="in_progress",
+                at="2026-02-08T12:05:00+00:00",
+            ),
+            _row(
+                _ulid(3),
+                from_lane="in_progress",
+                to_lane="for_review",
+                at="2026-02-08T12:10:00+00:00",
+            ),
+            _row(
+                _ulid(4),
+                from_lane="for_review",
+                to_lane="in_review",
+                at="2026-02-08T12:15:00+00:00",
+            ),
+            _row(
+                _ulid(5),
+                from_lane="in_review",
+                to_lane="planned",
+                at="2026-02-08T12:20:00+00:00",
+                actor="reviewer-a",
+                review_ref="review://WP01/changes-requested",
+            ),
+            _row(
+                _ulid(6),
+                from_lane="in_review",
+                to_lane="approved",
+                at="2026-02-08T12:25:00+00:00",
+                actor="reviewer-b",
+                review_result=_REVIEW_RESULT,
+            ),
+        ]
+
+        state = reduce(events)
+
+        assert state.work_packages["WP01"]["lane"] == "planned"
+        assert state.work_packages["WP01"]["last_event_id"] == _ulid(5)
+        assert state.summary["approved"] == 0
+        assert state.summary["planned"] == 1
+
+    def test_in_progress_rejection_beats_later_stale_approval(self) -> None:
+        """Same as above but the rejection rolls back to ``in_progress``
+        (the legacy #1475 shape already recognized by ``_is_rollback_event``)
+        -- isolates defect B alone: this shape still lost pre-fix because the
+        equal-``at`` gate never fired for a later-timestamp approval."""
+        events = [
+            _row(_ulid(1), from_lane="planned", to_lane="claimed", at="2026-02-08T12:00:00+00:00"),
+            _row(
+                _ulid(2),
+                from_lane="claimed",
+                to_lane="in_progress",
+                at="2026-02-08T12:05:00+00:00",
+            ),
+            _row(
+                _ulid(3),
+                from_lane="in_progress",
+                to_lane="for_review",
+                at="2026-02-08T12:10:00+00:00",
+            ),
+            _row(
+                _ulid(4),
+                from_lane="for_review",
+                to_lane="in_review",
+                at="2026-02-08T12:15:00+00:00",
+            ),
+            _row(
+                _ulid(5),
+                from_lane="in_review",
+                to_lane="in_progress",
+                at="2026-02-08T12:20:00+00:00",
+                actor="reviewer-a",
+                review_ref="review://WP01/changes-requested",
+            ),
+            _row(
+                _ulid(6),
+                from_lane="in_review",
+                to_lane="approved",
+                at="2026-02-08T12:25:00+00:00",
+                actor="reviewer-b",
+                review_result=_REVIEW_RESULT,
+            ),
+        ]
+
+        state = reduce(events)
+
+        assert state.work_packages["WP01"]["lane"] == "in_progress"
+        assert state.work_packages["WP01"]["last_event_id"] == _ulid(5)
+        assert state.summary["approved"] == 0
+
+    def test_continuous_rework_after_rejection_is_not_suppressed(self) -> None:
+        """Over-suppression guard: a rejection followed by a CONTINUOUS
+        rework chain (each event's ``from_lane`` matches the prior event's
+        ``to_lane``) must reach ``approved`` -- the from_lane-continuity rule
+        must not block genuine forward progress that causally follows the
+        rollback. Must stay green both before and after the fix."""
+        events = [
+            _row(
+                _ulid(1),
+                from_lane="in_review",
+                to_lane="planned",
+                at="2026-02-08T12:00:00+00:00",
+                actor="reviewer-a",
+                review_ref="review://WP01/changes-requested",
+            ),
+            _row(_ulid(2), from_lane="planned", to_lane="claimed", at="2026-02-08T12:05:00+00:00"),
+            _row(
+                _ulid(3),
+                from_lane="claimed",
+                to_lane="in_progress",
+                at="2026-02-08T12:10:00+00:00",
+            ),
+            _row(
+                _ulid(4),
+                from_lane="in_progress",
+                to_lane="for_review",
+                at="2026-02-08T12:15:00+00:00",
+            ),
+            _row(
+                _ulid(5),
+                from_lane="for_review",
+                to_lane="in_review",
+                at="2026-02-08T12:20:00+00:00",
+            ),
+            _row(
+                _ulid(6),
+                from_lane="in_review",
+                to_lane="approved",
+                at="2026-02-08T12:25:00+00:00",
+                actor="reviewer-b",
+                review_result=_REVIEW_RESULT,
+            ),
+        ]
+
+        state = reduce(events)
+
+        assert state.work_packages["WP01"]["lane"] == "approved"
+
 
 class TestSummaryCounts:
     def test_summary_counts_match_wp_states(self) -> None:
