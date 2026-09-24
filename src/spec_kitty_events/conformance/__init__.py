@@ -6,6 +6,7 @@ Run: pytest --pyargs spec_kitty_events.conformance
 from spec_kitty_events.conformance.loader import (
     FixtureCase,
     load_fixtures,
+    load_reducer_output,
     load_replay_stream,
 )
 from spec_kitty_events.conformance.pytest_helpers import (
@@ -36,6 +37,7 @@ __all__ = [
     "assert_payload_fails",
     "assert_producer_occurrence_preserved",
     "load_fixtures",
+    "load_reducer_output",
     "load_replay_stream",
     "load_timestamp_semantics_fixture",
     "validate_event",
