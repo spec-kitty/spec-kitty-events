@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.4.0] - 2026-09-24
+
+### Fixed
+
+- **The `status.events.jsonl` reducer no longer overwrites a causally-concurrent
+  rejection with a later approval (#69).** Before: `reduce()`/`reduce_parsed()`
+  arbitrated rollback precedence only when the two competing events shared the
+  EXACT SAME wall-clock `at`; a stale `in_review -> approved` approval carrying
+  a *later* `at` than an already-committed `in_review -> planned` rejection
+  silently won, reverting the WP from `planned` back to `approved`. After: a
+  forward transition never overwrites an applied rollback unless its
+  `from_lane` matches the lane the rollback left the WP in (i.e. it causally
+  followed the rollback rather than branching off the same prior `in_review`
+  state) — arbitrated regardless of timestamp ordering. `_is_rollback_event`
+  is also widened to recognize `in_review -> planned` (the canonical
+  `move-task --to planned` rejection shape), not just the legacy
+  `-> in_progress` shape. A genuine rework chain following a rejection is
+  unaffected. Every downstream consumer that reduces the diary (the CLI, the
+  SaaS repo dossier) inherits the corrected precedence; the new packaged
+  conformance fixture pair `status-diary-replay-concurrent-reject-beats-approve
+  [-output]` pins it for consumers that verify against the conformance suite.
+
 ## [10.3.0] - 2026-09-18
 
 Bounded cross-mission coordination messages (issue #54, design spike

@@ -2735,6 +2735,24 @@
       "min_version": "8.1.0"
     },
     {
+      "id": "status-diary-replay-concurrent-reject-beats-approve",
+      "path": "status_diary/replay/status_diary_concurrent_reject_beats_approve.jsonl",
+      "fixture_type": "replay_stream",
+      "event_type": "mixed",
+      "expected_result": "valid",
+      "notes": "#69: an in_review -> planned rejection is followed by a stale in_review -> approved approval at a LATER `at`; the rejection's from_lane-mismatched successor must never overwrite it regardless of wall-clock order",
+      "min_version": "10.4.0"
+    },
+    {
+      "id": "status-diary-replay-concurrent-reject-beats-approve-output",
+      "path": "status_diary/replay/status_diary_concurrent_reject_beats_approve_output.json",
+      "fixture_type": "reducer_output",
+      "event_type": "State",
+      "expected_result": "valid",
+      "notes": "Golden reduce() output for status_diary_concurrent_reject_beats_approve.jsonl (issue #69): the rejection wins, WP01 lands back in planned",
+      "min_version": "10.4.0"
+    },
+    {
       "id": "work-observation-valid-artifact-reference-partial",
       "path": "work_observation/valid/artifact_reference_partial.json",
       "expected_result": "valid",
