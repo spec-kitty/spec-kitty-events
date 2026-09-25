@@ -13,8 +13,14 @@ spec-kitty-events#145 gap ``test_zeitgeist_attrs_codec.py`` closed for the
 
 This module drives :func:`~spec_kitty_events.diary.reduce` through the
 packaged golden pairs so a downstream consumer running the pyargs entrypoint
-inherits the same reducer-precedence guarantees the in-repo suite pins --
-including the #69 causally-concurrent-rejection-beats-approval fixture pair.
+inherits the reducer-precedence guarantees pinned by those fixtures --
+including the #69 canonical ``in_review -> planned`` rejection-beats-approval
+pair. Note the packaged set pins only the canonical shapes; the legacy
+``in_review -> in_progress`` rejection precedence and the ``force`` /
+``claimed`` edge cases remain pinned by the in-repo
+``tests/test_status_diary_reducer.py``
+suite (which the wheel does not ship). A future revision may package a
+legacy-shape golden to close that gap for pyargs consumers.
 """
 
 from __future__ import annotations
