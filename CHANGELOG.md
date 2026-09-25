@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The `LICENSE` copyright holder now reads `Spec Kitty, Inc. and
+  contributors` (#47).** It previously said `Spec Kitty Contributors`, a
+  placeholder that predated the settled legal entity. The line now names the
+  legal entity while preserving contributor copyright ownership; the MIT grant
+  and warranty disclaimer are byte-for-byte unchanged.
+
 ## [10.3.0] - 2026-09-18
 
 Bounded cross-mission coordination messages (issue #54, design spike
