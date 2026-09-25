@@ -42,12 +42,16 @@ unless its `from_lane` matches the lane the rollback left the WP in --
 i.e. it must have causally followed the rollback, not branched off the same
 prior `in_review` state. A genuine rework chain after a rejection (e.g.
 `planned -> claimed -> ... -> approved`, each step's `from_lane` matching the
-prior `to_lane`) is unaffected and still reaches `approved`. This is a
-**behavior correction** for the `reduce()`/`reduce_parsed()` consumer role,
-not an envelope accept/reject change (no wire shape, required field, or
-forbidden-key change) -- see
-[`contracts/versioning-and-compatibility.md`](contracts/versioning-and-compatibility.md)
-for why that keeps this a minor bump. Every downstream consumer of the
+prior `to_lane`) is unaffected and still reaches `approved`. This corrects a
+**defect** in the `reduce()`/`reduce_parsed()` consumer role: a rejected WP
+silently reverting to `approved` was never an intended, contracted outcome a
+consumer could rely on, so restoring the correct precedence is a bug fix, not
+a change to a promised behavior. The envelope contract is untouched (no wire
+shape, required field, or forbidden-key change), so the on-wire schema version
+stays `3.0.0` per
+[`contracts/versioning-and-compatibility.md`](contracts/versioning-and-compatibility.md);
+the package minor bump conservatively flags the corrected reducer output for
+consumers that pin conformance goldens. Every downstream consumer of the
 reducer (the CLI's `status.reducer`, the SaaS repo dossier) inherits the
 corrected precedence automatically; the new packaged conformance fixture
 pair `status-diary-replay-concurrent-reject-beats-approve[-output]` pins the
