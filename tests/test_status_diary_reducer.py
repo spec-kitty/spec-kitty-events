@@ -478,6 +478,88 @@ class TestReduceConcurrentRollbackPrecedence:
 
         assert state.work_packages["WP01"]["lane"] == "approved"
 
+    def test_forced_recovery_after_rejection_applies(self) -> None:
+        """Break-glass guard: a ``force=True`` transition emitted after a
+        rollback applies even when its ``from_lane`` does not match the lane
+        the rollback set. ``force`` is the deliberate, reason-carrying
+        override, so the from_lane-continuity precedence drop (#69) must not
+        swallow it. The #69 hazard is an *unforced* approval, so exempting
+        force does not reopen it (see ``test_planned_rejection_beats_later_stale_approval``)."""
+        events = [
+            _row(
+                _ulid(1),
+                from_lane="in_review",
+                to_lane="planned",
+                at="2026-02-08T12:20:00+00:00",
+                actor="reviewer-a",
+                review_ref="review://WP01/changes-requested",
+            ),
+            _row(
+                _ulid(2),
+                from_lane="in_review",
+                to_lane="blocked",
+                at="2026-02-08T12:25:00+00:00",
+                actor="operator",
+                force=True,
+                reason="break-glass: escalate blocked dependency",
+            ),
+        ]
+
+        state = reduce(events)
+
+        assert state.work_packages["WP01"]["lane"] == "blocked"
+        assert state.work_packages["WP01"]["last_event_id"] == _ulid(2)
+
+    def test_in_review_to_claimed_rejection_beats_later_stale_approval(self) -> None:
+        """#69 precedence holds for the ``in_review -> claimed`` rollback shape
+        too (the third pre-review target in ``_REJECTION_ROLLBACK_TARGETS``): a
+        committed rejection to ``claimed`` is never overwritten by a later
+        stale ``in_review -> approved`` approval whose ``from_lane`` does not
+        match ``claimed``."""
+        events = [
+            _row(_ulid(1), from_lane="planned", to_lane="claimed", at="2026-02-08T12:00:00+00:00"),
+            _row(
+                _ulid(2),
+                from_lane="claimed",
+                to_lane="in_progress",
+                at="2026-02-08T12:05:00+00:00",
+            ),
+            _row(
+                _ulid(3),
+                from_lane="in_progress",
+                to_lane="for_review",
+                at="2026-02-08T12:10:00+00:00",
+            ),
+            _row(
+                _ulid(4),
+                from_lane="for_review",
+                to_lane="in_review",
+                at="2026-02-08T12:15:00+00:00",
+            ),
+            _row(
+                _ulid(5),
+                from_lane="in_review",
+                to_lane="claimed",
+                at="2026-02-08T12:20:00+00:00",
+                actor="reviewer-a",
+                review_ref="review://WP01/changes-requested",
+            ),
+            _row(
+                _ulid(6),
+                from_lane="in_review",
+                to_lane="approved",
+                at="2026-02-08T12:25:00+00:00",
+                actor="reviewer-b",
+                review_result=_REVIEW_RESULT,
+            ),
+        ]
+
+        state = reduce(events)
+
+        assert state.work_packages["WP01"]["lane"] == "claimed"
+        assert state.work_packages["WP01"]["last_event_id"] == _ulid(5)
+        assert state.summary["approved"] == 0
+
 
 class TestSummaryCounts:
     def test_summary_counts_match_wp_states(self) -> None:

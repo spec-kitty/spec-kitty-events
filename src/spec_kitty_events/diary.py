@@ -1333,10 +1333,16 @@ def _should_apply_event(
     # #69: the stale approval carries from_lane=in_review while the applied
     # rollback left the WP in planned/in_progress, so it is causally
     # concurrent and dropped regardless of `at`.
+    #
+    # `force=True` is the break-glass override: a deliberate, reason-carrying
+    # transition always applies, so it is exempt from this precedence drop.
+    # The #69 hazard is an *unforced* forward approval (force=False), so this
+    # exemption does not reopen it.
     if (
         current_setter is not None
         and _is_rollback_event(current_setter)
         and not _is_rollback_event(new_event)
+        and not new_event.force
         and str(new_event.from_lane) != current_lane
     ):
         return False
