@@ -60,6 +60,7 @@ review:
     verdict: approved
     reference: review-cycle://example-mission-01JZAB3C/WP09/review-cycle-2.md
   override:
+    complete: true
     at: '2026-09-26T09:30:00Z'
     actor: operator
     reason: Reviewed out of band by the maintainer.
