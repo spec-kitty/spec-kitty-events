@@ -1548,7 +1548,9 @@ class TestSeedPayloadFold:
 
     # -- FR-003: a real event always beats a seed, slot by slot -----------------
 
-    @pytest.mark.parametrize("seed_id", [_late_seed_id(7), _early_seed_id(7)], ids=["late", "early"])
+    @pytest.mark.parametrize(
+        "seed_id", [_late_seed_id(7), _early_seed_id(7)], ids=["late", "early"]
+    )
     def test_real_reclaim_beats_a_conflicting_seed_in_either_order(self, seed_id: str) -> None:
         """B1: the live claimant's values stand whichever side the seed sorts."""
         rows = _cycle_to_rejection() + [
@@ -1560,7 +1562,9 @@ class TestSeedPayloadFold:
         assert wp["lane"] == "in_progress"
         assert (wp["agent"], wp["shell_pid"]) == ("codex", 222)
 
-    @pytest.mark.parametrize("seed_id", [_late_seed_id(2), _early_seed_id(2)], ids=["late", "early"])
+    @pytest.mark.parametrize(
+        "seed_id", [_late_seed_id(2), _early_seed_id(2)], ids=["late", "early"]
+    )
     def test_real_pid_voids_a_seed_baseline(self, seed_id: str) -> None:
         """B2 / I3: a real pid is never paired with the seed's process-start time."""
         rows = [
@@ -1591,7 +1595,9 @@ class TestSeedPayloadFold:
         assert wp["agent"] == "codex"
         assert (wp["shell_pid"], wp["shell_pid_created_at"]) == (4242, "1700000000.5")
 
-    @pytest.mark.parametrize("seed_id", [_late_seed_id(2), _early_seed_id(2)], ids=["late", "early"])
+    @pytest.mark.parametrize(
+        "seed_id", [_late_seed_id(2), _early_seed_id(2)], ids=["late", "early"]
+    )
     def test_real_pid_without_baseline_is_not_paired_with_a_seed_baseline(
         self, seed_id: str
     ) -> None:
