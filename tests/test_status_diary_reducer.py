@@ -1714,6 +1714,26 @@ class TestSeedPayloadFold:
         assert (wp["agent"], wp["shell_pid"]) == ("b", 222)
         assert wp["shell_pid_created_at"] == "1700.0"
 
+    def test_real_write_clears_the_seed_mark_so_a_later_reclaim_keeps_it(self) -> None:
+        """I3 (ratchet): once a real claim writes the baseline, it is no longer a seed's.
+
+        A losing seed supplies ``shell_pid_created_at``; a later real claim
+        writes all three values; a real reclaim with a pid only must keep the
+        REAL start time, not void it as if it were still the seed's.
+        """
+        triple = {"agent": "a", "shell_pid": 100, "shell_pid_created_at": "1700.0"}
+        rows = [
+            _claim(_ulid(1), _t(1)),
+            _seed_claim(_late_seed_id(2), _t(1), {"shell_pid_created_at": "1.0"}),
+            _row(_ulid(3), from_lane="claimed", to_lane="planned", at=_t(2)),
+            _claim(_ulid(4), _t(3), actor="a", meta=triple),
+            _row(_ulid(5), from_lane="claimed", to_lane="planned", at=_t(4)),
+            _claim(_ulid(6), _t(5), actor="b", meta={"agent": "b", "shell_pid": 222}),
+        ]
+        wp = _wp(rows)
+        assert (wp["agent"], wp["shell_pid"]) == ("b", 222)
+        assert wp["shell_pid_created_at"] == "1700.0"
+
     def test_empty_losing_seed_is_a_no_op(self) -> None:
         """A losing seed with no sidecar and no verdict changes nothing."""
         real = [_claim(_ulid(1), _t(1), meta={"agent": "claude"})]
