@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The `status.events.jsonl` reducer now enforces `from_lane` continuity for
+  every current setter, not only a rollback setter (spec-kitty#5967).** The #69
+  precedence fix dropped a causally-stale forward transition (its `from_lane`
+  did not match the lane in force) only while the current lane had been set by a
+  review *rollback*. Two further split-brain shapes escaped that narrow gate,
+  because the current setter was a forward transition: a lead's pushed
+  `in_progress -> canceled` was overwritten by a teammate's stale
+  `in_progress -> for_review` (current setter = the cancel), and a reviewer's
+  pushed `in_review -> planned` rejection that the implementer had already
+  reclaimed was overwritten by a second reviewer's stale `in_review -> approved`
+  (current setter = the `claimed -> in_progress` rework claim). In both the
+  stale event's `from_lane` does not match the lane in force, so enforcing
+  `from_lane` continuity for *all* non-rollback setters drops it without
+  special-casing cancel or rework. Unchanged: a rollback event is authoritative
+  and always applies, `force=True` is the deliberate break-glass override, and a
+  genuine forward step whose `from_lane` IS the current lane is unaffected.
+
 ## [10.4.0] - 2026-09-24
 
 ### Changed

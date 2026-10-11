@@ -510,6 +510,97 @@ class TestReduceConcurrentRollbackPrecedence:
         assert state.work_packages["WP01"]["lane"] == "blocked"
         assert state.work_packages["WP01"]["last_event_id"] == _ulid(2)
 
+    def test_pushed_cancel_beats_later_stale_submit(self) -> None:
+        """#5967 (cancel shape): the lead's pushed ``in_progress -> canceled``
+        is never overwritten by a teammate's stale ``in_progress ->
+        for_review`` that carries a LATER wall-clock ``at`` (made in a clone
+        that had not pulled the cancel). The current setter is a cancel, not a
+        rollback, so the rollback-setter-only form of the #69 guard missed it;
+        the stale submit's ``from_lane`` (``in_progress``) does not match the
+        lane in force (``canceled``), so from_lane-continuity drops it."""
+        events = [
+            _row(_ulid(1), from_lane="planned", to_lane="claimed", at="2026-02-08T12:00:00+00:00"),
+            _row(
+                _ulid(2), from_lane="claimed", to_lane="in_progress", at="2026-02-08T12:05:00+00:00"
+            ),
+            _row(
+                _ulid(3),
+                from_lane="in_progress",
+                to_lane="canceled",
+                at="2026-02-08T12:10:00+00:00",
+                actor="lead",
+                force=True,
+                reason="descoped: out of scope",
+            ),
+            _row(
+                _ulid(4),
+                from_lane="in_progress",
+                to_lane="for_review",
+                at="2026-02-08T12:15:00+00:00",
+                actor="implementer",
+            ),
+        ]
+
+        state = reduce(events)
+
+        assert state.work_packages["WP01"]["lane"] == "canceled"
+        assert state.work_packages["WP01"]["last_event_id"] == _ulid(3)
+
+    def test_rejection_then_rework_claim_beats_later_stale_approval(self) -> None:
+        """#5967 (rework shape): after a reviewer's pushed ``in_review ->
+        planned`` rejection the implementer reclaims the WP (``planned ->
+        claimed -> in_progress``); a SECOND reviewer, in a clone that had not
+        pulled, approves the stale ``in_review -> approved`` with a LATER ``at``.
+        Here the current setter is the rework claim (``claimed -> in_progress``),
+        NOT the rollback, so the rollback-setter-only form of the #69 guard let
+        the stale approval through. Its ``from_lane`` (``in_review``) does not
+        match the lane in force (``in_progress``), so it is dropped and the WP
+        stays in the reclaimed rework."""
+        events = [
+            _row(_ulid(1), from_lane="planned", to_lane="claimed", at="2026-02-08T12:00:00+00:00"),
+            _row(
+                _ulid(2), from_lane="claimed", to_lane="in_progress", at="2026-02-08T12:05:00+00:00"
+            ),
+            _row(
+                _ulid(3),
+                from_lane="in_progress",
+                to_lane="for_review",
+                at="2026-02-08T12:10:00+00:00",
+            ),
+            _row(
+                _ulid(4),
+                from_lane="for_review",
+                to_lane="in_review",
+                at="2026-02-08T12:15:00+00:00",
+            ),
+            _row(
+                _ulid(5),
+                from_lane="in_review",
+                to_lane="planned",
+                at="2026-02-08T12:20:00+00:00",
+                actor="reviewer-a",
+                review_ref="review://WP01/changes-requested",
+            ),
+            _row(_ulid(6), from_lane="planned", to_lane="claimed", at="2026-02-08T12:25:00+00:00"),
+            _row(
+                _ulid(7), from_lane="claimed", to_lane="in_progress", at="2026-02-08T12:30:00+00:00"
+            ),
+            _row(
+                _ulid(8),
+                from_lane="in_review",
+                to_lane="approved",
+                at="2026-02-08T12:35:00+00:00",
+                actor="reviewer-b",
+                review_result=_REVIEW_RESULT,
+            ),
+        ]
+
+        state = reduce(events)
+
+        assert state.work_packages["WP01"]["lane"] == "in_progress"
+        assert state.work_packages["WP01"]["last_event_id"] == _ulid(7)
+        assert state.summary["approved"] == 0
+
     def test_in_review_to_claimed_rejection_beats_later_stale_approval(self) -> None:
         """#69 precedence holds for the ``in_review -> claimed`` rollback shape
         too (the third pre-review target in ``_REJECTION_ROLLBACK_TARGETS``): a

@@ -1328,19 +1328,34 @@ def _should_apply_event(
         ):
             return False  # Forward does not beat rollback
 
-    # (ii) A rollback is never overwritten by a forward transition that did
-    # not causally follow it (its from_lane != the lane the rollback set).
-    # #69: the stale approval carries from_lane=in_review while the applied
-    # rollback left the WP in planned/in_progress, so it is causally
-    # concurrent and dropped regardless of `at`.
+    # (ii) The current lane is never overwritten by a forward transition that
+    # did not causally follow it (its ``from_lane`` != the current lane). Such
+    # a transition branched off an EARLIER state than the one in force, so it is
+    # causally concurrent/stale and is dropped regardless of wall-clock ``at``.
     #
-    # `force=True` is the break-glass override: a deliberate, reason-carrying
-    # transition always applies, so it is exempt from this precedence drop.
-    # The #69 hazard is an *unforced* forward approval (force=False), so this
-    # exemption does not reopen it.
+    # #69 (the original narrow case): a stale approval carries
+    # ``from_lane=in_review`` while an applied rollback already left the WP in
+    # ``planned``/``in_progress``; the mismatch means it never followed the
+    # rollback. The same mismatch is the tell for two further hazards the
+    # rollback-setter-only form missed (#5967):
+    #   * a stale ``in_progress -> for_review`` after the lead's pushed
+    #     ``in_progress -> canceled`` (the current setter is a cancel, not a
+    #     rollback), and
+    #   * a stale ``in_review -> approved`` after a rejection the implementer
+    #     has already reclaimed (the current setter is ``claimed ->
+    #     in_progress``, the rework claim, not the rollback itself).
+    # In every case the stale event's ``from_lane`` does not match the lane in
+    # force, so enforcing ``from_lane`` continuity for ALL non-rollback setters
+    # (not only a rollback setter) drops it without special-casing cancel or
+    # rework. A genuine forward step (``claimed -> in_progress`` whose
+    # ``from_lane`` IS the current ``claimed``) matches and is unaffected.
+    #
+    # Exemptions, unchanged: a rollback event (``_is_rollback_event(new_event)``)
+    # is authoritative and always applies; ``force=True`` is the deliberate,
+    # reason-carrying break-glass override. The hazards are all *unforced*
+    # forward transitions, so neither exemption reopens them.
     if (
         current_setter is not None
-        and _is_rollback_event(current_setter)
         and not _is_rollback_event(new_event)
         and not new_event.force
         and str(new_event.from_lane) != current_lane
