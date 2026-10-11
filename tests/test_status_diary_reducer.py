@@ -1219,6 +1219,7 @@ _GOLDEN_REPLAYS = (
     "status-diary-replay-every-lane",
     "status-diary-replay-out-of-order-duplicates",
     "status-diary-replay-unknown-kinds",
+    "status-diary-replay-seed-payload-fold",
 )
 
 
@@ -1261,3 +1262,483 @@ def test_inner_state_changed_round_trips_through_the_row_shape() -> None:
     record = InnerStateChanged.from_dict(_annotation(_ulid(8), delta={"note": "n"}))
     reparsed = InnerStateChanged.from_dict(record.to_dict())
     assert reparsed == record
+
+
+# ── Reconstruction-seed payload fold (spec-kitty#6058, contract F1-F8) ─────────
+#
+# A ``migration:`` reconstruction seed that loses the lane contest on from_lane
+# continuity (arm ii of ``_should_apply_event``) still carries payload the
+# migration was minted to preserve: the claim slots and the backfilled verdict.
+# It never becomes the setter, and a real event always beats it, slot by slot.
+
+_SEED = "migration:backfill_runtime_state"
+_VERDICT_SEED = "migration:verdict_provenance_backfill"
+_CLAIM_SLOTS = ("agent", "shell_pid", "shell_pid_created_at")
+_SETTER_SLOTS = ("lane", "actor", "last_event_id", "last_transition_at", "force_count")
+_ABSENT = "<absent>"
+
+
+def _late_seed_id(n: int) -> str:
+    """A seed ULID sorting AFTER every ``_ulid`` id at the same ``at``."""
+    return "01JZZZZZ" + "0" * 14 + f"{n:04d}"
+
+
+def _early_seed_id(n: int) -> str:
+    """A seed ULID sorting BEFORE every ``_ulid`` id at the same ``at``."""
+    return "01JAAAAA" + "0" * 14 + f"{n:04d}"
+
+
+def _t(sec: int) -> str:
+    return f"2026-02-08T12:00:{sec:02d}+00:00"
+
+
+def _verdict(verdict: str, reviewer: str = "reviewer-1") -> dict[str, Any]:
+    return {
+        "reviewer": reviewer,
+        "verdict": verdict,
+        "reference": f"feedback://{reviewer}/{verdict}",
+    }
+
+
+def _wp(rows: list[dict[str, Any]], wp_id: str = "WP01") -> dict[str, Any]:
+    return reduce(rows).work_packages[wp_id]
+
+
+def _slots(wp: dict[str, Any]) -> dict[str, Any]:
+    """The setter, claim and verdict slots of one WP (absent slots are explicit)."""
+    view = {k: wp.get(k, _ABSENT) for k in (*_SETTER_SLOTS, *_CLAIM_SLOTS)}
+    result = wp.get("review_result", _ABSENT)
+    view["review_result"] = result["verdict"] if isinstance(result, dict) else result
+    return view
+
+
+_TRIPLE = {"agent": "legacy-agent", "shell_pid": 4242, "shell_pid_created_at": "1700000000.5"}
+
+
+def _claim(
+    eid: str, at: str, actor: str = "claude", meta: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    return _row(eid, at=at, actor=actor, policy_metadata=meta)
+
+
+def _seed_claim(eid: str, at: str, meta: dict[str, Any] | None = None) -> dict[str, Any]:
+    return _row(eid, at=at, actor=_SEED, policy_metadata=meta if meta is not None else _TRIPLE)
+
+
+def _to_in_progress(eid: str, at: str, actor: str = "claude") -> dict[str, Any]:
+    return _row(eid, from_lane="claimed", to_lane="in_progress", at=at, actor=actor)
+
+
+def _cycle_to_rejection() -> list[dict[str, Any]]:
+    """claim(claude, pid 100) -> in_progress -> for_review -> in_review -> rejected."""
+    return [
+        _claim(_ulid(1), _t(1), meta={"agent": "claude", "shell_pid": 100}),
+        _to_in_progress(_ulid(2), _t(2)),
+        _row(_ulid(3), from_lane="in_progress", to_lane="for_review", at=_t(3)),
+        _row(_ulid(4), from_lane="for_review", to_lane="in_review", at=_t(4), actor="rev"),
+        _row(
+            _ulid(5),
+            from_lane="in_review",
+            to_lane="planned",
+            at=_t(5),
+            actor="rev",
+            review_result=_verdict("changes_requested"),
+        ),
+    ]
+
+
+class TestSeedPayloadFold:
+    """A continuity-losing seed folds the payload no real event has written."""
+
+    # -- US1: the seed's claim slots -------------------------------------------
+
+    def test_losing_claim_seed_fills_the_triple_and_leaves_the_setter(self) -> None:
+        """sc.1: real claim without a sidecar + a same-``at`` seed sorting after it."""
+        wp = _wp([_claim(_ulid(1), _t(1)), _seed_claim(_late_seed_id(2), _t(1))])
+        assert wp["lane"] == "claimed"
+        assert wp["last_event_id"] == _ulid(1)
+        assert wp["actor"] == "claude"
+        assert {k: wp[k] for k in _CLAIM_SLOTS} == _TRIPLE
+
+    def test_seed_triple_survives_the_next_real_transition(self) -> None:
+        """sc.2: the same, followed by a real ``claimed -> in_progress``."""
+        wp = _wp(
+            [
+                _claim(_ulid(1), _t(1)),
+                _seed_claim(_late_seed_id(2), _t(1)),
+                _to_in_progress(_ulid(3), _t(2)),
+            ]
+        )
+        assert wp["lane"] == "in_progress"
+        assert wp["last_event_id"] == _ulid(3)
+        assert {k: wp[k] for k in _CLAIM_SLOTS} == _TRIPLE
+
+    def test_seed_position_does_not_change_the_slots(self) -> None:
+        """NFR-004: the seed sorting before the real claim gives the same slots."""
+        real = _claim(_ulid(1), _t(1))
+        after = _slots(_wp([real, _seed_claim(_late_seed_id(2), _t(1))]))
+        before = _slots(_wp([real, _seed_claim(_early_seed_id(2), _t(1))]))
+        assert after == before
+        assert after["shell_pid"] == 4242
+
+    def test_complement_seeds_only_the_slots_the_real_claim_left_missing(self) -> None:
+        """CLI backfill shape: real claim with ``agent`` only + a pid/baseline seed."""
+        wp = _wp(
+            [
+                _claim(_ulid(1), _t(1), meta={"agent": "claude"}),
+                _seed_claim(_late_seed_id(2), _t(1)),
+            ]
+        )
+        assert wp["agent"] == "claude"
+        assert wp["shell_pid"] == 4242
+        assert wp["shell_pid_created_at"] == "1700000000.5"
+
+    def test_seed_attribution_survives_a_later_cancel(self) -> None:
+        """B6: 10.4.0 parity -- a canceled WP keeps the seed's attribution."""
+        wp = _wp(
+            [
+                _claim(_ulid(1), _t(1)),
+                _seed_claim(_late_seed_id(2), _t(1)),
+                _row(_ulid(3), from_lane="claimed", to_lane="canceled", at=_t(2), actor="lead"),
+            ]
+        )
+        assert wp["lane"] == "canceled"
+        assert wp["agent"] == "legacy-agent"
+
+    @pytest.mark.parametrize(("earlier", "later"), [("seed-a", "seed-b"), ("seed-b", "seed-a")])
+    def test_seed_versus_seed_the_later_by_at_and_id_wins(self, earlier: str, later: str) -> None:
+        """FR-003: two losing seeds with different ids resolve by (at, event_id)."""
+        rows = [
+            _claim(_ulid(1), _t(1)),
+            _seed_claim(_late_seed_id(2), _t(1), {"agent": earlier, "shell_pid": 11}),
+            _seed_claim(_late_seed_id(3), _t(1), {"agent": later, "shell_pid": 22}),
+        ]
+        wp = _wp(rows)
+        assert (wp["agent"], wp["shell_pid"]) == (later, 22)
+
+    # -- US1: the seed's verdict -----------------------------------------------
+
+    def test_losing_verdict_seed_after_a_merge_keeps_the_verdict(self) -> None:
+        """sc.3: ``approved -> done`` with no real verdict, then a verdict seed."""
+        evidence = _DONE_EVIDENCE
+        wp = _wp(
+            [
+                _claim(_ulid(1), _t(1)),
+                _to_in_progress(_ulid(2), _t(2)),
+                _row(
+                    _ulid(3),
+                    from_lane="in_progress",
+                    to_lane="approved",
+                    at=_t(3),
+                    actor="lead",
+                    force=True,
+                    reason="legacy",
+                    evidence=evidence,
+                ),
+                _row(
+                    _ulid(4),
+                    from_lane="approved",
+                    to_lane="done",
+                    at=_t(4),
+                    actor="merge",
+                    evidence=evidence,
+                ),
+                _row(
+                    _late_seed_id(5),
+                    from_lane="in_review",
+                    to_lane="approved",
+                    at=_t(5),
+                    actor=_VERDICT_SEED,
+                    review_result=_verdict("approved", "old-reviewer"),
+                ),
+            ]
+        )
+        assert wp["lane"] == "done"
+        assert wp["last_event_id"] == _ulid(4)
+        assert wp["actor"] == "merge"
+        assert wp["review_result"]["verdict"] == "approved"
+
+    def test_losing_verdict_seed_never_overwrites_a_real_rejection(self) -> None:
+        """B3: a real ``changes_requested`` stands against a later approved seed."""
+        wp = _wp(
+            _cycle_to_rejection()
+            + [
+                _row(
+                    _late_seed_id(9),
+                    from_lane="in_review",
+                    to_lane="approved",
+                    at=_t(7),
+                    actor=_VERDICT_SEED,
+                    review_result=_verdict("approved", "old-reviewer"),
+                )
+            ]
+        )
+        assert wp["lane"] == "planned"
+        assert wp["review_result"]["verdict"] == "changes_requested"
+
+    def test_rejected_verdict_seed_does_not_become_approval_proof(self) -> None:
+        """B3b: the stale seed verdict cannot ride a later force-approve."""
+        rows = _cycle_to_rejection() + [
+            _row(
+                _late_seed_id(9),
+                from_lane="in_review",
+                to_lane="approved",
+                at=_t(7),
+                actor=_VERDICT_SEED,
+                review_result=_verdict("approved", "old-reviewer"),
+            ),
+            _claim(_ulid(10), _t(8), actor="codex"),
+            _to_in_progress(_ulid(11), _t(9), actor="codex"),
+            _row(
+                _ulid(12),
+                from_lane="in_progress",
+                to_lane="approved",
+                at=_t(10),
+                actor="lead",
+                force=True,
+                reason="ship",
+                evidence=_DONE_EVIDENCE,
+            ),
+        ]
+        wp = _wp(rows)
+        assert wp["lane"] == "approved"
+        assert wp["review_result"]["reviewer"] != "old-reviewer"
+
+    def test_losing_verdict_seed_does_not_refill_a_verdictless_real_exit(self) -> None:
+        """B4: a real verdict-less ``in_review`` exit leaves an explicit None."""
+        rows = _cycle_to_rejection()[:4] + [
+            _row(
+                _ulid(5),
+                from_lane="in_review",
+                to_lane="in_progress",
+                at=_t(5),
+                actor="lead",
+                force=True,
+                reason="takeback",
+            ),
+            _row(
+                _late_seed_id(9),
+                from_lane="in_review",
+                to_lane="approved",
+                at=_t(6),
+                actor=_VERDICT_SEED,
+                review_result=_verdict("approved", "old-reviewer"),
+            ),
+        ]
+        wp = _wp(rows)
+        assert wp["lane"] == "in_progress"
+        assert wp["review_result"] is None
+
+    def test_losing_seed_without_a_verdict_does_not_clear_one(self) -> None:
+        """sc.7 (ratchet): a verdict-less losing seed leaves the verdict in place."""
+        wp = _wp(
+            _cycle_to_rejection()
+            + [
+                _row(
+                    _late_seed_id(9),
+                    from_lane="claimed",
+                    to_lane="in_progress",
+                    at=_t(7),
+                    actor=_SEED,
+                )
+            ]
+        )
+        assert wp["lane"] == "planned"
+        assert wp["review_result"]["verdict"] == "changes_requested"
+
+    # -- FR-003: a real event always beats a seed, slot by slot -----------------
+
+    @pytest.mark.parametrize("seed_id", [_late_seed_id(7), _early_seed_id(7)])
+    def test_real_reclaim_beats_a_conflicting_seed_in_either_order(self, seed_id: str) -> None:
+        """B1: the live claimant's values stand whichever side the seed sorts."""
+        rows = _cycle_to_rejection() + [
+            _claim(_ulid(6), _t(6), actor="codex", meta={"agent": "codex", "shell_pid": 222}),
+            _seed_claim(seed_id, _t(6), {"agent": "claude", "shell_pid": 100}),
+            _to_in_progress(_ulid(8), _t(8), actor="codex"),
+        ]
+        wp = _wp(rows)
+        assert wp["lane"] == "in_progress"
+        assert (wp["agent"], wp["shell_pid"]) == ("codex", 222)
+
+    @pytest.mark.parametrize("seed_id", [_late_seed_id(2), _early_seed_id(2)])
+    def test_real_pid_voids_a_seed_baseline(self, seed_id: str) -> None:
+        """B2 / I3: a real pid is never paired with the seed's process-start time."""
+        rows = [
+            _claim(_ulid(1), _t(1)),
+            _seed_claim(seed_id, _t(1)),
+            _to_in_progress(_ulid(3), _t(2)),
+            _row(_ulid(4), from_lane="in_progress", to_lane="for_review", at=_t(3)),
+            _row(_ulid(5), from_lane="for_review", to_lane="in_review", at=_t(4), actor="rev"),
+            _row(_ulid(6), from_lane="in_review", to_lane="planned", at=_t(5), actor="rev"),
+            _claim(_ulid(7), _t(6), actor="codex", meta={"agent": "codex", "shell_pid": 222}),
+        ]
+        wp = _wp(rows)
+        assert wp["shell_pid"] == 222
+        assert wp.get("shell_pid_created_at") != "1700000000.5"
+
+    def test_real_agent_only_claim_keeps_the_seed_pid_and_baseline(self) -> None:
+        """A real claim writing only ``agent`` leaves the seed's pid and baseline."""
+        rows = [
+            _claim(_ulid(1), _t(1)),
+            _seed_claim(_late_seed_id(2), _t(1)),
+            _to_in_progress(_ulid(3), _t(2)),
+            _row(_ulid(4), from_lane="in_progress", to_lane="for_review", at=_t(3)),
+            _row(_ulid(5), from_lane="for_review", to_lane="in_review", at=_t(4), actor="rev"),
+            _row(_ulid(6), from_lane="in_review", to_lane="planned", at=_t(5), actor="rev"),
+            _claim(_ulid(7), _t(6), actor="codex", meta={"agent": "codex"}),
+        ]
+        wp = _wp(rows)
+        assert wp["agent"] == "codex"
+        assert (wp["shell_pid"], wp["shell_pid_created_at"]) == (4242, "1700000000.5")
+
+    @pytest.mark.parametrize("seed_id", [_late_seed_id(2), _early_seed_id(2)])
+    def test_real_pid_without_baseline_is_not_paired_with_a_seed_baseline(
+        self, seed_id: str
+    ) -> None:
+        """I3, order-independent: a seed after a real pid never supplies the baseline."""
+        real = _claim(_ulid(1), _t(1), meta={"agent": "claude", "shell_pid": 100})
+        wp = _wp([real, _seed_claim(seed_id, _t(1))])
+        assert (wp["agent"], wp["shell_pid"]) == ("claude", 100)
+        assert "shell_pid_created_at" not in wp
+
+    def test_real_pid_and_baseline_both_stand(self) -> None:
+        """I3 only voids the SEED's baseline: a real pid with a real baseline keeps it."""
+        meta = {"shell_pid": 7, "shell_pid_created_at": "1800000000.0"}
+        wp = _wp([_claim(_ulid(1), _t(1), meta=meta), _seed_claim(_late_seed_id(2), _t(1))])
+        assert (wp["shell_pid"], wp["shell_pid_created_at"]) == (7, "1800000000.0")
+
+    # -- FR-003 / F4: arm (i) losers fold nothing -------------------------------
+
+    def test_seed_losing_to_a_same_at_rollback_contributes_nothing(self) -> None:
+        """B7 / sc.6: arm (i) -- the rollback keeps the WP unclaimed."""
+        rows = _cycle_to_rejection() + [
+            _seed_claim(_late_seed_id(9), _t(5), {"agent": "ghost", "shell_pid": 999})
+        ]
+        without = _wp(_cycle_to_rejection())
+        wp = _wp(rows)
+        assert wp["lane"] == "planned"
+        assert _slots(wp) == _slots(without)
+        assert wp["agent"] == "claude"
+
+    # -- FR-002 / F6 / F7: nothing else moves ----------------------------------
+
+    def test_stale_real_claim_after_a_cancel_contributes_nothing(self) -> None:
+        """US2 sc.1 (ratchet): a dropped REAL event never folds a sidecar or verdict."""
+        rows = [
+            _claim(_ulid(1), _t(1), meta={"agent": "claude", "shell_pid": 100}),
+            _to_in_progress(_ulid(2), _t(2)),
+            _row(_ulid(3), from_lane="in_progress", to_lane="canceled", at=_t(3), actor="lead"),
+            _claim(_ulid(4), _t(4), actor="ghost", meta={"agent": "ghost", "shell_pid": 999}),
+            _row(
+                _ulid(5),
+                from_lane="in_review",
+                to_lane="approved",
+                at=_t(5),
+                actor="ghost",
+                review_result=_verdict("approved"),
+            ),
+        ]
+        wp = _wp(rows)
+        assert wp["lane"] == "canceled"
+        assert (wp["agent"], wp["shell_pid"]) == ("claude", 100)
+        assert wp.get("review_result", None) is None
+
+    def test_applied_seed_behaves_as_in_10_4_2(self) -> None:
+        """F6 (ratchet): a seed that wins the lane is the setter and writes its payload."""
+        wp = _wp([_seed_claim(_ulid(1), _t(1))])
+        assert wp["lane"] == "claimed"
+        assert wp["actor"] == _SEED
+        assert wp["last_event_id"] == _ulid(1)
+        assert {k: wp[k] for k in _CLAIM_SLOTS} == _TRIPLE
+
+    def test_empty_losing_seed_is_a_no_op(self) -> None:
+        """A losing seed with no sidecar and no verdict changes nothing."""
+        real = [_claim(_ulid(1), _t(1), meta={"agent": "claude"})]
+        seed = _row(_late_seed_id(2), at=_t(1), actor=_SEED)
+        assert reduce(real + [seed]).work_packages == reduce(real).work_packages
+
+    def test_losing_seed_never_touches_the_setter_slots(self) -> None:
+        """I1: lane, actor, last_event_id, last_transition_at, force_count are kept."""
+        real = [_claim(_ulid(1), _t(1))]
+        wp = _wp(real + [_seed_claim(_late_seed_id(2), _t(1))])
+        ref = _wp(real)
+        assert {k: wp[k] for k in _SETTER_SLOTS} == {k: ref[k] for k in _SETTER_SLOTS}
+
+    # -- I5: acceptance equals the applied claim path's -------------------------
+
+    @pytest.mark.parametrize(
+        "meta",
+        [
+            {"shell_pid": 0},
+            {"shell_pid": -1},
+            {"shell_pid": "x"},
+            {"shell_pid": None},
+            {"shell_pid": True},
+            {"agent": ""},
+            {"agent": None},
+            {"agent": "  "},
+            {"shell_pid_created_at": 0},
+            {"shell_pid_created_at": "not-a-time"},
+        ],
+    )
+    def test_losing_seed_acceptance_equals_the_applied_path(self, meta: dict[str, Any]) -> None:
+        """B10: the slots a losing seed folds equal those of the same seed applied."""
+        applied = _wp([_seed_claim(_ulid(1), _t(1), meta)])
+        losing = _wp([_claim(_ulid(2), _t(1)), _seed_claim(_late_seed_id(3), _t(1), meta)])
+        assert {k: losing.get(k, _ABSENT) for k in _CLAIM_SLOTS} == {
+            k: applied.get(k, _ABSENT) for k in _CLAIM_SLOTS
+        }
+
+    @pytest.mark.parametrize("meta", [{"shell_pid": 0}, {"shell_pid": "x"}, {"agent": ""}])
+    def test_real_sidecar_stands_against_an_odd_losing_seed(self, meta: dict[str, Any]) -> None:
+        """B10: where a real sidecar precedes the seed, the real value stands."""
+        real = _claim(_ulid(1), _t(1), meta={"agent": "claude", "shell_pid": 100})
+        wp = _wp([real, _seed_claim(_late_seed_id(2), _t(1), meta)])
+        assert (wp["agent"], wp["shell_pid"]) == ("claude", 100)
+
+    # -- NFR-004: determinism ---------------------------------------------------
+
+    def test_duplicate_seed_ids_resolve_by_content_not_file_order(self) -> None:
+        """B8 / I6: two seeds sharing an event id give one result in both file orders."""
+        base = [_claim(_ulid(1), _t(1)), _to_in_progress(_ulid(3), _t(2))]
+        s1 = _seed_claim(_late_seed_id(2), _t(1), {"agent": "claude", "shell_pid": 100})
+        s2 = _seed_claim(_late_seed_id(2), _t(1), {"agent": "codex", "shell_pid": 222})
+        one = reduce(base + [s1, s2]).work_packages
+        two = reduce(base + [s2, s1]).work_packages
+        assert one == two
+        # The canonical (sorted-JSON) minimum is the claude row.
+        assert one["WP01"]["agent"] == "claude"
+
+    def test_duplicate_real_ids_still_keep_the_first(self) -> None:
+        """Real-event dedup is unchanged: the first occurrence wins."""
+        first = _claim(_ulid(1), _t(1), meta={"agent": "first"})
+        second = _claim(_ulid(1), _t(1), meta={"agent": "second"})
+        assert _wp([first, second])["agent"] == "first"
+        assert _wp([second, first])["agent"] == "second"
+
+    def test_shuffled_order_gives_an_identical_snapshot(self) -> None:
+        """B9: 200 shuffles of a mixed real + seed log reduce identically."""
+        import random
+
+        rows = _cycle_to_rejection() + [
+            _claim(_ulid(6), _t(6), actor="codex", meta={"agent": "codex"}),
+            _seed_claim(_late_seed_id(7), _t(6), {"agent": "claude", "shell_pid": 100}),
+            _row(
+                _late_seed_id(8),
+                from_lane="in_review",
+                to_lane="approved",
+                at=_t(4),
+                actor=_VERDICT_SEED,
+                review_result=_verdict("approved"),
+            ),
+        ]
+        ref = reduce(rows).to_dict()
+        rng = random.Random(6058)
+        for _ in range(200):
+            shuffled = rows[:]
+            rng.shuffle(shuffled)
+            assert reduce(shuffled).to_dict() == ref
+
+    # B5 (a rollback-shaped verdict seed, ``in_review -> in_progress`` with a
+    # ``changes_requested`` verdict, still applies and sets the lane through the
+    # rollback exemption) is out of scope here: see spec-kitty-events#6061.

@@ -41,6 +41,7 @@ _GOLDEN_REPLAYS = (
     "status-diary-replay-out-of-order-duplicates",
     "status-diary-replay-unknown-kinds",
     "status-diary-replay-concurrent-reject-beats-approve",
+    "status-diary-replay-seed-payload-fold",
 )
 
 

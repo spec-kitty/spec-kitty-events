@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.4.2`
+**Current package version**: `10.4.3`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,36 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `10.4.3` — status-diary reducer: a reconstruction seed that loses the lane contest still folds its unwritten payload
+
+`10.4.3` (spec-kitty/spec-kitty#6058) is a patch-level behaviour change to
+`spec_kitty_events.diary.reduce` / `reduce_parsed`. The snapshot shape is
+unchanged; only slot values on migrated logs differ. A `migration:`
+reconstruction seed whose `from_lane` does not continue the lane in force used
+to be dropped whole, losing the claim attribution (`agent`, `shell_pid`,
+`shell_pid_created_at`) and the backfilled `review_result` the migration was
+minted to preserve. Now:
+
+- A seed dropped by the `from_lane` continuity rule folds each claim slot that
+  no real event has written, using the same acceptance as an applied
+  `planned -> claimed` (`shell_pid` and `shell_pid_created_at` when not `None`,
+  `agent` when non-empty), and folds its `review_result` when no real event has
+  written one (a real verdict, or the explicit `None` of a verdict-less
+  `in_review` exit, counts as written).
+- A real event's value always stands for its slot, whichever side of the seed it
+  sorts. A real write of `shell_pid` voids a seed-supplied
+  `shell_pid_created_at`, so a live pid is never paired with a legacy baseline.
+- A seed that loses a same-timestamp contest to a rollback folds nothing, and a
+  losing seed never changes `lane`, `actor`, `last_event_id`,
+  `last_transition_at` or `force_count`.
+- A seed that is applied, and every real event, behave exactly as in `10.4.2`.
+- Two seeds sharing an `event_id` with different content resolve by content (the
+  canonical-minimum row) rather than by file order. Real events keep
+  first-occurrence deduplication.
+
+Out of scope (spec-kitty-events#6061): a rollback-shaped seed such as
+`in_review -> in_progress` still applies through the rollback exemption.
 
 ## `10.4.1` — status-diary reducer: `from_lane` continuity now holds for every current setter, not only a rollback
 
