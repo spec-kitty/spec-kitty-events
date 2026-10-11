@@ -1694,6 +1694,26 @@ class TestSeedPayloadFold:
         wp = _wp([_claim(_ulid(1), _t(1), meta=meta)])
         assert {k: wp[k] for k in _CLAIM_SLOTS if k in wp} == expected
 
+    def test_real_baseline_survives_a_real_reclaim_without_one(self) -> None:
+        """F7 / FR-002 (ratchet): the I3 void touches only SEED baselines.
+
+        A seedless log reduces as in 10.4.2: a real start time carries forward
+        through a real re-claim that writes a pid but no start time.
+        """
+        rows = [
+            _claim(
+                _ulid(1),
+                _t(1),
+                actor="a",
+                meta={"agent": "a", "shell_pid": 100, "shell_pid_created_at": "1700.0"},
+            ),
+            _row(_ulid(2), from_lane="claimed", to_lane="planned", at=_t(2)),
+            _claim(_ulid(3), _t(3), actor="b", meta={"agent": "b", "shell_pid": 222}),
+        ]
+        wp = _wp(rows)
+        assert (wp["agent"], wp["shell_pid"]) == ("b", 222)
+        assert wp["shell_pid_created_at"] == "1700.0"
+
     def test_empty_losing_seed_is_a_no_op(self) -> None:
         """A losing seed with no sidecar and no verdict changes nothing."""
         real = [_claim(_ulid(1), _t(1), meta={"agent": "claude"})]
