@@ -46,12 +46,16 @@ minted to preserve. Now:
 - A seed that loses a same-timestamp contest to a rollback folds nothing, and a
   losing seed never changes `lane`, `actor`, `last_event_id`,
   `last_transition_at` or `force_count`.
-- A seed that is applied, and every real event, behave exactly as in `10.4.2`.
+- Real events in a log with no seeds are unchanged from `10.4.2`. A seed that is
+  applied behaves as in `10.4.2` too, with one exception (I3): a real `shell_pid`
+  write voids a seed-supplied `shell_pid_created_at`, whether the seed was applied
+  or folded, so a later real claim carrying a pid but no baseline no longer keeps
+  the seed's baseline.
 - Two seeds sharing an `event_id` with different content resolve by content (the
   canonical-minimum row) rather than by file order. Real events keep
   first-occurrence deduplication.
 
-Out of scope (spec-kitty-events#6061): a rollback-shaped seed such as
+Out of scope (spec-kitty/spec-kitty#6061): a rollback-shaped seed such as
 `in_review -> in_progress` still applies through the rollback exemption.
 
 ## `10.4.1` — status-diary reducer: `from_lane` continuity now holds for every current setter, not only a rollback

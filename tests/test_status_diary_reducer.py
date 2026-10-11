@@ -1548,7 +1548,7 @@ class TestSeedPayloadFold:
 
     # -- FR-003: a real event always beats a seed, slot by slot -----------------
 
-    @pytest.mark.parametrize("seed_id", [_late_seed_id(7), _early_seed_id(7)])
+    @pytest.mark.parametrize("seed_id", [_late_seed_id(7), _early_seed_id(7)], ids=["late", "early"])
     def test_real_reclaim_beats_a_conflicting_seed_in_either_order(self, seed_id: str) -> None:
         """B1: the live claimant's values stand whichever side the seed sorts."""
         rows = _cycle_to_rejection() + [
@@ -1560,7 +1560,7 @@ class TestSeedPayloadFold:
         assert wp["lane"] == "in_progress"
         assert (wp["agent"], wp["shell_pid"]) == ("codex", 222)
 
-    @pytest.mark.parametrize("seed_id", [_late_seed_id(2), _early_seed_id(2)])
+    @pytest.mark.parametrize("seed_id", [_late_seed_id(2), _early_seed_id(2)], ids=["late", "early"])
     def test_real_pid_voids_a_seed_baseline(self, seed_id: str) -> None:
         """B2 / I3: a real pid is never paired with the seed's process-start time."""
         rows = [
@@ -1591,7 +1591,7 @@ class TestSeedPayloadFold:
         assert wp["agent"] == "codex"
         assert (wp["shell_pid"], wp["shell_pid_created_at"]) == (4242, "1700000000.5")
 
-    @pytest.mark.parametrize("seed_id", [_late_seed_id(2), _early_seed_id(2)])
+    @pytest.mark.parametrize("seed_id", [_late_seed_id(2), _early_seed_id(2)], ids=["late", "early"])
     def test_real_pid_without_baseline_is_not_paired_with_a_seed_baseline(
         self, seed_id: str
     ) -> None:
@@ -1619,6 +1619,22 @@ class TestSeedPayloadFold:
         assert wp["lane"] == "planned"
         assert _slots(wp) == _slots(without)
         assert wp["agent"] == "claude"
+
+    def test_arm_i_loser_folds_nothing_even_when_no_real_claim_wrote_a_slot(self) -> None:
+        """B7b / F4: with no real sidecar, only the arm-(i) guard keeps the seed out.
+
+        The real claim carries no ``policy_metadata``, so per-slot provenance
+        cannot mask a wrongly folded loser: the ghost triple must not appear.
+        """
+        base = _cycle_to_rejection()
+        base[0] = _claim(_ulid(1), _t(1))  # no sidecar
+        ghost = {"agent": "ghost", "shell_pid": 999, "shell_pid_created_at": "1.0"}
+        wp = _wp(base + [_seed_claim(_late_seed_id(9), _t(5), ghost)])
+        without = _wp(base)
+        assert wp["lane"] == "planned"
+        assert _slots(wp) == _slots(without)
+        for slot in _CLAIM_SLOTS:
+            assert slot not in wp
 
     # -- FR-002 / F6 / F7: nothing else moves ----------------------------------
 
@@ -1651,6 +1667,27 @@ class TestSeedPayloadFold:
         assert wp["last_event_id"] == _ulid(1)
         assert {k: wp[k] for k in _CLAIM_SLOTS} == _TRIPLE
 
+    @pytest.mark.parametrize(
+        ("meta", "expected"),
+        [
+            ({"shell_pid": 0}, {"shell_pid": 0}),
+            ({"shell_pid": -1}, {"shell_pid": -1}),
+            ({"shell_pid_created_at": 0}, {"shell_pid_created_at": 0}),
+            ({"agent": ""}, {}),
+        ],
+        ids=["pid0", "pid-1", "baseline0", "agent-empty"],
+    )
+    def test_applied_claim_acceptance_is_pinned(
+        self, meta: dict[str, Any], expected: dict[str, Any]
+    ) -> None:
+        """F6 / I5: a real planned -> claimed lands pid 0 / -1 / baseline 0 as written.
+
+        Hand-picked values (not the B10 differential), so tightening the shared
+        helper to ``pid <= 0`` is caught: an empty ``agent`` is the one no-op.
+        """
+        wp = _wp([_claim(_ulid(1), _t(1), meta=meta)])
+        assert {k: wp[k] for k in _CLAIM_SLOTS if k in wp} == expected
+
     def test_empty_losing_seed_is_a_no_op(self) -> None:
         """A losing seed with no sidecar and no verdict changes nothing."""
         real = [_claim(_ulid(1), _t(1), meta={"agent": "claude"})]
@@ -1680,6 +1717,18 @@ class TestSeedPayloadFold:
             {"shell_pid_created_at": 0},
             {"shell_pid_created_at": "not-a-time"},
         ],
+        ids=[
+            "pid0",
+            "pid-1",
+            "pid-str",
+            "pid-none",
+            "pid-bool",
+            "agent-empty",
+            "agent-none",
+            "agent-blank",
+            "baseline0",
+            "baseline-str",
+        ],
     )
     def test_losing_seed_acceptance_equals_the_applied_path(self, meta: dict[str, Any]) -> None:
         """B10: the slots a losing seed folds equal those of the same seed applied."""
@@ -1689,7 +1738,11 @@ class TestSeedPayloadFold:
             k: applied.get(k, _ABSENT) for k in _CLAIM_SLOTS
         }
 
-    @pytest.mark.parametrize("meta", [{"shell_pid": 0}, {"shell_pid": "x"}, {"agent": ""}])
+    @pytest.mark.parametrize(
+        "meta",
+        [{"shell_pid": 0}, {"shell_pid": "x"}, {"agent": ""}],
+        ids=["pid0", "pid-str", "agent-empty"],
+    )
     def test_real_sidecar_stands_against_an_odd_losing_seed(self, meta: dict[str, Any]) -> None:
         """B10: where a real sidecar precedes the seed, the real value stands."""
         real = _claim(_ulid(1), _t(1), meta={"agent": "claude", "shell_pid": 100})
@@ -1741,4 +1794,4 @@ class TestSeedPayloadFold:
 
     # B5 (a rollback-shaped verdict seed, ``in_review -> in_progress`` with a
     # ``changes_requested`` verdict, still applies and sets the lane through the
-    # rollback exemption) is out of scope here: see spec-kitty-events#6061.
+    # rollback exemption) is out of scope here: see spec-kitty/spec-kitty#6061.
