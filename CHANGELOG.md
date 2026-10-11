@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.4.1] - 2026-10-11
+
 ### Fixed
 
 - **The `status.events.jsonl` reducer now enforces `from_lane` continuity for

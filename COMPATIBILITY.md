@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.4.0`
+**Current package version**: `10.4.1`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,38 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `10.4.1` — status-diary reducer: `from_lane` continuity now holds for every current setter, not only a rollback
+
+`10.4.1` (spec-kitty/spec-kitty#5967) completes the `10.4.0` (#69)
+`status.events.jsonl` reducer fix (`spec_kitty_events.diary.reduce` /
+`reduce_parsed`). `10.4.0` dropped a causally-stale forward transition (whose
+`from_lane` did not match the lane in force) **only while the current lane had
+been set by a review rollback**. Two further split-brain shapes escaped that
+narrow gate because the current setter was itself a forward transition: a
+lead's pushed `in_progress -> canceled` overwritten by a teammate's stale
+`in_progress -> for_review` (current setter = the cancel), and a reviewer's
+pushed `in_review -> planned` rejection the implementer had already reclaimed
+(`planned -> claimed -> in_progress`) overwritten by a second reviewer's stale
+`in_review -> approved` (current setter = the rework claim). In both the stale
+event's `from_lane` does not match the lane in force, so arm (ii) of
+`_should_apply_event` now enforces `from_lane` continuity for **all**
+non-rollback setters rather than special-casing a rollback setter. This is a
+strict superset of the `10.4.0` rule: every verdict it produced is preserved,
+and the delta is exactly the newly-dropped stale non-rollback-setter cases.
+The change also shifts the tie-break for any two divergent transitions that
+fork from a common base lane toward causal continuity (the first-sorted fork
+wins, a concurrent later-`at` fork off the same base is dropped), consistent
+with the module's Lamport/causal direction and still fully deterministic under
+the total `(at, event_id)` sort. Like `10.4.0` this corrects a **defect** in
+the `reduce()`/`reduce_parsed()` consumer role — a pushed cancel or rejection
+silently reverting was never a contracted outcome — so it is a bug fix, not a
+promised-behavior change. The envelope contract is untouched (no wire shape,
+required field, or forbidden-key change), so the on-wire schema version stays
+`3.0.0`; the patch bump conservatively flags the corrected reducer output for
+consumers that pin conformance goldens. Exemptions are unchanged: a rollback
+event is authoritative and always applies, and `force=True` is the deliberate
+break-glass override.
 
 ## `10.4.0` — status-diary reducer: a causally-concurrent rejection is never overwritten by a later approval
 
