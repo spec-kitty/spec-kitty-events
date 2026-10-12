@@ -1494,7 +1494,9 @@ class _SlotProvenance:
     verdict-less ``in_review`` exit. A losing reconstruction seed never folds
     into one of these. ``seed`` -- slots whose value in force came from a seed
     (applied or folded); a real write of the slot clears the mark. Never
-    serialized: the snapshot shape is unchanged.
+    serialized: the snapshot shape is unchanged. Valid ONLY during the
+    transition fold (:func:`_fold_transitions`); the later annotation pass
+    recomputes claim slots independently and must not consult it.
     """
 
     real: set[str] = field(default_factory=set)
@@ -1540,11 +1542,18 @@ def _fold_losing_seed(event: StatusEvent, state: dict[str, Any], prov: _SlotProv
     A reconstruction seed is minted to preserve a WP's historical claim
     attribution and verdict. When it loses the lane contest it still restates
     that payload, per slot and only where no real event has written the slot
-    (fill-if-absent; a later seed overwrites an earlier one by sort order).
+    (fill-if-absent; a later seed overwrites an earlier one by sort order --
+    "earlier one" includes an earlier *applied* seed, since fill-if-absent
+    guards only against ``prov.real``, not a prior seed write).
     Claim values use the applied path's acceptance (:func:`_claim_sidecar_writes`).
-    The seed's ``shell_pid_created_at`` is also withheld while a real event
-    owns ``shell_pid`` (I3, order-independent with the void in
-    :func:`_record_applied_event`). The lane-setter slots are never touched.
+    ``review_result`` is folded only when the seed carries a verdict, so a
+    verdict-less loser folds nothing for the slot -- deliberately unlike the
+    applied path, which writes an explicit ``None`` for a verdict-less
+    ``in_review`` exit (a best-effort loser must not manufacture a present
+    ``None`` over an absent slot). The seed's ``shell_pid_created_at`` is also
+    withheld while a real event owns ``shell_pid`` (I3, order-independent with
+    the void in :func:`_record_applied_event`). The lane-setter slots are never
+    touched.
     """
     for slot, value in _claim_sidecar_writes(event).items():
         if slot in prov.real:
