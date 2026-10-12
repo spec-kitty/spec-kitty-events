@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.4.4] - 2026-10-12
+
+### Fixed
+
+- **Migrated missions keep their claim attribution and backfilled verdicts when a
+  reconstruction seed loses the lane contest (spec-kitty#6058).** A
+  `migration:` seed (`backfill_runtime_state`, `verdict_provenance_backfill`) is
+  minted to preserve a work package's historical agent, shell pid, process-start
+  baseline and review verdict. When a real event already holds the lane and the
+  seed fails the `from_lane` continuity rule, `reduce()` / `reduce_parsed()`
+  dropped it whole, so the preserved payload vanished from the snapshot and the
+  mission-state audit reported it as drift. The reducer now folds the seed's
+  payload even though the seed does not win the lane, per slot and only where no
+  real event has written that slot: `agent`, `shell_pid` and
+  `shell_pid_created_at` (with the same value acceptance as an applied
+  `planned -> claimed`, through one shared helper) and `review_result`. Lanes are
+  unchanged and real events always win: a real claim, a real verdict or a real
+  verdict-less `in_review` exit keeps its slot whether the seed sorts before or
+  after it, a real write of `shell_pid` voids a seed-supplied
+  `shell_pid_created_at`, a seed that loses to a same-timestamp rollback folds
+  nothing, and no losing seed touches `lane`, `actor`, `last_event_id`,
+  `last_transition_at` or `force_count`. Two seeds that share an `event_id` now
+  resolve by content (the canonical-minimum row), not by file order. New golden
+  replay `status-diary-replay-seed-payload-fold`.
+
 ## [10.4.3] - 2026-10-12
 
 ### Fixed

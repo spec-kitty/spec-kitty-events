@@ -24,6 +24,40 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty`
 
 
+## `10.4.4` — status-diary reducer: a reconstruction seed that loses the lane contest still folds its unwritten payload
+
+`10.4.4` (spec-kitty/spec-kitty#6058) is a patch-level behaviour change to
+`spec_kitty_events.diary.reduce` / `reduce_parsed`. The snapshot shape is
+unchanged; only slot values on migrated logs differ. A `migration:`
+reconstruction seed whose `from_lane` does not continue the lane in force used
+to be dropped whole, losing the claim attribution (`agent`, `shell_pid`,
+`shell_pid_created_at`) and the backfilled `review_result` the migration was
+minted to preserve. Now:
+
+- A seed dropped by the `from_lane` continuity rule folds each claim slot that
+  no real event has written, using the same acceptance as an applied
+  `planned -> claimed` (`shell_pid` and `shell_pid_created_at` when not `None`,
+  `agent` when non-empty), and folds its `review_result` when no real event has
+  written one (a real verdict, or the explicit `None` of a verdict-less
+  `in_review` exit, counts as written).
+- A real event's value always stands for its slot, whichever side of the seed it
+  sorts. A real write of `shell_pid` voids a seed-supplied
+  `shell_pid_created_at`, so a live pid is never paired with a legacy baseline.
+- A seed that loses a same-timestamp contest to a rollback folds nothing, and a
+  losing seed never changes `lane`, `actor`, `last_event_id`,
+  `last_transition_at` or `force_count`.
+- Real events in a log with no seeds are unchanged from `10.4.2`. A seed that is
+  applied behaves as in `10.4.2` too, with one exception (I3): a real `shell_pid`
+  write voids a seed-supplied `shell_pid_created_at`, whether the seed was applied
+  or folded, so a later real claim carrying a pid but no baseline no longer keeps
+  the seed's baseline.
+- Two seeds sharing an `event_id` with different content resolve by content (the
+  canonical-minimum row) rather than by file order. Real events keep
+  first-occurrence deduplication.
+
+Out of scope (spec-kitty/spec-kitty#6061): a rollback-shaped seed such as
+`in_review -> in_progress` still applies through the rollback exemption.
+
 ## `10.4.3` — status-diary reducer: a backfilled rejection is never overwritten by a bare concurrent approval
 
 `10.4.3` (spec-kitty/spec-kitty#4941) closes the remaining `approval after

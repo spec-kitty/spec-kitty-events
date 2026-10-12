@@ -1,0 +1,53 @@
+{
+  "event_count": 13,
+  "last_event_id": "01JZZZZ0000000000000000053",
+  "materialized_at": "2026-08-26T10:05:00+00:00",
+  "mission_number": "58",
+  "mission_slug": "058-seed-payload-fold",
+  "mission_type": "software-dev",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 1,
+    "done": 1,
+    "for_review": 0,
+    "in_progress": 1,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "agent": "legacy-agent",
+      "force_count": 0,
+      "lane": "in_progress",
+      "last_event_id": "01JAAAA0000000000000000043",
+      "last_transition_at": "2026-08-26T10:02:00+00:00",
+      "shell_pid": 4242,
+      "shell_pid_created_at": "1700000000.5"
+    },
+    "WP02": {
+      "actor": "claude",
+      "agent": "claude",
+      "force_count": 0,
+      "lane": "claimed",
+      "last_event_id": "01JAAAA0000000000000000046",
+      "last_transition_at": "2026-08-26T10:01:00+00:00",
+      "shell_pid": 5151,
+      "shell_pid_created_at": "1700000100.25"
+    },
+    "WP03": {
+      "actor": "merge",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01JAAAA0000000000000000052",
+      "last_transition_at": "2026-08-26T10:04:00+00:00",
+      "review_result": {
+        "reference": "feedback://058-seed-payload-fold/WP03/approval",
+        "reviewer": "reviewer-1",
+        "verdict": "approved"
+      }
+    }
+  }
+}

@@ -48,10 +48,25 @@ Row partition rules (:func:`parse_diary`):
   place -- descriptive lifecycle events, not lane transitions.
 * Everything else must decode as a lane :class:`StatusEvent`; a malformed
   lane row raises :class:`DiaryError`.
+
+Reconstruction-seed payload fold (spec-kitty#6058). A ``migration:`` seed is a
+best-effort restatement of historical state, never a decision. When it loses
+the lane contest on ``from_lane`` continuity (``_arbitrate_event`` arm (ii)) it
+still folds its payload, per slot and only where no real event has written the
+slot: the claim slots ``agent``/``shell_pid``/``shell_pid_created_at`` (with the
+applied claim's acceptance rule, ``_claim_sidecar_writes``) and ``review_result``
+(a real verdict, or the explicit ``None`` of a verdict-less ``in_review`` exit,
+counts as written). A real write of ``shell_pid`` voids a seed-supplied
+``shell_pid_created_at``. A seed that loses to a same-``at`` rollback (arm (i))
+folds nothing, and no losing seed ever touches the lane-setter slots
+(``lane``/``actor``/``last_event_id``/``last_transition_at``/``force_count``).
+Rows sharing an ``event_id`` keep the first occurrence, except that rows which
+are all seeds keep the canonical-minimum one (file-order independent).
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from collections.abc import Iterable, Mapping
@@ -1051,6 +1066,13 @@ _REJECTION_ROLLBACK_TARGETS: frozenset[Lane] = frozenset(
 )
 
 
+#: Claim slots :func:`_claim_sidecar_writes` writes whenever the sidecar value
+#: is present (not ``None``). ``agent`` is the odd one out: it needs truthiness.
+_CLAIM_PRESENCE_SLOTS: tuple[str, ...] = ("shell_pid", "shell_pid_created_at")
+
+_VERDICT_SLOT = "review_result"
+
+
 def _is_rollback_event(event: StatusEvent) -> bool:
     """Check if an event represents a reviewer rollback.
 
@@ -1084,7 +1106,7 @@ def _is_reconstruction_seed(event: StatusEvent) -> bool:
     state injected by a corpus migration (actor identity prefixed
     ``migration:``, e.g. ``migration:backfill_runtime_state``). It is NOT an
     authoritative operator/agent decision. The distinction matters only in
-    :func:`_should_apply_event` arm (ii): a seed that happens to be the current
+    :func:`_arbitrate_event` arm (ii): a seed that happens to be the current
     setter must not *reject* a later, causally-consistent real lifecycle
     transition the way a genuine decision (a cancel, a rejection, or any real
     forward step) does. The seed still sets its own lane when nothing
@@ -1092,6 +1114,30 @@ def _is_reconstruction_seed(event: StatusEvent) -> bool:
     exists (spec-kitty#5967 follow-up).
     """
     return actor_identity_str(event.actor).startswith(_RECONSTRUCTION_SEED_ACTOR_PREFIX)
+
+
+def _claim_sidecar_writes(event: StatusEvent) -> dict[str, Any]:
+    """The claim slots a ``planned -> claimed`` event writes from its sidecar.
+
+    The ONE acceptance rule for the claim triple, shared by the applied path
+    (:func:`_wp_state_from_event`) and the losing-seed payload fold
+    (:func:`_fold_losing_seed`), so the two can never drift apart: any
+    transition other than ``planned -> claimed`` writes nothing;
+    ``shell_pid`` and ``shell_pid_created_at`` are written when present (not
+    ``None``, whatever their type); ``agent`` only when truthy (an empty
+    ``agent`` is a no-op, never a blank written over a real slot).
+    ``policy_metadata`` may be ``None`` -- read defensively.
+    """
+    if event.from_lane != Lane.PLANNED or event.to_lane != Lane.CLAIMED:
+        return {}
+    meta = event.policy_metadata or {}
+    writes: dict[str, Any] = {}
+    for slot in _CLAIM_PRESENCE_SLOTS:
+        if meta.get(slot) is not None:
+            writes[slot] = meta[slot]
+    if meta.get("agent"):
+        writes["agent"] = meta["agent"]
+    return writes
 
 
 def _wp_state_from_event(
@@ -1157,19 +1203,7 @@ def _wp_state_from_event(
                 state[slot] = previous[slot]
 
     # Claim exception: the only transition that writes a runtime slot.
-    if event.from_lane == Lane.PLANNED and event.to_lane == Lane.CLAIMED:
-        meta = event.policy_metadata or {}
-        shell_pid = meta.get("shell_pid")
-        if shell_pid is not None:
-            state["shell_pid"] = shell_pid
-        shell_pid_created_at = meta.get("shell_pid_created_at")
-        if shell_pid_created_at is not None:
-            state["shell_pid_created_at"] = shell_pid_created_at
-        agent = meta.get("agent")
-        # Truthiness, not ``is not None``: an empty ``agent`` sidecar is a
-        # no-op, never a blank written over a real slot.
-        if agent:
-            state["agent"] = agent
+    state.update(_claim_sidecar_writes(event))
 
     # review_result exception: see the docstring above. Trigger is "the event
     # carries a verdict" OR "outbound-from-in_review" (NOT from_lane ==
@@ -1302,12 +1336,37 @@ def _find_event_by_id(event_id: str | None, all_events: list[StatusEvent]) -> St
     return next((ev for ev in all_events if ev.event_id == event_id), None)
 
 
+class _Arbitration(Enum):
+    """Verdict of :func:`_arbitrate_event` on one candidate transition."""
+
+    APPLY = "apply"
+    #: Dropped by arm (i): a same-``at`` forward event never beats a rollback.
+    LOST_TO_ROLLBACK = "lost_to_rollback"
+    #: Dropped by arm (ii): ``from_lane`` does not continue the lane in force.
+    LOST_ON_CONTINUITY = "lost_on_continuity"
+
+
 def _should_apply_event(
     current_state: dict[str, Any] | None,
     new_event: StatusEvent,
     all_events: list[StatusEvent],
 ) -> bool:
+    """Whether *new_event* applies as a lane transition (see :func:`_arbitrate_event`)."""
+    return _arbitrate_event(current_state, new_event, all_events) is _Arbitration.APPLY
+
+
+def _arbitrate_event(
+    current_state: dict[str, Any] | None,
+    new_event: StatusEvent,
+    all_events: list[StatusEvent],
+) -> _Arbitration:
     """Determine whether new_event should be applied given the current state.
+
+    Returns :attr:`_Arbitration.APPLY`, or the arm that dropped the event
+    (:attr:`~_Arbitration.LOST_TO_ROLLBACK` for arm (i),
+    :attr:`~_Arbitration.LOST_ON_CONTINUITY` for arm (ii)). The arm matters
+    only to :func:`_fold_transitions`: a reconstruction seed dropped by arm
+    (ii) still folds its payload; one dropped by arm (i) contributes nothing.
 
     Implements rollback-aware precedence, in two arms:
 
@@ -1333,7 +1392,7 @@ def _should_apply_event(
     fires, the later event wins naturally through sort order.
     """
     if current_state is None:
-        return True
+        return _Arbitration.APPLY
 
     current_event_id = current_state.get("last_event_id")
     current_timestamp = current_state.get("last_transition_at")
@@ -1347,14 +1406,14 @@ def _should_apply_event(
             and current_setter is not None
             and not _is_rollback_event(current_setter)
         ):
-            return True  # Rollback beats forward
+            return _Arbitration.APPLY  # Rollback beats forward
 
         if (
             current_setter is not None
             and _is_rollback_event(current_setter)
             and not _is_rollback_event(new_event)
         ):
-            return False  # Forward does not beat rollback
+            return _Arbitration.LOST_TO_ROLLBACK  # Forward does not beat rollback
 
     # (ii) The current lane is never overwritten by a forward transition that
     # did not causally follow it (its ``from_lane`` != the current lane). Such
@@ -1418,10 +1477,131 @@ def _should_apply_event(
         and not new_event.force
         and str(new_event.from_lane) != current_lane
     ):
-        return False
+        return _Arbitration.LOST_ON_CONTINUITY
 
     # Default: apply the event (later in sort order wins)
-    return True
+    return _Arbitration.APPLY
+
+
+@dataclass
+class _SlotProvenance:
+    """Who wrote the payload slots of one WP, kept OUT of the snapshot.
+
+    ``real`` -- slots an applied non-seed event has written (a claim slot, or
+    ``review_result`` with a verdict or as the explicit ``None`` of a
+    verdict-less ``in_review`` exit). A reconstruction seed never folds into
+    one of these. ``seed`` -- slots whose value in force came from a seed
+    (applied or folded); a real write of the slot clears the mark. Never
+    serialized: the snapshot shape is unchanged.
+    """
+
+    real: set[str] = field(default_factory=set)
+    seed: set[str] = field(default_factory=set)
+
+
+def _writes_verdict(event: StatusEvent) -> bool:
+    """Whether applying *event* writes ``review_result`` (see :func:`_wp_state_from_event`)."""
+    return event.review_result is not None or event.from_lane == Lane.IN_REVIEW
+
+
+def _record_applied_event(
+    event: StatusEvent, new_state: dict[str, Any], prov: _SlotProvenance
+) -> None:
+    """Update *prov* (and apply the I3 void to *new_state*) after *event* applied."""
+    writes = _claim_sidecar_writes(event)
+    wrote = set(writes)
+    if _writes_verdict(event):
+        wrote.add(_VERDICT_SLOT)
+    if _is_reconstruction_seed(event):
+        prov.seed |= wrote
+        return
+    # A real pid is never paired with a seed's process-start baseline: a real
+    # write of ``shell_pid`` that brings no baseline of its own voids a
+    # seed-supplied one.
+    if (
+        "shell_pid" in writes
+        and "shell_pid_created_at" not in writes
+        and "shell_pid_created_at" in prov.seed
+    ):
+        new_state.pop("shell_pid_created_at", None)
+        prov.seed.discard("shell_pid_created_at")
+    prov.real |= wrote
+    prov.seed -= wrote
+
+
+def _fold_losing_seed(event: StatusEvent, state: dict[str, Any], prov: _SlotProvenance) -> None:
+    """Fold the payload of a seed that lost on continuity into *state* (spec-kitty#6058).
+
+    A reconstruction seed is minted to preserve a WP's historical claim
+    attribution and verdict. When it loses the lane contest it still restates
+    that payload, per slot and only where no real event has written the slot
+    (fill-if-absent; a later seed overwrites an earlier one by sort order).
+    Claim values use the applied path's acceptance (:func:`_claim_sidecar_writes`).
+    The seed's ``shell_pid_created_at`` is also withheld while a real event
+    owns ``shell_pid`` (I3, order-independent with the void in
+    :func:`_record_applied_event`). The lane-setter slots are never touched.
+    """
+    for slot, value in _claim_sidecar_writes(event).items():
+        if slot in prov.real:
+            continue
+        if slot == "shell_pid_created_at" and "shell_pid" in prov.real:
+            continue
+        state[slot] = value
+        prov.seed.add(slot)
+    if event.review_result is not None and _VERDICT_SLOT not in prov.real:
+        state[_VERDICT_SLOT] = event.review_result.to_dict()
+        prov.seed.add(_VERDICT_SLOT)
+
+
+def _fold_transitions(sorted_events: list[StatusEvent]) -> dict[str, dict[str, Any]]:
+    """Fold sorted transitions into per-WP state with rollback-aware precedence.
+
+    A reconstruction seed dropped on from_lane continuity (arm ii) folds its
+    unwritten payload (:func:`_fold_losing_seed`); one dropped by a same-``at``
+    rollback (arm i) contributes nothing.
+    """
+    wp_states: dict[str, dict[str, Any]] = {}
+    provenance: dict[str, _SlotProvenance] = {}
+    for event in sorted_events:
+        current = wp_states.get(event.wp_id)
+        prov = provenance.setdefault(event.wp_id, _SlotProvenance())
+        verdict = _arbitrate_event(current, event, sorted_events)
+        if verdict is _Arbitration.APPLY:
+            new_state = _wp_state_from_event(event, current)
+            _record_applied_event(event, new_state, prov)
+            wp_states[event.wp_id] = new_state
+        elif (
+            verdict is _Arbitration.LOST_ON_CONTINUITY
+            and current is not None
+            and _is_reconstruction_seed(event)
+        ):
+            _fold_losing_seed(event, current, prov)
+    return wp_states
+
+
+def _canonical_key(event: StatusEvent) -> str:
+    """Order-independent content key used to pick between same-id seeds."""
+    return json.dumps(event.to_dict(), sort_keys=True, default=str)
+
+
+def _dedup_transitions(transitions: list[StatusEvent]) -> list[StatusEvent]:
+    """Deduplicate by ``event_id``, in first-occurrence order.
+
+    Real events keep the first occurrence. Reconstruction seeds carry
+    content-free ids, so two backfills can mint the same id over different
+    payloads: when EVERY row sharing an id is a seed, the canonical-minimum
+    row (sorted JSON) is kept, so the result never depends on file order.
+    """
+    groups: dict[str, list[StatusEvent]] = {}
+    for event in transitions:
+        groups.setdefault(event.event_id, []).append(event)
+    unique: list[StatusEvent] = []
+    for rows in groups.values():
+        if len(rows) > 1 and all(_is_reconstruction_seed(row) for row in rows):
+            unique.append(min(rows, key=_canonical_key))
+        else:
+            unique.append(rows[0])
+    return unique
 
 
 def _runtime_only_wp_state(actor: ActorField) -> dict[str, Any]:
@@ -1608,11 +1788,14 @@ def reduce_parsed(
 
     Event-kind partition fold (NOT a timestamp-interleaved single pass):
 
-    1. Deduplicate transitions by event_id (keep first occurrence)
+    1. Deduplicate transitions by event_id (keep first occurrence; same-id
+       reconstruction seeds keep the canonical-minimum row)
     2. Sort transitions by (at, event_id) ascending
     3. Fold all transitions with rollback-aware precedence, preserving each
        WP's untouched runtime slots (and folding the ``planned -> claimed``
-       ``policy_metadata`` sidecar into the snapshot slots)
+       ``policy_metadata`` sidecar into the snapshot slots). A reconstruction
+       seed dropped on ``from_lane`` continuity folds the payload no real event
+       has written (see the module docstring)
     4. Fold **all annotations** in a dedicated post-transition pass, applying
        the per-field ``WPInnerStateDelta`` merge. A same-``at`` transition can
        never clobber an annotation slot; annotations never bump ``force_count``.
@@ -1640,19 +1823,13 @@ def reduce_parsed(
             summary={lane.value: 0 for lane in Lane if lane not in NON_DISPLAY_LANES},
         )
 
-    # Step 1: Deduplicate by event_id (keep first occurrence)
-    seen_ids: set[str] = set()
-    unique_events: list[StatusEvent] = []
-    for event in transitions:
-        if event.event_id not in seen_ids:
-            seen_ids.add(event.event_id)
-            unique_events.append(event)
+    # Step 1: Deduplicate by event_id (keep first occurrence; same-id seeds by content)
+    unique_events = _dedup_transitions(transitions)
 
     # Step 2: Sort by (at, event_id) ascending
     sorted_events = sorted(unique_events, key=lambda e: (e.at, e.event_id))
 
     # Step 3 & 4: Iterate and apply events with rollback-aware precedence
-    wp_states: dict[str, dict[str, Any]] = {}
     # The event's mission_slug is UNTRUSTED (verbatim from a status.events.jsonl
     # row). Sanitize it HERE -- the single seam where the snapshot's slug is set --
     # so a crafted traversal slug (e.g. "../../../../tmp/evil") is downgraded to
@@ -1662,10 +1839,7 @@ def reduce_parsed(
     # An annotation-only stream has no transition to source the slug from.
     mission_slug = safe_mission_slug(sorted_events[0].mission_slug, "") if sorted_events else ""
 
-    for event in sorted_events:
-        current = wp_states.get(event.wp_id)
-        if _should_apply_event(current, event, sorted_events):
-            wp_states[event.wp_id] = _wp_state_from_event(event, current)
+    wp_states = _fold_transitions(sorted_events)
 
     # Step 4: Annotation post-pass (event-kind partition -- folded AFTER every
     # transition, never interleaved by timestamp). A single O(annotations) walk

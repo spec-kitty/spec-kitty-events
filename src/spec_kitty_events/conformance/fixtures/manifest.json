@@ -2753,6 +2753,24 @@
       "min_version": "10.4.0"
     },
     {
+      "id": "status-diary-replay-seed-payload-fold",
+      "path": "status_diary/replay/status_diary_seed_payload_fold.jsonl",
+      "fixture_type": "replay_stream",
+      "event_type": "mixed",
+      "expected_result": "valid",
+      "notes": "spec-kitty#6058: a migration: reconstruction seed that loses the lane contest on from_lane continuity still folds the claim slots and the backfilled verdict no real event has written (per slot, fill-if-absent); the seed never becomes the setter",
+      "min_version": "10.4.3"
+    },
+    {
+      "id": "status-diary-replay-seed-payload-fold-output",
+      "path": "status_diary/replay/status_diary_seed_payload_fold_output.json",
+      "fixture_type": "reducer_output",
+      "event_type": "State",
+      "expected_result": "valid",
+      "notes": "Golden reduce() output for status_diary_seed_payload_fold.jsonl (spec-kitty#6058), written by hand from the contract: WP01 keeps the seed triple, WP02 takes only the slots its real claim left missing, WP03 keeps the backfilled verdict",
+      "min_version": "10.4.3"
+    },
+    {
       "id": "work-observation-valid-artifact-reference-partial",
       "path": "work_observation/valid/artifact_reference_partial.json",
       "expected_result": "valid",
