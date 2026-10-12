@@ -1831,33 +1831,17 @@ class TestSeedPayloadFold:
 
     @pytest.mark.parametrize(
         "meta",
-        [
-            {"shell_pid": 0},
-            {"shell_pid": -1},
-            {"shell_pid": "x"},
-            {"shell_pid": None},
-            {"shell_pid": True},
-            {"agent": ""},
-            {"agent": None},
-            {"agent": "  "},
-            {"shell_pid_created_at": 0},
-            {"shell_pid_created_at": "not-a-time"},
-        ],
-        ids=[
-            "pid0",
-            "pid-1",
-            "pid-str",
-            "pid-none",
-            "pid-bool",
-            "agent-empty",
-            "agent-none",
-            "agent-blank",
-            "baseline0",
-            "baseline-str",
-        ],
+        [{"shell_pid": "x"}, {"agent": "  "}],
+        ids=["pid-str", "agent-blank"],
     )
     def test_losing_seed_acceptance_equals_the_applied_path(self, meta: dict[str, Any]) -> None:
-        """B10: the slots a losing seed folds equal those of the same seed applied."""
+        """B10: the applied path and the fold share one acceptance rule.
+
+        A drift guard that ``_claim_sidecar_writes`` stays the single source of
+        truth for both paths -- the concrete per-value acceptance is pinned in
+        ``test_applied_claim_acceptance_is_pinned`` and the real-wins contrast in
+        ``test_real_sidecar_stands_against_an_odd_losing_seed``; two odd inputs
+        (one pid, one agent) are enough to catch a re-divergence here."""
         applied = _wp([_seed_claim(_ulid(1), _t(1), meta)])
         losing = _wp([_claim(_ulid(2), _t(1)), _seed_claim(_late_seed_id(3), _t(1), meta)])
         assert {k: losing.get(k, _ABSENT) for k in _CLAIM_SLOTS} == {
