@@ -1487,10 +1487,12 @@ def _arbitrate_event(
 class _SlotProvenance:
     """Who wrote the payload slots of one WP, kept OUT of the snapshot.
 
-    ``real`` -- slots an applied non-seed event has written (a claim slot, or
+    ``real`` -- slots an *authoritative* applied event has written: any
+    non-seed event, or a rollback/rejection seed (spec-kitty#4941 grants it
+    lane authority, so it owns its verdict too). The slots are a claim slot, or
     ``review_result`` with a verdict or as the explicit ``None`` of a
-    verdict-less ``in_review`` exit). A reconstruction seed never folds into
-    one of these. ``seed`` -- slots whose value in force came from a seed
+    verdict-less ``in_review`` exit. A losing reconstruction seed never folds
+    into one of these. ``seed`` -- slots whose value in force came from a seed
     (applied or folded); a real write of the slot clears the mark. Never
     serialized: the snapshot shape is unchanged.
     """
@@ -1512,7 +1514,10 @@ def _record_applied_event(
     wrote = set(writes)
     if _writes_verdict(event):
         wrote.add(_VERDICT_SLOT)
-    if _is_reconstruction_seed(event):
+    # A rollback seed that applies holds the lane under arm (ii); it owns its
+    # slots (in practice only the verdict -- claim slots are written solely on
+    # ``planned -> claimed``) so a losing approval seed cannot fold over it.
+    if _is_reconstruction_seed(event) and not _is_rollback_event(event):
         prov.seed |= wrote
         return
     # A real pid is never paired with a seed's process-start baseline: a real

@@ -1526,6 +1526,36 @@ class TestSeedPayloadFold:
         assert wp["lane"] == "planned"
         assert wp["review_result"]["verdict"] == "changes_requested"
 
+    def test_losing_verdict_seed_never_overwrites_a_rejection_seed(self) -> None:
+        """#79 x #81: a rejection SEED that holds the lane owns its verdict too.
+
+        The approval seed is dropped by arm (ii) and folds per slot; it must not
+        write ``approved`` over the rejection seed's ``changes_requested`` (a
+        ``in_progress`` lane with an ``approved`` verdict is contradictory)."""
+        wp = _wp(
+            [
+                _row(
+                    _early_seed_id(1),
+                    from_lane="in_review",
+                    to_lane="in_progress",
+                    at=_t(1),
+                    actor=_SEED,
+                    review_ref="review://WP01/changes-requested",
+                    review_result=_verdict("changes_requested"),
+                ),
+                _row(
+                    _late_seed_id(2),
+                    from_lane="in_review",
+                    to_lane="approved",
+                    at=_t(2),
+                    actor=_VERDICT_SEED,
+                    review_result=_verdict("approved", "old-reviewer"),
+                ),
+            ]
+        )
+        assert wp["lane"] == "in_progress"
+        assert wp["review_result"]["verdict"] == "changes_requested"
+
     def test_rejected_verdict_seed_does_not_become_approval_proof(self) -> None:
         """B3b: the stale seed verdict cannot ride a later force-approve."""
         rows = _cycle_to_rejection() + [
