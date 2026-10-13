@@ -1147,13 +1147,12 @@ def _is_bare_sibling(
         or approval.from_lane != seed.from_lane
     ):
         return False
+    key = (approval.at, approval.event_id)
     return not any(
         ev.wp_id == approval.wp_id
         and ev.from_lane == Lane.APPROVED
         and not _is_reconstruction_seed(ev)
-        # ``>=`` on ``at`` alone: an ``approved -> done`` sharing the approval's
-        # ``at`` settles it whatever its ``event_id`` (spec-kitty-events#87).
-        and ev.at >= approval.at
+        and (ev.at, ev.event_id) > key
         for ev in all_events
     )
 
