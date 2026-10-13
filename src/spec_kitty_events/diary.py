@@ -1424,7 +1424,7 @@ def _same_timestamp_verdict(
     beats only its bare sibling (R1). A rollback setter beats a forward new
     event, except an applied rollback seed that yields to a real event (R2).
     Abstaining (``None``) leaves the event to arm (ii), so a rollback seed that
-    loses here still folds its payload as a continuity loser (spec-kitty#6058, #6061).
+    loses here still folds its payload as a continuity loser (spec-kitty#6058, spec-kitty#6061).
     """
     if current_setter is None:
         return None
