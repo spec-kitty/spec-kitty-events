@@ -1,11 +1,13 @@
 ---
 title: 'ADR: adopt CloudEvents 1.0 as the event envelope'
 description: 'Proposed: CloudEvents 1.0 structured JSON becomes the envelope for Spec Kitty event-log rows, owned by this package; the 3.0.0 transport envelope and the status-diary row become legacy inputs to a read-time upcaster, with no log rewrite.'
-status: Proposed
-date: '2026-10-13'
 doc_status: draft
 updated: 2026-10-13
 type: ADR
+kind: ADR
+authors:
+  - MOES-Media
+  - stijn@sddevelopment.be
 ---
 
 # ADR: adopt CloudEvents 1.0 as the event envelope
@@ -29,7 +31,7 @@ the merge driver and the Mission Status Read API move to a CloudEvents envelope,
 [#72](https://github.com/spec-kitty/spec-kitty-events/issues/72).
 
 This ADR starts the `docs/adr/` folder of this repository. Design detail is in
-[`docs/design/cloudevents-envelope.md`](../design/cloudevents-envelope.md). Nothing here has
+[`docs/architecture/cloudevents-envelope.md`](../architecture/cloudevents-envelope.md). Nothing here has
 shipped: no code, schema, fixture or version number changes with this document.
 
 ---

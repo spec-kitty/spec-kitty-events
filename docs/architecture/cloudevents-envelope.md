@@ -3,13 +3,14 @@ title: CloudEvents envelope design
 description: Proposed design for adopting CloudEvents 1.0 (structured JSON) as the Spec Kitty event-log envelope, with the field-by-field mapping from the 3.0.0 transport envelope and the status-diary row, the upcaster principles, and a phased rollout.
 doc_status: draft
 updated: 2026-10-13
-type: Design
+type: Architecture
+kind: Explanation
 ---
 
 # CloudEvents envelope design
 
 **Status:** Proposed. Nothing here has shipped. This document supports
-[ADR 2026-10-13-1](../adr/2026-10-13-1-cloudevents-envelope.md), which is itself Proposed.
+[ADR-0001](../adr/0001-cloudevents-envelope.md), which is itself Proposed.
 Where this document recommends, it says "recommendation"; the ADR's four open questions
 (ordering, id format, timing, type prefix; question 3 is split into 3a and 3b) are not decided here, and the two embedded
 choices of section 4 (snake_case inside `data`; `actor` and `executionmode` as extensions)

@@ -3,7 +3,7 @@ title: Architectural Decision Records
 description: Index of architectural decision records for the spec-kitty-events contract package, with the naming convention and status vocabulary.
 doc_status: active
 updated: 2026-10-13
-type: Index
+type: ADR
 kind: Hub
 ---
 
@@ -16,8 +16,10 @@ before it.
 
 ## Naming
 
-`YYYY-MM-DD-N-descriptive-title-with-dashes.md`, where `N` is `1, 2, 3, ...` per ADR
-landed on a given date. This is the naming the core `spec-kitty` repository uses.
+ADRs are flat and sequentially numbered: `NNNN-descriptive-title-with-dashes.md`
+(`0001`, `0002`, ...), with no date in the filename. Each ADR carries its status in a
+`**Status:**` line in the body and in the table below. This `README.md` is the section
+index.
 
 ## Status vocabulary
 
@@ -28,8 +30,8 @@ landed on a given date. This is the naming the core `spec-kitty` repository uses
 
 ## Records
 
-| ADR | Status | Decision |
-|---|---|---|
-| [2026-10-13-1 CloudEvents envelope](2026-10-13-1-cloudevents-envelope.md) | Proposed | Adopt CloudEvents 1.0 (structured JSON) as the event envelope; the 3.0.0 transport envelope and the status-diary row become legacy inputs to a read-time upcaster. |
+| ID | Title | Status | Date |
+|----|-------|--------|------|
+| [0001](./0001-cloudevents-envelope.md) | ADR-0001: Adopt CloudEvents 1.0 as the event envelope | Proposed | 2026-10-13 |
 
-Design detail for the records above lives under [`docs/design/`](../design/).
+Design detail for the records above lives under [`docs/architecture/`](../architecture/).
