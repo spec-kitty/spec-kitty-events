@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "mission_slug": "seed-lane-equal-at-continuity-01M4V3K9",
+  "mission_id": "01M4V3K9T1BDYRF3P2VCVGEM5P",
+  "mission_branch": "kitty/mission-seed-lane-equal-at-continuity-01M4V3K9",
+  "target_branch": "main",
+  "lanes": [
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "src/spec_kitty_events/diary.py",
+        "tests/test_status_diary_reducer.py"
+      ],
+      "predicted_surfaces": [],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-10-13T17:12:40.847878+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "df9ef2b975a9a5849edf56a15edbbbb4cd5deb63"
+}
