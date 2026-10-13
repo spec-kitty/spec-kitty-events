@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.4.4`
+**Current package version**: `10.4.5`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,41 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `10.4.5` — status-diary reducer: a rollback-shaped seed never takes a lane against the real lifecycle
+
+`10.4.5` (spec-kitty/spec-kitty#6061) is a patch-level behaviour change to
+`spec_kitty_events.diary.reduce` / `reduce_parsed`. The snapshot shape and the
+envelope schema `3.0.0` are unchanged; only lane, actor and verdict values on
+migrated logs differ. A rollback-shaped `migration:` seed (a restatement of a
+rejection, e.g. `in_review -> in_progress` with a `changes_requested` verdict)
+used to take the lane through the rollback exemption whatever the WP's real
+lifecycle, reopening a `done` WP or overriding a later compatibility repair.
+Now:
+
+- **R1, arriving.** A rollback seed applies only when its `from_lane` continues
+  the lane in force. Exceptions: its bare sibling approval (a non-rollback
+  `-> approved` from the same lane that no real event left `approved` after),
+  an earlier rollback seed in force, and `force`. A rollback seed that loses is
+  a continuity loser, so its payload still folds (`10.4.4`), also at an equal
+  `at`.
+- **R2, setter.** An applied rollback seed yields the lane to a real event, as a
+  forward seed does, except to its bare sibling approval. The WP is no longer
+  stranded at the seed's lane by a later real claim or `done`.
+- **R3.** A seed never uses the forward-seed-setter exemption.
+- Equal `at` follows from R1 and R2: the outcome no longer depends on which
+  `event_id` sorts first. Real-against-real arbitration, `force` and logs with
+  no seeds are unchanged, as are the `10.4.3` bare-sibling ruling and the
+  `10.4.4` seed-owns-its-verdict ruling.
+
+Verdict change in the losing-seed pair: a rejection seed that loses, then an
+approval seed that loses (the 079 shape), now records `approved` (the later
+cycle's verdict folds); `10.4.4` recorded `changes_requested` because the
+rejection seed had taken the lane and owned the verdict.
+
+Consumers with non-terminal migrated missions may need to re-materialize their
+snapshots to pick up the corrected lanes. New golden replay
+`status-diary-replay-seed-lane-authority`.
 
 ## `10.4.4` — status-diary reducer: a reconstruction seed that loses the lane contest still folds its unwritten payload
 
@@ -55,8 +90,9 @@ minted to preserve. Now:
   canonical-minimum row) rather than by file order. Real events keep
   first-occurrence deduplication.
 
-Out of scope (spec-kitty/spec-kitty#6061): a rollback-shaped seed such as
-`in_review -> in_progress` still applies through the rollback exemption.
+Out of scope at `10.4.4`: a rollback-shaped seed such as
+`in_review -> in_progress` still applied through the rollback exemption. Closed
+in `10.4.5` (spec-kitty/spec-kitty#6061).
 
 ## `10.4.3` — status-diary reducer: a backfilled rejection is never overwritten by a bare concurrent approval
 

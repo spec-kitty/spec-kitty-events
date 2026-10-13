@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.4.5] - 2026-10-13
+
+### Fixed
+
+- **A rollback-shaped reconstruction seed never takes a lane against the real
+  lifecycle (spec-kitty#6061).** A `migration:` seed restating a rejection
+  (`in_review -> in_progress|planned|claimed` with a verdict) took the lane
+  through the rollback exemption whatever the WP had done since, so a `done` WP
+  could be reopened and a compatibility repair back to `planned` overridden.
+  `reduce()` / `reduce_parsed()` now apply a rollback seed only when it continues
+  the lane in force, or against its bare sibling approval
+  (spec-kitty-events#81), or an earlier rollback seed; a seed that loses still
+  folds its payload. An applied rollback seed yields to a later real event, and a
+  seed never uses the forward-seed-setter exemption. Equal-`at` outcomes no
+  longer depend on `event_id` order. Real-against-real arbitration, `force` and
+  seedless logs are unchanged, as is the snapshot shape. One verdict change: a
+  losing rejection seed followed by a losing approval seed records `approved`
+  (it was `changes_requested`). New golden replay
+  `status-diary-replay-seed-lane-authority`.
+
 ## [10.4.4] - 2026-10-12
 
 ### Fixed
