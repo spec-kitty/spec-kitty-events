@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.4.5`
+**Current package version**: `10.4.6`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,29 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `10.4.6` — status-diary reducer: an equal-`at` `approved -> done` settles its approval
+
+`10.4.6` (spec-kitty-events#87) is a patch-level behaviour change to
+`spec_kitty_events.diary.reduce` / `reduce_parsed`. The snapshot shape and the
+envelope schema `3.0.0` are unchanged; only lane and verdict values on certain
+migrated logs differ. When a WP's real `in_review -> approved` and its
+`approved -> done` shared the same `at` and the `done` sorted before the
+approval by `event_id`, the reducer dropped the `done` (arm-(ii) continuity saw
+it leave `approved` while the WP was still `in_review`) and did not count it as
+building upon the approval, so the approval was judged bare and a later
+rollback-shaped `migration:` seed reopened the WP. Now a real `approved -> …`
+sorts after its same-`at`, same-WP approval, and `_is_bare_sibling` counts an
+equal-`at` `approved -> …` as building upon the approval — so the WP stays
+`done`/`approved`.
+
+Ordering changes only when a same-WP, same-`at` real approval exists; the
+`10.4.5` (spec-kitty#6061), `10.4.4` (spec-kitty#6058) and `10.4.3`
+bare-sibling (spec-kitty-events#81) rulings, real-against-real arbitration,
+`force`, seedless logs and the Lamport `reduce_status_events` path are
+unchanged. Consumers with non-terminal migrated missions whose approval/done
+pairs share a timestamp may need to re-materialize snapshots to pick up the
+corrected lanes.
 
 ## `10.4.5` — status-diary reducer: a rollback-shaped seed never takes a lane against the real lifecycle
 

@@ -1,6 +1,6 @@
 [project]
 name = "spec-kitty-events"
-version = "10.4.5"
+version = "10.4.6"
 description = "Event log library with Lamport clocks and systematic error tracking"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -109,6 +109,9 @@ python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
 addopts = "--cov=src/spec_kitty_events --cov-report=term-missing --cov-report=html"
+markers = [
+    "regression: pins a bug that is already fixed; the test is its issue-referenced reproduction (ADR 2026-07-17-1).",
+]
 
 [tool.ruff]
 line-length = 100

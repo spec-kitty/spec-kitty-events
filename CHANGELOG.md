@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.4.6] - 2026-10-13
+
+### Fixed
+
+- **A migrated `done` work package no longer reopens at an equal timestamp
+  (spec-kitty-events#87).** When a mission's real `in_review -> approved` and
+  `approved -> done` events carried the same `at` timestamp and the `done`
+  sorted before its approval by `event_id`, reducing the log dropped the `done`
+  and treated the approval as never built upon, so a later rollback-shaped
+  `migration:` seed reopened the WP (`done` → `in_progress`, verdict reverting
+  to `changes_requested`). `reduce()` / `reduce_parsed()` now order a real
+  `approved -> …` after its same-`at` approval and count an equal-`at`
+  `approved -> done` as settling the approval, so the WP stays `done`/`approved`.
+  Ordering changes only when a same-WP, same-`at` real approval exists; the
+  spec-kitty-events#81, spec-kitty#6061 and spec-kitty#6058 outcomes, the
+  snapshot shape, the `3.0.0` envelope schema and the Lamport reducer are
+  unchanged.
+
 ## [10.4.5] - 2026-10-13
 
 ### Fixed
