@@ -1,1 +1,0 @@
-/Users/robert/.agents/skills/spec-kitty-bulk-edit-classification/SKILL.md

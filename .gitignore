@@ -86,3 +86,6 @@ kitty-ops/ops-index.jsonl
 .cursor/rules/spec-kitty.mdc
 .cursor/commands/
 .cursor/skills/
+
+# Local scratch (engineering notes, throwaway scripts) — never committed
+work/
