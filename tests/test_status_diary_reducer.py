@@ -1271,6 +1271,7 @@ _GOLDEN_REPLAYS = (
     "status-diary-replay-out-of-order-duplicates",
     "status-diary-replay-unknown-kinds",
     "status-diary-replay-seed-payload-fold",
+    "status-diary-replay-seed-lane-authority",
 )
 
 

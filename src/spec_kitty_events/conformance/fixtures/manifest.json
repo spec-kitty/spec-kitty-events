@@ -2771,6 +2771,24 @@
       "min_version": "10.4.3"
     },
     {
+      "id": "status-diary-replay-seed-lane-authority",
+      "path": "status_diary/replay/status_diary_seed_lane_authority.jsonl",
+      "fixture_type": "replay_stream",
+      "event_type": "mixed",
+      "expected_result": "valid",
+      "notes": "spec-kitty#6061: a rollback-shaped migration: seed never takes a lane against the real lifecycle. WP01 the 079 shape (compatibility repair keeps the lane), WP02 a rollback seed after a real done, WP03 approval then seed then done, WP04 the bare sibling approval pair (the seed keeps the lane, spec-kitty-events#81), WP05 a seed first then a real claim",
+      "min_version": "10.4.5"
+    },
+    {
+      "id": "status-diary-replay-seed-lane-authority-output",
+      "path": "status_diary/replay/status_diary_seed_lane_authority_output.json",
+      "fixture_type": "reducer_output",
+      "event_type": "State",
+      "expected_result": "valid",
+      "notes": "Golden reduce() output for status_diary_seed_lane_authority.jsonl (spec-kitty#6061), written by hand from the contract: WP01 planned/changes_requested, WP02 and WP03 done/approved, WP04 in_progress/changes_requested, WP05 claimed by the real claim",
+      "min_version": "10.4.5"
+    },
+    {
       "id": "work-observation-valid-artifact-reference-partial",
       "path": "work_observation/valid/artifact_reference_partial.json",
       "expected_result": "valid",
