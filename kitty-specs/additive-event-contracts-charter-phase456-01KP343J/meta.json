@@ -8,6 +8,7 @@
   "mission_type": "software-dev",
   "slug": "additive-event-contracts-charter-phase456-01KP343J",
   "source_description": "Smallest additive contract tranche for charter epic #461: profile invocation, retrospective, and conditional glossary summary events",
+  "status_phase": "1",
   "target_branch": "main",
   "topology": "lanes",
   "vcs": "git"

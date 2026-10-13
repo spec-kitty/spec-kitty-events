@@ -22,49 +22,107 @@
       "force_count": 1,
       "lane": "done",
       "last_event_id": "01KJ5V2V7ST1P6QADAH6TH1ZDD",
-      "last_transition_at": "2026-02-23T18:09:46.744997+00:00"
+      "last_transition_at": "2026-02-23T18:09:46.744997+00:00",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done",
+        "T005": "done",
+        "T006": "done"
+      }
     },
     "WP02": {
       "actor": "migration",
       "force_count": 1,
       "lane": "done",
       "last_event_id": "01KJ5V2V7TAKCM0ZCHR03GMDBB",
-      "last_transition_at": "2026-02-23T18:09:46.746887+00:00"
+      "last_transition_at": "2026-02-23T18:09:46.746887+00:00",
+      "subtasks": {
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done",
+        "T011": "done",
+        "T012": "done",
+        "T013": "done"
+      }
     },
     "WP03": {
       "actor": "migration",
       "force_count": 1,
       "lane": "done",
       "last_event_id": "01KJ5V2V7WS14ZR7QDJXRM9XHH",
-      "last_transition_at": "2026-02-23T18:09:46.748924+00:00"
+      "last_transition_at": "2026-02-23T18:09:46.748924+00:00",
+      "subtasks": {
+        "T014": "done",
+        "T015": "done",
+        "T016": "done",
+        "T017": "done",
+        "T018": "done",
+        "T019": "done",
+        "T020": "done"
+      }
     },
     "WP04": {
       "actor": "migration",
       "force_count": 1,
       "lane": "done",
       "last_event_id": "01KJ5V2V7YTZXARFWA0314428K",
-      "last_transition_at": "2026-02-23T18:09:46.750940+00:00"
+      "last_transition_at": "2026-02-23T18:09:46.750940+00:00",
+      "subtasks": {
+        "T021": "done",
+        "T022": "done",
+        "T023": "done",
+        "T024": "done",
+        "T025": "done",
+        "T026": "done",
+        "T027": "done",
+        "T028": "done"
+      }
     },
     "WP05": {
       "actor": "migration",
       "force_count": 1,
       "lane": "done",
       "last_event_id": "01KJ5V2V80H5T5B7W8FQ7ED7P4",
-      "last_transition_at": "2026-02-23T18:09:46.752796+00:00"
+      "last_transition_at": "2026-02-23T18:09:46.752796+00:00",
+      "subtasks": {
+        "T029": "done",
+        "T030": "done",
+        "T031": "done",
+        "T032": "done",
+        "T033": "done"
+      }
     },
     "WP06": {
       "actor": "migration",
       "force_count": 1,
       "lane": "done",
       "last_event_id": "01KJ5V2V8298QJXCGQSMH62KAA",
-      "last_transition_at": "2026-02-23T18:09:46.754715+00:00"
+      "last_transition_at": "2026-02-23T18:09:46.754715+00:00",
+      "subtasks": {
+        "T034": "done",
+        "T035": "done",
+        "T036": "done",
+        "T037": "done",
+        "T038": "done",
+        "T039": "done"
+      }
     },
     "WP07": {
       "actor": "migration",
       "force_count": 1,
       "lane": "done",
       "last_event_id": "01KJ5V2V848XNE7DNCKQYBP0KW",
-      "last_transition_at": "2026-02-23T18:09:46.756789+00:00"
+      "last_transition_at": "2026-02-23T18:09:46.756789+00:00",
+      "subtasks": {
+        "T040": "done",
+        "T041": "done",
+        "T042": "done",
+        "T043": "done",
+        "T044": "done"
+      }
     }
   }
 }

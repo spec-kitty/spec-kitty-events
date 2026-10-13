@@ -1,0 +1,23 @@
+{
+  "entries": [
+    {
+      "agents": [
+        "codex"
+      ],
+      "content_hash": "380b6abead8db46cb8be4868f31a4f858a9fd863a3c8e3ec5170c243c9d46c63",
+      "installed_at": "2026-10-13T16:36:37.259164+00:00",
+      "path": ".agents/skills/spec-kitty.consolidate/SKILL.md",
+      "spec_kitty_version": "4.0.0rc7"
+    },
+    {
+      "agents": [
+        "codex"
+      ],
+      "content_hash": "92da5ec247818c494ac9a75f3e3b789e7da9fbf0ebf38e2f94995cfb03e0351c",
+      "installed_at": "2026-10-13T16:36:37.259164+00:00",
+      "path": ".agents/skills/spec-kitty.status/SKILL.md",
+      "spec_kitty_version": "4.0.0rc7"
+    }
+  ],
+  "schema_version": 1
+}

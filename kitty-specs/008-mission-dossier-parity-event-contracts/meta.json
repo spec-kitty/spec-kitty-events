@@ -7,6 +7,7 @@
   "mission_slug": "008-mission-dossier-parity-event-contracts",
   "mission_type": "software-dev",
   "slug": "008-mission-dossier-parity-event-contracts",
+  "status_phase": "1",
   "target_branch": "2.x",
   "topology": "single_branch",
   "vcs": "git",

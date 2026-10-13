@@ -22,6 +22,7 @@
   "mission_type": "software-dev",
   "slug": "010-mission-audit-lifecycle-contracts",
   "source_description": "Build canonical mission-audit lifecycle event contracts and conformance fixtures for post-merge audit in Spec Kitty 2.x. Event family prefix MissionAudit*, five events (Requested, Started, DecisionRequested, Completed, Failed), payloads with mission/run/feature ids verdict severity artifact refs provenance pointers, deterministic replay fixtures for pass/warning/fail/decision-required, compatible with MissionDossier contracts, 2.x only.",
+  "status_phase": "1",
   "target_branch": "main",
   "topology": "single_branch",
   "vcs": "git",

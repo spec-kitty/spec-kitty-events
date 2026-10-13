@@ -22,21 +22,41 @@
       "force_count": 8,
       "lane": "done",
       "last_event_id": "01KK0011JC7DN4MZMSY1WHRXCD",
-      "last_transition_at": "2026-03-05T21:56:25.804561+00:00"
+      "last_transition_at": "2026-03-05T21:56:25.804561+00:00",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done",
+        "T005": "done"
+      }
     },
     "WP02": {
       "actor": "user",
       "force_count": 3,
       "lane": "done",
       "last_event_id": "01KK00Q282S9FAAKSJ15BXKZTE",
-      "last_transition_at": "2026-03-05T22:08:27.394465+00:00"
+      "last_transition_at": "2026-03-05T22:08:27.394465+00:00",
+      "subtasks": {
+        "T006": "done",
+        "T007": "done",
+        "T008": "done",
+        "T009": "done"
+      }
     },
     "WP03": {
       "actor": "user",
       "force_count": 5,
       "lane": "done",
       "last_event_id": "01KK02BTD9ME7AK8XJSHPRFZ6Q",
-      "last_transition_at": "2026-03-05T22:37:16.073581+00:00"
+      "last_transition_at": "2026-03-05T22:37:16.073581+00:00",
+      "subtasks": {
+        "T010": "done",
+        "T011": "done",
+        "T012": "done",
+        "T013": "done",
+        "T014": "done"
+      }
     }
   }
 }

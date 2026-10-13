@@ -8,6 +8,7 @@
   "mission_type": "software-dev",
   "slug": "007-glossary-semantic-integrity-contracts",
   "source_description": "/Users/robert/ClaudeCowork/Spec-Kitty-Cowork/spec-kitty-planning/product-ideas/mission-collaboration-platform-ddd/sprint-s2-kickoff-prompt-spec-kitty-events-2026-02-16.md",
+  "status_phase": "1",
   "target_branch": "2.x",
   "topology": "single_branch",
   "vcs": "git"

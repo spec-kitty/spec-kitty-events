@@ -22,21 +22,43 @@
       "force_count": 1,
       "lane": "done",
       "last_event_id": "01KJ5V2V6YQCFX0B2DA7XTEBMA",
-      "last_transition_at": "2026-02-07T00:00:00Z"
+      "last_transition_at": "2026-02-07T00:00:00Z",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done",
+        "T005": "done"
+      }
     },
     "WP02": {
       "actor": "migration",
       "force_count": 1,
       "lane": "done",
       "last_event_id": "01KJ5V2V70Q8M7M4XRWXZ4DFHG",
-      "last_transition_at": "2026-02-07T00:00:00Z"
+      "last_transition_at": "2026-02-07T00:00:00Z",
+      "subtasks": {
+        "T006": "done",
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done",
+        "T011": "done",
+        "T012": "done"
+      }
     },
     "WP03": {
       "actor": "migration",
       "force_count": 1,
       "lane": "done",
       "last_event_id": "01KJ5V2V72K40G8XSW5BZBJZ4G",
-      "last_transition_at": "2026-02-07T00:00:00Z"
+      "last_transition_at": "2026-02-07T00:00:00Z",
+      "subtasks": {
+        "T013": "done",
+        "T014": "done",
+        "T015": "done",
+        "T016": "done"
+      }
     }
   }
 }

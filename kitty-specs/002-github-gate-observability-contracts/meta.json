@@ -8,6 +8,7 @@
   "mission_type": "software-dev",
   "slug": "002-github-gate-observability-contracts",
   "source_description": "",
+  "status_phase": "1",
   "target_branch": "main",
   "topology": "single_branch",
   "vcs": "git"

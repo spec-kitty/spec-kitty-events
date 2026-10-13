@@ -8,6 +8,7 @@
   "mission_type": "software-dev",
   "slug": "decision-moment-v1-contract-freeze-01KPWA0N",
   "source_description": "Freeze the canonical DecisionPoint event contract (v4.0.0) for interview-originated Decision Moment V1: interview-origin metadata on Opened, new Widened event, terminal_outcome on Resolved, structured summary, participant external_refs, and replay-safe conformance fixtures.",
+  "status_phase": "1",
   "target_branch": "main",
   "topology": "lanes",
   "vcs": "git"

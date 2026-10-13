@@ -57,7 +57,6 @@ env/
 .opencode/
 .windsurf/
 .gemini/
-.cursor/
 .qwen/
 .kilocode/
 .augment/
@@ -75,3 +74,15 @@ env/
 .kittify/charter/metadata.yaml
 .kittify/charter/references.yaml
 .worktrees/
+.kittify/sync-state.json
+.kittify/encoding-provenance/
+kitty-ops/ops-index.jsonl
+.kittify/migrations/
+.kittify/logs/
+.agents/skills/
+.kittify/skills-manifest.json
+.kittify/.kitty.env
+.kittify/lint-report.json
+.cursor/rules/spec-kitty.mdc
+.cursor/commands/
+.cursor/skills/

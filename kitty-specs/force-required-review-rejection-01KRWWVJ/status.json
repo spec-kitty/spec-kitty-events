@@ -1,5 +1,5 @@
 {
-  "event_count": 4,
+  "event_count": 6,
   "last_event_id": "01KRWZW8YQS2GW6PY4PYSTWXJF",
   "materialized_at": "2026-05-18T07:30:17.175375+00:00",
   "mission_number": "16",
@@ -19,17 +19,36 @@
   "work_packages": {
     "WP01": {
       "actor": "user",
+      "agent": "claude",
       "force_count": 2,
       "lane": "done",
       "last_event_id": "01KRWZVZT4CZ9G350Z369MS9ZC",
-      "last_transition_at": "2026-05-18T07:30:07.812873+00:00"
+      "last_transition_at": "2026-05-18T07:30:07.812873+00:00",
+      "subtasks": {
+        "T001": "planned",
+        "T002": "planned",
+        "T003": "planned",
+        "T004": "planned",
+        "T005": "planned",
+        "T006": "planned"
+      }
     },
     "WP02": {
       "actor": "user",
+      "agent": "claude",
       "force_count": 2,
       "lane": "done",
       "last_event_id": "01KRWZW8YQS2GW6PY4PYSTWXJF",
-      "last_transition_at": "2026-05-18T07:30:17.175375+00:00"
+      "last_transition_at": "2026-05-18T07:30:17.175375+00:00",
+      "subtasks": {
+        "T007": "planned",
+        "T008": "planned",
+        "T009": "planned",
+        "T010": "planned",
+        "T011": "planned",
+        "T012": "planned",
+        "T013": "planned"
+      }
     }
   }
 }

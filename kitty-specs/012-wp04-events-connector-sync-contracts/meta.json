@@ -7,6 +7,7 @@
   "mission_slug": "012-wp04-events-connector-sync-contracts",
   "mission_type": "software-dev",
   "slug": "012-wp04-events-connector-sync-contracts",
+  "status_phase": "1",
   "target_branch": "codex/wp04-events-connector-sync-contracts",
   "topology": "single_branch",
   "vcs": "git",

@@ -8,6 +8,7 @@
   "mission_type": "software-dev",
   "slug": "013-per-user-identity-connector-events",
   "source_description": "Per-User Identity in Connector Lifecycle Events (from per-user-auth-specify-prompts.md, section 3)",
+  "status_phase": "1",
   "target_branch": "2.x",
   "topology": "single_branch",
   "vcs": "git"

@@ -8,6 +8,7 @@
   "mission_type": "software-dev",
   "slug": "001-event-model-project-identity",
   "source_description": "Extend the spec-kitty-events Event model to include project_uuid (required UUID) and project_slug (optional string) fields. This is a coordinated change across CLI, events library, and SaaS teams. No backward compatibility required. Bump version to 0.1.1-alpha. Update all tests, README, and public API.",
+  "status_phase": "1",
   "target_branch": "main",
   "topology": "single_branch",
   "vcs": "git"
