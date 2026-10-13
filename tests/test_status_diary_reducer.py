@@ -2303,6 +2303,33 @@ class TestSeedLaneAuthorityArriving:
     def test_arriving_seed(self, rows: list[dict[str, Any]], exp: tuple[Any, ...]) -> None:
         _assert_outcome(rows, exp)
 
+    @pytest.mark.regression
+    def test_equal_at_done_sorting_before_its_approval_settles_it(self) -> None:
+        """spec-kitty-events#87: an ``approved -> done`` sharing its approval's ``at``
+        but sorting BEFORE it by ``event_id`` still settles the approval, so a later
+        rollback seed does not reopen the done WP."""
+        rows = [
+            *_SEED_PRE,
+            _row(
+                _ulid(6),
+                from_lane="in_review",
+                to_lane="approved",
+                at=_hm("10:04:00"),
+                actor="rev",
+                review_result=_SEED_OK,
+            ),
+            _row(
+                _ulid(5),
+                from_lane="approved",
+                to_lane="done",
+                at=_hm("10:04:00"),
+                actor="merge",
+                evidence=_DONE_EVIDENCE,
+            ),
+            _rb_seed(_ulid(90), _hm("11:00:00")),
+        ]
+        _assert_outcome(rows, ("done", "approved"))
+
 
 class TestSeedLaneAuthoritySetter:
     """R2 (spec-kitty/spec-kitty#6061): an applied rollback seed yields to a real event."""

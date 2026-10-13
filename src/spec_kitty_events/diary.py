@@ -1147,12 +1147,13 @@ def _is_bare_sibling(
         or approval.from_lane != seed.from_lane
     ):
         return False
-    key = (approval.at, approval.event_id)
     return not any(
         ev.wp_id == approval.wp_id
         and ev.from_lane == Lane.APPROVED
         and not _is_reconstruction_seed(ev)
-        and (ev.at, ev.event_id) > key
+        # ``>=`` on ``at`` alone: an ``approved -> done`` sharing the approval's
+        # ``at`` settles it whatever its ``event_id`` (spec-kitty-events#87).
+        and ev.at >= approval.at
         for ev in all_events
     )
 
@@ -1682,6 +1683,33 @@ def _fold_transitions(sorted_events: list[StatusEvent]) -> dict[str, dict[str, A
     return wp_states
 
 
+def _order_transitions(events: list[StatusEvent]) -> list[StatusEvent]:
+    """Sort by ``(at, event_id)``, except that a real ``approved -> X`` follows its approval.
+
+    A non-seed event leaving ``approved`` that shares its ``at`` with a non-seed
+    ``-> approved`` of the same WP causally follows it, so it sorts after the
+    approval even when its ``event_id`` is smaller; otherwise arm (ii) would drop
+    it for arriving while the WP is still ``in_review`` (spec-kitty-events#87).
+    """
+    approvals = {
+        (ev.wp_id, ev.at)
+        for ev in events
+        if ev.to_lane == Lane.APPROVED
+        and ev.from_lane != Lane.APPROVED
+        and not _is_reconstruction_seed(ev)
+    }
+    return sorted(
+        events,
+        key=lambda e: (
+            e.at,
+            e.from_lane == Lane.APPROVED
+            and (e.wp_id, e.at) in approvals
+            and not _is_reconstruction_seed(e),
+            e.event_id,
+        ),
+    )
+
+
 def _canonical_key(event: StatusEvent) -> str:
     """Order-independent content key used to pick between same-id seeds."""
     return json.dumps(event.to_dict(), sort_keys=True, default=str)
@@ -1930,7 +1958,7 @@ def reduce_parsed(
     unique_events = _dedup_transitions(transitions)
 
     # Step 2: Sort by (at, event_id) ascending
-    sorted_events = sorted(unique_events, key=lambda e: (e.at, e.event_id))
+    sorted_events = _order_transitions(unique_events)
 
     # Step 3 & 4: Iterate and apply events with rollback-aware precedence
     # The event's mission_slug is UNTRUSTED (verbatim from a status.events.jsonl
