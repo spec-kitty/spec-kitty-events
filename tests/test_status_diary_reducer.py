@@ -11,6 +11,7 @@ mission slug, the row-partition contract, plus the packaged golden replays.
 from __future__ import annotations
 
 import json
+import random
 from typing import Any
 
 import pytest
@@ -1902,6 +1903,497 @@ class TestSeedPayloadFold:
             rng.shuffle(shuffled)
             assert reduce(shuffled).to_dict() == ref
 
-    # B5 (a rollback-shaped verdict seed, ``in_review -> in_progress`` with a
-    # ``changes_requested`` verdict, still applies and sets the lane through the
-    # rollback exemption) is out of scope here: see spec-kitty/spec-kitty#6061.
+    def test_rollback_seed_after_real_done_leaves_the_lane_and_verdict(self) -> None:
+        """B5 (spec-kitty/spec-kitty#6061): a rollback-shaped verdict seed after a
+        real ``approved -> done`` neither reopens the WP nor replaces its verdict."""
+        rows = [
+            *_SEED_PRE,
+            _row(
+                _ulid(5),
+                from_lane="in_review",
+                to_lane="approved",
+                at=_hm("10:04:00"),
+                actor="rev",
+                review_result=_SEED_OK,
+            ),
+            _row(
+                _ulid(6),
+                from_lane="approved",
+                to_lane="done",
+                at=_hm("10:05:00"),
+                actor="merge",
+                evidence=_DONE_EVIDENCE,
+            ),
+            _rb_seed(_ulid(90), _hm("11:00:00")),
+        ]
+        wp = _wp(rows)
+        assert (wp["lane"], wp["review_result"]["verdict"]) == ("done", "approved")
+
+
+# ── Rollback-seed lane authority (spec-kitty/spec-kitty#6061) ──────────────────
+#
+# A rollback-shaped ``migration:`` reconstruction seed (``in_review ->
+# in_progress|planned|claimed`` with a verdict) restates history; it must not
+# take a WP's lane against its real lifecycle. Rules (contracts/
+# reducer-seed-authority.md in the CLI mission):
+#   R1  as the ARRIVING event, a rollback seed applies only when its from_lane
+#       continues the lane in force, or the setter is its bare sibling approval
+#       (events#81), or the setter is itself a rollback seed, or force.
+#   R2  as the SETTER, an applied rollback seed yields to a real event (except
+#       its bare sibling), as a forward seed does.
+#   R3  the forward-seed-setter exemption never applies to a seed arriving.
+# Equal ``at`` follows from R1 + R2 (arm (i)): the outcome never depends on
+# which event_id sorts first.
+
+_SEED_VERDICT_ACTOR = "migration:verdict_provenance_backfill"
+_SEED_COMPAT = "migration:backfill_runtime_state:compatibility"
+_SEED_RTS = "migration:backfill_runtime_state"
+_SEED_OK = {"reviewer": "r1", "verdict": "approved", "reference": "feedback://WP01/ok"}
+_SEED_CR = {"reviewer": "r1", "verdict": "changes_requested", "reference": "feedback://WP01/cr1"}
+_SEED_CR2 = {"reviewer": "r2", "verdict": "changes_requested", "reference": "feedback://WP01/cr2"}
+
+
+def _hm(hm: str, suffix: str = "+00:00") -> str:
+    return f"2026-02-08T{hm}{suffix}"
+
+
+def _rb_seed(
+    eid: str,
+    at: str,
+    from_lane: str = "in_review",
+    to_lane: str = "in_progress",
+    result: dict[str, Any] | None = None,
+    **kw: Any,
+) -> dict[str, Any]:
+    """A verdict-provenance backfill seed (rollback-shaped by default)."""
+    return _row(
+        eid,
+        from_lane=from_lane,
+        to_lane=to_lane,
+        at=at,
+        actor=_SEED_VERDICT_ACTOR,
+        review_result=result if result is not None else _SEED_CR,
+        **kw,
+    )
+
+
+def _step(
+    n: int, from_lane: str, to_lane: str, hm: str, actor: str = "impl", **kw: Any
+) -> dict[str, Any]:
+    return _row(_ulid(n), from_lane=from_lane, to_lane=to_lane, at=_hm(hm), actor=actor, **kw)
+
+
+_SEED_PRE = [
+    _step(1, "planned", "claimed", "10:00:00"),
+    _step(2, "claimed", "in_progress", "10:01:00"),
+    _step(3, "in_progress", "for_review", "10:02:00"),
+    _step(4, "for_review", "in_review", "10:03:00", "rev"),
+]
+_SEED_APPROVE = _step(5, "in_review", "approved", "10:04:00", "rev", review_result=_SEED_OK)
+_SEED_DONE = _step(6, "approved", "done", "10:05:00", "merge", evidence=_DONE_EVIDENCE)
+_SEED_REAL_REJ = _step(5, "in_review", "planned", "10:04:00", "rev", review_result=_SEED_CR)
+_SEED_REWORK = [
+    _step(10, "planned", "claimed", "10:10:00"),
+    _step(11, "claimed", "in_progress", "10:11:00"),
+    _step(12, "in_progress", "for_review", "10:12:00"),
+    _step(13, "for_review", "in_review", "10:13:00", "rev"),
+]
+# The 079 shape: genesis repair, a runtime-state seed, then a compatibility
+# repair back to ``planned`` 1 microsecond later.
+_SEED_G079 = [
+    _step(1, "planned", "planned", "10:00:00", "finalize-tasks", force=True),
+    _row(_ulid(2), from_lane="planned", to_lane="claimed", at=_hm("10:00:00"), actor=_SEED_RTS),
+    _row(
+        _ulid(3),
+        from_lane="claimed",
+        to_lane="planned",
+        at=_hm("10:00:00.000001"),
+        actor=_SEED_COMPAT,
+    ),
+]
+
+_Case = tuple[list[dict[str, Any]], tuple[Any, ...]]
+
+
+def _case_params(cases: dict[str, _Case]) -> list[Any]:
+    return [pytest.param(rows, exp, id=name) for name, (rows, exp) in cases.items()]
+
+
+def _outcome(rows: list[dict[str, Any]]) -> tuple[Any, ...]:
+    wp = _wp(rows)
+    review = wp.get("review_result") or {}
+    return (wp["lane"], review.get("verdict"), wp.get("actor"), review.get("reference"))
+
+
+def _assert_outcome(rows: list[dict[str, Any]], exp: tuple[Any, ...]) -> None:
+    got = _outcome(rows)
+    assert got[: len(exp)] == exp, f"got {got}"
+
+
+# R1: the rollback seed ARRIVES and must not take the lane against the lifecycle.
+_ARRIVING: dict[str, _Case] = {
+    "US1.1-done-then-seed": (
+        [*_SEED_PRE, _SEED_APPROVE, _SEED_DONE, _rb_seed(_ulid(90), _hm("11:00:00"))],
+        ("done", "approved"),
+    ),
+    "US1.3-canceled-then-seed": (
+        [
+            *_SEED_PRE,
+            _step(5, "in_review", "canceled", "10:04:00", "lead"),
+            _rb_seed(_ulid(90), _hm("11:00:00")),
+        ],
+        ("canceled", None),
+    ),
+    "US1.4-in-review-then-seed-applies": (
+        [*_SEED_PRE, _rb_seed(_ulid(90), _hm("11:00:00"))],
+        ("in_progress", "changes_requested"),
+    ),
+    "US1.6-080-shape-real-rework-after-seed": (
+        [
+            *_SEED_PRE[:3],
+            _step(
+                4,
+                "for_review",
+                "in_progress",
+                "10:03:00",
+                "rev",
+                force=True,
+                review_ref="action-review-claim",
+            ),
+            _step(
+                5,
+                "in_progress",
+                "planned",
+                "10:04:00.659114",
+                "impl",
+                review_ref="review-cycle://m/WP01/review-cycle-1.md",
+            ),
+            _rb_seed(_ulid(90), _hm("10:04:00", "Z")),
+            _step(6, "planned", "claimed", "10:10:00", "impl2"),
+            _step(7, "claimed", "in_progress", "10:11:00", "impl2"),
+        ],
+        ("in_progress", "changes_requested", "impl2"),
+    ),
+    "FR008-real-reviewer-twin-still-rolls-back": (
+        # The done-then-seed fixture with a REAL reviewer as the rollback: it applies.
+        [
+            *_SEED_PRE,
+            _SEED_APPROVE,
+            _SEED_DONE,
+            _row(
+                _ulid(90),
+                from_lane="in_review",
+                to_lane="in_progress",
+                at=_hm("11:00:00"),
+                actor="rev",
+                review_result=_SEED_CR,
+            ),
+        ],
+        ("in_progress", "changes_requested"),
+    ),
+    "B2-legacy-for-review-approval-then-seed": (
+        [
+            *_SEED_PRE[:3],
+            _step(5, "for_review", "approved", "10:04:00", "rev", review_result=_SEED_OK),
+            _rb_seed(_ulid(90), _hm("11:00:00")),
+        ],
+        ("approved", "approved"),
+    ),
+    "B4a-real-rejection-then-approval-seed": (
+        [
+            *_SEED_PRE,
+            _SEED_REAL_REJ,
+            _rb_seed(_ulid(90), _hm("11:00:00"), to_lane="approved", result=_SEED_OK),
+        ],
+        ("planned", "changes_requested"),
+    ),
+    "B5-seed-vs-real-in-review-via-rework": (
+        [*_SEED_PRE, _SEED_REAL_REJ, *_SEED_REWORK, _rb_seed(_ulid(90), _hm("11:00:00"))],
+        ("in_progress", "changes_requested"),
+    ),
+    "B6-force-seed-after-done-applies": (
+        [*_SEED_PRE, _SEED_APPROVE, _SEED_DONE, _rb_seed(_ulid(90), _hm("11:00:00"), force=True)],
+        ("in_progress", "changes_requested"),
+    ),
+    "B11a-seed-to-planned-after-done": (
+        [
+            *_SEED_PRE,
+            _SEED_APPROVE,
+            _SEED_DONE,
+            _rb_seed(_ulid(90), _hm("11:00:00"), to_lane="planned"),
+        ],
+        ("done", "approved"),
+    ),
+    "B11b-seed-to-claimed-after-done": (
+        [
+            *_SEED_PRE,
+            _SEED_APPROVE,
+            _SEED_DONE,
+            _rb_seed(_ulid(90), _hm("11:00:00"), to_lane="claimed"),
+        ],
+        ("done", "approved"),
+    ),
+    "B11c-legacy-for-review-seed-after-done": (
+        [
+            *_SEED_PRE,
+            _SEED_APPROVE,
+            _SEED_DONE,
+            _rb_seed(_ulid(90), _hm("11:00:00"), from_lane="for_review", review_ref="review://x"),
+        ],
+        ("done", "approved"),
+    ),
+    "B15-real-rejection-then-seed-keeps-real-verdict": (
+        [*_SEED_PRE, _SEED_REAL_REJ, _rb_seed(_ulid(90), _hm("11:00:00"), result=_SEED_CR2)],
+        ("planned", "changes_requested", "rev", "feedback://WP01/cr1"),
+    ),
+}
+
+# R2: the seed has APPLIED (it is the setter) and a real event follows.
+_SETTER: dict[str, _Case] = {
+    "B3a-seed-between-sibling-approval-and-done": (
+        [*_SEED_PRE, _SEED_APPROVE, _rb_seed(_ulid(90), _hm("10:04:30")), _SEED_DONE],
+        ("done", "approved"),
+    ),
+    "B3d-seed-first-then-approval-then-done": (
+        [*_SEED_PRE, _rb_seed(_ulid(90), _hm("10:03:30")), _SEED_APPROVE, _SEED_DONE],
+        ("done", "approved"),
+    ),
+    "B4b-approval-seed-then-real-rejection": (
+        [
+            *_SEED_PRE,
+            _rb_seed(_ulid(90), _hm("10:03:30"), to_lane="approved", result=_SEED_OK),
+            _SEED_REAL_REJ,
+        ],
+        ("planned", "changes_requested"),
+    ),
+    "B9-seed-first-then-real-claim": (
+        [_rb_seed(_ulid(0), _hm("09:00:00")), _SEED_PRE[0]],
+        ("claimed", "changes_requested", "impl"),
+    ),
+    "B10-applied-sibling-seed-then-real-rework": (
+        [
+            *_SEED_PRE,
+            _SEED_APPROVE,
+            _rb_seed(_ulid(90), _hm("10:04:30")),
+            _step(20, "planned", "claimed", "10:10:00", "impl2"),
+        ],
+        ("claimed", "changes_requested", "impl2"),
+    ),
+}
+
+# R3: the 079 shape with ONLY the rollback exemption removed (forward-seed-setter
+# exemption must not be usable by an arriving seed).
+_FORWARD_SEED_SETTER: dict[str, _Case] = {
+    "US1.2-079-shape": (
+        [*_SEED_G079, _rb_seed(_ulid(90), _hm("11:00:00"))],
+        ("planned", "changes_requested"),
+    ),
+    "B7b-two-rollback-seeds-079-shape": (
+        [
+            *_SEED_G079,
+            _rb_seed(_ulid(90), _hm("11:00:00")),
+            _rb_seed(_ulid(91), _hm("12:00:00"), result=_SEED_CR2),
+        ],
+        ("planned", "changes_requested", _SEED_COMPAT, "feedback://WP01/cr2"),
+    ),
+    "B8a-079-seed-same-at-as-compat-seed-id-first": (
+        [*_SEED_G079[:2], _rb_seed(_ulid(0), _hm("10:00:00.000001")), _SEED_G079[2]],
+        ("planned", "changes_requested"),
+    ),
+    "B14-losing-rejection-seed-then-losing-approval-seed": (
+        # Verdict change vs 10.4.4 (which recorded changes_requested): both seeds
+        # lose; the later cycle's verdict folds.
+        [
+            *_SEED_G079,
+            _rb_seed(_ulid(90), _hm("11:00:00")),
+            _rb_seed(_ulid(91), _hm("12:00:00"), to_lane="approved", result=_SEED_OK),
+        ],
+        ("planned", "approved"),
+    ),
+}
+
+# Equal ``at``: neither event_id order may change the outcome.
+_EQUAL_TIMESTAMP: dict[str, _Case] = {
+    "B3b-done-then-seed-same-at-seed-id-first": (
+        [
+            *_SEED_PRE,
+            _SEED_APPROVE,
+            _step(8, "approved", "done", "10:05:00", "merge", evidence=_DONE_EVIDENCE),
+            _rb_seed(_ulid(7), _hm("10:05:00")),
+        ],
+        ("done", "approved"),
+    ),
+    "B3c-done-then-seed-same-at-done-id-first": (
+        [
+            *_SEED_PRE,
+            _SEED_APPROVE,
+            _step(7, "approved", "done", "10:05:00", "merge", evidence=_DONE_EVIDENCE),
+            _rb_seed(_ulid(8), _hm("10:05:00")),
+        ],
+        ("done", "approved"),
+    ),
+    "B8b-079-seed-same-at-as-genesis-seed-id-first": (
+        [_rb_seed(_ulid(0), _hm("10:00:00")), *_SEED_G079],
+        ("planned", "changes_requested"),
+    ),
+    "FR002-equal-at-loser-still-folds-its-verdict": (
+        # Compatibility id sorts first at the SAME ``at``: the rollback seed loses
+        # on continuity (so its verdict folds), it is not dropped by arm (i).
+        [
+            _step(1, "planned", "planned", "10:00:00", "finalize-tasks", force=True),
+            _row(
+                _ulid(2),
+                from_lane="planned",
+                to_lane="claimed",
+                at=_hm("10:00:00"),
+                actor=_SEED_RTS,
+            ),
+            _row(
+                _ulid(3),
+                from_lane="claimed",
+                to_lane="planned",
+                at=_hm("10:00:00.000001"),
+                actor=_SEED_COMPAT,
+            ),
+            _rb_seed(_ulid(90), _hm("10:00:00.000001")),
+        ],
+        ("planned", "changes_requested"),
+    ),
+}
+
+# events#81: the rejection seed and its BARE sibling approval, any order.
+_BARE_SIBLING: dict[str, _Case] = {
+    "US1.5a-seed-then-bare-approval": (
+        [
+            *_SEED_PRE,
+            _rb_seed(_ulid(90), _hm("10:03:30")),
+            _step(91, "in_review", "approved", "10:04:00", "rev", review_result=_SEED_OK),
+        ],
+        ("in_progress", "changes_requested"),
+    ),
+    "US1.5b-bare-approval-then-seed": (
+        [*_SEED_PRE, _SEED_APPROVE, _rb_seed(_ulid(90), _hm("11:00:00"))],
+        ("in_progress", "changes_requested"),
+    ),
+    "US1.5c-same-at-seed-id-first": (
+        [
+            *_SEED_PRE,
+            _rb_seed(_ulid(7), _hm("10:04:00")),
+            _step(8, "in_review", "approved", "10:04:00", "rev", review_result=_SEED_OK),
+        ],
+        ("in_progress", "changes_requested"),
+    ),
+    "US1.5d-same-at-approval-id-first": (
+        [
+            *_SEED_PRE,
+            _step(7, "in_review", "approved", "10:04:00", "rev", review_result=_SEED_OK),
+            _rb_seed(_ulid(8), _hm("10:04:00")),
+        ],
+        ("in_progress", "changes_requested"),
+    ),
+    "B1-approval-never-built-upon-is-still-bare": (
+        [
+            *_SEED_PRE,
+            _SEED_REAL_REJ,
+            *_SEED_REWORK,
+            _step(14, "in_review", "approved", "10:14:00", "rev", review_result=_SEED_OK),
+            _rb_seed(_ulid(90), _hm("11:00:00")),
+        ],
+        ("in_progress", "changes_requested"),
+    ),
+    "B13-approval-seed-then-rejection-seed": (
+        [
+            *_SEED_PRE,
+            _rb_seed(_ulid(90), _hm("10:04:00"), to_lane="approved", result=_SEED_OK),
+            _rb_seed(_ulid(91), _hm("11:00:00")),
+        ],
+        ("in_progress", "changes_requested"),
+    ),
+}
+
+# Seed against seed keeps the 10.4.4 behaviour.
+_SEED_VS_SEED: dict[str, _Case] = {
+    "B7a-two-rollback-seeds-later-wins": (
+        [
+            *_SEED_PRE,
+            _rb_seed(_ulid(90), _hm("11:00:00")),
+            _rb_seed(_ulid(91), _hm("12:00:00"), result=_SEED_CR2),
+        ],
+        ("in_progress", "changes_requested", _SEED_VERDICT_ACTOR, "feedback://WP01/cr2"),
+    ),
+}
+
+_ALL_SEED_CASES: dict[str, _Case] = {
+    **_ARRIVING,
+    **_SETTER,
+    **_FORWARD_SEED_SETTER,
+    **_EQUAL_TIMESTAMP,
+    **_BARE_SIBLING,
+    **_SEED_VS_SEED,
+}
+
+
+class TestSeedLaneAuthorityArriving:
+    """R1 (spec-kitty/spec-kitty#6061): an arriving rollback seed needs continuity."""
+
+    @pytest.mark.parametrize(("rows", "exp"), _case_params(_ARRIVING))
+    def test_arriving_seed(self, rows: list[dict[str, Any]], exp: tuple[Any, ...]) -> None:
+        _assert_outcome(rows, exp)
+
+
+class TestSeedLaneAuthoritySetter:
+    """R2 (spec-kitty/spec-kitty#6061): an applied rollback seed yields to a real event."""
+
+    @pytest.mark.parametrize(("rows", "exp"), _case_params(_SETTER))
+    def test_applied_seed_yields(self, rows: list[dict[str, Any]], exp: tuple[Any, ...]) -> None:
+        _assert_outcome(rows, exp)
+
+
+class TestSeedNeverUsesForwardSeedExemption:
+    """R3 (spec-kitty/spec-kitty#6061): a seed never rides the forward-seed-setter exemption."""
+
+    @pytest.mark.parametrize(("rows", "exp"), _case_params(_FORWARD_SEED_SETTER))
+    def test_forward_seed_setter(self, rows: list[dict[str, Any]], exp: tuple[Any, ...]) -> None:
+        _assert_outcome(rows, exp)
+
+
+class TestSeedEqualTimestamp:
+    """FR-007 (spec-kitty/spec-kitty#6061): equal ``at`` never depends on event_id order."""
+
+    @pytest.mark.parametrize(("rows", "exp"), _case_params(_EQUAL_TIMESTAMP))
+    def test_equal_timestamp(self, rows: list[dict[str, Any]], exp: tuple[Any, ...]) -> None:
+        _assert_outcome(rows, exp)
+
+
+class TestSeedBareSibling:
+    """spec-kitty-events#81 under spec-kitty/spec-kitty#6061: the bare sibling approval loses."""
+
+    @pytest.mark.parametrize(("rows", "exp"), _case_params(_BARE_SIBLING))
+    def test_bare_sibling(self, rows: list[dict[str, Any]], exp: tuple[Any, ...]) -> None:
+        _assert_outcome(rows, exp)
+
+    def test_approval_built_upon_by_a_real_done_is_not_bare(self) -> None:
+        """Positive control: a real ``approved -> done`` after the approval makes it
+        non-bare, so the rollback seed no longer wins over it (spec-kitty#6061)."""
+        rows = [*_SEED_PRE, _SEED_APPROVE, _SEED_DONE, _rb_seed(_ulid(90), _hm("10:04:30"))]
+        _assert_outcome(rows, ("done", "approved"))
+
+
+class TestSeedVsSeedUnchanged:
+    """Seed against seed keeps its 10.4.4 outcome (spec-kitty/spec-kitty#6061)."""
+
+    @pytest.mark.parametrize(("rows", "exp"), _case_params(_SEED_VS_SEED))
+    def test_seed_vs_seed(self, rows: list[dict[str, Any]], exp: tuple[Any, ...]) -> None:
+        _assert_outcome(rows, exp)
+
+
+@pytest.mark.parametrize("name", list(_ALL_SEED_CASES))
+def test_seed_lane_authority_is_permutation_invariant(name: str) -> None:
+    """spec-kitty/spec-kitty#6061: ``reduce`` sorts, so row order never matters."""
+    rows = _ALL_SEED_CASES[name][0]
+    baseline = reduce(list(rows)).to_dict()
+    rng = random.Random(6061)
+    for _ in range(60):
+        shuffled = list(rows)
+        rng.shuffle(shuffled)
+        assert reduce(shuffled).to_dict() == baseline
