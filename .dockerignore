@@ -71,4 +71,15 @@
 **/.kittify/charter/governance.yaml
 **/.kittify/charter/metadata.yaml
 **/.kittify/charter/references.yaml
+**/.kittify/sync-state.json
+**/.kittify/migrations
+**/.kittify/logs
+**/.kittify/skills-manifest.json
+**/.kittify/.kitty.env
+**/.kittify/lint-report.json
+**/.agents/skills
+**/kitty-ops/ops-index.jsonl
 **/.worktrees
+
+# Local scratch (engineering notes, throwaway scripts)
+**/work
