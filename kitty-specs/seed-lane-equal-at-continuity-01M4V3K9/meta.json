@@ -12,5 +12,7 @@
   "purpose_tldr": "A rollback seed can reopen a done WP when its approved->done shares the approval timestamp but sorts first (spec-kitty-events#87).",
   "slug": "seed-lane-equal-at-continuity-01M4V3K9",
   "target_branch": "main",
-  "topology": "single_branch"
+  "topology": "single_branch",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-13T17:12:47.237411+00:00"
 }
