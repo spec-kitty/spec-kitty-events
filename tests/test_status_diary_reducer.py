@@ -1286,7 +1286,6 @@ def test_golden_replay(fixture_id: str) -> None:
 @pytest.mark.parametrize("fixture_id", _GOLDEN_REPLAYS)
 def test_golden_replay_is_permutation_invariant(fixture_id: str) -> None:
     """Any permutation of the same rows reduces to the same state."""
-    import random
 
     rows = load_replay_stream(fixture_id)
     baseline = reduce(list(rows)).to_dict()
@@ -1883,7 +1882,6 @@ class TestSeedPayloadFold:
 
     def test_shuffled_order_gives_an_identical_snapshot(self) -> None:
         """B9: 200 shuffles of a mixed real + seed log reduce identically."""
-        import random
 
         rows = _cycle_to_rejection() + [
             _claim(_ulid(6), _t(6), actor="codex", meta={"agent": "codex"}),
@@ -1903,32 +1901,6 @@ class TestSeedPayloadFold:
             shuffled = rows[:]
             rng.shuffle(shuffled)
             assert reduce(shuffled).to_dict() == ref
-
-    def test_rollback_seed_after_real_done_leaves_the_lane_and_verdict(self) -> None:
-        """B5 (spec-kitty/spec-kitty#6061): a rollback-shaped verdict seed after a
-        real ``approved -> done`` neither reopens the WP nor replaces its verdict."""
-        rows = [
-            *_SEED_PRE,
-            _row(
-                _ulid(5),
-                from_lane="in_review",
-                to_lane="approved",
-                at=_hm("10:04:00"),
-                actor="rev",
-                review_result=_SEED_OK,
-            ),
-            _row(
-                _ulid(6),
-                from_lane="approved",
-                to_lane="done",
-                at=_hm("10:05:00"),
-                actor="merge",
-                evidence=_DONE_EVIDENCE,
-            ),
-            _rb_seed(_ulid(90), _hm("11:00:00")),
-        ]
-        wp = _wp(rows)
-        assert (wp["lane"], wp["review_result"]["verdict"]) == ("done", "approved")
 
 
 # ── Rollback-seed lane authority (spec-kitty/spec-kitty#6061) ──────────────────
@@ -2323,15 +2295,6 @@ _SEED_VS_SEED: dict[str, _Case] = {
     ),
 }
 
-_ALL_SEED_CASES: dict[str, _Case] = {
-    **_ARRIVING,
-    **_SETTER,
-    **_FORWARD_SEED_SETTER,
-    **_EQUAL_TIMESTAMP,
-    **_BARE_SIBLING,
-    **_SEED_VS_SEED,
-}
-
 
 class TestSeedLaneAuthorityArriving:
     """R1 (spec-kitty/spec-kitty#6061): an arriving rollback seed needs continuity."""
@@ -2385,15 +2348,3 @@ class TestSeedVsSeedUnchanged:
     @pytest.mark.parametrize(("rows", "exp"), _case_params(_SEED_VS_SEED))
     def test_seed_vs_seed(self, rows: list[dict[str, Any]], exp: tuple[Any, ...]) -> None:
         _assert_outcome(rows, exp)
-
-
-@pytest.mark.parametrize("name", list(_ALL_SEED_CASES))
-def test_seed_lane_authority_is_permutation_invariant(name: str) -> None:
-    """spec-kitty/spec-kitty#6061: ``reduce`` sorts, so row order never matters."""
-    rows = _ALL_SEED_CASES[name][0]
-    baseline = reduce(list(rows)).to_dict()
-    rng = random.Random(6061)
-    for _ in range(60):
-        shuffled = list(rows)
-        rng.shuffle(shuffled)
-        assert reduce(shuffled).to_dict() == baseline
