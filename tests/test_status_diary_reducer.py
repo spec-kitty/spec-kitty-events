@@ -1935,8 +1935,7 @@ class TestSeedPayloadFold:
 #
 # A rollback-shaped ``migration:`` reconstruction seed (``in_review ->
 # in_progress|planned|claimed`` with a verdict) restates history; it must not
-# take a WP's lane against its real lifecycle. Rules (contracts/
-# reducer-seed-authority.md in the CLI mission):
+# take a WP's lane against its real lifecycle. Rules (spec-kitty/spec-kitty#6061):
 #   R1  as the ARRIVING event, a rollback seed applies only when its from_lane
 #       continues the lane in force, or the setter is its bare sibling approval
 #       (events#81), or the setter is itself a rollback seed, or force.

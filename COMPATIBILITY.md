@@ -51,7 +51,9 @@ Now:
   `10.4.4` seed-owns-its-verdict ruling.
 
 Verdict change in the losing-seed pair: a rejection seed that loses, then an
-approval seed that loses (the 079 shape), now records `approved` (the later
+approval seed that loses (a synthetic case: the 079 setup followed by a later
+approval seed; no mission in the spec-kitty corpus has it, and the real 079
+keeps `changes_requested`), now records `approved` (the later
 cycle's verdict folds); `10.4.4` recorded `changes_requested` because the
 rejection seed had taken the lane and owned the verdict.
 
