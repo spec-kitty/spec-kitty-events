@@ -1,7 +1,7 @@
 {
-  "event_count": 1,
-  "last_event_id": "01M4V3XA9PRCCHMMAFRV8P7311",
-  "materialized_at": "2026-10-13T17:10:38.646479+00:00",
+  "event_count": 3,
+  "last_event_id": "01M4V417Y8A3BKK2T4ZV9XWJYJ",
+  "materialized_at": "2026-10-13T17:12:47.300293+00:00",
   "mission_number": "",
   "mission_slug": "seed-lane-equal-at-continuity-01M4V3K9",
   "mission_type": "software-dev",
@@ -13,17 +13,21 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 1
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
-      "actor": "finalize-tasks",
+      "actor": "implement-command",
+      "agent": "implement-command",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M4V3XA9PRCCHMMAFRV8P7311",
-      "last_transition_at": "2026-10-13T17:10:38.646479+00:00"
+      "implementer_of_record": "implement-command",
+      "lane": "in_progress",
+      "last_event_id": "01M4V417Y8A3BKK2T4ZV9XWJYJ",
+      "last_transition_at": "2026-10-13T17:12:47.300293+00:00",
+      "shell_pid": 1219395,
+      "shell_pid_created_at": "1791911564.55"
     }
   }
 }
