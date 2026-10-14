@@ -12,6 +12,12 @@
 > maintainer has to confirm it. Nothing here changes what any existing release accepts
 > and no reducer uses it yet: the reducer sort-key switch is #92's.
 
+This order is distinct from the pre-existing `spec_kitty_events.conflict.total_order_key`,
+which keys `(lamportclock, event_id)` over the Pydantic `Event` model. This contract keys
+`(h, c, t, i, s)` over CloudEvents-form row dictionaries and supersedes that key for rows
+in that form; a consumer ordering CloudEvents rows should use this one, not
+`total_order_key`.
+
 ## Why a defined total order
 
 The ADR's option C orders by Lamport clock, then time, then id, falling back to
@@ -87,6 +93,12 @@ as a JSON parser returns them; other host objects are outside the domain):
    counts as collapsed. If the rows of a group differ in any member other than `id`, the
    group is also reported as a *conflict*, by its `(s, i)` key. A conflict is a report,
    not another bucket: its rows are already counted as one survivor plus collapsed.
+   The survivor *bytes* are reproducible across languages only for integer- and
+   string-valued rows: the sort key `(h, c, t, i, s)` carries no number, so the chosen
+   **order** is language-independent regardless, but a non-Python conformance target may
+   serialise a non-integer number differently and so pick a different survivor
+   *representation* within a `(s, i)` group that differs only by such a value — a group
+   already flagged as a conflict. This matters only once a second-language target exists.
 4. **Sort** the survivors by key. After step 3 no two survivors share `(s, i)`, so no two
    have equal keys and the order is strict and total.
 

@@ -46,6 +46,20 @@ This release publishes:
   journal (saas#1814), relay fan-out (zeitgeist#304), and the
   People/Missions/Repositories projections (saas#1816) — never the volatile
   ``zeitgeist_attrs`` codec.
+- Producer row-schema contract (``spec_kitty_events.producer_contract``,
+  spec-kitty-events#92): the authoring registry and the composed/legacy JSON
+  Schemas for producer-written event rows (``load_registry``,
+  ``registered_types``, ``get_entry``, ``data_schema``, ``envelope_schema``,
+  ``row_schema``, ``legacy_row_form_schema``, ``RegistryError``). A
+  non-normative producer-side authoring contract, reached explicitly as the
+  sub-package — deliberately not re-exported here.
+- Total order over CloudEvents rows (``spec_kitty_events.total_order``,
+  spec-kitty-events#92): the reference implementation (``order_rows``,
+  ``order_key``) of the deterministic global order defined in
+  ``contracts/total-order.md``. Distinct from the legacy
+  ``conflict.total_order_key`` ``(lamportclock, event_id)`` over the ``Event``
+  model; the new order keys CloudEvents-form row dicts and supersedes it for
+  rows in that form.
 
 The offline sync/cutover surfaces (``spec_kitty_events.sync``, ``legacy``,
 ``cutover``) were removed in ``8.0.0``; envelope-level fail-closed gating now

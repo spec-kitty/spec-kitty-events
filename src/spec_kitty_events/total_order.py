@@ -17,6 +17,11 @@ The key of a row is ``(h, c, t, i, s)``:
 Strings compare by Unicode code point. A comparator that used the clock only when both
 rows have one would not be transitive; this one is a lexicographic key sort, so it is.
 
+This is distinct from the legacy :func:`spec_kitty_events.conflict.total_order_key`, which
+keys ``(lamportclock, event_id)`` over the Pydantic ``Event`` model. This order keys
+``(h, c, t, i, s)`` over CloudEvents-form row dicts and supersedes that key for rows in
+that form; new consumers ordering CloudEvents rows should use this module.
+
 :func:`order_rows` sets rows it cannot key aside as named error rows (never dropped,
 never sorted), collapses duplicates of ``(source, id)`` deterministically, and sorts the
 rest. Its result does not depend on the order of its input.
