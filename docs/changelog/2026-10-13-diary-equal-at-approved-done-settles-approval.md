@@ -20,7 +20,9 @@ generated:
 
 # 2026-10-13 — An equal-timestamp `approved -> done` settles its approval
 
-**Package `10.4.5` → `10.4.6`** · spec-kitty-events#87 · PR #91 · fix to the
+**Package `10.4.5` → `10.4.6`** · spec-kitty-events#87 · PR #91 · `v10.4.6` is
+also the first tag carrying the untagged `10.4.5`
+([rollback-seed lane authority](./2026-10-13-diary-rollback-seed-lane-authority.md)) · fix to the
 `status.events.jsonl` reducer (`spec_kitty_events.diary.reduce` /
 `reduce_parsed`, the event-ordering step).
 
@@ -96,7 +98,8 @@ The regression test is
 ## Downstream
 
 A consumer pinned to `spec-kitty-events>=10.4.4,<11` picks up `10.4.6` on its
-next resolve; raise the floor to `>=10.4.6` to require the fix. Snapshots
+next resolve; raise the floor to `>=10.4.6` to require this fix and the
+`10.4.5` one it carries. Snapshots
 already materialized from migrated missions whose approval and `done` share a
 timestamp keep the wrong lane until they are re-materialized from the log.
 

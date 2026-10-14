@@ -20,7 +20,7 @@ generated:
 
 # 2026-10-13 — A rollback seed never takes a lane against the real lifecycle
 
-**Package `10.4.4` → `10.4.5`** · spec-kitty#6061 · fix to the
+**Package `10.4.4` → `10.4.5`** (never tagged; first released in `v10.4.6`) · spec-kitty#6061 · fix to the
 `status.events.jsonl` reducer (`spec_kitty_events.diary.reduce` /
 `reduce_parsed`, both arbitration arms).
 
@@ -67,8 +67,9 @@ verdict. This pair is synthetic; no mission in the spec-kitty corpus has it.
 
 New packaged golden replay `status-diary-replay-seed-lane-authority`
 (`conformance/fixtures/status_diary/replay/status_diary_seed_lane_authority.jsonl`).
-Consumers with non-terminal migrated missions may need to re-materialize their
-snapshots to pick up the corrected lanes.
+`10.4.5` was never tagged, so take this fix from `10.4.6` (raise the floor to
+`spec-kitty-events>=10.4.6`). Consumers with non-terminal migrated missions may
+need to re-materialize their snapshots to pick up the corrected lanes.
 
 See the repo-root [`CHANGELOG.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/CHANGELOG.md) and
 [`COMPATIBILITY.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/COMPATIBILITY.md) for the versioned record and the
