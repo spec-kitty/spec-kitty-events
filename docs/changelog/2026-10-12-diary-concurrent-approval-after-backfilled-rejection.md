@@ -1,8 +1,8 @@
 ---
 title: "Reducer: a backfilled rejection is never overwritten by a bare concurrent approval (10.4.3)"
-description: "The status-diary reducer's reconstruction-seed exemption no longer lets a bare in_review -> approved approval overwrite a backfilled rejection it is causally concurrent with (spec-kitty#4941)."
+description: "A bare in_review -> approved approval no longer overwrites a backfilled rejection it is causally concurrent with (spec-kitty#4941)."
 doc_status: active
-updated: 2026-10-12
+updated: 2026-10-14
 type: Changelog
 kind: Changelog
 tags: [diary, reducer, status-events, review-verdict]

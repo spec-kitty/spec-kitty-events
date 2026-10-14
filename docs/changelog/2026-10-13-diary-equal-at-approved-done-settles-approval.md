@@ -9,6 +9,7 @@ authors:
   - ivan@spec-kitty.ai
 tags: [diary, reducer, status-events, migration]
 related:
+  - changelog/2026-10-13-diary-rollback-seed-lane-authority
   - changelog/2026-10-12-diary-concurrent-approval-after-backfilled-rejection
 generated:
   by: agent/doc-kitty-write
