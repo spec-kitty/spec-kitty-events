@@ -1,0 +1,27 @@
+{
+  "name": "spec-kitty-events-docsite",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The spec-kitty-events documentation site, built from ../docs with the published @spec-kitty/doc-toolkit.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "validate": "dockitty-validate-frontmatter ../docs && dockitty-check-links ../docs",
+    "check:built-links": "dockitty-assert-no-broken-links dist --base /spec-kitty-events --site https://spec-kitty.github.io"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.2.0",
+    "@astrojs/starlight": "^0.32.6",
+    "@spec-kitty/doc-toolkit": "0.2.0",
+    "astro": "^5.2.0",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

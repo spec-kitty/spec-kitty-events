@@ -1,0 +1,90 @@
+name: Docs site
+
+# Builds the doc-kitty docsite from docs/ on every pull request that touches the
+# docs, and publishes it to GitHub Pages from main. Modelled on spec-kitty-charter's
+# docs-site.yml.
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'site/**'
+      - '.github/workflows/docs-site.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'site/**'
+      - '.github/workflows/docs-site.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One Pages publish at a time; never cancel one in flight.
+concurrency:
+  group: docs-site-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # @spec-kitty/doc-toolkit is installed from GitHub Packages.
+      packages: read
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - name: Set up Node 22 with the GitHub Packages registry
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: '@spec-kitty'
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Install
+        # Exactly what site/package-lock.json records, so a build on main uses the
+        # same dependencies as the pull request check did.
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm ci
+      - name: Validate frontmatter and source links
+        run: npm run validate
+      - name: Build
+        # Most pages are drafts during the bootstrap, so drafts are published
+        # (as noindex pages) rather than dropped.
+        env:
+          DK_PUBLISH_DRAFTS: 'on'
+        run: npm run build
+      - name: Check links in the built site
+        # Non-blocking for now: the docs still use some `.md`-relative internal links,
+        # which 404 on the rendered site and fail this check. The next @spec-kitty/doc-toolkit
+        # release rewrites `.md`-relative links, after which this step can drop
+        # `continue-on-error`. See the PR that added this workflow.
+        continue-on-error: true
+        run: npm run check:built-links
+      - name: Upload the Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: site/dist
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
