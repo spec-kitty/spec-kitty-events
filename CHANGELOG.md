@@ -18,8 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and treated the approval as never built upon, so a later rollback-shaped
   `migration:` seed reopened the WP (`done` → `in_progress`, verdict reverting
   to `changes_requested`). `reduce()` / `reduce_parsed()` now order a real
-  `approved -> …` after its same-`at` approval and count an equal-`at`
-  `approved -> done` as settling the approval, so the WP stays `done`/`approved`.
+  `approved -> …` after its same-`at` approval, so the equal-`at`
+  `approved -> done` applies and settles the approval and the WP stays
+  `done`/`approved`. The sort tie-break is the whole fix; `_is_bare_sibling` is
+  unchanged.
   Ordering changes only when a same-WP, same-`at` real approval exists; the
   spec-kitty-events#81, spec-kitty#6061 and spec-kitty#6058 outcomes, the
   snapshot shape, the `3.0.0` envelope schema and the Lamport reducer are
