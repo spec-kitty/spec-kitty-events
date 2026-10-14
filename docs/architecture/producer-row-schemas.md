@@ -89,18 +89,20 @@ A registry entry:
   "schema": "data/mission.created.v1.schema.json",
   "scope": "mission",
   "subject": "none",
-  "legacy": { "shape": "payload_envelope", "discriminator": { "member": "event_type", "value": "MissionCreated" }, "envelope_members": { } },
-  "lifted": [ { "member": "event_id", "attribute": "id" } ]
+  "legacy": { "shape": "lifecycle_envelope", "discriminator_value": "MissionCreated" },
+  "lifted": [ { "member": "event_id", "attribute": "id" }, { "member": "timestamp", "attribute": "time" }, { "member": "event_type", "attribute": "type" } ]
 }
 ```
 
 - `scope`: `mission` or `project`. `subject`: `wp_id` (a work package id is required) or
   `none` (absent on a Mission-scoped row; on the project-scoped fallback source of
   OD-MISSIONID it is the aggregate; a `project`-scope type never carries one).
-- `legacy.shape` is one of `flat` (lane, annotation, retrospective rows: data members and
-  lifted members sit in one object), `payload_envelope` (lifecycle, decision and
-  run-journal rows: `data` is the row's `payload`; the other row members are the lifted
-  ones). `lifted` names each legacy member and the attribute it becomes.
+- `legacy.shape` names one of the `legacy_shapes` entries — `flat`, `lifecycle_envelope`,
+  `decision_envelope` or `journal_envelope` — and each entry declares a `form` that drives
+  composition. `form: flat` (lane, annotation, retrospective rows) keeps the data members
+  and the lifted members in one object; `form: payload_envelope` (lifecycle, decision and
+  run-journal rows) puts `data` under the shape's payload member and lifts the other row
+  members. `lifted` names each legacy member and the attribute it becomes.
 - The legacy-row form of a type is generated, never authored: `legacy_row_form_schema()`
   takes the data schema and the registry's lifted list and returns the schema a persisted
   line of that type must satisfy. This is the single source FR-032 asks for.
