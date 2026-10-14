@@ -33,6 +33,14 @@ The binding process is the programme constitution —
 The conformance gate is the packaged contract other repos consume; the in-repo suite does
 not collect it, so run it explicitly on every PR.
 
+## Documentation
+
+`docs/` follows the DocKitty convention; start at [`docs/README.md`](./docs/README.md).
+Each section's `README.md` is its index and carries frontmatter (`title`, `description`
+≤ 180 chars, `doc_status`, `updated`, plus `type`/`kind`). With the sibling `doc-kitty`
+checkout, validate with `node ../doc-kitty/src/scripts/validate-frontmatter.mjs docs`
+and `node ../doc-kitty/src/scripts/check-links.mjs docs`.
+
 
 <!-- spec-kitty:orientation -->
 **Spec Kitty v4.0.0rc7** — project: spec-kitty-events (healthy)

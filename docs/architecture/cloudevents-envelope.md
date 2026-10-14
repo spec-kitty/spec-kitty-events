@@ -1,6 +1,6 @@
 ---
 title: CloudEvents envelope design
-description: Proposed design for adopting CloudEvents 1.0 (structured JSON) as the Spec Kitty event-log envelope, with the field-by-field mapping from the 3.0.0 transport envelope and the status-diary row, the upcaster principles, and a phased rollout.
+description: 'Proposed CloudEvents 1.0 envelope design: field mapping from the 3.0.0 envelope and status-diary row, upcaster principles, and a phased rollout.'
 doc_status: draft
 updated: 2026-10-13
 type: Architecture

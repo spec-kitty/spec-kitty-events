@@ -1,3 +1,12 @@
+---
+title: "Consumer contract: mission dossier events (v2.4.0)"
+description: "Archived 2.4.0 dossier event contract (sections 1-6), plus the current normative review-rejection backward-transition family (section 7)."
+doc_status: active
+updated: 2026-10-14
+kind: Reference
+tags: [dossier, contract, backward-transitions]
+---
+
 # Consumer Contract: Mission Dossier Events — v2.4.0
 
 > Archived historical document.

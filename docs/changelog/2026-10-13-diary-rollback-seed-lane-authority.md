@@ -5,6 +5,8 @@ doc_status: active
 updated: 2026-10-14
 type: Changelog
 kind: Changelog
+sidebar:
+  order: -202610131
 authors:
   - ivan@spec-kitty.ai
 tags: [diary, reducer, status-events, migration]
@@ -68,6 +70,6 @@ New packaged golden replay `status-diary-replay-seed-lane-authority`
 Consumers with non-terminal migrated missions may need to re-materialize their
 snapshots to pick up the corrected lanes.
 
-See the repo-root [`CHANGELOG.md`](../../CHANGELOG.md) and
-[`COMPATIBILITY.md`](../../COMPATIBILITY.md) for the versioned record and the
+See the repo-root [`CHANGELOG.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/CHANGELOG.md) and
+[`COMPATIBILITY.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/COMPATIBILITY.md) for the versioned record and the
 compatibility rationale.

@@ -5,6 +5,8 @@ doc_status: active
 updated: 2026-10-14
 type: Changelog
 kind: Changelog
+sidebar:
+  order: -202610121
 tags: [diary, reducer, status-events, review-verdict]
 ---
 
@@ -61,6 +63,6 @@ The spec-kitty consumer xfails this exact contract pending the fix
 bumps its pin from `spec-kitty-events>=10.4.2,<11` to `>=10.4.3,<11`; the strict
 xfail then flips to XPASS (CI red), the signal to remove the marker.
 
-See the repo-root [`CHANGELOG.md`](../../CHANGELOG.md) and
-[`COMPATIBILITY.md`](../../COMPATIBILITY.md) for the versioned record and the
+See the repo-root [`CHANGELOG.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/CHANGELOG.md) and
+[`COMPATIBILITY.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/COMPATIBILITY.md) for the versioned record and the
 compatibility rationale.

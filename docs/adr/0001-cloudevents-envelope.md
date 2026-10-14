@@ -1,6 +1,6 @@
 ---
 title: 'ADR: adopt CloudEvents 1.0 as the event envelope'
-description: 'Proposed: CloudEvents 1.0 structured JSON becomes the envelope for Spec Kitty event-log rows, owned by this package; the 3.0.0 transport envelope and the status-diary row become legacy inputs to a read-time upcaster, with no log rewrite.'
+description: 'Proposed: CloudEvents 1.0 structured JSON becomes the Spec Kitty event-log envelope; the 3.0.0 envelope and status-diary row become legacy inputs to a read-time upcaster.'
 doc_status: draft
 updated: 2026-10-13
 type: ADR

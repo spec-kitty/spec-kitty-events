@@ -5,6 +5,8 @@ doc_status: active
 updated: 2026-10-14
 type: Changelog
 kind: Changelog
+sidebar:
+  order: -202610132
 authors:
   - ivan@spec-kitty.ai
 tags: [diary, reducer, status-events, migration]
@@ -98,6 +100,6 @@ next resolve; raise the floor to `>=10.4.6` to require the fix. Snapshots
 already materialized from migrated missions whose approval and `done` share a
 timestamp keep the wrong lane until they are re-materialized from the log.
 
-See the repo-root [`CHANGELOG.md`](../../CHANGELOG.md) and
-[`COMPATIBILITY.md`](../../COMPATIBILITY.md) for the versioned record and the
+See the repo-root [`CHANGELOG.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/CHANGELOG.md) and
+[`COMPATIBILITY.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/COMPATIBILITY.md) for the versioned record and the
 compatibility rationale.

@@ -5,6 +5,8 @@ doc_status: active
 updated: 2026-10-14
 type: Changelog
 kind: Changelog
+sidebar:
+  order: -202610122
 authors:
   - ivan@spec-kitty.ai
 tags: [diary, reducer, status-events, migration]
@@ -67,6 +69,6 @@ New packaged golden replay `status-diary-replay-seed-payload-fold`
 Consumers re-materializing migrated missions pick up the preserved attribution
 and verdicts.
 
-See the repo-root [`CHANGELOG.md`](../../CHANGELOG.md) and
-[`COMPATIBILITY.md`](../../COMPATIBILITY.md) for the versioned record and the
+See the repo-root [`CHANGELOG.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/CHANGELOG.md) and
+[`COMPATIBILITY.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/COMPATIBILITY.md) for the versioned record and the
 compatibility rationale.
