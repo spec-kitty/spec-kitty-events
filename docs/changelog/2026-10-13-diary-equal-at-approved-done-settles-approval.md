@@ -42,9 +42,12 @@ version stays `3.0.0`.
   helper is `_order_transitions` in `diary.py`; every other event keeps its
   `(at, event_id)` position.
 
-That tie-break carries the whole fix. The bare-sibling test
-(`_is_bare_sibling`) is unchanged: once the `done` sorts after its approval, the
-existing `(at, event_id)` look-ahead already sees it.
+That tie-break carries the whole fix. Once the `done` sorts after its approval,
+arm (ii) continuity applies it, so the work package's final setter is the `done`
+event rather than a bare approval, and the later rollback-shaped seed has no
+bare-sibling approval left to contest. The bare-sibling test (`_is_bare_sibling`)
+is unchanged and plays no part here: it still returns `False` for a non-approval
+setter like the `done`.
 
 ## Why it mattered
 

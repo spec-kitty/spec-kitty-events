@@ -36,9 +36,11 @@ it leave `approved` while the WP was still `in_review`) and did not count it as
 building upon the approval, so the approval was judged bare and a later
 rollback-shaped `migration:` seed reopened the WP. Now a real `approved -> …`
 sorts after its same-`at`, same-WP approval (`_order_transitions`), so arm (ii)
-applies the `done` and the unchanged `_is_bare_sibling` look-ahead sees it as
-building upon the approval — the WP stays `done`/`approved`. The sort
-tie-break is the whole fix; `_is_bare_sibling` itself is not modified.
+continuity applies the `done` and the WP's final setter is the `done` event
+rather than a bare approval; the later rollback-shaped seed then has no
+bare-sibling approval to contest — the WP stays `done`/`approved`. The sort
+tie-break is the whole fix; `_is_bare_sibling` is unchanged (it still returns
+`False` for a non-approval setter like the `done`).
 
 Ordering changes only when a same-WP, same-`at` real approval exists; the
 `10.4.5` (spec-kitty#6061), `10.4.4` (spec-kitty#6058) and `10.4.3`
