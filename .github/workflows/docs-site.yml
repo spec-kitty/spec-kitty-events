@@ -62,11 +62,6 @@ jobs:
           DK_PUBLISH_DRAFTS: 'on'
         run: npm run build
       - name: Check links in the built site
-        # Non-blocking for now: the docs still use some `.md`-relative internal links,
-        # which 404 on the rendered site and fail this check. The next @spec-kitty/doc-toolkit
-        # release rewrites `.md`-relative links, after which this step can drop
-        # `continue-on-error`. See the PR that added this workflow.
-        continue-on-error: true
         run: npm run check:built-links
       - name: Upload the Pages artifact
         if: github.event_name != 'pull_request'
