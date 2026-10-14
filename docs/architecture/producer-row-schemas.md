@@ -1,6 +1,6 @@
 ---
 title: Producer row schemas and the total order
-description: Design for the per-row-kind versioned data schemas, the producer registry, the producer conformance fixtures and the total-order comparator that spec-kitty#6185 consumes, and where each piece stops short of spec-kitty-events#92.
+description: Design for the per-row-kind data schemas, the producer registry, the conformance fixtures and the total-order comparator (spec-kitty#6185). First slice of #92.
 doc_status: draft
 updated: 2026-10-14
 type: Architecture
