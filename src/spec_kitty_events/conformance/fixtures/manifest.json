@@ -1725,6 +1725,78 @@
       "min_version": "3.0.0"
     },
     {
+      "id": "wp-status-changed-unforced-for-review-to-in-progress-with-review-ref-valid",
+      "path": "edge_cases/valid/wp_status_changed_unforced_for_review_to_in_progress_with_review_ref.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Valid unforced rewind for_review->in_progress with review_ref and reason set; member of the review-ref-gated rewind family, which is force-exempt by contract (spec-kitty-events#48).",
+      "min_version": "3.0.0"
+    },
+    {
+      "id": "wp-status-changed-unforced-for-review-to-in-progress-missing-review-ref-invalid",
+      "path": "edge_cases/invalid/wp_status_changed_unforced_for_review_to_in_progress_missing_review_ref.json",
+      "expected_result": "invalid",
+      "event_type": "WPStatusChanged",
+      "notes": "Unforced rewind for_review->in_progress without review_ref; member of the review-ref-gated rewind family (spec-kitty-events#48). validate_transition() MUST emit a violation containing 'requires review_ref'.",
+      "min_version": "3.0.0"
+    },
+    {
+      "id": "wp-status-changed-forced-for-review-to-in-progress-missing-review-ref-invalid",
+      "path": "edge_cases/invalid/wp_status_changed_forced_for_review_to_in_progress_missing_review_ref.json",
+      "expected_result": "invalid",
+      "event_type": "WPStatusChanged",
+      "notes": "Forced rewind for_review->in_progress with non-empty reason but no review_ref; force does not waive review_ref for the review-ref-gated rewind family (spec-kitty-events#48). validate_transition() MUST emit a violation containing 'requires review_ref'.",
+      "min_version": "3.0.0"
+    },
+    {
+      "id": "wp-status-changed-unforced-in-review-to-in-progress-with-review-ref-valid",
+      "path": "edge_cases/valid/wp_status_changed_unforced_in_review_to_in_progress_with_review_ref.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Valid unforced rewind in_review->in_progress with review_ref and reason set; member of the review-ref-gated rewind family, which is force-exempt by contract (spec-kitty-events#48).",
+      "min_version": "3.0.0"
+    },
+    {
+      "id": "wp-status-changed-unforced-in-review-to-in-progress-missing-review-ref-invalid",
+      "path": "edge_cases/invalid/wp_status_changed_unforced_in_review_to_in_progress_missing_review_ref.json",
+      "expected_result": "invalid",
+      "event_type": "WPStatusChanged",
+      "notes": "Unforced rewind in_review->in_progress without review_ref; member of the review-ref-gated rewind family (spec-kitty-events#48). validate_transition() MUST emit a violation containing 'requires review_ref'.",
+      "min_version": "3.0.0"
+    },
+    {
+      "id": "wp-status-changed-forced-in-review-to-in-progress-missing-review-ref-invalid",
+      "path": "edge_cases/invalid/wp_status_changed_forced_in_review_to_in_progress_missing_review_ref.json",
+      "expected_result": "invalid",
+      "event_type": "WPStatusChanged",
+      "notes": "Forced rewind in_review->in_progress with non-empty reason but no review_ref; force does not waive review_ref for the review-ref-gated rewind family (spec-kitty-events#48). validate_transition() MUST emit a violation containing 'requires review_ref'.",
+      "min_version": "3.0.0"
+    },
+    {
+      "id": "wp-status-changed-unforced-approved-to-in-progress-with-review-ref-valid",
+      "path": "edge_cases/valid/wp_status_changed_unforced_approved_to_in_progress_with_review_ref.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Valid unforced rewind approved->in_progress with review_ref and reason set; member of the review-ref-gated rewind family, which is force-exempt by contract (spec-kitty-events#48).",
+      "min_version": "3.0.0"
+    },
+    {
+      "id": "wp-status-changed-unforced-approved-to-in-progress-missing-review-ref-invalid",
+      "path": "edge_cases/invalid/wp_status_changed_unforced_approved_to_in_progress_missing_review_ref.json",
+      "expected_result": "invalid",
+      "event_type": "WPStatusChanged",
+      "notes": "Unforced rewind approved->in_progress without review_ref; member of the review-ref-gated rewind family (spec-kitty-events#48). validate_transition() MUST emit a violation containing 'requires review_ref'.",
+      "min_version": "3.0.0"
+    },
+    {
+      "id": "wp-status-changed-forced-approved-to-in-progress-missing-review-ref-invalid",
+      "path": "edge_cases/invalid/wp_status_changed_forced_approved_to_in_progress_missing_review_ref.json",
+      "expected_result": "invalid",
+      "event_type": "WPStatusChanged",
+      "notes": "Forced rewind approved->in_progress with non-empty reason but no review_ref; force does not waive review_ref for the review-ref-gated rewind family (spec-kitty-events#48). validate_transition() MUST emit a violation containing 'requires review_ref'.",
+      "min_version": "3.0.0"
+    },
+    {
       "id": "wp-review-rejection-cycle-replay",
       "path": "edge_cases/replay/wp_review_rejection_cycle.jsonl",
       "fixture_type": "replay_stream",

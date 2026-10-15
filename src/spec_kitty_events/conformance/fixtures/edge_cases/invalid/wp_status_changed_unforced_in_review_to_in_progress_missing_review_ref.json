@@ -1,0 +1,12 @@
+{
+  "wp_id": "WP09",
+  "from_lane": "in_review",
+  "to_lane": "in_progress",
+  "actor": "user",
+  "force": false,
+  "reason": "review feedback addressed: rework needed",
+  "execution_mode": "worktree",
+  "review_ref": null,
+  "evidence": null,
+  "mission_slug": "mission-backward-transition-demo"
+}
