@@ -1087,6 +1087,21 @@ def _is_rollback_event(event: StatusEvent) -> bool:
     pre-review pipeline lanes (canonically `planned`, #69; legacy logs also
     used `in_progress`). Legacy logs represented the same outcome as
     for_review to a pre-review lane with a review reference.
+
+    Review-ref-gated rewinds in the diary (the ``-> in_progress`` family named in
+    the ``status`` module docstring, spec-kitty-events#48):
+
+    * ``in_review -> in_progress`` is a rejection rollback
+      (``_REJECTION_ROLLBACK_TARGETS``). It takes rollback precedence and is
+      exempt from arm (ii) ``from_lane`` continuity.
+    * ``for_review -> in_progress`` is a rollback only when it carries a
+      ``review_ref``, which the contract requires.
+    * ``approved -> in_progress`` is NOT a rollback. It is an approved departure:
+      ordered after its approval (``_approved_departure_sort_at``, 10.5.1) and
+      judged by arm (ii) continuity unless forced. ``force=True`` skips
+      continuity, so a stale forced reopen arriving after ``approved -> done``
+      would move a ``done`` WP back to ``in_progress``. That is why the contract
+      keeps the family force-exempt.
     """
     if event.from_lane == Lane.IN_REVIEW:
         return event.to_lane in _REJECTION_ROLLBACK_TARGETS
