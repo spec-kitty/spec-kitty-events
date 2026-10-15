@@ -2,7 +2,7 @@
 title: Changelog
 description: Dated record of notable changes to the spec-kitty-events contract package.
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-15
 type: Changelog
 kind: Hub
 agent:
@@ -22,6 +22,7 @@ Each page sets `sidebar.order` to minus `YYYYMMDD` plus a same-day sequence
 digit (`-202610132` is the second page of 2026-10-13), so the sidebar lists the
 newest first without renumbering older pages.
 
+- [2026-10-15 — Reducer: a departure from approved outranks a clock-ahead approval (10.5.1)](./2026-10-15-diary-clock-ahead-approval-departure.md)
 - [2026-10-13 — Reducer: an equal-timestamp approved -> done settles its approval (10.4.6)](./2026-10-13-diary-equal-at-approved-done-settles-approval.md)
 - [2026-10-13 — Reducer: a rollback seed never takes a lane against the real lifecycle (10.4.5)](./2026-10-13-diary-rollback-seed-lane-authority.md)
 - [2026-10-12 — Reducer: a reconstruction seed that loses the lane still folds its payload (10.4.4)](./2026-10-12-diary-losing-seed-folds-payload.md)
