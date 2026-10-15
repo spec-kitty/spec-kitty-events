@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "mission_slug": "review-ref-gated-rewinds-01M4ZJJ0",
+  "mission_id": "01M4ZJJ0Y1Q0FF5386S363KHED",
+  "mission_branch": "kitty/mission-review-ref-gated-rewinds-01M4ZJJ0",
+  "target_branch": "issue-48-review-ref-gated-rewinds",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "src/spec_kitty_events/conformance/fixtures/edge_cases/invalid/wp_status_changed_*_to_in_progress*.json",
+        "src/spec_kitty_events/conformance/fixtures/edge_cases/valid/wp_status_changed_*_to_in_progress*.json",
+        "src/spec_kitty_events/conformance/fixtures/manifest.json",
+        "src/spec_kitty_events/status.py",
+        "tests/unit/test_status.py"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "CHANGELOG.md",
+        "COMPATIBILITY.md",
+        "README.md",
+        "pyproject.toml",
+        "src/spec_kitty_events/__init__.py",
+        "src/spec_kitty_events/diary.py",
+        "uv.lock"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    }
+  ],
+  "computed_at": "2026-10-15T10:46:53.123867+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "c3163d4ff8f2f9a329380089accfc9bcd966b576"
+}

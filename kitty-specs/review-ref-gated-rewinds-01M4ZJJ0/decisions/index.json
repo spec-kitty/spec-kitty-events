@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-15T10:43:50.010979Z",
+      "decision_id": "01M4ZJJFKTDBRFBK4B8M5WAYWA",
+      "final_answer": "b: document force-exempt (operator, 2026-10-15)",
+      "input_key": "rewind_guard",
+      "mission_id": "01M4ZJJ0Y1Q0FF5386S363KHED",
+      "mission_slug": "review-ref-gated-rewinds-01M4ZJJ0",
+      "opened_by": "cli",
+      "options": [
+        "a: extend force-required",
+        "b: document force-exempt",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Encode in_review->in_progress and approved->in_progress as force-required (a) or as a documented force-exempt review-ref-gated family (b)?",
+      "rationale": null,
+      "resolved_at": "2026-10-15T10:43:51.631006Z",
+      "resolved_by": null,
+      "slot_key": "specify.contract.rewind-guard",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M4ZJJ0Y1Q0FF5386S363KHED",
+  "version": 1
+}
