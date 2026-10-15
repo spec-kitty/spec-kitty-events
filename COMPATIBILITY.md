@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.5.1`
+**Current package version**: `10.5.2`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,22 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `10.5.2` — review-ref-gated rewinds documented in the status contract
+
+`10.5.2` (spec-kitty-events#48) is a documentation and contract-clarification patch.
+The `-> in_progress` rewinds from `for_review`, `in_review` and `approved` form a
+second family, separate from the review-rejection family (`* -> planned`). They are
+force-exempt: `force` is neither required nor needed, and consumers MUST NOT require
+it. They are gated on a non-empty `review_ref`, which is required whether or not the
+event is forced. A missing or blank `review_ref` yields a violation containing
+`requires review_ref`. Forcing a rewind skips the status diary's `from_lane`
+continuity check, so a stale forced `approved -> in_progress` could reopen a WP that
+is already `done`; keeping the edges unforced keeps that check in force.
+
+No validator change and no reducer behaviour change; the envelope schema stays
+`3.0.0`. Nine conformance fixtures pin the family. The `10.5.1`, `10.4.x` and `#69`
+rulings, `force`, and the Lamport `reduce_status_events` path are unchanged.
 
 ## `10.5.1` — status-diary reducer: a real departure from `approved` outranks a clock-ahead approval
 

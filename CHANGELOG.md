@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.5.2] - 2026-10-15
+
+### Changed
+
+- **The status contract now says which backward review moves need `force` and which
+  need a review reference (spec-kitty-events#48).** Before, the contract described
+  only the review-rejection family (`* -> planned`, which requires `force=True` and a
+  `reason`), so consumers could not tell how the `-> in_progress` rewinds from
+  `for_review`, `in_review` and `approved` were gated. After, the `status` module
+  docstring names them as a second, force-exempt family that requires a non-empty
+  `review_ref` (forced or not), nine conformance fixtures pin it, and the status-diary
+  reducer documents how it treats each edge: `in_review -> in_progress` and
+  `for_review -> in_progress` with a `review_ref` are rejection rollbacks, while
+  `approved -> in_progress` is an approved departure judged by `from_lane`
+  continuity, which is why consumers must not force it.
+
+### Compatibility
+
+- No validator change and no behaviour change: documentation, contract clarification
+  and conformance fixtures only. Envelope schema stays `3.0.0`; patch release. See
+  `COMPATIBILITY.md`.
+
 ## [10.5.1] - 2026-10-15
 
 ### Fixed
