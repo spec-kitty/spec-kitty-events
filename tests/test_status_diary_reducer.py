@@ -908,6 +908,72 @@ class TestApprovedDepartureFollowsItsApproval:
         assert state.work_packages["WP01"]["lane"] == "done"
         assert state.work_packages["WP01"]["last_event_id"] == _ulid(6)
 
+    def test_rework_cycle_is_unchanged_when_no_clock_ran_ahead(self) -> None:
+        """No-regression: two approval cycles on correct clocks. The first
+        rejection follows the first approval, the second approval settles the WP;
+        the departure-lift is a no-op because no approval is later than its
+        departure, so the un-skewed pass binds each departure to its own approval."""
+        events = [
+            _row(_ulid(1), from_lane="planned", to_lane="claimed", at="2026-02-08T12:00:00+00:00"),
+            _row(
+                _ulid(2), from_lane="claimed", to_lane="in_progress", at="2026-02-08T12:05:00+00:00"
+            ),
+            _row(
+                _ulid(3),
+                from_lane="in_progress",
+                to_lane="for_review",
+                at="2026-02-08T12:10:00+00:00",
+            ),
+            _row(
+                _ulid(4),
+                from_lane="for_review",
+                to_lane="in_review",
+                at="2026-02-08T12:15:00+00:00",
+            ),
+            _row(
+                _ulid(5),
+                from_lane="in_review",
+                to_lane="approved",
+                at="2026-02-08T12:20:00+00:00",
+                actor="reviewer-a",
+                review_result=_REVIEW_RESULT,
+            ),
+            _row(
+                _ulid(6),
+                from_lane="approved",
+                to_lane="in_progress",
+                at="2026-02-08T12:25:00+00:00",
+                actor="reviewer-b",
+                review_ref="review://WP01/rework-1",
+            ),
+            _row(
+                _ulid(7),
+                from_lane="in_progress",
+                to_lane="for_review",
+                at="2026-02-08T12:30:00+00:00",
+            ),
+            _row(
+                _ulid(8),
+                from_lane="for_review",
+                to_lane="in_review",
+                at="2026-02-08T12:35:00+00:00",
+            ),
+            _row(
+                _ulid(9),
+                from_lane="in_review",
+                to_lane="approved",
+                at="2026-02-08T12:40:00+00:00",
+                actor="reviewer-a",
+                review_result=_REVIEW_RESULT,
+            ),
+        ]
+
+        state = reduce(events)
+
+        assert state.work_packages["WP01"]["lane"] == "approved"
+        assert state.work_packages["WP01"]["last_event_id"] == _ulid(9)
+        assert state.summary["approved"] == 1
+
     @pytest.mark.parametrize(
         ("rows", "lane", "last_event"),
         [

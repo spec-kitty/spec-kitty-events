@@ -1794,6 +1794,9 @@ def _carry_lifted_sort_at(
     Returns the effective sort ``at`` per carried or lifted ``event_id`` and a
     sequence number that keeps the swept events in their original relative order.
     Stored ``at`` values are untouched; with nothing lifted both maps are empty.
+    Reconstruction seeds are carried too (unlike in the pairing): carrying only
+    moves an event's sort position, it does not apply it, so a seed keeps its
+    relative order behind the departure and the arms still judge it.
     """
     if not lifted:
         return {}, {}
