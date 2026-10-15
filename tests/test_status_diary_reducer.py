@@ -845,24 +845,23 @@ class TestApprovedDepartureFollowsItsApproval:
             ),
         ]
 
-    def test_rejection_wins_when_the_approval_clock_ran_ahead(self) -> None:
-        """The approval is stamped 10 minutes in the FUTURE (12:40) relative to
-        the rejection (12:30). The reducer must still honour the rejection."""
-        state = reduce(self._pipeline(approval_at="2026-02-08T12:40:00+00:00"))
+    @pytest.mark.parametrize(
+        "approval_at",
+        [
+            pytest.param("2026-02-08T12:40:00+00:00", id="approval-clock-ran-ahead"),
+            pytest.param("2026-02-08T12:20:00+00:00", id="control-on-time-approval"),
+        ],
+    )
+    def test_rejection_wins_whatever_the_approval_clock(self, approval_at: str) -> None:
+        """The skewed approval is stamped 10 minutes in the FUTURE (12:40) relative
+        to the rejection (12:30); the control is in the past (12:20). Either way
+        the reducer must honour the rejection."""
+        state = reduce(self._pipeline(approval_at=approval_at))
 
         assert state.work_packages["WP01"]["lane"] == "in_progress"
         assert state.work_packages["WP01"]["last_event_id"] == _ulid(6)
         assert state.summary["approved"] == 0
         assert state.summary["in_progress"] == 1
-
-    def test_control_on_time_rejection_also_wins(self) -> None:
-        """Control: the approval is in the past (12:20); the only difference from
-        the skewed case is the approval's ``at``. Same honoured outcome."""
-        state = reduce(self._pipeline(approval_at="2026-02-08T12:20:00+00:00"))
-
-        assert state.work_packages["WP01"]["lane"] == "in_progress"
-        assert state.work_packages["WP01"]["last_event_id"] == _ulid(6)
-        assert state.summary["approved"] == 0
 
     def test_future_stamped_approval_still_settles_a_done(self) -> None:
         """An ``approved -> done`` minted on a correct clock before a
