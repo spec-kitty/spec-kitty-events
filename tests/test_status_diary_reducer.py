@@ -799,6 +799,183 @@ class TestReduceConcurrentRollbackPrecedence:
         assert state.summary["approved"] == 0
 
 
+class TestApprovedDepartureFollowsItsApproval:
+    """#101 (spec-kitty/spec-kitty#4941): a real departure from ``approved`` must
+    never sort before the approval it left when the approval carries a later
+    (e.g. clock-skewed) ``at``. Unlike the #69 cases, the departure leaves
+    ``approved`` -- it causally FOLLOWED the approval, it is not concurrent with
+    it -- so it must win, not be dropped as stale."""
+
+    def _pipeline(self, approval_at: str) -> list[dict[str, Any]]:
+        """WP01 driven to ``approved``; the approval carries *approval_at*,
+        then a real-clock reviewer rejects ``approved -> in_progress`` at 12:30."""
+        return [
+            _row(_ulid(1), from_lane="planned", to_lane="claimed", at="2026-02-08T12:00:00+00:00"),
+            _row(
+                _ulid(2), from_lane="claimed", to_lane="in_progress", at="2026-02-08T12:05:00+00:00"
+            ),
+            _row(
+                _ulid(3),
+                from_lane="in_progress",
+                to_lane="for_review",
+                at="2026-02-08T12:10:00+00:00",
+            ),
+            _row(
+                _ulid(4),
+                from_lane="for_review",
+                to_lane="in_review",
+                at="2026-02-08T12:15:00+00:00",
+            ),
+            _row(
+                _ulid(5),
+                from_lane="in_review",
+                to_lane="approved",
+                at=approval_at,
+                actor="reviewer-a",
+                review_result=_REVIEW_RESULT,
+            ),
+            _row(
+                _ulid(6),
+                from_lane="approved",
+                to_lane="in_progress",
+                at="2026-02-08T12:30:00+00:00",
+                actor="reviewer-b",
+                review_ref="review://WP01/regression-after-approval",
+                reason="regression found after approval",
+            ),
+        ]
+
+    def test_rejection_wins_when_the_approval_clock_ran_ahead(self) -> None:
+        """The approval is stamped 10 minutes in the FUTURE (12:40) relative to
+        the rejection (12:30). The reducer must still honour the rejection."""
+        state = reduce(self._pipeline(approval_at="2026-02-08T12:40:00+00:00"))
+
+        assert state.work_packages["WP01"]["lane"] == "in_progress"
+        assert state.work_packages["WP01"]["last_event_id"] == _ulid(6)
+        assert state.summary["approved"] == 0
+        assert state.summary["in_progress"] == 1
+
+    def test_control_on_time_rejection_also_wins(self) -> None:
+        """Control: the approval is in the past (12:20); the only difference from
+        the skewed case is the approval's ``at``. Same honoured outcome."""
+        state = reduce(self._pipeline(approval_at="2026-02-08T12:20:00+00:00"))
+
+        assert state.work_packages["WP01"]["lane"] == "in_progress"
+        assert state.work_packages["WP01"]["last_event_id"] == _ulid(6)
+        assert state.summary["approved"] == 0
+
+    def test_future_stamped_approval_still_settles_a_done(self) -> None:
+        """An ``approved -> done`` minted on a correct clock before a
+        future-stamped approval still settles: the done sorts after its approval
+        and the WP ends ``done`` (the departure-from-approved lift is not
+        rejection-specific)."""
+        events = [
+            _row(_ulid(1), from_lane="planned", to_lane="claimed", at="2026-02-08T12:00:00+00:00"),
+            _row(
+                _ulid(2), from_lane="claimed", to_lane="in_progress", at="2026-02-08T12:05:00+00:00"
+            ),
+            _row(
+                _ulid(3),
+                from_lane="in_progress",
+                to_lane="for_review",
+                at="2026-02-08T12:10:00+00:00",
+            ),
+            _row(
+                _ulid(4),
+                from_lane="for_review",
+                to_lane="in_review",
+                at="2026-02-08T12:15:00+00:00",
+            ),
+            _row(
+                _ulid(5),
+                from_lane="in_review",
+                to_lane="approved",
+                at="2026-02-08T12:40:00+00:00",
+                actor="reviewer-a",
+                review_result=_REVIEW_RESULT,
+            ),
+            _row(
+                _ulid(6),
+                from_lane="approved",
+                to_lane="done",
+                at="2026-02-08T12:30:00+00:00",
+                actor="merge",
+                evidence=_DONE_EVIDENCE,
+            ),
+        ]
+
+        state = reduce(events)
+
+        assert state.work_packages["WP01"]["lane"] == "done"
+        assert state.work_packages["WP01"]["last_event_id"] == _ulid(6)
+
+    def test_rework_cycle_is_unchanged_when_no_clock_ran_ahead(self) -> None:
+        """No-regression: two approval cycles on correct clocks. The first
+        rejection follows the first approval, the second approval settles the WP;
+        the departure-lift is a no-op because no approval is later than its
+        departure, so the index pairing never mis-binds."""
+        events = [
+            _row(_ulid(1), from_lane="planned", to_lane="claimed", at="2026-02-08T12:00:00+00:00"),
+            _row(
+                _ulid(2), from_lane="claimed", to_lane="in_progress", at="2026-02-08T12:05:00+00:00"
+            ),
+            _row(
+                _ulid(3),
+                from_lane="in_progress",
+                to_lane="for_review",
+                at="2026-02-08T12:10:00+00:00",
+            ),
+            _row(
+                _ulid(4),
+                from_lane="for_review",
+                to_lane="in_review",
+                at="2026-02-08T12:15:00+00:00",
+            ),
+            _row(
+                _ulid(5),
+                from_lane="in_review",
+                to_lane="approved",
+                at="2026-02-08T12:20:00+00:00",
+                actor="reviewer-a",
+                review_result=_REVIEW_RESULT,
+            ),
+            _row(
+                _ulid(6),
+                from_lane="approved",
+                to_lane="in_progress",
+                at="2026-02-08T12:25:00+00:00",
+                actor="reviewer-b",
+                review_ref="review://WP01/rework-1",
+            ),
+            _row(
+                _ulid(7),
+                from_lane="in_progress",
+                to_lane="for_review",
+                at="2026-02-08T12:30:00+00:00",
+            ),
+            _row(
+                _ulid(8),
+                from_lane="for_review",
+                to_lane="in_review",
+                at="2026-02-08T12:35:00+00:00",
+            ),
+            _row(
+                _ulid(9),
+                from_lane="in_review",
+                to_lane="approved",
+                at="2026-02-08T12:40:00+00:00",
+                actor="reviewer-a",
+                review_result=_REVIEW_RESULT,
+            ),
+        ]
+
+        state = reduce(events)
+
+        assert state.work_packages["WP01"]["lane"] == "approved"
+        assert state.work_packages["WP01"]["last_event_id"] == _ulid(9)
+        assert state.summary["approved"] == 1
+
+
 class TestSummaryCounts:
     def test_summary_counts_match_wp_states(self) -> None:
         events = [

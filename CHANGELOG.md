@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.5.1] - 2026-10-15
+
+### Fixed
+
+- **A real departure from `approved` is no longer lost to a clock-ahead approval
+  (spec-kitty-events#101, for spec-kitty/spec-kitty#4941).** `diary._order_transitions`
+  sorted lane transitions by `(at, event_id)`, so a non-seed `approved -> …`
+  departure (a reviewer's `approved -> in_progress` rejection, or an
+  `approved -> done`) that carried an earlier `at` than the `in_review -> approved`
+  approval it left — a reviewer whose clock ran ahead, or a teammate's approval
+  arriving through `git pull` and the status-log union merge driver, which also
+  orders by `at` — sorted before its own approval and was dropped by arm-(ii)
+  `from_lane` continuity as causally stale, so a rejection recorded after an
+  approval was silently lost and the WP stayed `approved`. A non-seed departure
+  from `approved` now has its **sort** `at` lifted to the `at` of the approval it
+  followed (`_approved_departure_sort_at`), pairing each WP's departures to its
+  approvals in `(at, event_id)` order, so it sorts after its approval and applies.
+  The stored `at` is untouched; the equal-`at` behaviour (spec-kitty-events#87)
+  and every un-skewed log are unchanged.
+
+### Compatibility
+
+- Patch-level behaviour change to `diary.reduce` / `reduce_parsed`: only lane and
+  verdict values on clock-skewed logs differ. The snapshot shape, the `3.0.0`
+  envelope, `validate_strict_envelope`, `spec_kitty_events.Lane`, the
+  `#69`/`#81`/`#6061` rulings and the Lamport `reduce_status_events` path are
+  unchanged. See `COMPATIBILITY.md`.
+
 ## [10.5.0] - 2026-10-14
 
 ### Added

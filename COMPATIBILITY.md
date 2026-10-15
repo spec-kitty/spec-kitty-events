@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.5.0`
+**Current package version**: `10.5.1`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,36 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `10.5.1` — status-diary reducer: a real departure from `approved` outranks a clock-ahead approval
+
+`10.5.1` (spec-kitty-events#101, for spec-kitty/spec-kitty#4941) is a patch-level
+behaviour change to `spec_kitty_events.diary.reduce` / `reduce_parsed`. The
+snapshot shape and the envelope schema `3.0.0` are unchanged; only lane and
+verdict values on certain clock-skewed logs differ. When a WP's real
+`approved -> …` departure (a reviewer's `approved -> in_progress` rejection, or
+an `approved -> done`) carried an earlier `at` than the `in_review -> approved`
+approval it left — a reviewer whose clock ran ahead, or a teammate's approval row
+arriving through `git pull` and the status-log union merge driver, which also
+orders by `at` — the reducer sorted the departure before its own approval. At
+that position the WP was still `in_review`, so arm-(ii) `from_lane` continuity
+dropped the departure as causally stale and the stale-looking approval won: a
+rejection recorded after an approval was silently lost and the WP stayed
+`approved`. Now a non-seed departure from `approved` has its **sort** `at` lifted
+to the `at` of the approval it followed (`_order_transitions` /
+`_approved_departure_sort_at`), pairing each WP's departures to its approvals in
+`(at, event_id)` order, so the departure sorts after its approval and arm (ii)
+applies it. The stored `at` is never changed.
+
+This generalises the `10.4.6` (spec-kitty-events#87) equal-`at` tie-break to the
+later-`at` case; the equal-`at` behaviour and the un-skewed case are unchanged
+(the lift is a no-op whenever no approval is later than its departure). The
+`10.4.5` (spec-kitty#6061), `10.4.4` (spec-kitty#6058), `10.4.3`
+bare-sibling (spec-kitty-events#81) and `#69` `from_lane`-continuity rulings,
+real-against-real arbitration, `force`, seedless logs and the Lamport
+`reduce_status_events` path are all unchanged. Consumers whose logs contain a
+departure from `approved` recorded under clock skew may need to re-materialize
+snapshots to pick up the corrected lanes.
 
 ## `10.5.0` — producer row schemas, the producer registry and the total order
 
