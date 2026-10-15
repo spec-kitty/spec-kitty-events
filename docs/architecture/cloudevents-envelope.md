@@ -9,10 +9,10 @@ kind: Explanation
 
 # CloudEvents envelope design
 
-**Status:** Proposed. Nothing here has shipped. This document supports
-[ADR-0001](../adr/0001-cloudevents-envelope.md), which is itself Proposed.
-Where this document recommends, it says "recommendation"; the ADR's four open questions
-(ordering, id format, timing, type prefix; question 3 is split into 3a and 3b) are not decided here, and the two embedded
+**Status:** Proposed design. Nothing here has shipped. This document supports
+[ADR-0001](../adr/0001-cloudevents-envelope.md), which is Accepted (2026-10-15).
+Where this document recommends, it says "recommendation". The ADR has decided ordering
+(option C), the id format (ULID only) and the type prefix (`ai.spec-kitty`); timing (3a and 3b) is still open, and the two embedded
 choices of section 4 (snake_case inside `data`; `actor` and `executionmode` as extensions)
 are proposals to confirm on the PR.
 
@@ -124,7 +124,7 @@ error in strict use. Fixtures for slug-segment and unprefixed aggregates are par
 Phase 1 mapping exit criterion.
 
 - `missionid` extension = the `<mission_id>` segment.
-- `source` = `/spec-kitty/missions/<mission_id>` (placeholder prefix; open question 4).
+- `source` = `/spec-kitty/missions/<mission_id>` (prefix `ai.spec-kitty`, ADR question 4, decided).
 - `subject` = the work package id (for example `WP01`), absent for Mission-level events.
 - The registry marks which types are work-package scoped, so the split is reversible.
 - `session/<id>` aggregates, a non-ULID mission segment, and any other prefix: `source` =
@@ -159,7 +159,7 @@ fields, so several attributes are constants or supplied by context (the Mission'
 | `StatusEvent` field | Target | Type | Note | Name check |
 |---|---|---|---|---|
 | `event_id` | `id` | String | Normalized id. | ok |
-| (none) | `type` | String | Constant `dev.spec-kitty.lane.transitioned.v1` (placeholder prefix). | ok |
+| (none) | `type` | String | Constant `ai.spec-kitty.lane.transitioned.v1`. | ok |
 | (none) | `specversion`, `datacontenttype`, `dataschema`, `schemaversion` | constants | `1.0`; `application/json`; registry URI; `4.0.0`. | ok |
 | (none) | `source` | URI-ref | `/spec-kitty/missions/<missionid>`. | ok |
 | `mission_slug` (legacy name `feature_slug`, accepted by `StatusEvent.from_dict` today) | `missionslug` | String | Copied. `feature_slug` is a marked legacy name, read as `mission_slug`. | 11: ok |
@@ -194,13 +194,13 @@ lexicographically-orderable string", with semantics set by `sequencetype`; on ma
 wording differs (not in v1.0.2). `documented-extensions.md` (v1.0.2) says documented
 extensions "have no official standing and might be changed, or removed, at any time".
 Lamport clocks are integers and cross-node, which `sequence` (scoped to a `source`) does
-not model. So ordering is a Spec Kitty extension. The attributes proposed, subject to ADR
-open question 1:
+not model. So ordering is a Spec Kitty extension. The attributes proposed, as decided in ADR
+question 1 (option C):
 
 - `lamportclock` (Integer) and `nodeid` (String): the existing pair, same meaning as in
   `Event`. Optional in the schema, because diary writers stamp none today.
 - Reader rule options (ADR): A, wall-clock `(time, id)` as shipped; B, Lamport; C, Lamport
-  with a `(time, id)` fallback. Recommendation: C, only if a total order for logs mixing
+  with a `(time, id)` fallback. Decided: C (ADR, 2026-10-15), valid only if a total order for logs mixing
   clocked and clockless rows is defined (a comparator that uses the clock where present
   and `(time, id)` otherwise is not transitive, so the result would depend on input
   order, against the deterministic principle). Options B and C change the sort key the
@@ -215,7 +215,7 @@ open question 1:
 - `source` identifies the producing context, not the host: `/spec-kitty/missions/<missionid>`
   for Mission events, `/spec-kitty/projects/<project_uuid>` for project-scoped events.
   Relative URI-references are allowed by the spec ("non-empty URI-reference"; absolute
-  "RECOMMENDED"). Whether to publish an absolute form is tied to ADR open question 4.
+  "RECOMMENDED"). Whether to publish an absolute form is tied to the type prefix (ADR question 4, decided).
 - `source` + `id` uniqueness: the spec says nothing about equal ids from different sources,
   and a relative `source` weakens cross-repo uniqueness. Within one Mission's log every row
   has the same `source`, so deduping by `id` there equals deduping by `(source, id)`.
@@ -228,9 +228,9 @@ open question 1:
 
 ## 7. Type registry and naming
 
-`type` is `<prefix>.<noun>.<verb>.v<N>`, for example `dev.spec-kitty.lane.transitioned.v1`
+`type` is `<prefix>.<noun>.<verb>.v<N>`, for example `ai.spec-kitty.lane.transitioned.v1`
 (the noun/verb name is a proposal to confirm on the PR, like the lifted members of section 3).
-`<prefix>` is the placeholder reverse-DNS name (ADR open question 4).
+`<prefix>` is the reverse-DNS name `ai.spec-kitty` (ADR question 4, decided).
 
 - The registry is a committed table: legacy `event_type` (A) and diary shape (B) to `type`,
   `dataschema` and payload model. It must cover every type in `STRICT_EVENT_TYPES` (26
@@ -341,7 +341,7 @@ shown pretty-printed (the log line would be one line):
   "specversion": "1.0",
   "id": "01JAAAA0000000000000000002",
   "source": "/spec-kitty/missions/01JAAAA00000000000000MSN01",
-  "type": "dev.spec-kitty.lane.transitioned.v1",
+  "type": "ai.spec-kitty.lane.transitioned.v1",
   "subject": "WP01",
   "time": "2026-08-26T10:05:00+00:00",
   "datacontenttype": "application/json",

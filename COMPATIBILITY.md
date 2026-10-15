@@ -100,7 +100,7 @@ legacy rows, the legacy fixture corpus, the full type registry, a Java binding, 
 sort-key switch, and the `3.0.0` to `4.0.0` envelope cutover with its major release.
 
 **Status: non-normative.** The schemas, the registry and the order are published ahead of
-the cutover release of ADR 0001 (still Proposed). No consumer or producer gates on them:
+the cutover release of ADR 0001 (Accepted 2026-10-15; the cutover is not yet released). No consumer or producer gates on them:
 `schemaversion` `4.0.0` is the CloudEvents form and the strict profile does not accept it.
 Per the versioning contract a new event type is additive, and a minor version does not
 make an unknown type safe for every consumer: a producer must keep emission of these types

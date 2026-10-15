@@ -10,12 +10,11 @@ kind: Explanation
 # Producer row schemas and the total order
 
 **Status:** Proposed. This note supports
-[ADR-0001](../adr/0001-cloudevents-envelope.md) and
-[the envelope design](./cloudevents-envelope.md), both still Proposed. The choices it
-records that those documents leave open (the `ai.spec-kitty` prefix, ordering option C,
-the `source` tie-break, ULID-only new ids, the interim data-model choices) come from the
-spec-kitty operator for spec-kitty/spec-kitty#6185. The spec-kitty-events maintainer has
-to confirm each one. Nothing here changes what any existing release accepts.
+[ADR-0001](../adr/0001-cloudevents-envelope.md), which is Accepted (2026-10-15), and
+[the envelope design](./cloudevents-envelope.md). The ADR decided the `ai.spec-kitty`
+prefix, ordering option C and ULID-only new ids on maintainer approval. The `source`
+tie-break and the interim data-model choices come from the spec-kitty operator for
+spec-kitty/spec-kitty#6185 and still await maintainer confirmation. Nothing here changes what any existing release accepts.
 
 **Reader:** the maintainer reviewing the PR for spec-kitty-events#92 step 2, and the
 author of the Java producer in spec-kitty#6185, which consumes the released artifact.
@@ -52,12 +51,11 @@ absorbs it.
 All are inputs from #6185, not choices made here. Items marked INTERIM are the ADR's
 "further choices", adopted by the operator and awaiting maintainer confirmation.
 
-- Type string: `ai.spec-kitty.<name>.v<N>`. The prefix is the operator's ruling on ADR open
-  question 4; it is a third option beside the ADR's A (`dev.spec-kitty`) and B (a domain the
-  project controls), and still needs the maintainer to name a controlled domain. Registry key `type_prefix` holds it once; changing it later is breaking.
+- Type string: `ai.spec-kitty.<name>.v<N>`. The prefix is decided by ADR 0001 question 4
+  (maintainer, 2026-10-15). Registry key `type_prefix` holds it once; changing it later is breaking.
 - `dataschema` base: the design's placeholder `https://schemas.example.invalid/spec-kitty/`
   is kept, in one registry field (`dataschema_base`), because the maintainer has to name a
-  domain the project controls (ADR question 4, option B). The URI is an identifier, not a
+  domain the project controls (not part of the ADR 0001 prefix decision). The URI is an identifier, not a
   fetch target. INTERIM.
 - `schemaversion`: `4.0.0`, the CloudEvents-form value of the design. Non-normative until
   the cutover release; `validate_strict_envelope` still requires `3.0.0`.
@@ -175,9 +173,9 @@ consumer, as the versioning contract already says for new event types.
    These schemas are authored as JSON and are the contract for non-Python producers, the
    second reading in the ADR's "Charter" section. The amendment is #6117 decision 11,
    owned by #92 or the maintainer; this PR does not amend the charter.
-2. The prefix `ai.spec-kitty`, ordering option C, the `source` tie-break, ULID-only ids,
-   and the INTERIM list of section 2 come from the spec-kitty operator, not from this
-   repository's maintainer.
+2. The `source` tie-break and the INTERIM list of section 2 come from the spec-kitty
+   operator, not from this repository's maintainer. The prefix, ordering option C and
+   ULID-only ids are decided by ADR 0001.
 3. The `dataschema` base URI is a placeholder until a controlled domain is named.
 4. `source_invalid` and the treatment of `null` source as absent are this PR's reading of
    a gap in the design.

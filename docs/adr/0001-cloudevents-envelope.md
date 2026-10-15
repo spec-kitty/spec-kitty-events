@@ -1,8 +1,8 @@
 ---
 title: 'ADR: adopt CloudEvents 1.0 as the event envelope'
-description: 'Proposed: CloudEvents 1.0 structured JSON becomes the Spec Kitty event-log envelope; the 3.0.0 envelope and status-diary row become legacy inputs to a read-time upcaster.'
+description: 'Accepted: CloudEvents 1.0 structured JSON becomes the Spec Kitty event-log envelope; the 3.0.0 envelope and status-diary row become legacy inputs to a read-time upcaster.'
 doc_status: draft
-updated: 2026-10-13
+updated: 2026-10-15
 type: ADR
 kind: ADR
 authors:
@@ -12,13 +12,13 @@ authors:
 
 # ADR: adopt CloudEvents 1.0 as the event envelope
 
-**Status:** Proposed
+**Status:** Accepted
 
-**Date:** 2026-10-13
+**Date:** 2026-10-15 (proposed 2026-10-13)
 
-**Deciders:** Maintainer. Direction: maintainer approval, 2026-10-13 (to be confirmed on the PR).
-The four open questions below (question 3 split into 3a and 3b) are not decided, and further proposed choices are
-listed after them for confirmation on the PR.
+**Deciders:** Maintainer. Direction: maintainer approval, 2026-10-13. Accepted, with the
+open questions 1, 2 and 4 decided, on maintainer approval, 2026-10-15. Open questions 3a and 3b
+(timing) stay open, and the further proposed choices listed after them still await confirmation.
 
 **Reader:** a maintainer or consumer author deciding whether the Spec Kitty event log,
 the merge driver and the Mission Status Read API move to a CloudEvents envelope, and when.
@@ -136,6 +136,8 @@ Which shape CloudEvents replaces, stated for both:
   Rows that are not lane events (Decision Point, retrospective, future protocol rows) are
   not mapped: the upcaster passes them through unchanged, as the reducer ignores them
   today (design section 1).
+
+Confirmed by the maintainer on 2026-10-15: CloudEvents 1.0 structured JSON, from now on.
 
 Spec Kitty fields ride as CloudEvents extension attributes. CloudEvents requires
 extension names to be lowercase letters and digits and says they SHOULD NOT exceed 20
@@ -258,9 +260,9 @@ A permanent upcaster; a second language binding to keep in step (if the Java bin
 goes ahead); an ordering rule that CloudEvents does not give us; renamed attributes
 that every consumer must learn.
 
-## Open questions (options for the maintainer; none is decided)
+## Open questions (1, 2 and 4 decided 2026-10-15; 3a and 3b open)
 
-### 1. Ordering
+### 1. Ordering (decided: C)
 
 The code orders the diary by wall-clock `(at, event_id)` (the reducer as shipped, #4941).
 Core ADR `2026-02-09-3` (event-log merge semantics, Accepted) orders by Lamport clock,
@@ -274,14 +276,15 @@ into the diary. Today's diary writers stamp no clock.
 | B. Carry `lamportclock` and `nodeid` as extensions; order Lamport, `time`, `id` | Matches the ADR; needs the write core to stamp a clock and a rule for legacy rows with none; changes the reducer sort key. |
 | C. B, with `(time, id)` as the fallback for rows without a clock | B plus no breakage of existing logs; also changes the reducer sort key (design section 5). Only valid with a defined total order for logs mixing clocked and clockless rows (a naive mixed comparator is not transitive). |
 
-**Recommendation (open; the maintainer decides):** C, conditional on that total order
-being defined first; otherwise A or B. If B or C is chosen, Phase 2 owns the reducer
+**Decided (maintainer, 2026-10-15): C.** A Lamport clock, with `(time, id)` as the tiebreak
+and as the fallback for rows without a clock. It is conditional on the total order for logs
+mixing clocked and clockless rows being defined first (see `contracts/total-order.md`). Phase 2 owns the reducer
 sort-key change (design section 14). CloudEvents' own `sequence` extension is not a fit and its
 documentation says such extensions "have no official standing", so ordering is a Spec
 Kitty extension in any case. Options B and C also bound `lamportclock` to the CloudEvents
 Integer range (signed 32-bit), or make it a string (design section 5).
 
-### 2. Event id format
+### 2. Event id format (decided: A)
 
 The validator accepts 26-char ULID, 36-char UUID and 32-char hex UUID today.
 
@@ -290,7 +293,7 @@ The validator accepts 26-char ULID, 36-char UUID and 32-char hex UUID today.
 | A. ULID only for new events; readers keep accepting UUID in legacy rows | One format going forward, sortable ids; legacy UUID rows stay readable. |
 | B. ULID and UUID both valid for new events | No producer change; two formats forever; `id` uniqueness reasoning stays harder. |
 
-**Recommendation (open; the maintainer decides):** A. The upcaster normalizes ids with the existing rules, so a merge
+**Decided (maintainer, 2026-10-15): A.** ULID is the only event id format for new events. The upcaster normalizes ids with the existing rules, so a merge
 driver, if core adopts the proposal, compares UUID spelling variants as one id.
 
 ### 3. Timing
@@ -326,9 +329,9 @@ indefinitely or for a stated window. Whether SaaS ingress keeps accepting the ol
 for a window or indefinitely, or a later retirement step rejects it, is this question.
 No recommendation is made; the maintainer decides.
 
-### 4. Reverse-DNS type prefix
+### 4. Reverse-DNS type prefix (decided: `ai.spec-kitty`)
 
-`dev.spec-kitty` is a placeholder. CloudEvents says `type` SHOULD be prefixed with a
+`dev.spec-kitty` was a placeholder. CloudEvents says `type` SHOULD be prefixed with a
 reverse-DNS name. The prefix is part of every type string and every `dataschema`, so
 changing it later is a breaking change.
 
@@ -337,9 +340,12 @@ changing it later is a breaking change.
 | A. `dev.spec-kitty` | Short; assumes the project controls that domain. |
 | B. A prefix on a domain the project demonstrably controls | Honest reverse-DNS; needs the maintainer to name the domain. |
 
-**Recommendation (open; the maintainer decides):** B, if chosen, ruled before the registry is written.
+**Decided (maintainer, 2026-10-15): the prefix is `ai.spec-kitty`.** The maintainer left the
+prefix to the implementers; it is neither A nor B above. It is the prefix of the type registry
+in the released 10.5.x package and of the spec-kitty producer, so a type reads
+`ai.spec-kitty.<name>.v<N>`. Changing it later is a breaking change.
 
-## Further choices to confirm on the PR
+## Further choices (still to confirm)
 
 The design (section 4) embeds two choices that are proposed, not decided here. They
 differ from the illustrative example in spec-kitty#6117. Further proposals, also to
