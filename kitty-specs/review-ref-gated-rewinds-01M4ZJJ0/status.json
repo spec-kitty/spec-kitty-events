@@ -1,0 +1,53 @@
+{
+  "event_count": 14,
+  "last_event_id": "01M4ZK6RRAC09FPEDE1QE26Y9B",
+  "materialized_at": "2026-10-15T10:54:54.731008+00:00",
+  "mission_number": "",
+  "mission_slug": "review-ref-gated-rewinds-01M4ZJJ0",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 2,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M4ZK6R1B440F8EPFR4Z9C3HE",
+      "last_transition_at": "2026-10-15T10:54:53.995073+00:00",
+      "review_result": {
+        "reference": "review-cycle://review-ref-gated-rewinds-01M4ZJJ0/WP01-contract-family-and-fixtures/review-cycle-1.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "shell_pid": 3336499,
+      "shell_pid_created_at": "1792061234.42"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M4ZK6RRAC09FPEDE1QE26Y9B",
+      "last_transition_at": "2026-10-15T10:54:54.731008+00:00",
+      "review_result": {
+        "reference": "review-cycle://review-ref-gated-rewinds-01M4ZJJ0/WP02-diary-docs-and-release/review-cycle-1.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "shell_pid": 3339360,
+      "shell_pid_created_at": "1792061436.76"
+    }
+  }
+}

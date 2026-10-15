@@ -1,0 +1,59 @@
+{
+  "mission_slug": "review-ref-gated-rewinds-01M4ZJJ0",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "status.py module docstring section Review-Ref-Gated Rewind Family (lane-a 6a2aa39); WP01 review-cycle-1 approved",
+      "pass_fail": "pass",
+      "verified_by": "claude-opus",
+      "verified_at": "2026-10-15T10:53:22.423149+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "uv run --frozen pytest --pyargs spec_kitty_events.conformance -q: 673 passed (+9 new manifest rows)",
+      "pass_fail": "pass",
+      "verified_by": "claude-opus",
+      "verified_at": "2026-10-15T10:53:24.629168+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "tests/unit/test_status.py::TestReviewRefGatedRewindFamily + reviewer exhaustive (valid,violations) equality over 1056 payloads",
+      "pass_fail": "pass",
+      "verified_by": "claude-opus",
+      "verified_at": "2026-10-15T10:53:26.842297+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "diary.py _is_rollback_event docstring (lane-b 82155de); forced stale approved->in_progress after done reopens, unforced stays done",
+      "pass_fail": "pass",
+      "verified_by": "claude-opus",
+      "verified_at": "2026-10-15T10:53:29.041857+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "CHANGELOG [10.5.2] + COMPATIBILITY 10.5.2 (lane-b e255f40); compatibility_doc + version_not_amended tests green",
+      "pass_fail": "pass",
+      "verified_by": "claude-opus",
+      "verified_at": "2026-10-15T10:53:31.255673+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

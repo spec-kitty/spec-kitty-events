@@ -1,0 +1,17 @@
+{
+  "rows": {
+    "#48": {
+      "evidence_ref": "6a2aa39 (WP01 family+fixtures), 82155de/e255f40 (WP02 diary docs + 10.5.2)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "fixed",
+      "wp": "WP01"
+    }
+  },
+  "schema_version": 1
+}
