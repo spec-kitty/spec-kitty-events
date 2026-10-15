@@ -1753,7 +1753,8 @@ def _order_transitions(events: list[StatusEvent]) -> list[StatusEvent]:
     ``in_review`` (spec-kitty-events#87 for the equal-``at`` case,
     spec-kitty-events#101 / spec-kitty/spec-kitty#4941 for the later-``at`` case).
     The later-``at`` case lifts only the departure's SORT ``at`` to its approval's
-    (:func:`_approved_departure_sort_at`); the stored ``at`` is untouched, and the
+    (:func:`_approved_departure_sort_at`) and carries it to the same-WP events stamped
+    below it (:func:`_carry_lifted_sort_at`); the stored ``at`` is untouched, and the
     un-skewed case is a no-op, so the equal-``at`` behaviour is unchanged.
     """
     approvals = {
@@ -1763,17 +1764,51 @@ def _order_transitions(events: list[StatusEvent]) -> list[StatusEvent]:
         and ev.from_lane != Lane.APPROVED
         and not _is_reconstruction_seed(ev)
     }
-    lifted = _approved_departure_sort_at(events)
+    effective, seq = _carry_lifted_sort_at(events, _approved_departure_sort_at(events))
     return sorted(
         events,
         key=lambda e: (
-            lifted.get(e.event_id, e.at),
-            e.from_lane == Lane.APPROVED
-            and not _is_reconstruction_seed(e)
-            and ((e.wp_id, e.at) in approvals or e.event_id in lifted),
+            effective.get(e.event_id, e.at),
+            e.event_id in seq
+            or (
+                e.from_lane == Lane.APPROVED
+                and not _is_reconstruction_seed(e)
+                and (e.wp_id, e.at) in approvals
+            ),
+            seq.get(e.event_id, 0),
             e.event_id,
         ),
     )
+
+
+def _carry_lifted_sort_at(
+    events: list[StatusEvent], lifted: dict[str, str]
+) -> tuple[dict[str, str], dict[str, int]]:
+    """Carry each lifted departure's sort ``at`` forward to the same-WP events after it.
+
+    A lifted departure sorts at its approval's (later) ``at``; the rework that
+    followed it was stamped on the real clock, below that value, so it would sort
+    BEFORE the departure and be dropped as stale. Sweep each WP in ``(at,
+    event_id)`` order keeping a running floor: a lifted departure raises it, and a
+    later event whose ``at`` is below it is given the floor as its sort ``at``.
+    Returns the effective sort ``at`` per carried or lifted ``event_id`` and a
+    sequence number that keeps the swept events in their original relative order.
+    Stored ``at`` values are untouched; with nothing lifted both maps are empty.
+    """
+    if not lifted:
+        return {}, {}
+    effective = dict(lifted)
+    seq: dict[str, int] = {}
+    floors: dict[str, str] = {}
+    for position, event in enumerate(sorted(events, key=lambda e: (e.at, e.event_id)), 1):
+        floor = floors.get(event.wp_id)
+        if event.event_id in lifted:
+            floors[event.wp_id] = max(floor or "", lifted[event.event_id])
+            seq[event.event_id] = position
+        elif floor is not None and event.at < floor:
+            effective[event.event_id] = floor
+            seq[event.event_id] = position
+    return effective, seq
 
 
 def _canonical_key(event: StatusEvent) -> str:

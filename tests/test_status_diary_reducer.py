@@ -909,12 +909,21 @@ class TestApprovedDepartureFollowsItsApproval:
         assert state.work_packages["WP01"]["lane"] == "done"
         assert state.work_packages["WP01"]["last_event_id"] == _ulid(6)
 
-    def test_rework_cycle_pairs_each_departure_to_its_own_approval(self) -> None:
-        """Two approval cycles where only the FIRST approval's clock ran ahead
-        (12:40) and the second cycle ran on the real clock (rejection 12:30,
-        re-approval 12:35, done 12:38). Index pairing would bind the early
-        rejection to the skewed approval and the done to the wrong one; each
-        departure must bind to its own approval, so the WP ends ``done``."""
+    @pytest.mark.parametrize(
+        ("rows", "lane", "last_event"),
+        [
+            pytest.param(10, "done", 10, id="second-cycle-pairs-to-its-own-approval"),
+            pytest.param(7, "for_review", 7, id="rework-after-lifted-rejection-sorts-after-it"),
+        ],
+    )
+    def test_rework_after_a_clock_ahead_approval(
+        self, rows: int, lane: str, last_event: int
+    ) -> None:
+        """Only the FIRST approval's clock ran ahead (12:40); the rejection
+        (12:30) and the rework that follows ran on the real clock. Each departure
+        must bind to its own approval (index pairing would cross the cycles: the
+        full two-cycle run ends ``done``), and rework stamped below the lifted
+        rejection must sort after it (stopping at ``for_review``), not before."""
 
         def at(minute: int) -> str:
             return f"2026-02-08T12:{minute:02d}:00+00:00"
@@ -958,12 +967,12 @@ class TestApprovedDepartureFollowsItsApproval:
                 actor="merge",
                 evidence=_DONE_EVIDENCE,
             ),
-        ]
+        ][:rows]
 
         state = reduce(events)
 
-        assert state.work_packages["WP01"]["lane"] == "done"
-        assert state.work_packages["WP01"]["last_event_id"] == _ulid(10)
+        assert state.work_packages["WP01"]["lane"] == lane
+        assert state.work_packages["WP01"]["last_event_id"] == _ulid(last_event)
 
 
 class TestSummaryCounts:
