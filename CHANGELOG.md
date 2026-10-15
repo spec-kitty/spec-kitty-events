@@ -22,8 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `from_lane` continuity as causally stale, so a rejection recorded after an
   approval was silently lost and the WP stayed `approved`. A non-seed departure
   from `approved` now has its **sort** `at` lifted to the `at` of the approval it
-  followed (`_approved_departure_sort_at`), pairing each WP's departures to its
-  approvals in `(at, event_id)` order, so it sorts after its approval and applies.
+  followed (`_approved_departure_sort_at`), so it sorts after its approval and
+  applies. Each departure first binds to the latest approval stamped at or before
+  it; only a departure with no such approval is lifted, so a clock-ahead first
+  approval cannot capture a later rework cycle's departure. Rework stamped below a
+  lifted departure is carried after it rather than dropped as stale.
   The stored `at` is untouched; the equal-`at` behaviour (spec-kitty-events#87)
   and every un-skewed log are unchanged.
 
