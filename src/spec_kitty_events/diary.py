@@ -1696,17 +1696,21 @@ def _approved_departure_sort_at(events: list[StatusEvent]) -> dict[str, str]:
     causally stale and the stale-looking approval wins
     (spec-kitty-events#101, spec-kitty/spec-kitty#4941).
 
-    Pair each WP's non-seed approved departures to its non-seed approvals in
-    ``(at, event_id)`` order -- the i-th departure left the i-th approval, since
-    every departure is preceded by its own arrival and only the final approval of
-    a still-``approved`` WP is unpaired -- and return, for each departure whose
-    paired approval is later, a lifted sort ``at`` of the approval's ``at``. The
-    stored ``at`` is never changed; only :func:`_order_transitions`'s sort key is
-    lifted, so a real-time departure sorts immediately after the approval it
-    followed and then applies. A departure already at or after its approval (the
-    ordinary, un-skewed case) is absent from the map and unchanged, so this is a
-    no-op whenever no clock ran ahead. Reconstruction seeds are excluded: they are
-    best-effort restatements judged by the arms, not causal decisions.
+    Pair each WP's non-seed approved departures to its non-seed approvals in two
+    passes, both in ``(at, event_id)`` order, so a rework cycle never binds a
+    departure to another cycle's approval (index pairing would, once one cycle's
+    approval ran ahead). Pass 1 binds each departure to the latest still-unbound
+    approval whose ``at`` is not after the departure's: that is its un-skewed
+    approval, and the departure needs no lift. Pass 2 binds each remaining
+    departure, in order, to the earliest still-unbound approval LATER than it --
+    the clock-ahead approval it must follow -- and returns a lifted sort ``at`` of
+    that approval's ``at``. The stored ``at`` is never changed; only
+    :func:`_order_transitions`'s sort key is lifted, so a real-time departure sorts
+    immediately after the approval it followed and then applies. A departure left
+    unbound (no approval to follow) is absent from the map and unchanged, as is
+    every departure already at or after its approval, so this is a no-op whenever
+    no clock ran ahead. Reconstruction seeds are excluded: they are best-effort
+    restatements judged by the arms, not causal decisions.
     """
     arrivals: dict[str, list[StatusEvent]] = {}
     departures: dict[str, list[StatusEvent]] = {}
@@ -1720,13 +1724,20 @@ def _approved_departure_sort_at(events: list[StatusEvent]) -> dict[str, str]:
 
     lifted: dict[str, str] = {}
     for wp_id, wp_departures in departures.items():
-        wp_arrivals = sorted(arrivals.get(wp_id, []), key=lambda e: (e.at, e.event_id))
-        if not wp_arrivals:
-            continue
-        for index, departure in enumerate(sorted(wp_departures, key=lambda e: (e.at, e.event_id))):
-            approval = wp_arrivals[index] if index < len(wp_arrivals) else wp_arrivals[-1]
-            if approval.at > departure.at:
-                lifted[departure.event_id] = approval.at
+        unbound = sorted(arrivals.get(wp_id, []), key=lambda e: (e.at, e.event_id))
+        ordered = sorted(wp_departures, key=lambda e: (e.at, e.event_id))
+        skewed: list[StatusEvent] = []
+        for departure in ordered:
+            earlier = [a for a in unbound if a.at <= departure.at]
+            if earlier:
+                unbound.remove(earlier[-1])
+            else:
+                skewed.append(departure)
+        for departure in skewed:
+            later = [a for a in unbound if a.at > departure.at]
+            if later:
+                unbound.remove(later[0])
+                lifted[departure.event_id] = later[0].at
     return lifted
 
 
