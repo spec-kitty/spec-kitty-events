@@ -19,7 +19,7 @@ Generated: 2026-04-20T07:35:23Z
 ## Branch Strategy
 
 - Any change to event envelopes, payload fields, schema versioning, or conformance fixtures requires deliberate compatibility review.
-- Deployment constraints: Package must ship as a Python library with committed schemas and fixtures; live consumers rely on fail-closed compatibility behavior.
+- Deployment constraints: Package must ship as a Python library with committed schemas and fixtures, and may also ship a Java binding (see Language Bindings); live consumers rely on fail-closed compatibility behavior.
 
 ## Governance Activation
 
@@ -34,12 +34,12 @@ template_set: software-dev-default
 ## Policy Summary
 
 - Intent: Publish canonical event envelopes, conformance fixtures, and compatibility rules consumed by Spec Kitty systems.
-- Languages/Frameworks: Python 3.10+ with Pydantic event models, committed JSON Schemas, and conformance fixtures as part of the public contract.
+- Languages/Frameworks: Python 3.10+ with Pydantic event models, committed JSON Schemas, and conformance fixtures as part of the public contract. A Java binding may sit beside the Python binding (see Language Bindings).
 - Testing: Use pytest, hypothesis, schema drift checks, and conformance fixture validation for any event contract change.
 - Quality Gates: pytest, committed schema generation checks, and mypy --strict must pass before merge.
 - Review Policy: Any change to event envelopes, payload fields, schema versioning, or conformance fixtures requires deliberate compatibility review.
 - Performance Targets: Validation and replay helpers should stay deterministic and efficient for normal CLI and SaaS event volumes.
-- Deployment Constraints: Package must ship as a Python library with committed schemas and fixtures; live consumers rely on fail-closed compatibility behavior.
+- Deployment Constraints: Package must ship as a Python library with committed schemas and fixtures, and may also ship a Java binding (see Language Bindings); live consumers rely on fail-closed compatibility behavior.
 
 ## Project Directives
 
@@ -68,9 +68,25 @@ template_set: software-dev-default
 - Use SemVer to communicate compatibility. Breaking event contract changes require a major release or an explicitly documented cutover policy.
 - Consumer compatibility should be proven with package conformance fixtures and downstream consumer tests rather than by forcing unrelated package releases into lockstep.
 
+## Language Bindings
+
+Amendment of 2026-10-15 (spec-kitty/spec-kitty#6117 decision 11; unblocks spec-kitty/spec-kitty-events#92).
+
+- The committed JSON Schemas and conformance fixtures are the single source of truth for the event contract. A language binding is generated from, or tested against, them; no binding is itself the specification.
+- The Python binding (Python 3.10+ with Pydantic event models) remains required and keeps shipping as a Python library with committed schemas and fixtures.
+- A Java binding may be added beside the Python binding.
+- Every binding must pass the same conformance fixtures. A change to the schemas or fixtures applies to all bindings in the same change.
+- Pydantic models stay the Python binding's models. How the schemas are authored and generated, the envelope, and which shape CloudEvents replaces are not decided here; ADR 0001 and the pull requests that implement it decide them. Every other rule in this charter, including the review policy for envelope changes, the fail-closed behavior and the package boundary, applies to every binding unchanged.
+
 ## Amendment Process
 
 Update the charter through pull request review by maintainers when governance or compatibility rules change.
+
+### Amendment log
+
+| Date | Change | Reference |
+|---|---|---|
+| 2026-10-15 | Added Language Bindings: a Java binding may sit beside the Python binding; schemas and fixtures are the single source of truth; all bindings pass the same fixtures. Deployment Constraints and Languages/Frameworks updated to match. | spec-kitty/spec-kitty#6117 decision 11; spec-kitty/spec-kitty-events#92 |
 
 ## Exception Policy
 
