@@ -2082,3 +2082,45 @@ def test_review_rejection_family_has_exactly_four_pairs() -> None:
             (Lane.APPROVED, Lane.PLANNED),
         }
     )
+
+
+class TestReviewRefGatedRewindFamily:
+    """Pin validate_transition() outcomes against the pre-#48 guard expression."""
+
+    @pytest.mark.parametrize("force", [False, True])
+    @pytest.mark.parametrize("review_ref", [None, "ref://x"])
+    @pytest.mark.parametrize("to_lane", list(Lane))
+    @pytest.mark.parametrize("from_lane", [None, *Lane])
+    def test_review_ref_guard_matches_frozen_rule(
+        self, from_lane: Lane | None, to_lane: Lane, review_ref: str | None, force: bool
+    ) -> None:
+        data = {
+            **VALID_TRANSITION_DATA,
+            "from_lane": from_lane.value if from_lane else None,
+            "to_lane": to_lane.value,
+            "force": force,
+            "reason": "r",
+            "review_ref": review_ref,
+        }
+        try:
+            payload = StatusTransitionPayload(**data)
+        except pydantic.ValidationError:
+            pytest.skip("payload rejected by model")
+
+        # Frozen copy of the pre-#48 review_ref guard.
+        rejection = {
+            (Lane.IN_PROGRESS, Lane.PLANNED),
+            (Lane.FOR_REVIEW, Lane.PLANNED),
+            (Lane.IN_REVIEW, Lane.PLANNED),
+            (Lane.APPROVED, Lane.PLANNED),
+        }
+        frozen_required = (
+            from_lane in {Lane.FOR_REVIEW, Lane.IN_REVIEW, Lane.APPROVED}
+            and to_lane in {Lane.IN_PROGRESS, Lane.PLANNED}
+            and not (force and (from_lane, to_lane) in rejection)
+        )
+        expected = (
+            f"{from_lane.value if from_lane else 'None'} -> {to_lane.value} requires review_ref"
+        )
+        has_violation = expected in validate_transition(payload).violations
+        assert has_violation == (frozen_required and review_ref is None)

@@ -1,0 +1,12 @@
+{
+  "wp_id": "WP09",
+  "from_lane": "approved",
+  "to_lane": "in_progress",
+  "actor": "user",
+  "force": true,
+  "reason": "backward rewind: approved -> in_progress",
+  "execution_mode": "worktree",
+  "review_ref": null,
+  "evidence": null,
+  "mission_slug": "mission-backward-transition-demo"
+}
