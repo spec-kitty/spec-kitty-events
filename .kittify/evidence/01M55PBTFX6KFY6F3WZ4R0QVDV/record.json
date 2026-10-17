@@ -1,0 +1,8 @@
+{
+  "event": "completed",
+  "invocation_id": "01M55PBTFX6KFY6F3WZ4R0QVDV",
+  "completed_at": "2026-10-17T19:46:37.108642+00:00",
+  "outcome": "done",
+  "closed_by": "agent",
+  "evidence_ref": ".kittify/evidence/01M55PBTFX6KFY6F3WZ4R0QVDV/evidence.md"
+}
