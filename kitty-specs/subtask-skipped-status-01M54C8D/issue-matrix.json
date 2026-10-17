@@ -1,0 +1,17 @@
+{
+  "rows": {
+    "#76": {
+      "evidence_ref": "WP01 commit 72ee77d: SubtaskStatus vocab + terminal skipped, not_applicable parse normalization, conformance fixture + round-trip tests, 10.6.0; adversarial review APPROVE",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "fixed",
+      "wp": "WP01"
+    }
+  },
+  "schema_version": 1
+}

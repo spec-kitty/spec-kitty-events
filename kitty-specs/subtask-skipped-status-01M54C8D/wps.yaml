@@ -1,0 +1,39 @@
+work_packages:
+  - id: WP01
+    title: "Subtask status vocabulary + skipped"
+    dependencies: []
+    owned_files:
+      - "src/spec_kitty_events/diary.py"
+      - "src/spec_kitty_events/__init__.py"
+      - "src/spec_kitty_events/conformance/fixtures/status_diary/**"
+      - "src/spec_kitty_events/conformance/fixtures/manifest.json"
+      - "src/spec_kitty_events/conformance/test_status_diary_reducer_replay.py"
+      - "tests/test_status_diary_reducer.py"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "COMPATIBILITY.md"
+    requirement_refs:
+      - FR-001
+      - FR-002
+      - FR-003
+      - FR-004
+      - FR-005
+      - FR-006
+      - FR-007
+      - NFR-001
+      - NFR-002
+      - C-001
+      - C-002
+      - C-003
+    plan_concern_refs:
+      - IC-01
+    subtasks:
+      - T001
+      - T002
+      - T003
+      - T004
+      - T005
+      - T006
+    prompt_file: "tasks/WP01-subtask-status-vocabulary.md"

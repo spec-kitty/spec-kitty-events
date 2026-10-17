@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "mission_slug": "subtask-skipped-status-01M54C8D",
+  "mission_id": "01M54C8D8DFHPVPNCCZTJ25S67",
+  "mission_branch": "kitty/mission-subtask-skipped-status-01M54C8D",
+  "target_branch": "feat/subtask-skipped-status",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "CHANGELOG.md",
+        "COMPATIBILITY.md",
+        "README.md",
+        "pyproject.toml",
+        "src/spec_kitty_events/__init__.py",
+        "src/spec_kitty_events/conformance/fixtures/status_diary/**",
+        "src/spec_kitty_events/conformance/test_status_diary_reducer_replay.py",
+        "src/spec_kitty_events/diary.py",
+        "tests/test_status_diary_reducer.py",
+        "uv.lock"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-10-17T17:11:16.674632+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "11b0f8ab839bc39a1ef6db91afa4435969eed233"
+}
