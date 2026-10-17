@@ -2843,6 +2843,24 @@
       "min_version": "10.4.3"
     },
     {
+      "id": "status-diary-replay-skipped-subtask",
+      "path": "status_diary/replay/status_diary_skipped_subtask.jsonl",
+      "fixture_type": "replay_stream",
+      "event_type": "mixed",
+      "expected_result": "valid",
+      "notes": "A WPInnerStateDelta annotation carries a skipped subtask and a not_applicable input alias; both reduce to the canonical skipped value",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "status-diary-replay-skipped-subtask-output",
+      "path": "status_diary/replay/status_diary_skipped_subtask_output.json",
+      "fixture_type": "reducer_output",
+      "event_type": "State",
+      "expected_result": "valid",
+      "notes": "Golden reduce() output for status_diary_skipped_subtask.jsonl: T002 skipped, T003 not_applicable normalized to skipped",
+      "min_version": "10.6.0"
+    },
+    {
       "id": "status-diary-replay-seed-lane-authority",
       "path": "status_diary/replay/status_diary_seed_lane_authority.jsonl",
       "fixture_type": "replay_stream",
