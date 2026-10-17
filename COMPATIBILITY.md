@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.5.2`
+**Current package version**: `10.5.3`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,15 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `10.5.3` — packaged total-order contract copy re-synced
+
+`10.5.3` (spec-kitty-events#110) is a packaging patch. The total-order contract
+shipped inside the wheel (`spec_kitty_events/producer_contract/total-order.md`) is a
+byte-for-byte copy of the canonical `contracts/total-order.md`; a documentation fold
+(#108) updated the canonical file's ADR-0001 back-reference to "Accepted" but not the
+packaged copy, so the two drifted. This release re-syncs the copy. No validator,
+schema, fixture or behaviour change; the envelope schema stays `3.0.0`.
 
 ## `10.5.2` — review-ref-gated rewinds documented in the status contract
 
