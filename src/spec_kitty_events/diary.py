@@ -102,11 +102,15 @@ __all__ = [
     "State",
     "Status",
     "StatusEvent",
+    "SubtaskStatus",
+    "SubtaskValue",
+    "TERMINAL_SUBTASK_STATUSES",
     "VerificationResult",
     "WPInnerStateDelta",
     "actor_identity_str",
     "assert_safe_path_segment",
     "decode_actor",
+    "is_terminal_subtask",
     "mission_identity_fields",
     "mission_number_from_slug",
     "parse_diary",
@@ -201,10 +205,48 @@ class Lane(str, Enum):
 NON_DISPLAY_LANES: frozenset[Lane] = frozenset({Lane.GENESIS, Lane.UNINITIALIZED})
 
 
-#: A subtask's completion status reuses the canonical lane/status enum
-#: vocabulary (:class:`Lane`) rather than introducing a divergent string type.
-#: A subtask is "done" when its status is ``Lane.DONE``.
-Status: TypeAlias = Lane
+class SubtaskStatus(str, Enum):
+    """Status vocabulary of a work-package subtask.
+
+    The ten active :class:`Lane` values plus ``SKIPPED``, mirroring the
+    ``wp.innerstate.changed.v1`` producer-contract schema. ``UNINITIALIZED``
+    is deliberately excluded: it is a read sentinel for an absent WP, never a
+    subtask value, and is not in the schema enum. ``(str, Enum)`` for the same
+    Python 3.10 reason as :class:`Lane`.
+    """
+
+    GENESIS = "genesis"
+    PLANNED = "planned"
+    CLAIMED = "claimed"
+    IN_PROGRESS = "in_progress"
+    FOR_REVIEW = "for_review"
+    IN_REVIEW = "in_review"
+    APPROVED = "approved"
+    DONE = "done"
+    BLOCKED = "blocked"
+    CANCELED = "canceled"
+    SKIPPED = "skipped"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+#: Published forward-looking alias for a subtask's status value.
+SubtaskValue: TypeAlias = SubtaskStatus
+
+#: A subtask's status vocabulary (:class:`SubtaskStatus`): the lane vocabulary
+#: plus ``skipped``. A subtask is "done" when its status is ``DONE``.
+Status: TypeAlias = SubtaskStatus
+
+#: Subtask statuses after which no further work is expected.
+TERMINAL_SUBTASK_STATUSES: frozenset[SubtaskStatus] = frozenset(
+    {SubtaskStatus.DONE, SubtaskStatus.SKIPPED}
+)
+
+
+def is_terminal_subtask(value: SubtaskStatus) -> bool:
+    """Return ``True`` iff ``value`` is ``done`` or ``skipped``."""
+    return value in TERMINAL_SUBTASK_STATUSES
 
 
 # ---------------------------------------------------------------------------
@@ -723,7 +765,13 @@ class WPInnerStateDelta:
         subtasks_raw = data.get("subtasks")
         subtasks: dict[str, Status] | None = None
         if subtasks_raw is not None:
-            subtasks = {str(sid): Status(value) for sid, value in subtasks_raw.items()}
+            # ``not_applicable`` is an input alias of ``skipped``: normalize it
+            # before the enum lookup so it is never persisted. Any other
+            # unknown value still raises (fail closed).
+            subtasks = {
+                str(sid): Status("skipped" if value == "not_applicable" else value)
+                for sid, value in subtasks_raw.items()
+            }
         review_raw = data.get("review")
         review = ReviewOverride.from_dict(review_raw) if review_raw is not None else None
         shell_pid_raw = data.get("shell_pid")
@@ -1373,6 +1421,7 @@ def _apply_annotation_delta(state: dict[str, Any], delta: WPInnerStateDelta) -> 
     if delta.subtasks is not None:
         current_subtasks: dict[str, str] = dict(state.get("subtasks") or {})
         for subtask_id, status in delta.subtasks.items():
+            # ``skipped`` folds via this same per-subtask replace.
             current_subtasks[subtask_id] = str(status)
         state["subtasks"] = current_subtasks
     if delta.note is not None:

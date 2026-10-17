@@ -21,6 +21,7 @@ from spec_kitty_events.conformance.loader import (
     load_reducer_output,
     load_replay_stream,
 )
+from spec_kitty_events.producer_contract import data_schema
 from spec_kitty_events.diary import (
     ANNOTATION_KIND,
     NON_DISPLAY_LANES,
@@ -30,6 +31,9 @@ from spec_kitty_events.diary import (
     Lane,
     State,
     StatusEvent,
+    SubtaskStatus,
+    WPInnerStateDelta,
+    is_terminal_subtask,
     parse_diary,
     reduce,
     reduce_parsed,
@@ -1240,6 +1244,44 @@ class TestAnnotationFolding:
         assert wp["notes"] == ["one", "two"]
         assert wp["subtasks"] == {"T1": "done", "T2": "done"}
 
+    def test_skipped_subtask_parses_folds_and_not_applicable_normalizes(self) -> None:
+        skipped = WPInnerStateDelta.from_dict({"subtasks": {"T001": "skipped"}})
+        assert skipped.subtasks == {"T001": SubtaskStatus.SKIPPED}
+        assert skipped.to_dict()["subtasks"] == {"T001": "skipped"}
+
+        alias = WPInnerStateDelta.from_dict({"subtasks": {"T002": "not_applicable"}})
+        assert alias.subtasks == {"T002": SubtaskStatus.SKIPPED}
+        assert alias.to_dict()["subtasks"] == {"T002": "skipped"}
+
+        state = reduce([_annotation(_ulid(1), delta={"subtasks": {"T002": "not_applicable"}})])
+        assert state.work_packages["WP01"]["subtasks"] == {"T002": "skipped"}
+
+        with pytest.raises(ValueError):
+            WPInnerStateDelta.from_dict({"subtasks": {"T003": "bogus"}})
+
+    def test_terminal_subtask_predicate(self) -> None:
+        assert is_terminal_subtask(SubtaskStatus.DONE)
+        assert is_terminal_subtask(SubtaskStatus.SKIPPED)
+        assert not is_terminal_subtask(SubtaskStatus.IN_PROGRESS)
+
+    def test_subtask_status_matches_schema_enum(self) -> None:
+        # Authority guard: SubtaskStatus must equal the wire contract's enum.
+        # The schema (not Lane) is the authority the docstring/CHANGELOG cite, so
+        # pin to it directly — this goes red if the binding drifts from the schema
+        # even when diary.Lane is left untouched.
+        schema = data_schema("wp.innerstate.changed.v1")
+        schema_enum = set(
+            schema["properties"]["delta"]["properties"]["subtasks"]["additionalProperties"]["enum"]
+        )
+        assert {m.value for m in SubtaskStatus} == schema_enum
+
+    def test_subtask_status_tracks_lane_vocabulary_plus_skipped(self) -> None:
+        # Secondary non-drift guard documenting the "active Lane values plus
+        # skipped" relationship: a new active Lane must be mirrored here deliberately.
+        assert {m.value for m in SubtaskStatus} == (
+            {m.value for m in Lane} - {"uninitialized"} | {"skipped"}
+        )
+
     def test_tracker_refs_union_vs_replace(self) -> None:
         events = [
             _annotation(_ulid(1), delta={"tracker_refs": ["A", "B"]}),
@@ -1513,6 +1555,7 @@ _GOLDEN_REPLAYS = (
     "status-diary-replay-unknown-kinds",
     "status-diary-replay-seed-payload-fold",
     "status-diary-replay-seed-lane-authority",
+    "status-diary-replay-skipped-subtask",
 )
 
 
