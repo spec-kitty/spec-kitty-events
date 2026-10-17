@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.6.0] - 2026-10-17
+
+### Added
+
+- **Readers no longer crash on a `skipped` subtask.** A CLI can mark a work-package
+  subtask `skipped`, and the shipped `wp.innerstate.changed.v1` schema already allowed
+  it, but the Python binding typed subtask values as `Lane`, so `parse_diary` and
+  `WPInnerStateDelta.from_dict` raised `ValueError: 'skipped' is not a valid Lane`.
+  The new `SubtaskStatus` enum (the ten active `Lane` values plus `skipped`) is now the
+  subtask vocabulary; `Status` and the new `SubtaskValue` alias point at it. The input
+  alias `not_applicable` is accepted on parse and normalized to `skipped`; it is never
+  serialized. Any other unknown value still raises.
+- `is_terminal_subtask()` and `TERMINAL_SUBTASK_STATUSES` report `done` and `skipped`
+  as terminal. A `status_diary` replay fixture pins a `skipped` subtask.
+
 ## [10.5.3] - 2026-10-17
 
 ### Fixed

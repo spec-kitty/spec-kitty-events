@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.5.3`
+**Current package version**: `10.6.0`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,17 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `10.6.0` — subtask status vocabulary with terminal `skipped`
+
+`10.6.0` is a SemVer minor, additive. `WPInnerStateDelta.subtasks` is now typed
+`Mapping[str, SubtaskStatus]`, where `SubtaskStatus` is the active `Lane` values plus
+`skipped` (the vocabulary the `wp.innerstate.changed.v1` schema already declared).
+Readers that previously raised on a `skipped` subtask now parse and re-serialize it.
+`not_applicable` is an input alias normalized to `skipped` at parse and never emitted.
+`Status` now aliases `SubtaskStatus` (it aliased `Lane`); every previous value still
+parses. `is_terminal_subtask()` treats `done` and `skipped` as terminal. The on-wire
+envelope version stays `3.0.0`; no schema file changed.
 
 ## `10.5.3` — packaged total-order contract copy re-synced
 
