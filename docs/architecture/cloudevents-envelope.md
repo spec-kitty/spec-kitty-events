@@ -523,14 +523,14 @@ the maintainer-reviewed amendment flagged in the ADR before Phase 1 begins in th
 - **Two shapes remain readable forever.** The upcaster is permanent; mitigated by fixtures
   that never retire.
 - **Ordering regression.** Choosing Lamport while writers stamp none leaves legacy rows
-  unordered by clock; mitigated by the `(time, id)` fallback (recommendation) and a
+  unordered by clock; mitigated by the `(time, id)` fallback (option C, decided) and a
   reducer-equivalence test.
 - **Name-rule drift and extension ambiguity.** A future underscore or over-long name
   violates the spec; reused documented-extension names (`correlationid`, `causationid`,
   `partitionkey`) have no official standing. Mitigated by a name-check test and by
   defining them in our own schemas.
-- **Placeholder prefix baked in.** Every `type` and `dataschema` carries it; deciding late
-  is a breaking change (ADR open question 4).
+- **Prefix baked in.** Every `type` and `dataschema` carries the `ai.spec-kitty` prefix
+  (decided, ADR question 4); changing it later is a breaking change.
 - **Merge-driver failure modes.** If writers emit CloudEvents before the core driver is
   adopted, an unchanged driver rejects the rows (`event_id` missing) and every mixed merge
   conflicts. If the driver is only partly adopted (accepts `id`, fork detection still reads
