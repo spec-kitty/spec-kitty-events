@@ -7,9 +7,9 @@
 **Fixtures**: [`producer_contract/fixtures/total_order/`](../src/spec_kitty_events/producer_contract/fixtures/total_order/)
 
 > Written for spec-kitty/spec-kitty#6185 and spec-kitty-events#92. It is the ordering
-> option C of [ADR 0001](../docs/adr/0001-cloudevents-envelope.md) (still Proposed), with
-> the total order that option C requires. The spec-kitty operator ruled option C; the
-> maintainer has to confirm it. Nothing here changes what any existing release accepts
+> option C of [ADR 0001](../docs/adr/0001-cloudevents-envelope.md) (Accepted 2026-10-15), with
+> the total order that option C requires. The spec-kitty operator ruled option C and the
+> maintainer confirmed it on acceptance of ADR 0001. Nothing here changes what any existing release accepts
 > and no reducer uses it yet: the reducer sort-key switch is #92's.
 
 This order is distinct from the pre-existing `spec_kitty_events.conflict.total_order_key`,
