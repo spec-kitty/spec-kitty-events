@@ -1,0 +1,79 @@
+{
+  "mission_slug": "subtask-skipped-status-01M54C8D",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "SubtaskStatus/SubtaskValue exported; test_subtask_status_tracks_lane_vocabulary_plus_skipped (72ee77d)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-17T17:23:39.982659+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "test_skipped_subtask_parses_folds_and_not_applicable_normalizes: skipped parses, not_applicable->skipped, never persisted (72ee77d)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-17T17:23:42.133123+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "is_terminal_subtask + TERMINAL_SUBTASK_STATUSES; test_terminal_subtask_predicate (72ee77d)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-17T17:23:44.258913+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "reducer per-subtask fold status-agnostic; fold assertion in test_skipped_subtask_parses_folds_and_not_applicable_normalizes (72ee77d)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-17T17:23:46.355913+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "conformance fixture status-diary-replay-skipped-subtask + round-trip test; conformance 675 passed (72ee77d)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-17T17:23:48.499307+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "backward-compat ratchet: diary 156 + conformance 675 passed, 0 regressions (72ee77d)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-17T17:23:50.634199+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "version 10.6.0 across pyproject/__init__/README/uv.lock; CHANGELOG+COMPATIBILITY; check_version_not_amended ok (72ee77d)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-17T17:23:52.750145+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

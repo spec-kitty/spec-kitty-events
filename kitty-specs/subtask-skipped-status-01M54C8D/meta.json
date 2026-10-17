@@ -1,0 +1,35 @@
+{
+  "accept_commit": "d3af6f4a08f2e608c34b867f99b089c3061acb99",
+  "acceptance_history": [
+    {
+      "accept_commit": "d3af6f4a08f2e608c34b867f99b089c3061acb99",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-17T17:24:02.415992+00:00",
+      "accepted_by": "stijn",
+      "accepted_from_commit": "c5ab46751fb8b305feb3051ccb1da1b332e4ee9a"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-17T17:24:02.415992+00:00",
+  "accepted_by": "stijn",
+  "accepted_from_commit": "c5ab46751fb8b305feb3051ccb1da1b332e4ee9a",
+  "baseline_merge_commit": "70c81b95e986b4e3986485b9ef743e2fbd14ce09",
+  "created_at": "2026-10-17T07:29:40.636947+00:00",
+  "flattened": true,
+  "friendly_name": "Subtask skipped-status vocabulary in the diary contract",
+  "merged_at": "2026-10-17T17:25:27.592521+00:00",
+  "merged_commit": "df6819b75d6564149694ac169a6e9175d83e2166",
+  "mid8": "01M54C8D",
+  "mission_id": "01M54C8D8DFHPVPNCCZTJ25S67",
+  "mission_number": 18,
+  "mission_slug": "subtask-skipped-status-01M54C8D",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "The CLI already writes 'skipped' subtask marks (spec-kitty#5953), but the shared events package only knows Lane values, so any consumer reading such a log raises ValueError. This mission adds a public subtask-status vocabulary with a terminal 'skipped' to the diary contract and ships it as a minor release, letting the CLI drop its local copy and consume the shared type.",
+  "purpose_tldr": "Teach the diary contract the 'skipped' subtask value so logs with skipped subtasks parse instead of crashing consumers.",
+  "slug": "subtask-skipped-status-01M54C8D",
+  "status_phase": "1",
+  "target_branch": "feat/subtask-skipped-status",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-17T17:13:56.607205+00:00"
+}

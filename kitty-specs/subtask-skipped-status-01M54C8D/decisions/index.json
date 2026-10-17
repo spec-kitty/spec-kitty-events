@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-17T07:33:33.385019Z",
+      "decision_id": "01M54CFGJ91EEZ0QNT3D26PSHZ",
+      "final_answer": "Accept 'not_applicable' on input as an alias and normalize it to 'skipped'; never persist it as a distinct value (serialization emits 'skipped'). Rationale: the CLI (spec-kitty#5953) and the shipped producer-contract schema both treat 'not_applicable' as an alias for 'skipped' with no distinct persisted meaning (the schema subtasks enum contains 'skipped', not 'not_applicable'). Defensive input acceptance avoids a crash on a stray unresolved alias while keeping the canonical/persisted surface aligned with the source-of-truth schema.",
+      "input_key": "not_applicable_handling",
+      "mission_id": "01M54C8D8DFHPVPNCCZTJ25S67",
+      "mission_slug": "subtask-skipped-status-01M54C8D",
+      "opened_by": "cli",
+      "options": [
+        "alias-normalize-to-skipped",
+        "distinct-persisted-value",
+        "reject-strict"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Should the events package persist 'not_applicable' as a distinct subtask value, or treat it as an input alias for 'skipped'?",
+      "rationale": null,
+      "resolved_at": "2026-10-17T07:33:35.043847Z",
+      "resolved_by": null,
+      "slot_key": "specify.subtask-status.not-applicable-alias",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M54C8D8DFHPVPNCCZTJ25S67",
+  "version": 1
+}
