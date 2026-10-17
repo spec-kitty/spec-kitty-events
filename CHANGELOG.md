@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.5.3] - 2026-10-17
+
+### Fixed
+
+- **The total-order contract shipped inside the package again matches its canonical
+  source (`#110`).** The wheel ships a copy of `contracts/total-order.md` at
+  `spec_kitty_events/producer_contract/total-order.md`, and the package guarantees the
+  two are byte-identical. A documentation fold (`#108`) updated the canonical file's
+  ADR-0001 back-reference from "still Proposed" to "Accepted" but left the packaged copy
+  stale, so the copy-equality contract test went red on `main`. The packaged copy is
+  re-synced. Packaging only — no validator, schema, fixture or behaviour change.
+
 ## [10.5.2] - 2026-10-15
 
 ### Changed
