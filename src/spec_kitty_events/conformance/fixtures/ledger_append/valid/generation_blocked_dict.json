@@ -1,0 +1,39 @@
+{
+  "input_kind": "dict",
+  "input": {
+    "conflicts": [
+      {
+        "candidate_senses": [
+          {
+            "confidence": 0.9,
+            "definition": "Shipping a build to an environment",
+            "scope": "team_domain",
+            "surface": "deployment"
+          },
+          {
+            "confidence": 0.6,
+            "definition": "A rollout step",
+            "scope": "mission_local",
+            "surface": "deployment"
+          }
+        ],
+        "confidence": 0.8,
+        "conflict_type": "ambiguous",
+        "context": "step input: description field",
+        "severity": "medium",
+        "term": {
+          "surface_text": "deployment"
+        }
+      }
+    ],
+    "effective_strictness": "max",
+    "event_id": "42af37f9-3f97-5b03-91a7-25ad08e8ef02",
+    "event_type": "GenerationBlockedBySemanticConflict",
+    "mission_id": "01M57TCP-mission",
+    "run_id": "run-0001",
+    "step_id": "specify",
+    "strictness_mode": "max",
+    "timestamp": "2026-10-18T12:00:00+00:00"
+  },
+  "expected_line": "{\"conflicts\": [{\"candidate_senses\": [{\"confidence\": 0.9, \"definition\": \"Shipping a build to an environment\", \"scope\": \"team_domain\", \"surface\": \"deployment\"}, {\"confidence\": 0.6, \"definition\": \"A rollout step\", \"scope\": \"mission_local\", \"surface\": \"deployment\"}], \"confidence\": 0.8, \"conflict_type\": \"ambiguous\", \"context\": \"step input: description field\", \"severity\": \"medium\", \"term\": {\"surface_text\": \"deployment\"}}], \"effective_strictness\": \"max\", \"event_id\": \"42af37f9-3f97-5b03-91a7-25ad08e8ef02\", \"event_type\": \"GenerationBlockedBySemanticConflict\", \"mission_id\": \"01M57TCP-mission\", \"run_id\": \"run-0001\", \"step_id\": \"specify\", \"strictness_mode\": \"max\", \"timestamp\": \"2026-10-18T12:00:00+00:00\"}\n"
+}

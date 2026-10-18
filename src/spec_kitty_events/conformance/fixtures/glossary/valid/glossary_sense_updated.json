@@ -1,9 +1,22 @@
 {
-  "mission_id": "mission-fixture-001",
-  "scope_id": "scope-team-domain",
-  "term_surface": "dashboard",
-  "before_sense": "Generic display panel",
-  "after_sense": "Analytics overview panel showing key metrics",
-  "reason": "Clarified after team discussion",
-  "actor": "human-reviewer-001"
+  "actor": {
+    "actor_id": "agent-1",
+    "actor_type": "llm",
+    "display_name": "Claude"
+  },
+  "new_sense": {
+    "confidence": 0.9,
+    "definition": "Shipping a build to an environment",
+    "scope": "team_domain",
+    "status": "active",
+    "surface": "deployment"
+  },
+  "provenance": {
+    "actor_id": "agent-1",
+    "source": "user_clarification",
+    "timestamp": "2026-10-18T12:00:00+00:00"
+  },
+  "scope": "team_domain",
+  "term_surface": "deployment",
+  "update_type": "create"
 }

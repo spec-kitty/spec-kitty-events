@@ -1,14 +1,29 @@
 {
   "input_kind": "dict",
   "input": {
+    "actor": {
+      "actor_id": "agent-1",
+      "actor_type": "llm",
+      "display_name": "Claude"
+    },
+    "event_id": "58224786-c5c9-553f-912c-a4b0a8e1ca55",
     "event_type": "GlossarySenseUpdated",
-    "mission_id": "mission-fixture-001",
-    "scope_id": "scope-team-domain",
-    "term_surface": "dashboard",
-    "before_sense": "Generic display panel",
-    "after_sense": "Café — übersicht 😀",
-    "reason": "Clarified after team discussion",
-    "actor": "human-reviewer-001"
+    "new_sense": {
+      "confidence": 0.9,
+      "definition": "Café — übersicht 😀",
+      "scope": "team_domain",
+      "status": "active",
+      "surface": "deployment"
+    },
+    "provenance": {
+      "actor_id": "agent-1",
+      "source": "user_clarification",
+      "timestamp": "2026-10-18T12:00:00+00:00"
+    },
+    "scope": "team_domain",
+    "term_surface": "deployment",
+    "timestamp": "2026-10-18T12:00:00+00:00",
+    "update_type": "create"
   },
-  "expected_line": "{\"actor\": \"human-reviewer-001\", \"after_sense\": \"Caf\\u00e9 \\u2014 \\u00fcbersicht \\ud83d\\ude00\", \"before_sense\": \"Generic display panel\", \"event_type\": \"GlossarySenseUpdated\", \"mission_id\": \"mission-fixture-001\", \"reason\": \"Clarified after team discussion\", \"scope_id\": \"scope-team-domain\", \"term_surface\": \"dashboard\"}\n"
+  "expected_line": "{\"actor\": {\"actor_id\": \"agent-1\", \"actor_type\": \"llm\", \"display_name\": \"Claude\"}, \"event_id\": \"58224786-c5c9-553f-912c-a4b0a8e1ca55\", \"event_type\": \"GlossarySenseUpdated\", \"new_sense\": {\"confidence\": 0.9, \"definition\": \"Caf\\u00e9 \\u2014 \\u00fcbersicht \\ud83d\\ude00\", \"scope\": \"team_domain\", \"status\": \"active\", \"surface\": \"deployment\"}, \"provenance\": {\"actor_id\": \"agent-1\", \"source\": \"user_clarification\", \"timestamp\": \"2026-10-18T12:00:00+00:00\"}, \"scope\": \"team_domain\", \"term_surface\": \"deployment\", \"timestamp\": \"2026-10-18T12:00:00+00:00\", \"update_type\": \"create\"}\n"
 }

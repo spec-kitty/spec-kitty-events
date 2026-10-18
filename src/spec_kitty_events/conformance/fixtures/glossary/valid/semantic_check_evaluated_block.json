@@ -1,20 +1,35 @@
 {
-  "mission_id": "mission-fixture-001",
-  "scope_id": "scope-team-domain",
-  "step_id": "step-002",
-  "conflicts": [
+  "blocked": true,
+  "confidence": 0.8,
+  "effective_strictness": "max",
+  "findings": [
     {
-      "term": "dashboard",
-      "nature": "overloaded",
+      "candidate_senses": [
+        {
+          "confidence": 0.9,
+          "definition": "Shipping a build to an environment",
+          "scope": "team_domain",
+          "surface": "deployment"
+        },
+        {
+          "confidence": 0.6,
+          "definition": "A rollout step",
+          "scope": "mission_local",
+          "surface": "deployment"
+        }
+      ],
+      "confidence": 0.8,
+      "conflict_type": "ambiguous",
+      "context": "step input: description field",
       "severity": "high",
-      "description": "Term used with multiple conflicting meanings"
+      "term": {
+        "surface_text": "deployment"
+      }
     }
   ],
-  "severity": "high",
-  "confidence": 0.92,
+  "mission_id": "01M57TCP-mission",
+  "overall_severity": "high",
   "recommended_action": "block",
-  "effective_strictness": "max",
-  "step_metadata": {
-    "primitive": "generate"
-  }
+  "run_id": "run-0001",
+  "step_id": "specify"
 }

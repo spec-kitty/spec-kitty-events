@@ -28,6 +28,7 @@
   "other_answer": false,
   "phase": "P1",
   "question": null,
+  "reopened_from_deferred": false,
   "resolved_by": null,
   "run_id": "run-001",
   "state": "resolved",

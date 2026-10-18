@@ -306,6 +306,14 @@
       "min_version": "2.0.0"
     },
     {
+      "id": "event-lamport-clock-absent-valid",
+      "path": "events/valid/event_lamport_clock_absent.json",
+      "expected_result": "valid",
+      "event_type": "Event",
+      "notes": "11.0.0: an envelope without lamport_clock is valid under validate_event (unclocked); the strict profile still requires it",
+      "min_version": "11.0.0"
+    },
+    {
       "id": "wp-status-changed-invalid-lane",
       "path": "events/invalid/wp_status_changed_invalid_lane.json",
       "expected_result": "invalid",
@@ -446,64 +454,72 @@
       "path": "glossary/valid/glossary_scope_activated.json",
       "expected_result": "valid",
       "event_type": "GlossaryScopeActivated",
-      "notes": "Valid GlossaryScopeActivatedPayload with team_domain scope",
-      "min_version": "2.0.0"
+      "notes": "11.0.0 glossary shape. Provenance: static capture of core 0746bec3 glossary builder output for GlossaryScopeActivated. GlossaryScopeActivatedPayload shape of core's GlossaryScopeActivated builder (run_id added, scope_type removed).",
+      "min_version": "11.0.0"
     },
     {
       "id": "glossary-term-candidate-observed-valid",
       "path": "glossary/valid/term_candidate_observed.json",
       "expected_result": "valid",
       "event_type": "TermCandidateObserved",
-      "notes": "Valid TermCandidateObservedPayload with confidence 0.7",
-      "min_version": "2.0.0"
+      "notes": "11.0.0 glossary shape. Provenance: static capture of core 0746bec3 glossary builder output for TermCandidateObserved. TermCandidateObservedPayload shape of core's TermCandidateObserved builder (term, source_step, actor_id, extraction_method, context).",
+      "min_version": "11.0.0"
     },
     {
       "id": "glossary-semantic-check-block-valid",
       "path": "glossary/valid/semantic_check_evaluated_block.json",
       "expected_result": "valid",
       "event_type": "SemanticCheckEvaluated",
-      "notes": "Valid SemanticCheckEvaluatedPayload with high severity and block action",
-      "min_version": "2.0.0"
+      "notes": "11.0.0 glossary shape. Provenance: static capture of core 0746bec3 glossary builder output for SemanticCheckEvaluated. Block variant derived from the core capture: overall_severity high, recommended_action block, blocked true, effective_strictness max (edited, not captured).",
+      "min_version": "11.0.0"
     },
     {
       "id": "glossary-semantic-check-warn-valid",
       "path": "glossary/valid/semantic_check_evaluated_warn.json",
       "expected_result": "valid",
       "event_type": "SemanticCheckEvaluated",
-      "notes": "Valid SemanticCheckEvaluatedPayload with medium severity and warn action",
-      "min_version": "2.0.0"
+      "notes": "11.0.0 glossary shape. Provenance: static capture of core 0746bec3 glossary builder output for SemanticCheckEvaluated. Warn variant, exactly the core capture (medium severity, warn, findings[Finding]).",
+      "min_version": "11.0.0"
     },
     {
       "id": "glossary-generation-blocked-valid",
       "path": "glossary/valid/generation_blocked.json",
       "expected_result": "valid",
       "event_type": "GenerationBlockedBySemanticConflict",
-      "notes": "Valid GenerationBlockedBySemanticConflictPayload with max strictness",
-      "min_version": "2.0.0"
+      "notes": "11.0.0 glossary shape. Provenance: static capture of core 0746bec3 glossary builder output for GenerationBlockedBySemanticConflict. Core capture: conflicts[Finding], strictness_mode and effective_strictness max.",
+      "min_version": "11.0.0"
     },
     {
       "id": "glossary-clarification-requested-valid",
       "path": "glossary/valid/glossary_clarification_requested.json",
       "expected_result": "valid",
       "event_type": "GlossaryClarificationRequested",
-      "notes": "Valid GlossaryClarificationRequestedPayload with high urgency",
-      "min_version": "2.0.0"
+      "notes": "11.0.0 glossary shape. Provenance: static capture of core 0746bec3 glossary builder output for GlossaryClarificationRequested. Core capture: conflict_id correlation id, no semantic_check_event_id (optional since 11.0.0).",
+      "min_version": "11.0.0"
     },
     {
       "id": "glossary-clarification-resolved-valid",
       "path": "glossary/valid/glossary_clarification_resolved.json",
       "expected_result": "valid",
       "event_type": "GlossaryClarificationResolved",
-      "notes": "Valid GlossaryClarificationResolvedPayload referencing clarification event",
-      "min_version": "2.0.0"
+      "notes": "11.0.0 glossary shape. Provenance: static capture of core 0746bec3 glossary builder output for GlossaryClarificationResolved. Core capture: selected_sense SenseRef, nested actor and provenance, correlated by conflict_id.",
+      "min_version": "11.0.0"
     },
     {
       "id": "glossary-sense-updated-valid",
       "path": "glossary/valid/glossary_sense_updated.json",
       "expected_result": "valid",
       "event_type": "GlossarySenseUpdated",
-      "notes": "Valid GlossarySenseUpdatedPayload with before and after sense",
-      "min_version": "2.0.0"
+      "notes": "11.0.0 glossary shape. Provenance: static capture of core 0746bec3 glossary builder output for GlossarySenseUpdated. Core capture: scope, new_sense with status, nested actor and provenance, update_type create.",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "glossary-step-checkpointed-valid",
+      "path": "glossary/valid/step_checkpointed.json",
+      "expected_result": "valid",
+      "event_type": "StepCheckpointed",
+      "notes": "New in 11.0.0. Provenance: static capture of core 0746bec3 glossary builder output for StepCheckpointed. Core capture: cursor pre_generation_gate, scope_refs, 64-hex input_hash, 36-char retry_token.",
+      "min_version": "11.0.0"
     },
     {
       "id": "glossary-strictness-set-valid",
@@ -518,24 +534,40 @@
       "path": "glossary/invalid/semantic_check_missing_step_id.json",
       "expected_result": "invalid",
       "event_type": "SemanticCheckEvaluated",
-      "notes": "SemanticCheckEvaluatedPayload missing required step_id field",
-      "min_version": "2.0.0"
+      "notes": "SemanticCheckEvaluatedPayload (11.0.0 shape, from the warn capture) missing required step_id field",
+      "min_version": "11.0.0"
     },
     {
-      "id": "glossary-scope-invalid-type",
-      "path": "glossary/invalid/glossary_scope_invalid_type.json",
+      "id": "glossary-sense-updated-invalid-update-type",
+      "path": "glossary/invalid/glossary_sense_updated_invalid_update_type.json",
       "expected_result": "invalid",
-      "event_type": "GlossaryScopeActivated",
-      "notes": "GlossaryScopeActivatedPayload with invalid scope_type value",
-      "min_version": "2.0.0"
+      "event_type": "GlossarySenseUpdated",
+      "notes": "GlossarySenseUpdatedPayload (SenseUpdated capture) with update_type 'delete', outside the create/update enum; replaces the premise-lost scope_type enum fixture",
+      "min_version": "11.0.0"
     },
     {
-      "id": "glossary-clarification-missing-check-ref",
-      "path": "glossary/invalid/clarification_missing_check_ref.json",
+      "id": "glossary-clarification-missing-conflict-id",
+      "path": "glossary/invalid/clarification_missing_conflict_id.json",
       "expected_result": "invalid",
       "event_type": "GlossaryClarificationRequested",
-      "notes": "GlossaryClarificationRequestedPayload missing semantic_check_event_id",
-      "min_version": "2.0.0"
+      "notes": "GlossaryClarificationRequestedPayload (ClarificationRequested capture) missing required conflict_id; replaces the premise-lost missing-semantic_check_event_id fixture",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "glossary-clarification-empty-check-ref",
+      "path": "glossary/invalid/clarification_empty_check_ref.json",
+      "expected_result": "invalid",
+      "event_type": "GlossaryClarificationRequested",
+      "notes": "GlossaryClarificationRequestedPayload with semantic_check_event_id '' : absent is valid since 11.0.0, an empty string is refused (min_length=1)",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "glossary-step-checkpointed-bad-input-hash",
+      "path": "glossary/invalid/step_checkpointed_bad_input_hash.json",
+      "expected_result": "invalid",
+      "event_type": "StepCheckpointed",
+      "notes": "StepCheckpointedPayload (StepCheckpointed capture) with input_hash 'not-a-sha256' : must be a 64-character lowercase hex digest",
+      "min_version": "11.0.0"
     },
     {
       "id": "event-uuid-hyphenated",
@@ -2151,6 +2183,15 @@
       "min_version": "7.0.0"
     },
     {
+      "id": "class-taxonomy-envelope-strict-journal-lamport-clock-absent",
+      "path": "class_taxonomy/envelope_strict_journal/lamport_clock_absent.json",
+      "fixture_type": "strict_profile_only",
+      "expected_result": "invalid",
+      "event_type": "MissionStarted",
+      "notes": "envelope_strict_journal class. L1 (11.0.0): lamport_clock absent; valid under validate_event, refused by the strict profile (ENVELOPE_SHAPE_INVALID).",
+      "min_version": "11.0.0"
+    },
+    {
       "id": "wp_status_changed_planned_doing",
       "path": "zeitgeist_attrs/valid/wp_status_changed_planned_doing.json",
       "expected_result": "valid",
@@ -3560,8 +3601,8 @@
       "path": "ledger_append/valid/core_flat_glossary_dict.json",
       "expected_result": "valid",
       "event_type": "GlossaryScopeActivated",
-      "notes": "Flat dict shaped like core's glossary emitter; identity keys kept",
-      "min_version": "10.8.0",
+      "notes": "Flat dict shaped like core's glossary emitter (11.0.0 shape); identity keys kept. static capture of core 0746bec3 glossary builder output for GlossaryScopeActivated",
+      "min_version": "11.0.0",
       "fixture_type": "ledger_append"
     },
     {
@@ -3587,8 +3628,62 @@
       "path": "ledger_append/valid/glossary_sense_updated_dict.json",
       "expected_result": "valid",
       "event_type": "GlossarySenseUpdated",
-      "notes": "GlossarySenseUpdated is canonical and appendable",
-      "min_version": "10.8.0",
+      "notes": "GlossarySenseUpdated is canonical and appendable (11.0.0 shape). static capture of core 0746bec3 glossary builder output for GlossarySenseUpdated",
+      "min_version": "11.0.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-core-semantic-check-evaluated-dict",
+      "path": "ledger_append/valid/semantic_check_evaluated_dict.json",
+      "expected_result": "valid",
+      "event_type": "SemanticCheckEvaluated",
+      "notes": "Core-shaped flat glossary record appended as-is. static capture of core 0746bec3 glossary builder output for SemanticCheckEvaluated",
+      "min_version": "11.0.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-core-step-checkpointed-dict",
+      "path": "ledger_append/valid/step_checkpointed_dict.json",
+      "expected_result": "valid",
+      "event_type": "StepCheckpointed",
+      "notes": "Core-shaped flat glossary record appended as-is. static capture of core 0746bec3 glossary builder output for StepCheckpointed",
+      "min_version": "11.0.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-core-clarification-resolved-dict",
+      "path": "ledger_append/valid/clarification_resolved_dict.json",
+      "expected_result": "valid",
+      "event_type": "GlossaryClarificationResolved",
+      "notes": "Core-shaped flat glossary record appended as-is. static capture of core 0746bec3 glossary builder output for GlossaryClarificationResolved",
+      "min_version": "11.0.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-core-clarification-requested-dict",
+      "path": "ledger_append/valid/clarification_requested_dict.json",
+      "expected_result": "valid",
+      "event_type": "GlossaryClarificationRequested",
+      "notes": "Core-shaped flat glossary record appended as-is. static capture of core 0746bec3 glossary builder output for GlossaryClarificationRequested",
+      "min_version": "11.0.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-core-generation-blocked-dict",
+      "path": "ledger_append/valid/generation_blocked_dict.json",
+      "expected_result": "valid",
+      "event_type": "GenerationBlockedBySemanticConflict",
+      "notes": "Core-shaped flat glossary record appended as-is. static capture of core 0746bec3 glossary builder output for GenerationBlockedBySemanticConflict",
+      "min_version": "11.0.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-core-term-candidate-observed-dict",
+      "path": "ledger_append/valid/term_candidate_observed_dict.json",
+      "expected_result": "valid",
+      "event_type": "TermCandidateObserved",
+      "notes": "Core-shaped flat glossary record appended as-is. static capture of core 0746bec3 glossary builder output for TermCandidateObserved",
+      "min_version": "11.0.0",
       "fixture_type": "ledger_append"
     },
     {
@@ -3596,8 +3691,8 @@
       "path": "ledger_append/valid/payload_model.json",
       "expected_result": "valid",
       "event_type": "GlossaryScopeActivated",
-      "notes": "Registered payload model; event_type attached",
-      "min_version": "10.8.0",
+      "notes": "Registered payload model (11.0.0 GlossaryScopeActivatedPayload); event_type attached",
+      "min_version": "11.0.0",
       "fixture_type": "ledger_append"
     },
     {
@@ -3605,8 +3700,8 @@
       "path": "ledger_append/valid/non_ascii_text.json",
       "expected_result": "valid",
       "event_type": "GlossarySenseUpdated",
-      "notes": "Non-ASCII text written as \\uXXXX escapes (incl. surrogate pair)",
-      "min_version": "10.8.0",
+      "notes": "Non-ASCII text written as \\uXXXX escapes (incl. surrogate pair); 11.0.0 shape",
+      "min_version": "11.0.0",
       "fixture_type": "ledger_append"
     },
     {
@@ -3614,8 +3709,8 @@
       "path": "ledger_append/valid/float_values.json",
       "expected_result": "valid",
       "event_type": "SemanticCheckEvaluated",
-      "notes": "Floats rendered as shortest round-trip repr",
-      "min_version": "10.8.0",
+      "notes": "Floats rendered as shortest round-trip repr; 11.0.0 shape",
+      "min_version": "11.0.0",
       "fixture_type": "ledger_append"
     },
     {
@@ -3655,6 +3750,15 @@
       "fixture_type": "ledger_append"
     },
     {
+      "id": "ledger-append-old-shape-glossary-record",
+      "path": "ledger_append/invalid/old_shape_glossary_record.json",
+      "expected_result": "invalid",
+      "event_type": "GlossaryScopeActivated",
+      "notes": "The pre-11.0.0 GlossaryScopeActivated shape (scope_type, no run_id) is refused: no compatibility alias (C-002)",
+      "min_version": "11.0.0",
+      "fixture_type": "ledger_append"
+    },
+    {
       "id": "ledger-append-unregistered-model",
       "path": "ledger_append/invalid/unregistered_model.json",
       "expected_result": "invalid",
@@ -3668,8 +3772,8 @@
       "path": "ledger_append/invalid/nan_value.json",
       "expected_result": "invalid",
       "event_type": "SemanticCheckEvaluated",
-      "notes": "Non-finite float is refused (nan_field injects NaN)",
-      "min_version": "10.8.0",
+      "notes": "Non-finite float is refused (nan_field injects NaN); 11.0.0 shape",
+      "min_version": "11.0.0",
       "fixture_type": "ledger_append"
     },
     {
@@ -3680,6 +3784,213 @@
       "notes": "Ledger whose last byte is not LF is refused",
       "min_version": "10.8.0",
       "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ordering-mixed-clocked-unclocked",
+      "path": "ordering/mixed_clocked_unclocked.json",
+      "expected_result": "valid",
+      "event_type": "mixed",
+      "fixture_type": "event_ordering",
+      "notes": "11.0.0 canonical ordering of a mixed clocked/unclocked stream, including clock 0 and a timestamp tie",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "ordering-unclocked-only",
+      "path": "ordering/unclocked_only.json",
+      "expected_result": "valid",
+      "event_type": "mixed",
+      "fixture_type": "event_ordering",
+      "notes": "11.0.0 canonical ordering of an all-unclocked stream: (timestamp, event_id)",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "ledger-append-decision-point-opened-envelope-unclocked",
+      "path": "ledger_append/valid/decision_point_opened_envelope_unclocked.json",
+      "expected_result": "valid",
+      "event_type": "DecisionPointOpened",
+      "notes": "Full DecisionPointOpened envelope without lamport_clock (11.0.0): an unclocked envelope is a valid ledger append; the record carries \"lamport_clock\": null",
+      "min_version": "11.0.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-decision-point-widened-envelope-unclocked",
+      "path": "ledger_append/valid/decision_point_widened_envelope_unclocked.json",
+      "expected_result": "valid",
+      "event_type": "DecisionPointWidened",
+      "notes": "Full DecisionPointWidened envelope without lamport_clock (11.0.0): an unclocked envelope is a valid ledger append; the record carries \"lamport_clock\": null",
+      "min_version": "11.0.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-decision-point-discussing-envelope-unclocked",
+      "path": "ledger_append/valid/decision_point_discussing_envelope_unclocked.json",
+      "expected_result": "valid",
+      "event_type": "DecisionPointDiscussing",
+      "notes": "Full DecisionPointDiscussing envelope without lamport_clock (11.0.0): an unclocked envelope is a valid ledger append; the record carries \"lamport_clock\": null",
+      "min_version": "11.0.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-decision-point-resolved-envelope-unclocked",
+      "path": "ledger_append/valid/decision_point_resolved_envelope_unclocked.json",
+      "expected_result": "valid",
+      "event_type": "DecisionPointResolved",
+      "notes": "Full DecisionPointResolved envelope without lamport_clock (11.0.0): an unclocked envelope is a valid ledger append; the record carries \"lamport_clock\": null",
+      "min_version": "11.0.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-decision-point-overridden-envelope-unclocked",
+      "path": "ledger_append/valid/decision_point_overridden_envelope_unclocked.json",
+      "expected_result": "valid",
+      "event_type": "DecisionPointOverridden",
+      "notes": "Full DecisionPointOverridden envelope without lamport_clock (11.0.0): an unclocked envelope is a valid ledger append; the record carries \"lamport_clock\": null",
+      "min_version": "11.0.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "decisionpoint-replay-reopen-deferred-first",
+      "path": "decisionpoint/replay/reopen_deferred_first.jsonl",
+      "fixture_type": "replay_stream",
+      "event_type": "mixed",
+      "expected_result": "valid",
+      "notes": "3 unclocked events: Opened, Resolved(deferred), Resolved(resolved). Folds to RESOLVED with reopened_from_deferred=true and no anomaly",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-reopen-deferred-first-output",
+      "path": "decisionpoint/replay/reopen_deferred_first_output.json",
+      "fixture_type": "reducer_output",
+      "event_type": "DecisionPointState",
+      "expected_result": "valid",
+      "notes": "Golden reducer output for reopen_deferred_first.jsonl (generated by the reducer, then inspected)",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-reopen-resolved-first",
+      "path": "decisionpoint/replay/reopen_resolved_first.jsonl",
+      "fixture_type": "replay_stream",
+      "event_type": "mixed",
+      "expected_result": "valid",
+      "notes": "Same decision as reopen_deferred_first with the resolved event first in the file and earlier by timestamp: reducer output is byte-identical to reopen_deferred_first_output.json",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-reopen-resolved-first-output",
+      "path": "decisionpoint/replay/reopen_resolved_first_output.json",
+      "fixture_type": "reducer_output",
+      "event_type": "DecisionPointState",
+      "expected_result": "valid",
+      "notes": "Golden reducer output for reopen_resolved_first.jsonl (generated by the reducer, then inspected)",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-reopen-then-overridden",
+      "path": "decisionpoint/replay/reopen_then_overridden.jsonl",
+      "fixture_type": "replay_stream",
+      "event_type": "mixed",
+      "expected_result": "valid",
+      "notes": "Reopen pair followed by Overridden after the effective resolve: state overridden, reopened_from_deferred=true, no anomaly",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-reopen-then-overridden-output",
+      "path": "decisionpoint/replay/reopen_then_overridden_output.json",
+      "fixture_type": "reducer_output",
+      "event_type": "DecisionPointState",
+      "expected_result": "valid",
+      "notes": "Golden reducer output for reopen_then_overridden.jsonl (generated by the reducer, then inspected)",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-reopen-overridden-between",
+      "path": "decisionpoint/replay/reopen_overridden_between.jsonl",
+      "fixture_type": "replay_stream",
+      "event_type": "mixed",
+      "expected_result": "valid",
+      "notes": "Overridden between the two Resolved events sorts before the effective resolve: one invalid_transition anomaly, the decision stays resolved",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-reopen-overridden-between-output",
+      "path": "decisionpoint/replay/reopen_overridden_between_output.json",
+      "fixture_type": "reducer_output",
+      "event_type": "DecisionPointState",
+      "expected_result": "valid",
+      "notes": "Golden reducer output for reopen_overridden_between.jsonl (generated by the reducer, then inspected)",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-reopen-discussing-after-deferred",
+      "path": "decisionpoint/replay/reopen_discussing_after_deferred.jsonl",
+      "fixture_type": "replay_stream",
+      "event_type": "mixed",
+      "expected_result": "valid",
+      "notes": "Discussing after the deferred event and before the effective resolve is applied normally: resolved, reopened, no anomaly",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-reopen-discussing-after-deferred-output",
+      "path": "decisionpoint/replay/reopen_discussing_after_deferred_output.json",
+      "fixture_type": "reducer_output",
+      "event_type": "DecisionPointState",
+      "expected_result": "valid",
+      "notes": "Golden reducer output for reopen_discussing_after_deferred.jsonl (generated by the reducer, then inspected)",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-unfoldable-triple",
+      "path": "decisionpoint/replay/unfoldable_triple.jsonl",
+      "fixture_type": "replay_stream",
+      "event_type": "mixed",
+      "expected_result": "valid",
+      "notes": "Resolved deferred + canceled + resolved: unfoldable, the first Resolved (deferred) stands, two unfoldable_terminal_combination anomalies",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-unfoldable-triple-output",
+      "path": "decisionpoint/replay/unfoldable_triple_output.json",
+      "fixture_type": "reducer_output",
+      "event_type": "DecisionPointState",
+      "expected_result": "valid",
+      "notes": "Golden reducer output for unfoldable_triple.jsonl (generated by the reducer, then inspected)",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-unfoldable-two-deferred",
+      "path": "decisionpoint/replay/unfoldable_two_deferred.jsonl",
+      "fixture_type": "replay_stream",
+      "event_type": "mixed",
+      "expected_result": "valid",
+      "notes": "Two Resolved(deferred) events with different ids: unfoldable, the first stands, one unfoldable_terminal_combination anomaly",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-unfoldable-two-deferred-output",
+      "path": "decisionpoint/replay/unfoldable_two_deferred_output.json",
+      "fixture_type": "reducer_output",
+      "event_type": "DecisionPointState",
+      "expected_result": "valid",
+      "notes": "Golden reducer output for unfoldable_two_deferred.jsonl (generated by the reducer, then inspected)",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-unfoldable-deferred-canceled",
+      "path": "decisionpoint/replay/unfoldable_deferred_canceled.jsonl",
+      "fixture_type": "replay_stream",
+      "event_type": "mixed",
+      "expected_result": "valid",
+      "notes": "Resolved deferred + canceled: not a reopen pair, unfoldable; the first stands, one unfoldable_terminal_combination anomaly",
+      "min_version": "11.0.0"
+    },
+    {
+      "id": "decisionpoint-replay-unfoldable-deferred-canceled-output",
+      "path": "decisionpoint/replay/unfoldable_deferred_canceled_output.json",
+      "fixture_type": "reducer_output",
+      "event_type": "DecisionPointState",
+      "expected_result": "valid",
+      "notes": "Golden reducer output for unfoldable_deferred_canceled.jsonl (generated by the reducer, then inspected)",
+      "min_version": "11.0.0"
     }
   ],
   "classes": {

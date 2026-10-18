@@ -1,0 +1,15 @@
+{
+  "cursor": "pre_generation_gate",
+  "input_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "mission_id": "01M57TCP-mission",
+  "retry_token": "5f6a7b8c-9d0e-4f1a-8b2c-3d4e5f6a7b8c",
+  "run_id": "run-0001",
+  "scope_refs": [
+    {
+      "scope": "team_domain",
+      "version_id": "v3"
+    }
+  ],
+  "step_id": "specify",
+  "strictness": "medium"
+}

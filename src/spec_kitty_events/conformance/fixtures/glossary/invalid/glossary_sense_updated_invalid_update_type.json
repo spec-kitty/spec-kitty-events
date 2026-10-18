@@ -1,0 +1,22 @@
+{
+  "actor": {
+    "actor_id": "agent-1",
+    "actor_type": "llm",
+    "display_name": "Claude"
+  },
+  "new_sense": {
+    "confidence": 0.9,
+    "definition": "Shipping a build to an environment",
+    "scope": "team_domain",
+    "status": "active",
+    "surface": "deployment"
+  },
+  "provenance": {
+    "actor_id": "agent-1",
+    "source": "user_clarification",
+    "timestamp": "2026-10-18T12:00:00+00:00"
+  },
+  "scope": "team_domain",
+  "term_surface": "deployment",
+  "update_type": "delete"
+}

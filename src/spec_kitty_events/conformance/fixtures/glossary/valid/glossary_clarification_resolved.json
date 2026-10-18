@@ -1,6 +1,21 @@
 {
-  "mission_id": "mission-fixture-001",
-  "clarification_event_id": "01HTESTCLAR000000000000001",
-  "selected_meaning": "Analytics overview panel",
-  "actor": "human-reviewer-001"
+  "actor": {
+    "actor_id": "agent-1",
+    "actor_type": "llm",
+    "display_name": "Claude"
+  },
+  "conflict_id": "0b1c2d3e-4f50-4a6b-8c7d-9e0f1a2b3c4d",
+  "provenance": {
+    "actor_id": "agent-1",
+    "source": "user_clarification",
+    "timestamp": "2026-10-18T12:00:00+00:00"
+  },
+  "resolution_mode": "interactive",
+  "selected_sense": {
+    "confidence": 0.9,
+    "definition": "Shipping a build to an environment",
+    "scope": "team_domain",
+    "surface": "deployment"
+  },
+  "term_surface": "deployment"
 }

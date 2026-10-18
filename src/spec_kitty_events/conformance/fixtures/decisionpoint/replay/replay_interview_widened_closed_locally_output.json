@@ -32,6 +32,7 @@
   "other_answer": false,
   "phase": "P3",
   "question": "Should we use Kubernetes or ECS for container orchestration?",
+  "reopened_from_deferred": false,
   "resolved_by": "human-owner-3",
   "run_id": "run-iv-003",
   "state": "resolved",

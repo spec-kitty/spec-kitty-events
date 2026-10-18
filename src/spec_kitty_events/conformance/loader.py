@@ -34,6 +34,7 @@ _VALID_CATEGORIES = frozenset(
         "status_diary",  # 8.1.0: status.events.jsonl diary reducer (issue #41)
         "work_observation",  # durable live-work contracts (#55, 10.1.0)
         "ledger_append",  # local-ledger write contract (#118, 10.8.0)
+        "ordering",  # canonical order of unclocked / mixed envelopes (#120, 11.0.0)
     }
 )
 
@@ -48,6 +49,7 @@ _SPECIAL_FIXTURE_TYPES: frozenset[str] = frozenset(
         "reducer_output",
         "timestamp_semantics",
         "ledger_append",
+        "event_ordering",
     }
 )
 
@@ -152,6 +154,26 @@ def load_ledger_append_cases() -> List[Dict[str, Any]]:
         with open(_FIXTURES_DIR / entry["path"], "r", encoding="utf-8") as fh:
             document: Dict[str, Any] = json.load(fh)
         cases.append({**document, "id": entry["id"], "expected_result": entry["expected_result"]})
+    return cases
+
+
+def load_event_ordering_cases() -> List[Dict[str, Any]]:
+    """Load the ``event_ordering`` documents (#120, 11.0.0).
+
+    Each returned dict is the fixture document (``events``: raw envelopes in an
+    arbitrary arrangement, ``expected_order``: their ``event_id`` values in the
+    canonical order) plus the manifest ``id``. They pin the order of unclocked
+    and mixed clocked/unclocked streams, so :func:`load_fixtures` skips them.
+    """
+    with open(_MANIFEST_PATH, "r", encoding="utf-8") as fh:
+        manifest: Dict[str, Any] = json.load(fh)
+    cases: List[Dict[str, Any]] = []
+    for entry in manifest["fixtures"]:
+        if entry.get("fixture_type") != "event_ordering":
+            continue
+        with open(_FIXTURES_DIR / entry["path"], "r", encoding="utf-8") as fh:
+            document: Dict[str, Any] = json.load(fh)
+        cases.append({**document, "id": entry["id"]})
     return cases
 
 

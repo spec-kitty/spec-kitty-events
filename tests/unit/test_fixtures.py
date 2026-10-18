@@ -109,9 +109,9 @@ class TestValidEventFixtures:
         # + 4 mission-lifecycle reconciliation fixtures (MissionReopened,
         #   FollowUpRecorded commit+pr, ReviewerSelfApproval) shipped by mission
         #   mission-lifecycle-reconciliation-01M574ET (WP01).
-        assert len(files) == 32, (
-            f"Expected 32 valid event fixtures (13 historical + 8 canonical lifecycle "
-            f"+ 7 WP02 + 4 lifecycle-reconciliation), got {len(files)}"
+        assert len(files) == 33, (
+            f"Expected 33 valid event fixtures (13 historical + 8 canonical lifecycle "
+            f"+ 7 WP02 + 4 lifecycle-reconciliation + 1 unclocked), got {len(files)}"
         )
 
 
@@ -470,7 +470,8 @@ class TestLoadFixtures:
         # + 4 mission-lifecycle reconciliation fixtures (MissionReopened,
         # FollowUpRecorded commit+pr, ReviewerSelfApproval) shipped by WP01 of
         # mission-lifecycle-reconciliation-01M574ET.
-        assert len(valid_cases) == 32
+        # + 1 unclocked envelope (lamport_clock absent, 11.0.0).
+        assert len(valid_cases) == 33
 
     def test_events_invalid_cases_expected_valid_false(self) -> None:
         cases = load_fixtures("events")

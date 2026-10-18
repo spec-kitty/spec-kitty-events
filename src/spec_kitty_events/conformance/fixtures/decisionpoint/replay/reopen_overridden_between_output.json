@@ -1,0 +1,44 @@
+{
+  "state": "resolved",
+  "decision_point_id": "dp-ro-004",
+  "mission_id": "m-4",
+  "run_id": "run-4",
+  "mission_slug": "reopen-fold",
+  "mission_type": "software-dev",
+  "phase": "P1",
+  "last_actor_id": "human-owner",
+  "last_actor_type": "human",
+  "last_authority_role": null,
+  "last_rationale": null,
+  "last_alternatives_considered": null,
+  "last_evidence_refs": null,
+  "last_state_entered_at": "2026-04-23T10:00:03Z",
+  "anomalies": [
+    {
+      "kind": "invalid_transition",
+      "event_id": "01J2B000000000000000000046",
+      "message": "Invalid transition: open -> overridden"
+    }
+  ],
+  "event_count": 4,
+  "origin_surface": "planning_interview",
+  "origin_flow": "specify",
+  "question": "Which authentication protocol should we adopt?",
+  "options": [
+    "session",
+    "oauth2",
+    "oidc"
+  ],
+  "input_key": "auth_protocol",
+  "step_id": "step-auth-001",
+  "widening": null,
+  "terminal_outcome": "resolved",
+  "final_answer": "oauth2",
+  "other_answer": false,
+  "summary": null,
+  "actual_participants": [],
+  "resolved_by": "human-owner",
+  "closed_locally_while_widened": false,
+  "closure_message": null,
+  "reopened_from_deferred": true
+}

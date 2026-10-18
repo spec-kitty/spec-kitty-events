@@ -27,6 +27,7 @@
   "other_answer": false,
   "phase": "P1",
   "question": "Which encryption algorithm should we use for at-rest data?",
+  "reopened_from_deferred": false,
   "resolved_by": "human-owner-4",
   "run_id": "run-iv-004",
   "state": "resolved",

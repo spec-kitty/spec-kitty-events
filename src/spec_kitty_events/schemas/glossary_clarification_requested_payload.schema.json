@@ -1,12 +1,13 @@
 {
   "$id": "spec-kitty-events/glossary_clarification_requested_payload",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
   "description": "Payload for GlossaryClarificationRequested event.",
   "properties": {
-    "actor": {
-      "description": "Actor who triggered the request",
+    "conflict_id": {
+      "description": "Tracking id correlating request and resolution",
       "minLength": 1,
-      "title": "Actor",
+      "title": "Conflict Id",
       "type": "string"
     },
     "mission_id": {
@@ -28,17 +29,25 @@
       "title": "Question",
       "type": "string"
     },
-    "scope_id": {
-      "description": "Scope context",
+    "run_id": {
+      "description": "Run context",
       "minLength": 1,
-      "title": "Scope Id",
+      "title": "Run Id",
       "type": "string"
     },
     "semantic_check_event_id": {
-      "description": "Event ID of triggering SemanticCheckEvaluated (burst-window key)",
-      "minLength": 1,
-      "title": "Semantic Check Event Id",
-      "type": "string"
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Event ID of the triggering SemanticCheckEvaluated (burst-window key)",
+      "title": "Semantic Check Event Id"
     },
     "step_id": {
       "description": "Step that triggered clarification",
@@ -65,14 +74,13 @@
   },
   "required": [
     "mission_id",
-    "scope_id",
+    "run_id",
     "step_id",
-    "semantic_check_event_id",
+    "conflict_id",
     "term",
     "question",
     "options",
-    "urgency",
-    "actor"
+    "urgency"
   ],
   "title": "GlossaryClarificationRequestedPayload",
   "type": "object"

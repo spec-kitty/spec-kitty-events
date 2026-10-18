@@ -1,64 +1,187 @@
 {
+  "$defs": {
+    "GlossaryActor": {
+      "additionalProperties": false,
+      "description": "Identity of the actor behind a glossary action.",
+      "properties": {
+        "actor_id": {
+          "description": "Stable actor identifier",
+          "minLength": 1,
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "actor_type": {
+          "$ref": "#/$defs/GlossaryActorType",
+          "description": "Kind of actor"
+        },
+        "display_name": {
+          "description": "Human-readable actor name",
+          "minLength": 1,
+          "title": "Display Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "actor_id",
+        "actor_type",
+        "display_name"
+      ],
+      "title": "GlossaryActor",
+      "type": "object"
+    },
+    "GlossaryActorType": {
+      "description": "Kind of actor behind a glossary action.",
+      "enum": [
+        "human",
+        "llm",
+        "service"
+      ],
+      "title": "GlossaryActorType",
+      "type": "string"
+    },
+    "GlossaryNewSense": {
+      "additionalProperties": false,
+      "description": "A sense as written by a ``GlossarySenseUpdated`` event (adds ``status``).",
+      "properties": {
+        "confidence": {
+          "description": "Confidence (0.0-1.0)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "definition": {
+          "description": "Definition of the sense",
+          "minLength": 1,
+          "title": "Definition",
+          "type": "string"
+        },
+        "scope": {
+          "$ref": "#/$defs/GlossaryScope",
+          "description": "Scope that owns the sense"
+        },
+        "status": {
+          "$ref": "#/$defs/GlossarySenseStatus",
+          "description": "Lifecycle status of the sense"
+        },
+        "surface": {
+          "description": "Term surface text",
+          "minLength": 1,
+          "title": "Surface",
+          "type": "string"
+        }
+      },
+      "required": [
+        "surface",
+        "scope",
+        "definition",
+        "confidence",
+        "status"
+      ],
+      "title": "GlossaryNewSense",
+      "type": "object"
+    },
+    "GlossaryProvenance": {
+      "additionalProperties": false,
+      "description": "Where a clarification or sense update came from.",
+      "properties": {
+        "actor_id": {
+          "description": "Actor who produced the record",
+          "minLength": 1,
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "source": {
+          "description": "Origin, e.g. user_clarification",
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "timestamp": {
+          "description": "ISO-8601 time the action happened",
+          "minLength": 1,
+          "title": "Timestamp",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "timestamp",
+        "actor_id"
+      ],
+      "title": "GlossaryProvenance",
+      "type": "object"
+    },
+    "GlossaryScope": {
+      "description": "Glossary scope levels.",
+      "enum": [
+        "mission_local",
+        "team_domain",
+        "audience_domain",
+        "spec_kitty_core"
+      ],
+      "title": "GlossaryScope",
+      "type": "string"
+    },
+    "GlossarySenseStatus": {
+      "description": "Lifecycle status of a term sense.",
+      "enum": [
+        "draft",
+        "active",
+        "deprecated"
+      ],
+      "title": "GlossarySenseStatus",
+      "type": "string"
+    },
+    "GlossaryUpdateType": {
+      "description": "Whether a sense update created or changed a sense.",
+      "enum": [
+        "create",
+        "update"
+      ],
+      "title": "GlossaryUpdateType",
+      "type": "string"
+    }
+  },
   "$id": "spec-kitty-events/glossary_sense_updated_payload",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
   "description": "Payload for GlossarySenseUpdated event.",
   "properties": {
     "actor": {
-      "description": "Actor who made the change",
-      "minLength": 1,
-      "title": "Actor",
-      "type": "string"
+      "$ref": "#/$defs/GlossaryActor",
+      "description": "Actor who made the change"
     },
-    "after_sense": {
-      "description": "New sense value",
-      "minLength": 1,
-      "title": "After Sense",
-      "type": "string"
+    "new_sense": {
+      "$ref": "#/$defs/GlossaryNewSense",
+      "description": "The sense after the update"
     },
-    "before_sense": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "description": "Previous sense value (None if first definition)",
-      "title": "Before Sense"
+    "provenance": {
+      "$ref": "#/$defs/GlossaryProvenance",
+      "description": "Where the change came from"
     },
-    "mission_id": {
-      "description": "Mission context",
-      "minLength": 1,
-      "title": "Mission Id",
-      "type": "string"
-    },
-    "reason": {
-      "description": "Why the sense was changed",
-      "title": "Reason",
-      "type": "string"
-    },
-    "scope_id": {
-      "description": "Scope of the term",
-      "minLength": 1,
-      "title": "Scope Id",
-      "type": "string"
+    "scope": {
+      "$ref": "#/$defs/GlossaryScope",
+      "description": "Scope of the sense"
     },
     "term_surface": {
       "description": "Term being updated",
       "minLength": 1,
       "title": "Term Surface",
       "type": "string"
+    },
+    "update_type": {
+      "$ref": "#/$defs/GlossaryUpdateType",
+      "description": "Created or updated"
     }
   },
   "required": [
-    "mission_id",
-    "scope_id",
     "term_surface",
-    "after_sense",
-    "reason",
-    "actor"
+    "scope",
+    "new_sense",
+    "actor",
+    "update_type",
+    "provenance"
   ],
   "title": "GlossarySenseUpdatedPayload",
   "type": "object"

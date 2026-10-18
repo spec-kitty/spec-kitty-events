@@ -106,6 +106,9 @@ def _event_fixture_entries() -> List[Dict[str, Any]]:
             # expected_error} write-contract documents, run by the packaged
             # test_ledger_append.py runner -- not event envelopes.
             "ledger_append",
+            # event_ordering (#120): {events, expected_order} documents, run by
+            # the packaged test_event_ordering.py runner -- not envelopes.
+            "event_ordering",
             # envelope_strict_journal (F1-T1) class_taxonomy fixtures: these
             # assert strict-profile-only rejections (e.g. an envelope-level
             # extra key, a naive timestamp) that the lenient Event model /

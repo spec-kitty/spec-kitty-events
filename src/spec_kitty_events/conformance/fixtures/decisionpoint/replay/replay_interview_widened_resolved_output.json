@@ -56,6 +56,7 @@
   "other_answer": false,
   "phase": "P2",
   "question": "How should we handle schema migration in production?",
+  "reopened_from_deferred": false,
   "resolved_by": "human-owner-2",
   "run_id": "run-iv-002",
   "state": "resolved",

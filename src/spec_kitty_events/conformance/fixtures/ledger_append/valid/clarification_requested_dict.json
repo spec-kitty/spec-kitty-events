@@ -1,0 +1,20 @@
+{
+  "input_kind": "dict",
+  "input": {
+    "conflict_id": "0b1c2d3e-4f50-4a6b-8c7d-9e0f1a2b3c4d",
+    "event_id": "ebf6605c-3f61-5368-82ee-8c8e18d15076",
+    "event_type": "GlossaryClarificationRequested",
+    "mission_id": "01M57TCP-mission",
+    "options": [
+      "Shipping a build",
+      "A rollout step"
+    ],
+    "question": "Which sense of deployment?",
+    "run_id": "run-0001",
+    "step_id": "specify",
+    "term": "deployment",
+    "timestamp": "2026-10-18T12:00:00+00:00",
+    "urgency": "high"
+  },
+  "expected_line": "{\"conflict_id\": \"0b1c2d3e-4f50-4a6b-8c7d-9e0f1a2b3c4d\", \"event_id\": \"ebf6605c-3f61-5368-82ee-8c8e18d15076\", \"event_type\": \"GlossaryClarificationRequested\", \"mission_id\": \"01M57TCP-mission\", \"options\": [\"Shipping a build\", \"A rollout step\"], \"question\": \"Which sense of deployment?\", \"run_id\": \"run-0001\", \"step_id\": \"specify\", \"term\": \"deployment\", \"timestamp\": \"2026-10-18T12:00:00+00:00\", \"urgency\": \"high\"}\n"
+}

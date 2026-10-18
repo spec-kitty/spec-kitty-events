@@ -1,20 +1,32 @@
 {
   "$id": "spec-kitty-events/term_candidate_observed_payload",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
   "description": "Payload for TermCandidateObserved event.",
   "properties": {
-    "actor": {
-      "description": "Identity of the observing actor",
+    "actor_id": {
+      "description": "Actor who triggered extraction",
       "minLength": 1,
-      "title": "Actor",
+      "title": "Actor Id",
       "type": "string"
     },
     "confidence": {
-      "description": "Confidence score (0.0\u20131.0)",
+      "description": "Extraction confidence (0.0-1.0)",
       "maximum": 1.0,
       "minimum": 0.0,
       "title": "Confidence",
       "type": "number"
+    },
+    "context": {
+      "description": "Where the term was found",
+      "title": "Context",
+      "type": "string"
+    },
+    "extraction_method": {
+      "description": "How the term was extracted",
+      "minLength": 1,
+      "title": "Extraction Method",
+      "type": "string"
     },
     "mission_id": {
       "description": "Mission context",
@@ -22,40 +34,34 @@
       "title": "Mission Id",
       "type": "string"
     },
-    "scope_id": {
-      "description": "Scope the term was observed in",
+    "run_id": {
+      "description": "Run context",
       "minLength": 1,
-      "title": "Scope Id",
+      "title": "Run Id",
       "type": "string"
     },
-    "step_id": {
-      "description": "Mission step that produced the term",
+    "source_step": {
+      "description": "Step that produced the term",
       "minLength": 1,
-      "title": "Step Id",
+      "title": "Source Step",
       "type": "string"
     },
-    "step_metadata": {
-      "additionalProperties": {
-        "type": "string"
-      },
-      "description": "Mission primitive metadata for the step (no hardcoded step names)",
-      "title": "Step Metadata",
-      "type": "object"
-    },
-    "term_surface": {
-      "description": "Raw text form of the observed term",
+    "term": {
+      "description": "Extracted term surface text",
       "minLength": 1,
-      "title": "Term Surface",
+      "title": "Term",
       "type": "string"
     }
   },
   "required": [
     "mission_id",
-    "scope_id",
-    "step_id",
-    "term_surface",
+    "run_id",
+    "term",
+    "source_step",
+    "actor_id",
     "confidence",
-    "actor"
+    "extraction_method",
+    "context"
   ],
   "title": "TermCandidateObservedPayload",
   "type": "object"

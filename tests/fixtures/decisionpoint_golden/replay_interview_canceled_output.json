@@ -27,6 +27,7 @@
   "other_answer": false,
   "phase": "P1",
   "question": "Which CSS framework should we adopt?",
+  "reopened_from_deferred": false,
   "resolved_by": "human-owner-5",
   "run_id": "run-iv-005",
   "state": "resolved",

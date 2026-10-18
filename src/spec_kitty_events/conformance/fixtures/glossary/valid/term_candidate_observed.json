@@ -1,11 +1,10 @@
 {
-  "mission_id": "mission-fixture-001",
-  "scope_id": "scope-team-domain",
-  "step_id": "step-001",
-  "term_surface": "dashboard",
-  "confidence": 0.7,
-  "actor": "agent-001",
-  "step_metadata": {
-    "primitive": "specify"
-  }
+  "actor_id": "agent-1",
+  "confidence": 0.85,
+  "context": "step input: description field",
+  "extraction_method": "metadata_hint",
+  "mission_id": "01M57TCP-mission",
+  "run_id": "run-0001",
+  "source_step": "specify",
+  "term": "deployment"
 }

@@ -1,0 +1,42 @@
+{
+  "input_kind": "dict",
+  "input": {
+    "blocked": false,
+    "confidence": 0.8,
+    "effective_strictness": "medium",
+    "event_id": "83b1d59b-1092-5db0-a7e0-0bae0db70222",
+    "event_type": "SemanticCheckEvaluated",
+    "findings": [
+      {
+        "candidate_senses": [
+          {
+            "confidence": 0.9,
+            "definition": "Shipping a build to an environment",
+            "scope": "team_domain",
+            "surface": "deployment"
+          },
+          {
+            "confidence": 0.6,
+            "definition": "A rollout step",
+            "scope": "mission_local",
+            "surface": "deployment"
+          }
+        ],
+        "confidence": 0.8,
+        "conflict_type": "ambiguous",
+        "context": "step input: description field",
+        "severity": "medium",
+        "term": {
+          "surface_text": "deployment"
+        }
+      }
+    ],
+    "mission_id": "01M57TCP-mission",
+    "overall_severity": "medium",
+    "recommended_action": "warn",
+    "run_id": "run-0001",
+    "step_id": "specify",
+    "timestamp": "2026-10-18T12:00:00+00:00"
+  },
+  "expected_line": "{\"blocked\": false, \"confidence\": 0.8, \"effective_strictness\": \"medium\", \"event_id\": \"83b1d59b-1092-5db0-a7e0-0bae0db70222\", \"event_type\": \"SemanticCheckEvaluated\", \"findings\": [{\"candidate_senses\": [{\"confidence\": 0.9, \"definition\": \"Shipping a build to an environment\", \"scope\": \"team_domain\", \"surface\": \"deployment\"}, {\"confidence\": 0.6, \"definition\": \"A rollout step\", \"scope\": \"mission_local\", \"surface\": \"deployment\"}], \"confidence\": 0.8, \"conflict_type\": \"ambiguous\", \"context\": \"step input: description field\", \"severity\": \"medium\", \"term\": {\"surface_text\": \"deployment\"}}], \"mission_id\": \"01M57TCP-mission\", \"overall_severity\": \"medium\", \"recommended_action\": \"warn\", \"run_id\": \"run-0001\", \"step_id\": \"specify\", \"timestamp\": \"2026-10-18T12:00:00+00:00\"}\n"
+}

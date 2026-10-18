@@ -67,7 +67,6 @@ from spec_kitty_events.collaboration import (
     SessionLinkedPayload,
 )
 from spec_kitty_events.glossary import (
-    SemanticConflictEntry,
     GlossaryScopeActivatedPayload,
     TermCandidateObservedPayload,
     GlossarySenseUpdatedPayload,
@@ -76,6 +75,7 @@ from spec_kitty_events.glossary import (
     GlossaryClarificationRequestedPayload,
     GlossaryClarificationResolvedPayload,
     GenerationBlockedBySemanticConflictPayload,
+    StepCheckpointedPayload,
 )
 from spec_kitty_events.mission_next import (
     RuntimeActorIdentity,
@@ -230,7 +230,6 @@ PYDANTIC_MODELS: List[tuple[str, Type[BaseModel]]] = [
     ("decision_captured_payload", DecisionCapturedPayload),
     ("session_linked_payload", SessionLinkedPayload),
     # Glossary semantic integrity models
-    ("semantic_conflict_entry", SemanticConflictEntry),
     ("glossary_scope_activated_payload", GlossaryScopeActivatedPayload),
     ("term_candidate_observed_payload", TermCandidateObservedPayload),
     ("glossary_sense_updated_payload", GlossarySenseUpdatedPayload),
@@ -239,6 +238,7 @@ PYDANTIC_MODELS: List[tuple[str, Type[BaseModel]]] = [
     ("glossary_clarification_requested_payload", GlossaryClarificationRequestedPayload),
     ("glossary_clarification_resolved_payload", GlossaryClarificationResolvedPayload),
     ("generation_blocked_by_semantic_conflict_payload", GenerationBlockedBySemanticConflictPayload),
+    ("step_checkpointed_payload", StepCheckpointedPayload),
     # Mission-next runtime models
     ("runtime_actor_identity", RuntimeActorIdentity),
     ("mission_run_started_payload", MissionRunStartedPayload),
