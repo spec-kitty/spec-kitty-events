@@ -1,667 +1,363 @@
-"""Tests for glossary payload models (WP07)."""
+"""Tests for the glossary 11.0 payload models (core-shaped, #120)."""
 
 from __future__ import annotations
 
-import pytest
-from pydantic import ValidationError
+import copy
+from typing import Any, Dict, Type
 
+import pytest
+from pydantic import BaseModel, ValidationError
+
+import spec_kitty_events
 from spec_kitty_events import (
-    SemanticConflictEntry,
+    GLOSSARY_EVENT_TYPES,
+    STEP_CHECKPOINTED,
+    GenerationBlockedBySemanticConflictPayload,
+    GlossaryClarificationRequestedPayload,
+    GlossaryClarificationResolvedPayload,
+    GlossaryFinding,
     GlossaryScopeActivatedPayload,
-    TermCandidateObservedPayload,
     GlossarySenseUpdatedPayload,
     GlossaryStrictnessSetPayload,
     SemanticCheckEvaluatedPayload,
-    GlossaryClarificationRequestedPayload,
-    GlossaryClarificationResolvedPayload,
-    GenerationBlockedBySemanticConflictPayload,
+    StepCheckpointedPayload,
+    TermCandidateObservedPayload,
 )
+from spec_kitty_events.persistence import LedgerValidationError, build_record
 
+_IDENTITY_KEYS = ("event_type", "event_id", "timestamp")
 
-# ── T031: Scope and Strictness Payloads ──────────────────────────────────────
-
-
-class TestGlossaryScopeActivatedPayload:
-    """Tests for GlossaryScopeActivatedPayload."""
-
-    @pytest.mark.parametrize(
-        "scope_type",
-        [
-            "spec_kitty_core",
-            "team_domain",
-            "audience_domain",
-            "mission_local",
+# ── Issue #120: core-shaped glossary records ─────────────────────────────────
+#
+# Static captures of the records core's builders emit, run once by hand. Each
+# also carries a top-level ``event_id`` (uuid, added by core's persistence).
+# captured from spec-kitty 0746bec3 src/glossary/events.py:build_glossary_scope_activated,
+# build_term_candidate_observed, build_semantic_check_evaluated, build_generation_blocked,
+# build_clarification_requested, build_clarification_resolved, build_sense_updated,
+# build_step_checkpointed (the builder is named by each record's ``event_type``).
+CORE_GLOSSARY_RECORDS: Dict[str, Dict[str, Any]] = {
+    "GenerationBlockedBySemanticConflict": {
+        "conflicts": [
+            {
+                "candidate_senses": [
+                    {
+                        "confidence": 0.9,
+                        "definition": "Shipping a build to an environment",
+                        "scope": "team_domain",
+                        "surface": "deployment",
+                    },
+                    {
+                        "confidence": 0.6,
+                        "definition": "A rollout step",
+                        "scope": "mission_local",
+                        "surface": "deployment",
+                    },
+                ],
+                "confidence": 0.8,
+                "conflict_type": "ambiguous",
+                "context": "step input: description field",
+                "severity": "medium",
+                "term": {"surface_text": "deployment"},
+            }
         ],
+        "effective_strictness": "max",
+        "event_id": "42af37f9-3f97-5b03-91a7-25ad08e8ef02",
+        "event_type": "GenerationBlockedBySemanticConflict",
+        "mission_id": "01M57TCP-mission",
+        "run_id": "run-0001",
+        "step_id": "specify",
+        "strictness_mode": "max",
+        "timestamp": "2026-10-18T12:00:00+00:00",
+    },
+    "GlossaryClarificationRequested": {
+        "conflict_id": "0b1c2d3e-4f50-4a6b-8c7d-9e0f1a2b3c4d",
+        "event_id": "ebf6605c-3f61-5368-82ee-8c8e18d15076",
+        "event_type": "GlossaryClarificationRequested",
+        "mission_id": "01M57TCP-mission",
+        "options": ["Shipping a build", "A rollout step"],
+        "question": "Which sense of deployment?",
+        "run_id": "run-0001",
+        "step_id": "specify",
+        "term": "deployment",
+        "timestamp": "2026-10-18T12:00:00+00:00",
+        "urgency": "high",
+    },
+    "GlossaryClarificationResolved": {
+        "actor": {"actor_id": "agent-1", "actor_type": "llm", "display_name": "Claude"},
+        "conflict_id": "0b1c2d3e-4f50-4a6b-8c7d-9e0f1a2b3c4d",
+        "event_id": "664f03d5-ce2c-5651-8f70-88a93dbaff1b",
+        "event_type": "GlossaryClarificationResolved",
+        "provenance": {
+            "actor_id": "agent-1",
+            "source": "user_clarification",
+            "timestamp": "2026-10-18T12:00:00+00:00",
+        },
+        "resolution_mode": "interactive",
+        "selected_sense": {
+            "confidence": 0.9,
+            "definition": "Shipping a build to an environment",
+            "scope": "team_domain",
+            "surface": "deployment",
+        },
+        "term_surface": "deployment",
+        "timestamp": "2026-10-18T12:00:00+00:00",
+    },
+    "GlossaryScopeActivated": {
+        "event_id": "83f49bb3-70e7-58e9-8d57-a6686f81284c",
+        "event_type": "GlossaryScopeActivated",
+        "glossary_version_id": "v3",
+        "mission_id": "01M57TCP-mission",
+        "run_id": "run-0001",
+        "scope_id": "team_domain",
+        "timestamp": "2026-10-18T12:00:00+00:00",
+    },
+    "GlossarySenseUpdated": {
+        "actor": {"actor_id": "agent-1", "actor_type": "llm", "display_name": "Claude"},
+        "event_id": "58224786-c5c9-553f-912c-a4b0a8e1ca55",
+        "event_type": "GlossarySenseUpdated",
+        "new_sense": {
+            "confidence": 0.9,
+            "definition": "Shipping a build to an environment",
+            "scope": "team_domain",
+            "status": "active",
+            "surface": "deployment",
+        },
+        "provenance": {
+            "actor_id": "agent-1",
+            "source": "user_clarification",
+            "timestamp": "2026-10-18T12:00:00+00:00",
+        },
+        "scope": "team_domain",
+        "term_surface": "deployment",
+        "timestamp": "2026-10-18T12:00:00+00:00",
+        "update_type": "create",
+    },
+    "SemanticCheckEvaluated": {
+        "blocked": False,
+        "confidence": 0.8,
+        "effective_strictness": "medium",
+        "event_id": "83b1d59b-1092-5db0-a7e0-0bae0db70222",
+        "event_type": "SemanticCheckEvaluated",
+        "findings": [
+            {
+                "candidate_senses": [
+                    {
+                        "confidence": 0.9,
+                        "definition": "Shipping a build to an environment",
+                        "scope": "team_domain",
+                        "surface": "deployment",
+                    },
+                    {
+                        "confidence": 0.6,
+                        "definition": "A rollout step",
+                        "scope": "mission_local",
+                        "surface": "deployment",
+                    },
+                ],
+                "confidence": 0.8,
+                "conflict_type": "ambiguous",
+                "context": "step input: description field",
+                "severity": "medium",
+                "term": {"surface_text": "deployment"},
+            }
+        ],
+        "mission_id": "01M57TCP-mission",
+        "overall_severity": "medium",
+        "recommended_action": "warn",
+        "run_id": "run-0001",
+        "step_id": "specify",
+        "timestamp": "2026-10-18T12:00:00+00:00",
+    },
+    "StepCheckpointed": {
+        "cursor": "pre_generation_gate",
+        "event_id": "6aac9ca5-94c2-5c5c-a0d3-e2bc5bc18292",
+        "event_type": "StepCheckpointed",
+        "input_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mission_id": "01M57TCP-mission",
+        "retry_token": "5f6a7b8c-9d0e-4f1a-8b2c-3d4e5f6a7b8c",
+        "run_id": "run-0001",
+        "scope_refs": [{"scope": "team_domain", "version_id": "v3"}],
+        "step_id": "specify",
+        "strictness": "medium",
+        "timestamp": "2026-10-18T12:00:00+00:00",
+    },
+    "TermCandidateObserved": {
+        "actor_id": "agent-1",
+        "confidence": 0.85,
+        "context": "step input: description field",
+        "event_id": "3a151d22-95f0-5dac-a5bf-75c1a740f110",
+        "event_type": "TermCandidateObserved",
+        "extraction_method": "metadata_hint",
+        "mission_id": "01M57TCP-mission",
+        "run_id": "run-0001",
+        "source_step": "specify",
+        "term": "deployment",
+        "timestamp": "2026-10-18T12:00:00+00:00",
+    },
+}
+
+
+_MODELS: Dict[str, Type[BaseModel]] = {
+    "GlossaryScopeActivated": GlossaryScopeActivatedPayload,
+    "TermCandidateObserved": TermCandidateObservedPayload,
+    "SemanticCheckEvaluated": SemanticCheckEvaluatedPayload,
+    "GenerationBlockedBySemanticConflict": GenerationBlockedBySemanticConflictPayload,
+    "GlossaryClarificationRequested": GlossaryClarificationRequestedPayload,
+    "GlossaryClarificationResolved": GlossaryClarificationResolvedPayload,
+    "GlossarySenseUpdated": GlossarySenseUpdatedPayload,
+    "StepCheckpointed": StepCheckpointedPayload,
+}
+
+
+def _payload(event_type: str) -> Dict[str, Any]:
+    """Payload part of a captured core record (a deep copy, safe to mutate)."""
+    record = copy.deepcopy(CORE_GLOSSARY_RECORDS[event_type])
+    return {k: v for k, v in record.items() if k not in _IDENTITY_KEYS}
+
+
+# ── Core-shape fidelity (NFR-002, #120) ──────────────────────────────────────
+
+
+@pytest.mark.parametrize("event_type", sorted(_MODELS))
+def test_core_record_validates_and_round_trips(event_type: str) -> None:
+    """Each captured core record validates strictly and round-trips losslessly."""
+    model = _MODELS[event_type].model_validate(_payload(event_type))
+    assert model.model_dump(mode="json", exclude_none=True) == _payload(event_type)
+
+
+@pytest.mark.parametrize(
+    "event_type",
+    sorted(t for t in CORE_GLOSSARY_RECORDS if t != STEP_CHECKPOINTED),
+)
+def test_build_record_accepts_core_glossary_record(event_type: str) -> None:
+    """#120: persistence.build_record accepts what core's builders emit."""
+    record = CORE_GLOSSARY_RECORDS[event_type]
+    assert build_record(record) == record
+
+
+def test_step_checkpointed_is_registered() -> None:
+    assert STEP_CHECKPOINTED == "StepCheckpointed"
+    assert STEP_CHECKPOINTED in GLOSSARY_EVENT_TYPES
+    assert len(GLOSSARY_EVENT_TYPES) == 9
+
+
+def test_removed_semantic_conflict_entry() -> None:
+    assert not hasattr(spec_kitty_events, "SemanticConflictEntry")
+    assert "SemanticConflictEntry" not in spec_kitty_events.__all__
+
+
+def test_each_event_type_has_its_own_model_class() -> None:
+    assert len(set(_MODELS.values())) == len(_MODELS)
+
+
+@pytest.mark.parametrize("event_type", sorted(_MODELS))
+def test_models_are_frozen_and_forbid_extra(event_type: str) -> None:
+    model = _MODELS[event_type].model_validate(_payload(event_type))
+    with pytest.raises(ValidationError):
+        _MODELS[event_type].model_validate({**_payload(event_type), "surprise": 1})
+    with pytest.raises(ValidationError):
+        setattr(model, "mission_id", "other")
+
+
+@pytest.mark.parametrize("event_type", sorted(_MODELS))
+def test_missing_required_field_rejected(event_type: str) -> None:
+    for key in _payload(event_type):
+        payload = _payload(event_type)
+        del payload[key]
+        with pytest.raises(ValidationError):
+            _MODELS[event_type].model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    "event_type,field,value",
+    [
+        ("GlossaryScopeActivated", "run_id", ""),
+        ("TermCandidateObserved", "confidence", 1.5),
+        ("TermCandidateObserved", "term", ""),
+        ("SemanticCheckEvaluated", "overall_severity", "critical"),
+        ("SemanticCheckEvaluated", "recommended_action", "pass"),
+        ("SemanticCheckEvaluated", "effective_strictness", "strict"),
+        ("GenerationBlockedBySemanticConflict", "strictness_mode", "none"),
+        ("GlossaryClarificationRequested", "urgency", "urgent"),
+        ("GlossaryClarificationRequested", "conflict_id", ""),
+        ("GlossaryClarificationResolved", "resolution_mode", "batch"),
+        ("GlossarySenseUpdated", "scope", "galaxy"),
+        ("GlossarySenseUpdated", "update_type", "delete"),
+        ("StepCheckpointed", "input_hash", "abc"),
+        ("StepCheckpointed", "cursor", "somewhere"),
+        ("StepCheckpointed", "retry_token", "not-a-uuid"),
+        ("StepCheckpointed", "strictness", "strict"),
+    ],
+)
+def test_invalid_values_rejected(event_type: str, field: str, value: Any) -> None:
+    payload = _payload(event_type)
+    payload[field] = value
+    with pytest.raises(ValidationError):
+        _MODELS[event_type].model_validate(payload)
+    if event_type != STEP_CHECKPOINTED:
+        with pytest.raises(LedgerValidationError):
+            build_record({"event_type": event_type, **payload})
+
+
+@pytest.mark.parametrize(
+    "event_type", ["SemanticCheckEvaluated", "GenerationBlockedBySemanticConflict"]
+)
+def test_old_field_names_are_rejected(event_type: str) -> None:
+    payload = _payload(event_type)
+    payload["scope_id"] = "s1"
+    with pytest.raises(ValidationError):
+        _MODELS[event_type].model_validate(payload)
+
+
+# ── Optionality (FR-007) ─────────────────────────────────────────────────────
+
+
+def test_semantic_check_event_id_is_optional_but_not_empty() -> None:
+    payload = _payload("GlossaryClarificationRequested")
+    assert (
+        GlossaryClarificationRequestedPayload.model_validate(payload).semantic_check_event_id
+        is None
     )
-    def test_valid_scope_types(self, scope_type: str) -> None:
-        p = GlossaryScopeActivatedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            scope_type=scope_type,
-            glossary_version_id="v1",
-        )
-        assert p.scope_type == scope_type
+    payload["semantic_check_event_id"] = ""
+    with pytest.raises(ValidationError):
+        GlossaryClarificationRequestedPayload.model_validate(payload)
+    payload["semantic_check_event_id"] = "01HXCHECK"
+    parsed = GlossaryClarificationRequestedPayload.model_validate(payload)
+    assert parsed.semantic_check_event_id == "01HXCHECK"
 
-    def test_round_trip(self) -> None:
-        p = GlossaryScopeActivatedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            scope_type="team_domain",
-            glossary_version_id="v1",
-        )
-        reconstructed = GlossaryScopeActivatedPayload(**p.model_dump())
-        assert reconstructed == p
 
-    def test_invalid_scope_type(self) -> None:
-        with pytest.raises(ValidationError):
-            GlossaryScopeActivatedPayload(
-                mission_id="m1",
-                scope_id="s1",
-                scope_type="invalid_scope",
-                glossary_version_id="v1",
-            )
+def test_ambiguous_finding_requires_candidate_senses() -> None:
+    finding = copy.deepcopy(_payload("SemanticCheckEvaluated")["findings"][0])
+    finding["candidate_senses"] = []
+    with pytest.raises(ValidationError):
+        GlossaryFinding.model_validate(finding)
+    finding["conflict_type"] = "unknown"
+    assert GlossaryFinding.model_validate(finding).candidate_senses == ()
 
-    @pytest.mark.parametrize("field", ["scope_id", "mission_id", "glossary_version_id"])
-    def test_empty_string_rejected(self, field: str) -> None:
-        data = {
-            "mission_id": "m1",
-            "scope_id": "s1",
-            "scope_type": "team_domain",
-            "glossary_version_id": "v1",
-        }
-        data[field] = ""
-        with pytest.raises(ValidationError):
-            GlossaryScopeActivatedPayload(**data)
+
+def test_provenance_timestamp_must_be_iso() -> None:
+    payload = _payload("GlossarySenseUpdated")
+    payload["provenance"]["timestamp"] = "yesterday"
+    with pytest.raises(ValidationError):
+        GlossarySenseUpdatedPayload.model_validate(payload)
+    payload["provenance"]["timestamp"] = "2026-10-18T12:00:00Z"
+    GlossarySenseUpdatedPayload.model_validate(payload)
+
+
+# ── GlossaryStrictnessSet (package-only, unchanged) ──────────────────────────
 
 
 class TestGlossaryStrictnessSetPayload:
-    """Tests for GlossaryStrictnessSetPayload."""
-
-    @pytest.mark.parametrize("strictness", ["off", "medium", "max"])
-    def test_valid_strictness(self, strictness: str) -> None:
-        p = GlossaryStrictnessSetPayload(
-            mission_id="m1",
-            new_strictness=strictness,
-            actor="admin",
-        )
-        assert p.new_strictness == strictness
-
-    def test_previous_strictness_none(self) -> None:
-        p = GlossaryStrictnessSetPayload(
-            mission_id="m1",
-            new_strictness="max",
-            actor="admin",
-        )
+    @pytest.mark.parametrize("mode", ["off", "medium", "max"])
+    def test_valid_modes(self, mode: str) -> None:
+        p = GlossaryStrictnessSetPayload(mission_id="m", new_strictness=mode, actor="a")  # type: ignore[arg-type]
         assert p.previous_strictness is None
 
-    def test_previous_strictness_set(self) -> None:
-        p = GlossaryStrictnessSetPayload(
-            mission_id="m1",
-            new_strictness="max",
-            previous_strictness="medium",
-            actor="admin",
-        )
-        assert p.previous_strictness == "medium"
-
-    def test_invalid_strictness(self) -> None:
+    def test_invalid_mode_rejected(self) -> None:
         with pytest.raises(ValidationError):
-            GlossaryStrictnessSetPayload(
-                mission_id="m1",
-                new_strictness="extreme",
-                actor="admin",
-            )
+            GlossaryStrictnessSetPayload(mission_id="m", new_strictness="strict", actor="a")  # type: ignore[arg-type]
 
-    def test_round_trip(self) -> None:
-        p = GlossaryStrictnessSetPayload(
-            mission_id="m1",
-            new_strictness="max",
-            previous_strictness="medium",
-            actor="admin",
-        )
-        assert GlossaryStrictnessSetPayload(**p.model_dump()) == p
-
-
-# ── T032: Term Candidate Payload ─────────────────────────────────────────────
-
-
-class TestTermCandidateObservedPayload:
-    """Tests for TermCandidateObservedPayload."""
-
-    def test_valid_construction(self) -> None:
-        p = TermCandidateObservedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            term_surface="api",
-            confidence=0.7,
-            actor="a1",
-        )
-        assert p.confidence == 0.7
-
-    def test_confidence_zero(self) -> None:
-        p = TermCandidateObservedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            term_surface="api",
-            confidence=0.0,
-            actor="a1",
-        )
-        assert p.confidence == 0.0
-
-    def test_confidence_one(self) -> None:
-        p = TermCandidateObservedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            term_surface="api",
-            confidence=1.0,
-            actor="a1",
-        )
-        assert p.confidence == 1.0
-
-    def test_confidence_too_low(self) -> None:
+    def test_frozen(self) -> None:
+        p = GlossaryStrictnessSetPayload(mission_id="m", new_strictness="max", actor="a")
         with pytest.raises(ValidationError):
-            TermCandidateObservedPayload(
-                mission_id="m1",
-                scope_id="s1",
-                step_id="st1",
-                term_surface="api",
-                confidence=-0.1,
-                actor="a1",
-            )
-
-    def test_confidence_too_high(self) -> None:
-        with pytest.raises(ValidationError):
-            TermCandidateObservedPayload(
-                mission_id="m1",
-                scope_id="s1",
-                step_id="st1",
-                term_surface="api",
-                confidence=1.1,
-                actor="a1",
-            )
-
-    def test_empty_term_surface_rejected(self) -> None:
-        with pytest.raises(ValidationError):
-            TermCandidateObservedPayload(
-                mission_id="m1",
-                scope_id="s1",
-                step_id="st1",
-                term_surface="",
-                confidence=0.5,
-                actor="a1",
-            )
-
-    def test_step_metadata_default(self) -> None:
-        p = TermCandidateObservedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            term_surface="api",
-            confidence=0.5,
-            actor="a1",
-        )
-        assert p.step_metadata == {}
-
-    def test_step_metadata_with_values(self) -> None:
-        p = TermCandidateObservedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            term_surface="api",
-            confidence=0.5,
-            actor="a1",
-            step_metadata={"primitive": "specify"},
-        )
-        assert p.step_metadata == {"primitive": "specify"}
-
-    def test_round_trip(self) -> None:
-        p = TermCandidateObservedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            term_surface="api",
-            confidence=0.85,
-            actor="a1",
-            step_metadata={"k": "v"},
-        )
-        assert TermCandidateObservedPayload(**p.model_dump()) == p
-
-
-# ── T033: Semantic Check and Conflict Entry ──────────────────────────────────
-
-
-class TestSemanticConflictEntry:
-    """Tests for SemanticConflictEntry value object."""
-
-    @pytest.mark.parametrize("nature", ["overloaded", "drift", "ambiguous"])
-    def test_valid_natures(self, nature: str) -> None:
-        e = SemanticConflictEntry(
-            term="api",
-            nature=nature,
-            severity="high",
-            description="desc",
-        )
-        assert e.nature == nature
-
-    def test_invalid_nature(self) -> None:
-        with pytest.raises(ValidationError):
-            SemanticConflictEntry(
-                term="api",
-                nature="unknown",
-                severity="high",
-                description="desc",
-            )
-
-    @pytest.mark.parametrize("severity", ["low", "medium", "high"])
-    def test_valid_severities(self, severity: str) -> None:
-        e = SemanticConflictEntry(
-            term="api",
-            nature="drift",
-            severity=severity,
-            description="desc",
-        )
-        assert e.severity == severity
-
-    def test_invalid_severity(self) -> None:
-        with pytest.raises(ValidationError):
-            SemanticConflictEntry(
-                term="api",
-                nature="drift",
-                severity="critical",
-                description="desc",
-            )
-
-    def test_empty_term_rejected(self) -> None:
-        with pytest.raises(ValidationError):
-            SemanticConflictEntry(
-                term="",
-                nature="drift",
-                severity="high",
-                description="desc",
-            )
-
-    def test_round_trip(self) -> None:
-        e = SemanticConflictEntry(
-            term="api",
-            nature="overloaded",
-            severity="high",
-            description="desc",
-        )
-        assert SemanticConflictEntry(**e.model_dump()) == e
-
-
-class TestSemanticCheckEvaluatedPayload:
-    """Tests for SemanticCheckEvaluatedPayload."""
-
-    def test_valid_with_conflicts(self) -> None:
-        conflict = SemanticConflictEntry(
-            term="api",
-            nature="overloaded",
-            severity="high",
-            description="ambig",
-        )
-        p = SemanticCheckEvaluatedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            conflicts=(conflict,),
-            severity="high",
-            confidence=0.9,
-            recommended_action="block",
-            effective_strictness="max",
-        )
-        assert len(p.conflicts) == 1
-
-    def test_empty_conflicts_valid(self) -> None:
-        p = SemanticCheckEvaluatedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            conflicts=(),
-            severity="low",
-            confidence=0.1,
-            recommended_action="pass",
-            effective_strictness="medium",
-        )
-        assert len(p.conflicts) == 0
-
-    @pytest.mark.parametrize("action", ["block", "warn", "pass"])
-    def test_recommended_actions(self, action: str) -> None:
-        p = SemanticCheckEvaluatedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            conflicts=(),
-            severity="low",
-            confidence=0.5,
-            recommended_action=action,
-            effective_strictness="medium",
-        )
-        assert p.recommended_action == action
-
-    @pytest.mark.parametrize("strictness", ["off", "medium", "max"])
-    def test_effective_strictness(self, strictness: str) -> None:
-        p = SemanticCheckEvaluatedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            conflicts=(),
-            severity="low",
-            confidence=0.5,
-            recommended_action="pass",
-            effective_strictness=strictness,
-        )
-        assert p.effective_strictness == strictness
-
-    def test_confidence_bounds(self) -> None:
-        for val in [0.0, 1.0]:
-            p = SemanticCheckEvaluatedPayload(
-                mission_id="m1",
-                scope_id="s1",
-                step_id="st1",
-                conflicts=(),
-                severity="low",
-                confidence=val,
-                recommended_action="pass",
-                effective_strictness="off",
-            )
-            assert p.confidence == val
-
-    def test_confidence_out_of_bounds(self) -> None:
-        with pytest.raises(ValidationError):
-            SemanticCheckEvaluatedPayload(
-                mission_id="m1",
-                scope_id="s1",
-                step_id="st1",
-                conflicts=(),
-                severity="low",
-                confidence=1.1,
-                recommended_action="pass",
-                effective_strictness="off",
-            )
-
-    def test_round_trip_with_nested_conflicts(self) -> None:
-        conflict = SemanticConflictEntry(
-            term="api",
-            nature="overloaded",
-            severity="high",
-            description="ambig",
-        )
-        p = SemanticCheckEvaluatedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            conflicts=(conflict,),
-            severity="high",
-            confidence=0.9,
-            recommended_action="block",
-            effective_strictness="max",
-        )
-        assert SemanticCheckEvaluatedPayload(**p.model_dump()) == p
-
-
-# ── T034: Clarification Payloads ─────────────────────────────────────────────
-
-
-class TestGlossaryClarificationRequestedPayload:
-    """Tests for GlossaryClarificationRequestedPayload."""
-
-    def test_valid_construction(self) -> None:
-        p = GlossaryClarificationRequestedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            semantic_check_event_id="evt1",
-            term="api",
-            question="Which meaning?",
-            options=("REST", "Generic"),
-            urgency="high",
-            actor="a1",
-        )
-        assert p.semantic_check_event_id == "evt1"
-
-    def test_semantic_check_event_id_required(self) -> None:
-        with pytest.raises(ValidationError):
-            GlossaryClarificationRequestedPayload(
-                mission_id="m1",
-                scope_id="s1",
-                step_id="st1",
-                term="api",
-                question="Which?",
-                options=("A",),
-                urgency="low",
-                actor="a1",
-            )
-
-    @pytest.mark.parametrize("urgency", ["low", "medium", "high"])
-    def test_urgency_values(self, urgency: str) -> None:
-        p = GlossaryClarificationRequestedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            semantic_check_event_id="evt1",
-            term="api",
-            question="Which?",
-            options=("A",),
-            urgency=urgency,
-            actor="a1",
-        )
-        assert p.urgency == urgency
-
-    def test_options_multiple(self) -> None:
-        p = GlossaryClarificationRequestedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            semantic_check_event_id="evt1",
-            term="api",
-            question="Which?",
-            options=("A", "B", "C"),
-            urgency="low",
-            actor="a1",
-        )
-        assert len(p.options) == 3
-
-    def test_round_trip(self) -> None:
-        p = GlossaryClarificationRequestedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            step_id="st1",
-            semantic_check_event_id="evt1",
-            term="api",
-            question="Which?",
-            options=("REST", "Generic"),
-            urgency="high",
-            actor="a1",
-        )
-        assert GlossaryClarificationRequestedPayload(**p.model_dump()) == p
-
-
-class TestGlossaryClarificationResolvedPayload:
-    """Tests for GlossaryClarificationResolvedPayload."""
-
-    def test_valid_construction(self) -> None:
-        p = GlossaryClarificationResolvedPayload(
-            mission_id="m1",
-            clarification_event_id="evt1",
-            selected_meaning="REST interface",
-            actor="a1",
-        )
-        assert p.selected_meaning == "REST interface"
-
-    def test_clarification_event_id_required(self) -> None:
-        with pytest.raises(ValidationError):
-            GlossaryClarificationResolvedPayload(
-                mission_id="m1",
-                selected_meaning="REST",
-                actor="a1",
-            )
-
-    def test_empty_selected_meaning_rejected(self) -> None:
-        with pytest.raises(ValidationError):
-            GlossaryClarificationResolvedPayload(
-                mission_id="m1",
-                clarification_event_id="evt1",
-                selected_meaning="",
-                actor="a1",
-            )
-
-    def test_round_trip(self) -> None:
-        p = GlossaryClarificationResolvedPayload(
-            mission_id="m1",
-            clarification_event_id="evt1",
-            selected_meaning="REST interface",
-            actor="a1",
-        )
-        assert GlossaryClarificationResolvedPayload(**p.model_dump()) == p
-
-
-# ── T035: Generation Block Payload ───────────────────────────────────────────
-
-
-class TestGenerationBlockedBySemanticConflictPayload:
-    """Tests for GenerationBlockedBySemanticConflictPayload."""
-
-    def test_valid_medium(self) -> None:
-        p = GenerationBlockedBySemanticConflictPayload(
-            mission_id="m1",
-            step_id="st1",
-            conflict_event_ids=("e1",),
-            blocking_strictness="medium",
-        )
-        assert p.blocking_strictness == "medium"
-
-    def test_valid_max(self) -> None:
-        p = GenerationBlockedBySemanticConflictPayload(
-            mission_id="m1",
-            step_id="st1",
-            conflict_event_ids=("e1",),
-            blocking_strictness="max",
-        )
-        assert p.blocking_strictness == "max"
-
-    def test_off_rejected(self) -> None:
-        with pytest.raises(ValidationError):
-            GenerationBlockedBySemanticConflictPayload(
-                mission_id="m1",
-                step_id="st1",
-                conflict_event_ids=("e1",),
-                blocking_strictness="off",
-            )
-
-    def test_empty_conflict_event_ids_rejected(self) -> None:
-        with pytest.raises(ValidationError):
-            GenerationBlockedBySemanticConflictPayload(
-                mission_id="m1",
-                step_id="st1",
-                conflict_event_ids=(),
-                blocking_strictness="max",
-            )
-
-    def test_step_metadata_default(self) -> None:
-        p = GenerationBlockedBySemanticConflictPayload(
-            mission_id="m1",
-            step_id="st1",
-            conflict_event_ids=("e1",),
-            blocking_strictness="max",
-        )
-        assert p.step_metadata == {}
-
-    def test_step_metadata_with_values(self) -> None:
-        p = GenerationBlockedBySemanticConflictPayload(
-            mission_id="m1",
-            step_id="st1",
-            conflict_event_ids=("e1",),
-            blocking_strictness="max",
-            step_metadata={"primitive": "generate"},
-        )
-        assert p.step_metadata == {"primitive": "generate"}
-
-    def test_round_trip(self) -> None:
-        p = GenerationBlockedBySemanticConflictPayload(
-            mission_id="m1",
-            step_id="st1",
-            conflict_event_ids=("e1", "e2"),
-            blocking_strictness="max",
-            step_metadata={"k": "v"},
-        )
-        assert GenerationBlockedBySemanticConflictPayload(**p.model_dump()) == p
-
-
-# ── T036: Sense Updated Payload ──────────────────────────────────────────────
-
-
-class TestGlossarySenseUpdatedPayload:
-    """Tests for GlossarySenseUpdatedPayload."""
-
-    def test_initial_definition(self) -> None:
-        p = GlossarySenseUpdatedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            term_surface="api",
-            before_sense=None,
-            after_sense="REST interface",
-            reason="initial definition",
-            actor="a1",
-        )
-        assert p.before_sense is None
-
-    def test_update_existing(self) -> None:
-        p = GlossarySenseUpdatedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            term_surface="api",
-            before_sense="old meaning",
-            after_sense="new meaning",
-            reason="refinement",
-            actor="a1",
-        )
-        assert p.before_sense == "old meaning"
-
-    def test_empty_term_surface_rejected(self) -> None:
-        with pytest.raises(ValidationError):
-            GlossarySenseUpdatedPayload(
-                mission_id="m1",
-                scope_id="s1",
-                term_surface="",
-                after_sense="meaning",
-                reason="initial",
-                actor="a1",
-            )
-
-    def test_empty_after_sense_rejected(self) -> None:
-        with pytest.raises(ValidationError):
-            GlossarySenseUpdatedPayload(
-                mission_id="m1",
-                scope_id="s1",
-                term_surface="api",
-                after_sense="",
-                reason="initial",
-                actor="a1",
-            )
-
-    def test_round_trip_none_before(self) -> None:
-        p = GlossarySenseUpdatedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            term_surface="api",
-            before_sense=None,
-            after_sense="REST interface",
-            reason="initial",
-            actor="a1",
-        )
-        assert GlossarySenseUpdatedPayload(**p.model_dump()) == p
-
-    def test_round_trip_with_before(self) -> None:
-        p = GlossarySenseUpdatedPayload(
-            mission_id="m1",
-            scope_id="s1",
-            term_surface="api",
-            before_sense="old",
-            after_sense="new",
-            reason="update",
-            actor="a1",
-        )
-        assert GlossarySenseUpdatedPayload(**p.model_dump()) == p
+            p.actor = "b"  # type: ignore[misc]

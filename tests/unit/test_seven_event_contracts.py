@@ -2,11 +2,10 @@
 
 Covers FR-010 (model classes exist, round-trip, frozen+forbid).
 
-Registry-presence tests (FR-011) and LOCAL_ONLY_EVENT_TYPES tests (FR-013)
-live in WP01 and WP04 respectively — WP02's tests intentionally import payload
-models directly from their source modules so this file can run before WP01
-adds the seven entries to `_EVENT_TYPE_TO_MODEL` and before WP04 adds the
-package-root re-exports.
+Registry-presence tests (FR-011) live in WP01; WP02's tests intentionally import
+payload models directly from their source modules so this file can run before
+the registry entries and package-root re-exports exist. The retired
+``LOCAL_ONLY_EVENT_TYPES`` registry is covered by ``tests/test_local_only_removed.py``.
 """
 
 from __future__ import annotations

@@ -66,7 +66,7 @@ The offline sync/cutover surfaces (``spec_kitty_events.sync``, ``legacy``,
 lives in ``spec_kitty_events.strict.validate_strict_envelope``.
 """
 
-__version__ = "10.8.0"
+__version__ = "11.0.0"
 
 # Core data models
 from spec_kitty_events.models import (
@@ -268,17 +268,6 @@ from spec_kitty_events.zeitgeist_attrs import (
     to_zeitgeist_attrs,
 )
 
-# DEPRECATED (10.8.0; removed in 11.0). The "local-only event type" concept
-# is retired (spec-kitty-events#118): it let core keep events off the
-# canonical set while their contracts were experimental. Every event type the
-# package models is canonical -- MissionReopened and FollowUpRecorded
-# included -- and whether a producer ships a record off-host is the
-# producer's decision, not part of this contract. The name stays exported and
-# empty through 10.x because core imports it unguarded; it emits no warning
-# (a warning would raise in consumers running with -W error). Never add a
-# member. persistence.append_event does not consult it.
-LOCAL_ONLY_EVENT_TYPES: frozenset[str] = frozenset()
-
 # Status state model contracts
 from spec_kitty_events.status import (
     Lane,
@@ -365,7 +354,24 @@ from spec_kitty_events.glossary import (
     GENERATION_BLOCKED_BY_SEMANTIC_CONFLICT,
     GLOSSARY_STRICTNESS_SET,
     GLOSSARY_EVENT_TYPES,
-    SemanticConflictEntry,
+    STEP_CHECKPOINTED,
+    GlossaryActor,
+    GlossaryActorType,
+    GlossaryConflictType,
+    GlossaryFinding,
+    GlossaryNewSense,
+    GlossaryProvenance,
+    GlossaryRecommendedAction,
+    GlossaryResolutionMode,
+    GlossaryScope,
+    GlossarySenseStatus,
+    GlossarySeverity,
+    GlossaryStrictness,
+    GlossaryTermSurface,
+    GlossaryUpdateType,
+    ScopeRef,
+    SenseRef,
+    StepCheckpointedPayload,
     GlossaryScopeActivatedPayload,
     TermCandidateObservedPayload,
     SemanticCheckEvaluatedPayload,
@@ -487,6 +493,9 @@ from spec_kitty_events.decisionpoint import (
     DecisionPointWidenedPayload as DecisionPointWidenedPayload,
     ReducedDecisionPointState as ReducedDecisionPointState,
     reduce_decision_point_events as reduce_decision_point_events,
+    reduce_decision_point_records as reduce_decision_point_records,
+    DECISION_POINT_TERMINAL_REOPEN as DECISION_POINT_TERMINAL_REOPEN,
+    DecisionPointFoldError as DecisionPointFoldError,
 )
 
 # Decision Moment V1 shared models (4.0.0)
@@ -859,7 +868,24 @@ __all__ = [
     "GENERATION_BLOCKED_BY_SEMANTIC_CONFLICT",
     "GLOSSARY_STRICTNESS_SET",
     "GLOSSARY_EVENT_TYPES",
-    "SemanticConflictEntry",
+    "STEP_CHECKPOINTED",
+    "GlossaryActor",
+    "GlossaryActorType",
+    "GlossaryConflictType",
+    "GlossaryFinding",
+    "GlossaryNewSense",
+    "GlossaryProvenance",
+    "GlossaryRecommendedAction",
+    "GlossaryResolutionMode",
+    "GlossaryScope",
+    "GlossarySenseStatus",
+    "GlossarySeverity",
+    "GlossaryStrictness",
+    "GlossaryTermSurface",
+    "GlossaryUpdateType",
+    "ScopeRef",
+    "SenseRef",
+    "StepCheckpointedPayload",
     "GlossaryScopeActivatedPayload",
     "TermCandidateObservedPayload",
     "SemanticCheckEvaluatedPayload",
@@ -970,6 +996,9 @@ __all__ = [
     "DecisionPointWidenedPayload",
     "ReducedDecisionPointState",
     "reduce_decision_point_events",
+    "reduce_decision_point_records",
+    "DECISION_POINT_TERMINAL_REOPEN",
+    "DecisionPointFoldError",
     # Decision Moment V1 shared models (4.0.0)
     "ClosureMessageRef",
     "DefaultChannelRef",
@@ -1077,7 +1106,6 @@ __all__ = [
     "BuildRegisteredPayload",
     "BuildHeartbeatPayload",
     # Machine-readable classification surface.
-    "LOCAL_ONLY_EVENT_TYPES",
     # HarnessObservation vocabulary (F1-T1, 7.0.0).
     "HARNESS_OBSERVATION",
     "HARNESS_OBSERVATION_CONTRACT_VERSION",
