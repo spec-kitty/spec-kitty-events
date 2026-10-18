@@ -1,0 +1,35 @@
+{
+  "accept_commit": "5f6306937b0eb4bb00e615059379fa2c583c6c2f",
+  "acceptance_history": [
+    {
+      "accept_commit": "5f6306937b0eb4bb00e615059379fa2c583c6c2f",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-18T16:41:19.397327+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "691ac9da3695549a10608419d89727cef254f71b"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-18T16:41:19.397327+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "691ac9da3695549a10608419d89727cef254f71b",
+  "baseline_merge_commit": "5f0e26c64223d479629f9dc98be0c033717bf9d4",
+  "created_at": "2026-10-18T15:34:25.678273+00:00",
+  "flattened": true,
+  "friendly_name": "Decision and glossary contract reconciliation (11.0)",
+  "merged_at": "2026-10-18T16:42:20.576254+00:00",
+  "merged_commit": "2ddb0035bc0fa3ef75db35c3404a59f0fc8ca2fe",
+  "mid8": "01M57TCP",
+  "mission_id": "01M57TCPSYZCEP5N1DGZZSGE0Z",
+  "mission_number": 21,
+  "mission_slug": "decision-glossary-contract-reconciliation-01M57TCP",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Grounding showed core's decision reopen diverges from the package reducer, its glossary records match none of the package glossary models, and the envelope requires a Lamport clock core never keeps. This mission adopts core's glossary shapes, folds the deferred-to-resolved reopen, adds a ledger-record read-side fold, makes lamport_clock optional and removes LOCAL_ONLY_EVENT_TYPES, shipped as 11.0.0.",
+  "purpose_tldr": "Make decision and glossary events written by core append and replay through the package contract, as a major 11.0 release.",
+  "slug": "decision-glossary-contract-reconciliation-01M57TCP",
+  "status_phase": "1",
+  "target_branch": "issue-120-decision-moment-reconciliation",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-18T15:42:14.689554+00:00"
+}

@@ -1,0 +1,101 @@
+{
+  "event_count": 37,
+  "last_event_id": "01M57Y8VEWMMJSJHCWBA898D2V",
+  "materialized_at": "2026-10-18T16:42:12.828844+00:00",
+  "mission_number": "",
+  "mission_slug": "decision-glossary-contract-reconciliation-01M57TCP",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 5,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M57Y8E9GKMKYPRJZQ5MXA3X8",
+      "last_transition_at": "2026-10-18T16:41:59.344750+00:00",
+      "review_result": {
+        "reference": "review-cycle://decision-glossary-contract-reconciliation-01M57TCP/WP01-envelope-clock/review-cycle-1.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "shell_pid": 4676,
+      "shell_pid_created_at": "1792338123.22"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M57Y8J247TEMV4MZMBMQSAFK",
+      "last_transition_at": "2026-10-18T16:42:03.204754+00:00",
+      "review_result": {
+        "reference": "review-cycle://decision-glossary-contract-reconciliation-01M57TCP/WP02-decisionpoint-reopen/review-cycle-1.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "shell_pid": 9808,
+      "shell_pid_created_at": "1792338670.56"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M57Y8NCXQCAAFM5P5NZJ1Q7R",
+      "last_transition_at": "2026-10-18T16:42:06.621648+00:00",
+      "review_result": {
+        "reference": "review-cycle://decision-glossary-contract-reconciliation-01M57TCP/WP03-glossary-11/review-cycle-1.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "shell_pid": 17855,
+      "shell_pid_created_at": "1792339505.45"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M57Y8REW01PNNAGPN2YE18A6",
+      "last_transition_at": "2026-10-18T16:42:09.756991+00:00",
+      "review_result": {
+        "reference": "review-cycle://decision-glossary-contract-reconciliation-01M57TCP/WP04-conformance-registries/review-cycle-1.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "shell_pid": 23365,
+      "shell_pid_created_at": "1792340188.39"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M57Y8VEWMMJSJHCWBA898D2V",
+      "last_transition_at": "2026-10-18T16:42:12.828844+00:00",
+      "review_result": {
+        "reference": "review-cycle://decision-glossary-contract-reconciliation-01M57TCP/WP05-release-11/review-cycle-1.md",
+        "reviewer": "user",
+        "verdict": "approved"
+      },
+      "shell_pid": 27479,
+      "shell_pid_created_at": "1792340982.59"
+    }
+  }
+}
