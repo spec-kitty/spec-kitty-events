@@ -221,6 +221,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 # ``spec_kitty_events.status.reduce``.
 from spec_kitty_events.diary import DiaryError, State, parse_diary, reduce
 from spec_kitty_events.models import Event, SpecKittyEventsError, ValidationError
+from spec_kitty_events.ordering import canonical_order_key
 
 logger = logging.getLogger(__name__)
 
@@ -744,12 +745,13 @@ def validate_transition(payload: StatusTransitionPayload) -> TransitionValidatio
 # ---------------------------------------------------------------------------
 
 
-def status_event_sort_key(event: Event) -> Tuple[int, str, str]:
+def status_event_sort_key(event: Event) -> Tuple[int, int, str, str]:
     """Deterministic sort key for status events.
 
-    Returns (lamport_clock, timestamp_isoformat, event_id).
+    Delegates to :func:`spec_kitty_events.ordering.canonical_order_key`:
+    ``(1 if clocked else 0, clock or 0, utc_timestamp_iso, event_id)``.
     """
-    return (event.lamport_clock, event.timestamp.isoformat(), event.event_id)
+    return canonical_order_key(event)
 
 
 def dedup_events(events: Sequence[Event]) -> List[Event]:
@@ -882,12 +884,19 @@ def reduce_status_events(events: Sequence[Event]) -> ReducedStatus:
             last_processed_event_id=unique_events[-1].event_id,
         )
 
-    # 5. Rollback-aware reordering: group by (wp_id, lamport_clock)
+    # 5. Rollback-aware reordering: group by (wp_id, lamport_clock); unclocked = singleton
     # Use insertion-order dict grouping to handle interleaving keys correctly.
     grouped: List[List[Tuple[Event, StatusTransitionPayload]]] = []
-    grouped_by_key: Dict[Tuple[str, int], List[Tuple[Event, StatusTransitionPayload]]] = {}
+    grouped_by_key: Dict[
+        Tuple[str, Optional[int], str], List[Tuple[Event, StatusTransitionPayload]]
+    ] = {}
     for event, payload in parsed:
-        key = (payload.wp_id, event.lamport_clock)
+        # An unclocked event is never concurrent: it forms its own singleton group.
+        key = (
+            payload.wp_id,
+            event.lamport_clock,
+            event.event_id if event.lamport_clock is None else "",
+        )
         grouped_by_key.setdefault(key, []).append((event, payload))
     for group in grouped_by_key.values():
         grouped.append(_rollback_aware_order(group))

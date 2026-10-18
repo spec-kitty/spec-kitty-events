@@ -436,7 +436,7 @@ def reduce_collaboration_events(
 
     Pipeline:
     1. Filter to collaboration event types only
-    2. Sort by (lamport_clock, timestamp, event_id)
+    2. Sort by the canonical ordering key (unclocked first by timestamp, then clocked by lamport_clock; see ordering.py)
     3. Deduplicate by event_id
     4. Process each event, mutating intermediate state
     5. Assemble frozen ReducedCollaborationState

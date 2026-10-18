@@ -3,6 +3,11 @@
 from typing import Tuple
 from spec_kitty_events.models import Event
 
+# Sort sentinel for unclocked envelopes. It is below every real clock (clocks
+# are >= 0), so unclocked events sort first without a TypeError, as in ADR
+# 0001's total order. Prefer ordering.canonical_order_key for a total order.
+_UNCLOCKED_SORT_CLOCK = -1
+
 
 def is_concurrent(event1: Event, event2: Event) -> bool:
     """Determine if two events are concurrent (conflicting).
@@ -32,6 +37,8 @@ def is_concurrent(event1: Event, event2: Event) -> bool:
         >>> is_concurrent(e1, e3)  # Different aggregate
         False
     """
+    if event1.lamport_clock is None or event2.lamport_clock is None:
+        return False
     return (
         event1.lamport_clock == event2.lamport_clock
         and event1.aggregate_id == event2.aggregate_id
@@ -52,11 +59,15 @@ def total_order_key(event: Event) -> Tuple[int, str]:
         event: Event to generate key for
 
     Returns:
-        Tuple of (lamport_clock, node_id) for sorting
+        Tuple of (lamport_clock, node_id) for sorting; an unclocked event uses a
+        sentinel clock below any real one, so it sorts first without a TypeError. Unclocked events from the same
+        node tie and keep input order; use ``ordering.canonical_order_key``
+        for a total order over unclocked events
 
     Example:
         >>> events = [event1, event2, event3]
         >>> sorted_events = sorted(events, key=total_order_key)
         # Events are now deterministically ordered by (clock, node_id)
     """
-    return (event.lamport_clock, event.node_id)
+    clock = event.lamport_clock
+    return (_UNCLOCKED_SORT_CLOCK if clock is None else clock, event.node_id)

@@ -597,6 +597,13 @@ def validate_strict_envelope(record: Any) -> Tuple[ValidationError, ...]:
         errors.append(_envelope_shape_error(extra=extra))
         envelope_shape_failed = True
 
+    # Step 3b (#120): the envelope model now accepts a missing/null
+    # lamport_clock, but the strict journal profile still requires a real one,
+    # so an explicit null is rejected here rather than passing step 9.
+    if "lamport_clock" in record and record["lamport_clock"] is None:
+        errors.append(_envelope_shape_error(null=["lamport_clock"]))
+        envelope_shape_failed = True
+
     # Step 4: forbidden keys anywhere (recursive walk over the whole record).
     forbidden_set = FORBIDDEN_LEGACY_KEYS
     if record.get("event_type") == HARNESS_OBSERVATION:
