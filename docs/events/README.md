@@ -32,7 +32,7 @@ This section groups the families by concern. For the envelope they all ride in, 
 - **[Collaboration](/events/collaboration/)** — multi-participant presence, drive intent,
   focus, comments and decisions, and bounded cross-mission coordination messages.
 - **[Semantics and analytics](/events/semantics-and-analytics/)** — glossary semantic-integrity
-  enforcement, and token-usage and diff accounting.
+  enforcement and step checkpoints, and token-usage and diff accounting.
 
 ## Families at a glance
 
@@ -40,10 +40,22 @@ This section groups the families by concern. For the envelope they all ride in, 
 |---|---|---|
 | [Mission lifecycle](/events/mission-lifecycle/) | `lifecycle`, `project_lifecycle`, `mission_next` | `reduce_lifecycle_events`, `reduce_mission_next_events` |
 | [Work and status](/events/work-and-status/) | `status`, `diary` | `reduce_status_events`, `diary.reduce` |
-| [Review, audit & decisions](/events/review-audit-decisions/) | `decisionpoint`, `mission_audit`, `retrospective`, `dossier`, `gates` | `reduce_decision_point_events`, `reduce_mission_audit_events`, `reduce_mission_dossier` |
+| [Review, audit & decisions](/events/review-audit-decisions/) | `decisionpoint`, `mission_audit`, `retrospective`, `dossier`, `gates` | `reduce_decision_point_events`, `reduce_decision_point_records`, `reduce_mission_audit_events`, `reduce_mission_dossier` |
 | [Runtime observation](/events/runtime-observation/) | `harness_observation`, `work_observation`, `work_replay`, `build_lifecycle`, `profile_invocation`, `ops_invocation`, `connector` | `reduce_connector_events`, `classify_work_stream` |
 | [Collaboration](/events/collaboration/) | `collaboration`, `coordination_message` | `reduce_collaboration_events` |
 | [Semantics & analytics](/events/semantics-and-analytics/) | `glossary`, `analytics` | `reduce_glossary_events` |
+
+## What changed in 11.0.0
+
+`11.0.0` (#120) changes three families and the envelope they ride in. See
+[the 11.0.0 changelog page](/changelog/2026-10-18-11-0-0-decision-glossary-envelope-clock/)
+and `COMPATIBILITY.md` for the migration.
+
+| Family or surface | Change |
+|---|---|
+| [Review, audit & decisions](/events/review-audit-decisions/) | A deferred decision reopens on a later resolve, in either order. New fold over ledger records: `reduce_decision_point_records`. |
+| [Semantics & analytics](/events/semantics-and-analytics/) | Glossary payloads take core's emitted shapes. `StepCheckpointed` added. The reducer is re-keyed and gains `checkpoints`. |
+| [Envelope](/api/envelope/) | `lamport_clock` is optional. Unclocked envelopes sort first, as in ADR 0001's total order. They are local-ledger only. |
 
 ## Durable or volatile?
 

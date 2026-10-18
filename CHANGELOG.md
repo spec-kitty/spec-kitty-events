@@ -7,6 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.0.0] - 2026-10-18
+
+### Breaking
+
+- **Glossary payloads now carry the shapes core emits.** All seven existing glossary payload
+  models renamed, retyped or reshaped fields (for example `term_surface` -> `term`,
+  `conflicts` -> `findings`, `actor` as an object). Old names are rejected, with no aliases;
+  see the field map in `COMPATIBILITY.md`. ([#120](https://github.com/spec-kitty/spec-kitty-events/issues/120))
+- **`SemanticConflictEntry` and `semantic_conflict_entry.schema.json` are removed.**
+  Use `GlossaryFinding`.
+- **`ReducedGlossaryState` and `ClarificationRecord` are reshaped.**
+  - `term_candidates` is keyed by `term`; it was `(scope_id, term_surface)`.
+  - `term_senses` is keyed by `(scope, term_surface)`; it was `(scope_id, term_surface)`.
+  - A new `checkpoints` field holds the latest `StepCheckpointed` per `step_id`.
+  - `ClarificationRecord` gains `conflict_id`, which correlates the request and its
+    resolution, and its `semantic_check_event_id` becomes optional. ([#120](https://github.com/spec-kitty/spec-kitty-events/issues/120))
+- **`LOCAL_ONLY_EVENT_TYPES` is removed**, as 10.8.0 announced. Importing it now raises
+  `ImportError`. ([#120](https://github.com/spec-kitty/spec-kitty-events/issues/120))
+- **`Event.lamport_clock` is optional.** Code that reads it as an `int` must handle `None`.
+  - `event.schema.json` no longer requires it. The strict profile still does, so unclocked
+    envelopes are for local ledgers only.
+  - Unclocked envelopes sort **before every clocked one**, by `(timestamp, event_id)`,
+    the same rule as ADR 0001's total order (`total_order.order_key`).
+  - Unclocked envelopes are never concurrent, so each forms a singleton group in the
+    conflict, lifecycle and status-rollback grouping.
+  - `merge` raises on unclocked input, and `work_replay` refuses it (LW-10).
+  - The envelope `schema_version` stays `3.0.0`.
+  ([#120](https://github.com/spec-kitty/spec-kitty-events/issues/120))
+- **`status_event_sort_key` returns a 4-tuple.** It now returns
+  `(1 if clocked else 0, lamport_clock or 0, utc_timestamp_iso, event_id)`, where the time part is the instant in UTC, instead of
+  `(lamport_clock, timestamp_iso, event_id)`. Callers that unpack the tuple or compare it
+  with stored 3-tuples must update. ([#120](https://github.com/spec-kitty/spec-kitty-events/issues/120))
+- **A deferred decision can now be reopened by a resolve.** Streams that reduced to
+  `invalid_transition` now reduce to RESOLVED, and every reduced state carries
+  `reopened_from_deferred`. ([#120](https://github.com/spec-kitty/spec-kitty-events/issues/120))
+
+Existing reducer goldens changed only by the added `reopened_from_deferred: false` key. No
+committed replay behaviour changed.
+
+### Added
+
+- **`StepCheckpointed` is registered** with a payload model, committed schema and
+  conformance entries. ([#120](https://github.com/spec-kitty/spec-kitty-events/issues/120))
+- **One canonical ordering key for mixed clocked and unclocked streams**
+  (`ordering.canonical_order_key`), used by every in-package ordering site. Unclocked
+  envelopes are never concurrent. ([#120](https://github.com/spec-kitty/spec-kitty-events/issues/120))
+- **`reduce_decision_point_records`, `DECISION_POINT_TERMINAL_REOPEN` and
+  `DecisionPointFoldError`**: decisions written with `append_event` now fold back, and the
+  anomaly kind `unfoldable_terminal_combination` reports impossible terminal sets.
+  ([#120](https://github.com/spec-kitty/spec-kitty-events/issues/120))
+- **New 11.0.0 conformance fixtures** for glossary, reopen, ordering, unclocked envelopes
+  and `ledger_append`. ([#120](https://github.com/spec-kitty/spec-kitty-events/issues/120))
+
+### Removed
+
+- `LOCAL_ONLY_EVENT_TYPES`, `SemanticConflictEntry` and `semantic_conflict_entry.schema.json`.
+
+### Fixed
+
+- **The wheel now ships every conformance fixture.** `ordering/`, `timestamp_semantics/`,
+  `dossier/replay/canonical_output_snapshot.json` and `zeitgeist_attrs/README.md` were
+  missing from built wheels, so the packaged gate could fail from a clean install.
+  `tests/test_wheel_contents.py` now guards the globs.
+
 ## [10.8.0] - 2026-10-18
 
 ### Added

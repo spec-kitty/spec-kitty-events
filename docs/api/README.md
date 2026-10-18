@@ -30,8 +30,8 @@ contract, that root file governs.
 - [Versioning & compatibility](/api/versioning-and-compatibility/) — the two version numbers,
   what makes a change major, and the artifacts a bump must ship.
 - [Ledger write contract](/api/ledger-write-contract/) — `persistence.append_event`, the
-  fail-closed, fixture-pinned append to a local JSONL ledger, and the retired
-  `LOCAL_ONLY_EVENT_TYPES`.
+  fail-closed, fixture-pinned append to a local JSONL ledger, unclocked envelopes, and
+  the removed `LOCAL_ONLY_EVENT_TYPES`.
 - [The strict profile](/api/strict-profile/) — `validate_strict_envelope`, the fail-closed
   gate for the durable journal and TeamSpace ingress.
 - [Consumer contract: mission dossier events (v2.4.0)](/api/consumer-contract-dossier-v2.4.0/)

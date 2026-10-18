@@ -23,7 +23,8 @@ and the dossier parity checker.
 
 A decision point is a question a mission opens, optionally widens to a broader
 audience, discusses, and resolves (or has overridden). Shared value objects
-live in `decision_moment.py`.
+live in `decision_moment.py`. Decision Moment V1 was introduced in spec-kitty-events
+4.0.0; its envelope `schema_version` is `3.0.0`.
 
 | Event type | Payload model | Meaning |
 |---|---|---|
@@ -61,6 +62,23 @@ filter(`DECISION_POINT_EVENT_TYPES`) → fold → freeze into a
 (`decision_point_id`, `mission_id`, `run_id`, `mission_slug`), the V1 projection
 (`origin_surface`, `question`, `options`, `widening`, `terminal_outcome`,
 `final_answer`, participants, `resolved_by`) and `anomalies`.
+
+**Reopen.** Since 11.0.0 a decision may be reopened from deferred by a resolve
+(`DECISION_POINT_TERMINAL_REOPEN = {(deferred, resolved)}`). One Resolved(deferred)
+plus one Resolved(resolved) fold to `resolved` in either file order, using the resolved
+event's answer and time; `reopened_from_deferred` is `True` and no anomaly is emitted. Every
+reduced state carries `reopened_from_deferred`. An Overridden is legal only after the
+effective resolve; one placed before it reports `invalid_transition`. Any other
+multi-Resolved set reports `unfoldable_terminal_combination` for each extra, and the first
+Resolved by the canonical ordering key stands
+([#120](https://github.com/spec-kitty/spec-kitty-events/issues/120)).
+
+**Ledger fold.** `reduce_decision_point_records(records, *, strict=True)` folds the records
+`persistence.append_event` writes: it validates each fail-closed, skips non-DecisionPoint
+types, groups by `decision_point_id` and reduces each group by the same rules. With
+`strict=True` it raises `LedgerValidationError` on a malformed record and
+`DecisionPointFoldError` on an unfoldable combination; with `strict=False` both become
+anomalies.
 
 **Durability.** Journaled. `DecisionPointOpened` and `DecisionPointResolved` are
 also projected onto the volatile relay (`VOLATILE_EVENT_TYPES`).

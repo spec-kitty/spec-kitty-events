@@ -23,7 +23,9 @@ checker and the analytics journal.
 
 The glossary family activates a semantic scope, observes candidate terms, runs
 semantic checks, requests and resolves clarifications, updates a term's sense,
-and blocks generation on an unresolved conflict.
+blocks generation on an unresolved conflict, and checkpoints a step.
+Since 11.0.0 the payloads carry the shapes core emits
+([#120](https://github.com/spec-kitty/spec-kitty-events/issues/120)).
 
 | Event type | Payload model | Meaning |
 |---|---|---|
@@ -35,13 +37,19 @@ and blocks generation on an unresolved conflict.
 | `GlossarySenseUpdated` | `GlossarySenseUpdatedPayload` | A term's recorded sense is updated. |
 | `GenerationBlockedBySemanticConflict` | `GenerationBlockedBySemanticConflictPayload` | Generation is blocked by an unresolved semantic conflict. |
 | `GlossaryStrictnessSet` | `GlossaryStrictnessSetPayload` | The glossary strictness level is set. |
+| `StepCheckpointed` | `StepCheckpointedPayload` | A step is checkpointed with its scope versions, input hash and cursor. |
 
-The eight types make up `GLOSSARY_EVENT_TYPES`.
+The nine types make up `GLOSSARY_EVENT_TYPES`. The payloads nest `GlossaryFinding`,
+`SenseRef`, `GlossaryActor`, `GlossaryProvenance` and `ScopeRef`, and are imported from the
+flat `spec_kitty_events.glossary` module. Each carries `mission_id` and `run_id`, except
+`GlossaryStrictnessSet`, which is unchanged, and the sense and clarification-resolved
+records, which are keyed by `scope`/`term_surface` and `conflict_id`.
 
 **Reducer.** `reduce_glossary_events` filters to `GLOSSARY_EVENT_TYPES` and
 folds into a frozen `ReducedGlossaryState`, tracking the active scope, the
-current strictness (default `medium`), recorded `ClarificationRecord`s,
-`SemanticConflictEntry`s and `anomalies`.
+current strictness (default `medium`), term candidates keyed by `term`, senses keyed
+by `(scope, term_surface)`, `ClarificationRecord`s correlated by `conflict_id`,
+`semantic_checks`, `generation_blocks`, `checkpoints` and `anomalies`.
 
 **Durability.** Journaled and reduced into durable glossary state.
 

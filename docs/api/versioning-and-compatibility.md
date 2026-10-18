@@ -27,7 +27,9 @@ related:
 They move independently. Conflating them is the most common misreading of this package. A
 major **package** bump does **not** imply a wire-format change — producers keep emitting
 `schema_version="3.0.0"`, and the [strict profile](/api/strict-profile/) rejects anything
-else. Both `5.0.0` and `6.0.0` were major package bumps that left the envelope at `3.0.0`.
+else. `5.0.0`, `6.0.0` and `11.0.0` were major package bumps that left the envelope at
+`3.0.0`. Likewise the "4.0.0" in Decision Moment V1 is the package release that introduced it
+(spec-kitty-events 4.0.0); its envelope `schema_version` is `3.0.0`.
 
 For the current release number, read `COMPATIBILITY.md`'s single declaration rather than any
 figure restated elsewhere.
@@ -41,7 +43,8 @@ consumer:
 - changing a typed payload's required fields, or renaming a field;
 - adding to the forbidden-key set, or widening where it is enforced;
 - any change that makes a previously-accepted envelope rejected, or a previously-rejected one
-  accepted.
+  accepted (`11.0.0` made `lamport_clock` optional and reshaped the glossary payloads);
+- removing a public export (`11.0.0` removed `LOCAL_ONLY_EVENT_TYPES`).
 
 Adding a **new** event type with its own payload model is **additive** (a minor bump): the
 new family is a new capability while every existing contract keeps its boundary. `6.1.0`
@@ -51,9 +54,13 @@ intended consumer can validate the new type.
 
 ## Artifacts a major bump must ship
 
-`CHANGELOG.md` (`### Breaking`), `COMPATIBILITY.md` (the version line plus the migration per
-role), `pyproject.toml` and `__version__`, every regenerated `*.schema.json`, and conformance
-fixtures covering the new accept/reject boundary.
+`CHANGELOG.md` (`### Breaking`, one line per change plus its consequence), `COMPATIBILITY.md`
+(the version line plus the migration per role, and an old-to-new field map for any renamed
+field), `pyproject.toml`, `__version__`, the README masthead and pip lines and `uv.lock`,
+every regenerated `*.schema.json`, and conformance fixtures covering the new accept/reject
+boundary. Forbidden: bumping without updating `CHANGELOG.md`, changing models without
+regenerating schemas, documenting a breaking change as additive, or weakening the
+local-CLI compatibility wording.
 
 ## Two validity domains
 

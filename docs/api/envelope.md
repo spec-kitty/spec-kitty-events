@@ -31,7 +31,7 @@ context fields and leaves the `payload` to the family's own model.
 | `timestamp` | `datetime` | Producer-assigned wall-clock occurrence time (ISO-8601 UTC). Consumers preserve it and record receipt time separately. **Not used for ordering.** |
 | `build_id` | `str` | Canonical checkout/worktree identity that produced the event. |
 | `node_id` | `str` | Causal emitter identity; used for Lamport ordering and deterministic tie-breaking. |
-| `lamport_clock` | `int` (≥0) | Lamport logical clock. Owns ordering together with `node_id`. |
+| `lamport_clock` | `int \| None` (≥0) | Optional since 11.0.0. Lamport logical clock; owns ordering together with `node_id` when present. Required by the strict profile. |
 | `causation_id` | `str \| None` | Parent event id (ULID/UUID); `None` for roots. |
 | `project_uuid` | `uuid.UUID` | The project this event belongs to. |
 | `project_slug` | `str \| None` | Human-readable project id. |
@@ -46,7 +46,10 @@ context fields and leaves the `payload` to the family's own model.
 - **`build_id` is the only canonical build identity.** It is build/checkout scoped, never
   team scoped; private-versus-team routing is host-product policy and not part of the
   envelope. See [system context](/context/system-context/).
-- **Ordering is by `(lamport_clock, node_id)`, not time.** Wall-clock `timestamp` can skew
+- **Unclocked envelopes (11.0.0).** `lamport_clock` may be `None` for local ledgers. They
+  order before clocked envelopes by `(timestamp, event_id)`, as in ADR 0001's total order, and are never concurrent with
+  another envelope. The durable journal and TeamSpace ingress reject them.
+- **Ordering is by `(lamport_clock, node_id)`, not time, for clocked envelopes.** Wall-clock `timestamp` can skew
   between nodes, so it never orders a stream. For the total order over CloudEvents-form rows,
   see [ordering and reduction](/architecture/ordering-and-reduction/).
 
