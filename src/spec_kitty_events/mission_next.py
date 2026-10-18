@@ -313,7 +313,7 @@ def reduce_mission_next_events(
 
     Pipeline:
     1. Filter to canonical mission-next event types
-    2. Sort by (lamport_clock, timestamp, event_id)
+    2. Sort by the canonical ordering key (unclocked first by timestamp, then clocked by lamport_clock; see ordering.py)
     3. Deduplicate by event_id
     4. Process each event
     5. Assemble frozen ReducedMissionRunState

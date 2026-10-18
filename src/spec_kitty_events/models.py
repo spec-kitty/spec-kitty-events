@@ -117,8 +117,13 @@ class Event(BaseModel):
         min_length=1,
         description="Required causal emitter identity used for Lamport ordering and deterministic tie-breaking",
     )
-    lamport_clock: int = Field(
-        ..., ge=0, description="Lamport logical clock value (monotonically increasing)"
+    lamport_clock: Optional[int] = Field(
+        None,
+        ge=0,
+        description=(
+            "Optional Lamport logical clock value (monotonically increasing). "
+            "An envelope without it is unclocked and orders before clocked ones."
+        ),
     )
     causation_id: Optional[str] = Field(
         None,

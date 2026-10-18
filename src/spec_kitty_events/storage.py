@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict
 from spec_kitty_events.models import Event, ErrorEntry
+from spec_kitty_events.ordering import node_order_key
 
 
 class EventStore(ABC):
@@ -10,7 +11,7 @@ class EventStore(ABC):
 
     Implementations must provide idempotent save semantics:
     - Saving the same event twice (by event_id) should not duplicate it
-    - load_events() returns events in temporal order (sorted by lamport_clock, then node_id)
+    - load_events() returns events in temporal order (unclocked events first, then clocked by lamport_clock, then node_id)
 
     Note: Thread-safety is the responsibility of the concrete implementation.
     """
@@ -35,7 +36,7 @@ class EventStore(ABC):
             aggregate_id: Aggregate identifier to filter by
 
         Returns:
-            List of events sorted by (lamport_clock, node_id)
+            List of events sorted by ordering.node_order_key (unclocked first, then clock, then node_id)
 
         Raises:
             StorageError: If load fails
@@ -47,7 +48,7 @@ class EventStore(ABC):
         """Load all events across all aggregates.
 
         Returns:
-            List of all events sorted by (lamport_clock, node_id)
+            List of all events sorted by ordering.node_order_key (unclocked first, then clock, then node_id)
 
         Raises:
             StorageError: If load fails
@@ -151,13 +152,13 @@ class InMemoryEventStore(EventStore):
         self._events[event.event_id] = event
 
     def load_events(self, aggregate_id: str) -> List[Event]:
-        """Load events for aggregate, sorted by (lamport_clock, node_id)."""
+        """Load events for aggregate, sorted by ordering.node_order_key (unclocked first, then clock, then node_id)."""
         events = [e for e in self._events.values() if e.aggregate_id == aggregate_id]
-        return sorted(events, key=lambda e: (e.lamport_clock, e.node_id))
+        return sorted(events, key=node_order_key)
 
     def load_all_events(self) -> List[Event]:
-        """Load all events, sorted by (lamport_clock, node_id)."""
-        return sorted(self._events.values(), key=lambda e: (e.lamport_clock, e.node_id))
+        """Load all events, sorted by ordering.node_order_key (unclocked first, then clock, then node_id)."""
+        return sorted(self._events.values(), key=node_order_key)
 
 
 class InMemoryClockStorage(ClockStorage):

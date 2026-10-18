@@ -235,7 +235,7 @@ def reduce_mission_audit_events(events: Sequence[Event]) -> ReducedMissionAuditS
 
     Pipeline: sort → dedup → filter(MISSION_AUDIT_EVENT_TYPES) → reduce → freeze.
     """
-    # Step 1: Sort by (timestamp, lamport_clock) for determinism
+    # Step 1: Sort by the canonical ordering key (unclocked first by timestamp, then clocked by lamport_clock; see ordering.py)
     sorted_events = sorted(events, key=status_event_sort_key)
 
     # Step 2: Deduplicate by event_id

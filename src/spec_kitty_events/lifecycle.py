@@ -652,7 +652,7 @@ def reduce_lifecycle_events(events: Sequence[Event]) -> ReducedMissionState:
     """Fold a sequence of lifecycle events into projected mission state.
 
     Pipeline:
-    1. Sort by (lamport_clock, timestamp, event_id)
+    1. Sort by the canonical ordering key (unclocked first by timestamp, then clocked by lamport_clock; see ordering.py)
     2. Deduplicate by event_id
     3. Partition into mission-level and WP-level events
     4. Reduce mission events with cancel-beats-re-open precedence
@@ -662,6 +662,7 @@ def reduce_lifecycle_events(events: Sequence[Event]) -> ReducedMissionState:
     Pure function. No I/O. Deterministic for any causal-order-preserving
     permutation.
     """
+    from spec_kitty_events.ordering import canonical_order_key
     from spec_kitty_events.status import (
         ReducedStatus,
         dedup_events,
@@ -702,12 +703,13 @@ def reduce_lifecycle_events(events: Sequence[Event]) -> ReducedMissionState:
     anomalies: List[LifecycleAnomaly] = []
 
     # Group by lamport_clock for concurrent group handling
-    clock_groups: Dict[int, List[Event]] = {}
+    # An unclocked event is never concurrent: it forms its own singleton group.
+    clock_groups: Dict[Tuple[Optional[int], str], List[Event]] = {}
     for event in mission_events:
-        clock_groups.setdefault(event.lamport_clock, []).append(event)
+        gkey = (event.lamport_clock, event.event_id if event.lamport_clock is None else "")
+        clock_groups.setdefault(gkey, []).append(event)
 
-    for clock in sorted(clock_groups.keys()):
-        group = clock_groups[clock]
+    for group in sorted(clock_groups.values(), key=lambda g: canonical_order_key(g[0])):
         # Cancel-beats-re-open: sort so MissionCancelled is applied last
         group.sort(key=_cancel_last_key)
         for event in group:

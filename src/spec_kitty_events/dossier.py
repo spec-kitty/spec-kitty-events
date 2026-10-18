@@ -297,7 +297,7 @@ def reduce_mission_dossier(events: Sequence[Event]) -> MissionDossierState:
 
     Pipeline:
     1. Filter to DOSSIER_EVENT_TYPES
-    2. Sort by (lamport_clock, timestamp, event_id) via status_event_sort_key
+    2. Sort by the canonical ordering key (unclocked first by timestamp, then clocked by lamport_clock; see ordering.py) via status_event_sort_key
     3. Deduplicate by event_id via dedup_events
     4. Validate namespace consistency (5-field key; step_id excluded) —
        raise NamespaceMixedStreamError on mismatch; skip events with
@@ -317,7 +317,7 @@ def reduce_mission_dossier(events: Sequence[Event]) -> MissionDossierState:
     if not dossier_events:
         return MissionDossierState()
 
-    # 2. Sort by (lamport_clock, timestamp, event_id)
+    # 2. Sort by the canonical ordering key (unclocked first by timestamp, then clocked by lamport_clock; see ordering.py)
     sorted_events = sorted(dossier_events, key=status_event_sort_key)
 
     # 3. Deduplicate by event_id

@@ -41,6 +41,11 @@ def state_machine_merge(
 
     # Validate all events have same lamport_clock and aggregate_id (concurrent)
     first_event = events[0]
+    for event in events:
+        if event.lamport_clock is None:
+            raise ValidationError(
+                f"Cannot merge unclocked event {event.event_id}: merge requires lamport_clock"
+            )
     for event in events[1:]:
         if event.lamport_clock != first_event.lamport_clock:
             raise ValidationError(

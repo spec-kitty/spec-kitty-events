@@ -81,6 +81,8 @@ def work_item_from_event(event: Event) -> WorkStreamItem:
     """
     if event.event_type != WORK_OBSERVATION:
         raise ValueError(f"expected event_type={WORK_OBSERVATION!r}, got {event.event_type!r}")
+    if event.lamport_clock is None:
+        raise ValueError("work replay requires lamport_clock (LW-10)")
     producer = event.payload.get("producer")
     if not isinstance(producer, Mapping):
         raise ValueError("payload.producer is missing or not an object")
