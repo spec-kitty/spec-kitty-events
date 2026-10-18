@@ -1,0 +1,53 @@
+/*
+ * Build Kitty accent override (Layer 3 — consumer) for spec-kitty-events.
+ *
+ * The Spec Kitty brand theme carries the shared YELLOW accent signal. Build Kitty's
+ * product-line colour is Aegean blue, so this sheet re-states only the accent / link /
+ * focus / diagram tokens in blue. It is loaded AFTER the brand's tokens.css via the
+ * theme `customCss` list, so it wins by source order at plain specificity — the
+ * documented default -> brand -> consumer layering (doc-kitty theming.md, ADR-0011).
+ *
+ * `--dk-*` ONLY (never `--sl-*`): the base sheet owns the `--dk-* -> --sl-*` bridge.
+ * Every mode-varying token is declared for LIGHT on `:root` and re-declared for dark
+ * under `:root[data-theme='dark']`, so no value leaks across modes. Hexes are chosen
+ * for WCAG AA against the brand's surfaces (links/text >= 4.5:1, non-text >= 3:1).
+ * Non-accent state colours (info/success/warning/danger) are left to the brand.
+ */
+
+:root {
+  /* ===== Accent — Aegean blue — LIGHT (surfaces #FBFAF7 / #FFFFFF) ============= */
+  /* Link text: deep Aegean on paper (~6:1). */
+  --dk-color-text-accent: #1d5a87;
+  /* Accent fill + its ink (white on medium Aegean). */
+  --dk-color-accent-low: #e7eff8;   /* pale blue tint bg */
+  --dk-color-accent: #205c87;       /* the Aegean signal */
+  --dk-color-accent-high: #16486c;  /* hover / strong */
+  --dk-color-accent-text: #ffffff;  /* ink on the accent fill */
+
+  /* Focus ring — deep Aegean (non-text, >= 3:1 on paper). */
+  --dk-shadow-focus: 0 0 0 3px #1d5a87;
+
+  /* Diagram surfaces — the brand's blue motif (edge already blue). */
+  --dk-diagram-node-border: #1d5a87;
+  --dk-diagram-edge: #2c5e86;
+  --dk-diagram-subgraph-title: #1d5a87;
+}
+
+:root[data-theme='dark'] {
+  /* ===== Accent — Aegean blue — DARK (surfaces #0D0E11 / #181A1F) ============= */
+  /* Link text: light Aegean on dark (~7:1). */
+  --dk-color-text-accent: #6fa8d6;
+  /* Accent fill + its ink (near-black navy on light Aegean). */
+  --dk-color-accent-low: #10243a;   /* deep blue tint bg */
+  --dk-color-accent: #3e86c0;       /* same signal, brighter on dark */
+  --dk-color-accent-high: #5ea3db;  /* hover / strong */
+  --dk-color-accent-text: #0a1622;  /* ink on the accent fill */
+
+  /* Focus ring — light Aegean. */
+  --dk-shadow-focus: 0 0 0 3px #6fa8d6;
+
+  /* Diagram surfaces. */
+  --dk-diagram-node-border: #6fa8d6;
+  --dk-diagram-edge: #6fa8d6;
+  --dk-diagram-subgraph-title: #6fa8d6;
+}
