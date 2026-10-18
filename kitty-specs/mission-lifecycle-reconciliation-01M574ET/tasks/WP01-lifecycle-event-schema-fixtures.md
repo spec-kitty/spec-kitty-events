@@ -18,6 +18,9 @@ requirement_refs:
 planning_base_branch: issue-119-mission-lifecycle-reconciliation
 merge_target_branch: issue-119-mission-lifecycle-reconciliation
 branch_strategy: Planning artifacts for this mission were generated on issue-119-mission-lifecycle-reconciliation. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-119-mission-lifecycle-reconciliation unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-mission-lifecycle-reconciliation-01M574ET
+base_commit: 55a19980e7a5a1cb345be145163a81825121c88d
+created_at: '2026-10-18T09:20:26.624669+00:00'
 subtasks:
 - T001
 - T002
