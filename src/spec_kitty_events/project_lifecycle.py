@@ -78,6 +78,7 @@ WP_ASSIGNED: str = "WPAssigned"
 HISTORY_ADDED: str = "HistoryAdded"
 ERROR_LOGGED: str = "ErrorLogged"
 DEPENDENCY_RESOLVED: str = "DependencyResolved"
+REVIEWER_SELF_APPROVAL: str = "ReviewerSelfApproval"
 
 
 PROJECT_LIFECYCLE_EVENT_TYPES: FrozenSet[str] = frozenset(
@@ -104,6 +105,7 @@ WP_LIFECYCLE_EVENT_TYPES: FrozenSet[str] = frozenset(
         HISTORY_ADDED,
         ERROR_LOGGED,
         DEPENDENCY_RESOLVED,
+        REVIEWER_SELF_APPROVAL,
     }
 )
 
@@ -376,6 +378,42 @@ class DependencyResolvedPayload(BaseModel):
     )
 
 
+class ReviewerSelfApprovalPayload(BaseModel):
+    """Typed payload for ``ReviewerSelfApproval`` events.
+
+    Records that a work-package's implementing actor fell back to
+    self-approving their own work because the intended reviewer was
+    unavailable. The event is an auditable fact about the review-gate
+    fallback; ``fallback_approved`` captures whether the self-approval was
+    actually taken.
+
+    This mirrors the already-committed producer-contract row
+    (``producer_contract/fixtures/rows/valid/wp.reviewer.selfapproved.v1.json``
+    ``data`` object) and core's ``emit`` site
+    (``spec-kitty/src/specify_cli/status/lifecycle_events.py``). The field set
+    is read from core, never imported (mirror-not-depend); the lifecycle model
+    stays self-contained, ``frozen`` and ``extra="forbid"`` like its peers.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    mission_slug: str = Field(..., min_length=1, description="Human handle for the mission.")
+    wp_id: str = Field(..., min_length=1, description="Work-package identifier (e.g. ``WP01``).")
+    implementing_actor: str = Field(
+        ..., min_length=1, description="Actor who implemented the work-package."
+    )
+    intended_reviewer: str = Field(
+        ..., min_length=1, description="Reviewer who was unavailable to review."
+    )
+    failure_reason: str = Field(
+        ..., min_length=1, description="Why the review fell back to self-approval."
+    )
+    fallback_approved: bool = Field(
+        ..., description="Whether the fallback self-approval was taken."
+    )
+    timestamp: str = Field(..., min_length=1, description="Event time (ISO-8601 UTC).")
+
+
 __all__ = [
     "PROJECT_INITIALIZED",
     "SPECIFY_STARTED",
@@ -389,6 +427,7 @@ __all__ = [
     "HISTORY_ADDED",
     "ERROR_LOGGED",
     "DEPENDENCY_RESOLVED",
+    "REVIEWER_SELF_APPROVAL",
     "PROJECT_LIFECYCLE_EVENT_TYPES",
     "ARTIFACT_LIFECYCLE_EVENT_TYPES",
     "WP_LIFECYCLE_EVENT_TYPES",
@@ -406,4 +445,5 @@ __all__ = [
     "HistoryAddedPayload",
     "ErrorLoggedPayload",
     "DependencyResolvedPayload",
+    "ReviewerSelfApprovalPayload",
 ]

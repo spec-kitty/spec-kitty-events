@@ -106,9 +106,12 @@ class TestValidEventFixtures:
         # + 7 new canonical contracts (WPAssigned, BuildRegistered, BuildHeartbeat,
         #   HistoryAdded, ErrorLogged, DependencyResolved, MissionOriginBound) shipped
         #   by mission canonical-producer-contracts-legacy-envelope-01KS7JM3 (WP02).
-        assert len(files) == 28, (
-            f"Expected 28 valid event fixtures (13 historical + 8 canonical lifecycle + 7 WP02), "
-            f"got {len(files)}"
+        # + 4 mission-lifecycle reconciliation fixtures (MissionReopened,
+        #   FollowUpRecorded commit+pr, ReviewerSelfApproval) shipped by mission
+        #   mission-lifecycle-reconciliation-01M574ET (WP01).
+        assert len(files) == 32, (
+            f"Expected 32 valid event fixtures (13 historical + 8 canonical lifecycle "
+            f"+ 7 WP02 + 4 lifecycle-reconciliation), got {len(files)}"
         )
 
 
@@ -464,7 +467,10 @@ class TestLoadFixtures:
         # (project init, specify/plan/tasks lifecycle, WPCreated)
         # + 7 new canonical contracts shipped by mission
         # canonical-producer-contracts-legacy-envelope-01KS7JM3 (WP02).
-        assert len(valid_cases) == 28
+        # + 4 mission-lifecycle reconciliation fixtures (MissionReopened,
+        # FollowUpRecorded commit+pr, ReviewerSelfApproval) shipped by WP01 of
+        # mission-lifecycle-reconciliation-01M574ET.
+        assert len(valid_cases) == 32
 
     def test_events_invalid_cases_expected_valid_false(self) -> None:
         cases = load_fixtures("events")
@@ -472,7 +478,10 @@ class TestLoadFixtures:
         # 5 historical invalid fixtures + 2 new lifecycle invalid fixtures.
         # (8.0.0 removed the five cutover-policy fixtures — the gate they
         # exercised lived in the deleted spec_kitty_events.cutover.)
-        assert len(invalid_cases) == 7
+        # + 11 mission-lifecycle reconciliation invalid fixtures (4 MissionReopened,
+        # 4 FollowUpRecorded, 3 ReviewerSelfApproval) shipped by WP01 of
+        # mission-lifecycle-reconciliation-01M574ET.
+        assert len(invalid_cases) == 18
 
     def test_fixture_case_has_payload(self) -> None:
         cases = load_fixtures("events")

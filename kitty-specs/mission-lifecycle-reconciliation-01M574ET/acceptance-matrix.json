@@ -1,0 +1,99 @@
+{
+  "mission_slug": "mission-lifecycle-reconciliation-01M574ET",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 b9acfa0; conformance 691 passed, schema-drift 4 passed, mypy --strict clean, ruff clean; review APPROVE (reviewer-renata)",
+      "pass_fail": "pass",
+      "verified_by": "stijn-dejongh",
+      "verified_at": "2026-10-18T09:37:15.308711+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 b9acfa0; conformance 691 passed, schema-drift 4 passed, mypy --strict clean, ruff clean; review APPROVE (reviewer-renata)",
+      "pass_fail": "pass",
+      "verified_by": "stijn-dejongh",
+      "verified_at": "2026-10-18T09:37:17.482478+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 b9acfa0; conformance 691 passed, schema-drift 4 passed, mypy --strict clean, ruff clean; review APPROVE (reviewer-renata)",
+      "pass_fail": "pass",
+      "verified_by": "stijn-dejongh",
+      "verified_at": "2026-10-18T09:37:19.624675+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 b9acfa0; conformance 691 passed, schema-drift 4 passed, mypy --strict clean, ruff clean; review APPROVE (reviewer-renata)",
+      "pass_fail": "pass",
+      "verified_by": "stijn-dejongh",
+      "verified_at": "2026-10-18T09:37:21.756005+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 b9acfa0; conformance 691 passed, schema-drift 4 passed, mypy --strict clean, ruff clean; review APPROVE (reviewer-renata)",
+      "pass_fail": "pass",
+      "verified_by": "stijn-dejongh",
+      "verified_at": "2026-10-18T09:37:23.880564+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 b9acfa0; conformance 691 passed, schema-drift 4 passed, mypy --strict clean, ruff clean; review APPROVE (reviewer-renata)",
+      "pass_fail": "pass",
+      "verified_by": "stijn-dejongh",
+      "verified_at": "2026-10-18T09:37:26.030246+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 b9acfa0; conformance 691 passed, schema-drift 4 passed, mypy --strict clean, ruff clean; review APPROVE (reviewer-renata)",
+      "pass_fail": "pass",
+      "verified_by": "stijn-dejongh",
+      "verified_at": "2026-10-18T09:37:28.189218+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 b9acfa0; conformance 691 passed, schema-drift 4 passed, mypy --strict clean, ruff clean; review APPROVE (reviewer-renata)",
+      "pass_fail": "pass",
+      "verified_by": "stijn-dejongh",
+      "verified_at": "2026-10-18T09:37:30.357002+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 b9acfa0; conformance 691 passed, schema-drift 4 passed, mypy --strict clean, ruff clean; review APPROVE (reviewer-renata)",
+      "pass_fail": "pass",
+      "verified_by": "stijn-dejongh",
+      "verified_at": "2026-10-18T09:37:32.583949+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

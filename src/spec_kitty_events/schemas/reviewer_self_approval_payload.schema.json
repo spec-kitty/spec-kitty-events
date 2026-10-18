@@ -1,0 +1,60 @@
+{
+  "$id": "spec-kitty-events/reviewer_self_approval_payload",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Typed payload for ``ReviewerSelfApproval`` events.\n\nRecords that a work-package's implementing actor fell back to\nself-approving their own work because the intended reviewer was\nunavailable. The event is an auditable fact about the review-gate\nfallback; ``fallback_approved`` captures whether the self-approval was\nactually taken.\n\nThis mirrors the already-committed producer-contract row\n(``producer_contract/fixtures/rows/valid/wp.reviewer.selfapproved.v1.json``\n``data`` object) and core's ``emit`` site\n(``spec-kitty/src/specify_cli/status/lifecycle_events.py``). The field set\nis read from core, never imported (mirror-not-depend); the lifecycle model\nstays self-contained, ``frozen`` and ``extra=\"forbid\"`` like its peers.",
+  "properties": {
+    "failure_reason": {
+      "description": "Why the review fell back to self-approval.",
+      "minLength": 1,
+      "title": "Failure Reason",
+      "type": "string"
+    },
+    "fallback_approved": {
+      "description": "Whether the fallback self-approval was taken.",
+      "title": "Fallback Approved",
+      "type": "boolean"
+    },
+    "implementing_actor": {
+      "description": "Actor who implemented the work-package.",
+      "minLength": 1,
+      "title": "Implementing Actor",
+      "type": "string"
+    },
+    "intended_reviewer": {
+      "description": "Reviewer who was unavailable to review.",
+      "minLength": 1,
+      "title": "Intended Reviewer",
+      "type": "string"
+    },
+    "mission_slug": {
+      "description": "Human handle for the mission.",
+      "minLength": 1,
+      "title": "Mission Slug",
+      "type": "string"
+    },
+    "timestamp": {
+      "description": "Event time (ISO-8601 UTC).",
+      "minLength": 1,
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "wp_id": {
+      "description": "Work-package identifier (e.g. ``WP01``).",
+      "minLength": 1,
+      "title": "Wp Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "mission_slug",
+    "wp_id",
+    "implementing_actor",
+    "intended_reviewer",
+    "failure_reason",
+    "fallback_approved",
+    "timestamp"
+  ],
+  "title": "ReviewerSelfApprovalPayload",
+  "type": "object"
+}
