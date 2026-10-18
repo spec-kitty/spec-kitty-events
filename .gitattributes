@@ -1,3 +1,6 @@
+# Normalise text files to LF in the repository and in checkouts.
+* text=auto eol=lf
+
 kitty-specs/**/status.events.jsonl merge=spec-kitty-event-log
 kitty-specs/**/status.json linguist-generated=true
 kitty-specs/**/status.events.jsonl linguist-generated=true
