@@ -1,0 +1,35 @@
+{
+  "accept_commit": "6c9ee158b869bbc6c2f68753835da4af561467a7",
+  "acceptance_history": [
+    {
+      "accept_commit": "6c9ee158b869bbc6c2f68753835da4af561467a7",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-18T14:50:31.686373+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "3b122c859b604e7b8c82e14b7c9e907ca0f5a8cf"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-18T14:50:31.686373+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "3b122c859b604e7b8c82e14b7c9e907ca0f5a8cf",
+  "baseline_merge_commit": "3d16c0ea0b1d769a3e15c63539f1140572f3be36",
+  "created_at": "2026-10-18T14:20:43.165625+00:00",
+  "flattened": true,
+  "friendly_name": "Ledger-write contract seam",
+  "merged_at": "2026-10-18T14:51:24.527470+00:00",
+  "merged_commit": "aebab28396ad19168f0376ac0bb824e849edcf66",
+  "mid8": "01M57P5Q",
+  "mission_id": "01M57P5QVT3WWE7A83A91630FB",
+  "mission_number": 20,
+  "mission_slug": "ledger-write-contract-seam-01M57P5Q",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Core already imports spec_kitty_events.persistence.append_event behind a fail-closed guard. This mission ships that seam as a validated, fail-closed append whose exact bytes are pinned by conformance fixtures so a second binding can be held to them, and deprecates the empty LOCAL_ONLY_EVENT_TYPES registry now that MissionReopened and FollowUpRecorded are canonical.",
+  "purpose_tldr": "Ship persistence.append_event, the fixture-pinned reference write path for local JSONL ledgers, and retire LOCAL_ONLY_EVENT_TYPES.",
+  "slug": "ledger-write-contract-seam-01M57P5Q",
+  "status_phase": "1",
+  "target_branch": "issue-118-ledger-write-contract-seam",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-18T14:27:48.005116+00:00"
+}
