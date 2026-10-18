@@ -66,7 +66,7 @@ The offline sync/cutover surfaces (``spec_kitty_events.sync``, ``legacy``,
 lives in ``spec_kitty_events.strict.validate_strict_envelope``.
 """
 
-__version__ = "10.7.0"
+__version__ = "10.8.0"
 
 # Core data models
 from spec_kitty_events.models import (
@@ -268,13 +268,15 @@ from spec_kitty_events.zeitgeist_attrs import (
     to_zeitgeist_attrs,
 )
 
-# Machine-readable classification surface for event types that are NOT
-# routed through the SaaS-bound producer path. Empty in this release —
-# every CLI-emitted event audited as of spec-kitty 43305c12c routes
-# through SpecKittyEventEmitter._emit(). The surface is published so
-# downstream consumers (CLI canonical-producer lint, SaaS adapter) can
-# import the set and adjust enforcement without re-shipping a contract.
-# Mission: canonical-producer-contracts-legacy-envelope-01KS7JM3.
+# DEPRECATED (10.8.0; removed in 11.0). The "local-only event type" concept
+# is retired (spec-kitty-events#118): it let core keep events off the
+# canonical set while their contracts were experimental. Every event type the
+# package models is canonical -- MissionReopened and FollowUpRecorded
+# included -- and whether a producer ships a record off-host is the
+# producer's decision, not part of this contract. The name stays exported and
+# empty through 10.x because core imports it unguarded; it emits no warning
+# (a warning would raise in consumers running with -W error). Never add a
+# member. persistence.append_event does not consult it.
 LOCAL_ONLY_EVENT_TYPES: frozenset[str] = frozenset()
 
 # Status state model contracts

@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.8.0] - 2026-10-18
+
+### Added
+
+- **Core's guarded ledger write path now has something to import.** Core imports
+  `from spec_kitty_events.persistence import append_event` behind a fail-closed guard,
+  but the module did not exist, so every write took core's local fallback. This release
+  adds `append_event(event, path)`, the reference write path for a local JSONL ledger.
+  - It accepts an `Event`, a flat dict carrying `event_type`, or a registered payload model.
+  - It validates strictly and refuses unknown or invalid input before touching the file.
+  - It appends exactly one LF-terminated line with a single `O_APPEND` write, and refuses
+    a ledger with a torn tail.
+  - The new packaged `ledger_append` fixtures pin the line bytes so a second binding can
+    be held to them. For JSON-native records the bytes equal core's fallback.
+
+  ([#118](https://github.com/spec-kitty/spec-kitty-events/issues/118))
+
+### Deprecated
+
+- **`LOCAL_ONLY_EVENT_TYPES` is retired as a concept.** `MissionReopened` and
+  `FollowUpRecorded` are canonical events and were not added to it. The empty set stays
+  exported, with no runtime warning, through 10.x and is removed in 11.0.
+  ([#118](https://github.com/spec-kitty/spec-kitty-events/issues/118))
+
 ## [10.7.0] - 2026-10-18
 
 ### Added
