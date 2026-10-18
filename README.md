@@ -2,6 +2,8 @@
 
 # spec-kitty-events
 
+**Package Version**: `10.6.0` | **Envelope Schema Version**: `3.0.0` | **Python**: `>=3.10`
+
 The **event contracts** of Spec Kitty: the canonical vocabulary the Spec Kitty CLI and
 runtime emit as a Mission moves through its lifecycle. This repository is the
 event-contract surface of the [Build Kitty](https://github.com/spec-kitty/spec-kitty)
@@ -59,8 +61,8 @@ convention and is published from `main` to
   [Guides](docs/guides/README.md) · [Changelog](docs/changelog/README.md)
 
 The durable, governing contracts live in [`contracts/`](contracts/README.md);
-[`COMPATIBILITY.md`](COMPATIBILITY.md) is the public compatibility policy and the single
-declaration of the current package version.
+[`COMPATIBILITY.md`](COMPATIBILITY.md) is the public compatibility policy and the
+authoritative version-and-compatibility reference.
 
 ## Installation
 
