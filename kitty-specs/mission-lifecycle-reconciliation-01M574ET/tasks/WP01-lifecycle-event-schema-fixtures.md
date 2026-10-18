@@ -17,9 +17,13 @@ requirement_refs:
 - C-002
 planning_base_branch: issue-119-mission-lifecycle-reconciliation
 merge_target_branch: issue-119-mission-lifecycle-reconciliation
-branch_strategy: already-confirmed
-subtasks: [T001, T002, T003, T004, T005]
-agent: python-pedro
+branch_strategy: Planning artifacts for this mission were generated on issue-119-mission-lifecycle-reconciliation. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-119-mission-lifecycle-reconciliation unless the human explicitly redirects the landing branch.
+subtasks:
+- T001
+- T002
+- T003
+- T004
+- T005
 history:
 - '2026-10-18: created by /spec-kitty.tasks (semi-auto drive)'
 agent_profile: python-pedro
@@ -37,6 +41,8 @@ owned_files:
 - src/spec_kitty_events/schemas/reviewer_self_approval_payload.schema.json
 - src/spec_kitty_events/conformance/fixtures/events/**
 role: implementer
+tags: []
+tracker_refs: []
 ---
 
 ## ⚡ Do This First: Load Agent Profile
