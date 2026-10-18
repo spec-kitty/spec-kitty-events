@@ -139,18 +139,24 @@ python -m spec_kitty_events.schemas.generate --check
 uv run pytest --pyargs spec_kitty_events.conformance -v
 ```
 
-## Event-type classification
+## Write to a local ledger
 
-`LOCAL_ONLY_EVENT_TYPES` is a published `frozenset[str]` of event types that are **not**
-routed through the SaaS-bound producer path. It is currently empty — every audited CLI event
-routes through the central, SaaS-bound emitter — and exists so downstream consumers can
-classify future local-only types without re-shipping a contract.
+`spec_kitty_events.persistence.append_event(event, path)` (10.8.0) validates an `Event`, a
+flat dict or a registered payload model fail-closed, then appends one pinned-byte JSONL line.
+Its refusals (`LedgerAppendError`, `LedgerValidationError`, `LedgerTornTailError`) are
+exported from `spec_kitty_events.persistence` only, deliberately not from the package
+root. See [Ledger write contract](/api/ledger-write-contract/).
 
 ```python
-from spec_kitty_events import LOCAL_ONLY_EVENT_TYPES
-
-assert LOCAL_ONLY_EVENT_TYPES == frozenset()
+from spec_kitty_events.persistence import LedgerAppendError, append_event
 ```
+
+## `LOCAL_ONLY_EVENT_TYPES` (deprecated)
+
+The local-only classification is retired (10.8.0). Every modelled event type is canonical,
+`MissionReopened` and `FollowUpRecorded` included, and `append_event` does not consult the
+set. `LOCAL_ONLY_EVENT_TYPES` stays exported as an empty `frozenset`, with no runtime
+warning, through 10.x and is removed in 11.0.
 
 ## See also
 

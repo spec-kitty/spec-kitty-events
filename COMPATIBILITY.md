@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.7.0`
+**Current package version**: `10.8.0`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,34 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `10.8.0` — local-ledger write contract; `LOCAL_ONLY_EVENT_TYPES` deprecated
+
+`10.8.0` is a SemVer minor, additive. A new module, `spec_kitty_events.persistence`,
+exports `append_event(event, path)`, the reference write path for a local JSONL ledger,
+along with `build_record`, `serialize_record` and the `LedgerAppendError` /
+`LedgerValidationError` / `LedgerTornTailError` refusals.
+- It accepts a canonical `Event`, a flat dict carrying `event_type`, or a registered
+  payload model.
+- It validates fail-closed (`strict=True`) and refuses unknown types.
+- It appends `json.dumps(record, sort_keys=True, ensure_ascii=True, allow_nan=False) + "\n"`
+  with one `O_APPEND` write. For JSON-native records these bytes are identical to
+  core's local fallback append.
+- The new `ledger_append` conformance fixtures (min_version `10.8.0`) pin those bytes,
+  so every binding is held to the same lines.
+
+`LOCAL_ONLY_EVENT_TYPES` is **deprecated** and will be removed in `11.0`. It stays
+exported, empty and silent (no runtime warning) through 10.x. `MissionReopened`,
+`FollowUpRecorded` and `GlossarySenseUpdated` are canonical. The envelope
+`schema_version` is unchanged. No existing export, schema or fixture changed, and
+consumers that do not import `persistence` are unaffected.
+
+**Core adoption:** core's guard also imports `spec_kitty_events.glossary.events`, which this
+package does not provide, so core's `EVENTS_AVAILABLE` stays `False`. Core keeps its local
+fallback until it drops or rewrites that import. The fallback's line bytes already equal
+`append_event`'s for JSON-native records, and core's existing call shape `(event, path)` is
+unchanged. This follow-up belongs to core.
+(ledger-write-contract-seam; spec-kitty/spec-kitty-events#118)
 
 ## `10.7.0` — mission-lifecycle event schema + fixture reconciliation
 
