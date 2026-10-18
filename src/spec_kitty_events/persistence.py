@@ -29,8 +29,7 @@ ledger is opened, so a refused event never touches the file. Two residuals
 are I/O-level, not validation-level: the torn-tail check is advisory under
 concurrent writers (it runs before the write, not under a lock), and a short
 ``os.write`` -- impossible on a regular local file -- is reported after the
-partial bytes have landed. ``LOCAL_ONLY_EVENT_TYPES`` is not
-consulted: that registry is retired (deprecated, removed in 11.0).
+partial bytes have landed.
 """
 
 from __future__ import annotations
