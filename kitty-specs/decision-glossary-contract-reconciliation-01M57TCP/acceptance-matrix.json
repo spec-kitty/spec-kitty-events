@@ -1,0 +1,169 @@
+{
+  "mission_slug": "decision-glossary-contract-reconciliation-01M57TCP",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "test",
+      "evidence": "models.Event.lamport_clock Optional; tests/test_ordering.py",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:39:43.533812+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "test",
+      "evidence": "ordering.canonical_order_key at every sort site; ordering fixtures + test_event_ordering",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:39:32.228049+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002a",
+      "description": "Verify FR-002a is satisfied",
+      "proof_type": "test",
+      "evidence": "conflict/merge/lifecycle/status grouping singleton tests in tests/test_ordering.py",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:40:22.399319+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002b",
+      "description": "Verify FR-002b is satisfied",
+      "proof_type": "test",
+      "evidence": "work_replay LW-10 refusal test",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:40:27.672011+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "test",
+      "evidence": "strict profile rejects absent/null lamport_clock; envelope_strict_journal fixture",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:39:37.673066+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "test",
+      "evidence": "two-pass reopen fold; reopen replay fixtures (both orders identical)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:40:00.571178+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "test",
+      "evidence": "DECISION_POINT_TERMINAL_REOPEN constant exported",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:40:06.189534+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "test",
+      "evidence": "reduce_decision_point_records + tests/test_decisionpoint_records_fold.py",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:39:49.160697+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "test",
+      "evidence": "glossary 11.0 models; 8 core captures byte-match fixtures",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:39:54.585815+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "test",
+      "evidence": "StepCheckpointedPayload + schema + validator maps",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:40:11.713312+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "test",
+      "evidence": "glossary reducer re-keyed; tests/test_glossary_reducer.py",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:40:16.956450+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "test",
+      "evidence": "LOCAL_ONLY_EVENT_TYPES removed; tests/test_local_only_removed.py",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:40:43.246201+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "test",
+      "evidence": "schemas.generate --check clean (126 schemas)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:40:38.065227+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "test",
+      "evidence": "11.0.0 fixtures a-f; packaged gate 727 passed incl. clean wheel",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:40:53.556565+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "test",
+      "evidence": "11.0.0 surfaces, CHANGELOG Breaking, COMPATIBILITY migration + field map",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:40:48.606792+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "test",
+      "evidence": "docs updated (9 pages)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T16:40:32.849719+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "mission_slug": "decision-glossary-contract-reconciliation-01M57TCP",
+  "mission_id": "01M57TCPSYZCEP5N1DGZZSGE0Z",
+  "mission_branch": "kitty/mission-decision-glossary-contract-reconciliation-01M57TCP",
+  "target_branch": "issue-120-decision-moment-reconciliation",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "src/spec_kitty_events/collaboration.py",
+        "src/spec_kitty_events/conflict.py",
+        "src/spec_kitty_events/dossier.py",
+        "src/spec_kitty_events/lifecycle.py",
+        "src/spec_kitty_events/merge.py",
+        "src/spec_kitty_events/mission_next.py",
+        "src/spec_kitty_events/models.py",
+        "src/spec_kitty_events/ordering.py",
+        "src/spec_kitty_events/status.py",
+        "src/spec_kitty_events/storage.py",
+        "src/spec_kitty_events/strict.py",
+        "src/spec_kitty_events/work_replay.py",
+        "tests/test_ordering.py"
+      ],
+      "predicted_surfaces": [],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "src/spec_kitty_events/decisionpoint.py",
+        "tests/test_decisionpoint_records_fold.py",
+        "tests/test_decisionpoint_reducer.py"
+      ],
+      "predicted_surfaces": [],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "src/spec_kitty_events/__init__.py",
+        "src/spec_kitty_events/glossary.py",
+        "src/spec_kitty_events/persistence.py",
+        "tests/test_glossary.py",
+        "tests/test_glossary_reducer.py",
+        "tests/test_local_only_deprecation.py",
+        "tests/test_local_only_removed.py",
+        "tests/unit/test_seven_event_contracts.py"
+      ],
+      "predicted_surfaces": [
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "src/spec_kitty_events/conformance/**",
+        "src/spec_kitty_events/schemas/**",
+        "src/spec_kitty_events/support_matrix.json",
+        "tests/test_decisionpoint_conformance.py",
+        "tests/test_glossary_conformance.py",
+        "tests/test_support_matrix.py"
+      ],
+      "predicted_surfaces": [],
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "CHANGELOG.md",
+        "COMPATIBILITY.md",
+        "README.md",
+        "docs/**",
+        "pyproject.toml",
+        "uv.lock"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 4
+    }
+  ],
+  "computed_at": "2026-10-18T15:41:32.364149+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "d151b728fd7b08843179df89a37cb5834769033a"
+}
