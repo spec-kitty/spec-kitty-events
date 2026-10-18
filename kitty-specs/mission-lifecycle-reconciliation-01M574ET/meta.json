@@ -13,5 +13,7 @@
   "purpose_tldr": "Close the schema+fixture gaps so the mission-lifecycle event contracts this package ships match what core currently emits and consumes.",
   "slug": "mission-lifecycle-reconciliation-01M574ET",
   "target_branch": "issue-119-mission-lifecycle-reconciliation",
-  "topology": "coord"
+  "topology": "coord",
+  "contracts": "none",
+  "contracts_rationale": "Event contracts are the committed JSON Schemas under src/spec_kitty_events/schemas/ (generated from the Pydantic models and guarded by tests/integration/test_schema_drift.py); this mission introduces no service/API interface, so no kitty-specs/contracts/ directory applies."
 }
