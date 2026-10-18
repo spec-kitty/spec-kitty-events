@@ -2,10 +2,9 @@
   "event_count": 7,
   "last_event_id": "01M57611ZF8VP4V4WZ5EJM2G50",
   "materialized_at": "2026-10-18T09:38:31.535290+00:00",
-  "mission_number": "19",
+  "mission_number": "",
   "mission_slug": "mission-lifecycle-reconciliation-01M574ET",
-  "mission_type": "software-dev",
-  "schema_version": 2,
+  "mission_type": "",
   "summary": {
     "approved": 0,
     "blocked": 0,
@@ -20,32 +19,20 @@
   "work_packages": {
     "WP01": {
       "actor": "merge",
-      "agent": "reviewer-renata",
-      "agent_profile": "__resolved_profile_absent__",
-      "agent_profile_version": "__resolved_profile_version_absent__",
+      "agent": "python-pedro",
       "force_count": 0,
       "implementer_of_record": "python-pedro",
       "lane": "done",
       "last_event_id": "01M57611ZF8VP4V4WZ5EJM2G50",
       "last_transition_at": "2026-10-18T09:38:31.535290+00:00",
-      "model": "__resolved_model_absent__",
-      "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/stijn/Documents/_code/SDD/fork/spec-kitty-events/.worktrees/mission-lifecycle-reconciliation-01M574ET-coord/kitty-specs/mission-lifecycle-reconciliation-01M574ET/tasks/WP01-lifecycle-event-schema-fixtures/review-cycle-1.md",
         "reference": "review-cycle://mission-lifecycle-reconciliation-01M574ET/WP01-lifecycle-event-schema-fixtures/review-cycle-1.md",
         "reviewer": "reviewer-renata",
         "verdict": "approved"
       },
-      "role": "reviewer",
-      "shell_pid": 1157681,
-      "shell_pid_created_at": "1792315808.57",
-      "subtasks": {
-        "T001": "done",
-        "T002": "done",
-        "T003": "done",
-        "T004": "done",
-        "T005": "done"
-      }
+      "shell_pid": 1135436,
+      "shell_pid_created_at": "1792315223.3"
     }
   }
 }
