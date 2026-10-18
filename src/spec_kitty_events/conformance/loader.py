@@ -33,6 +33,7 @@ _VALID_CATEGORIES = frozenset(
         "zeitgeist_attrs",  # E2: volatile mission/WP moment codecs
         "status_diary",  # 8.1.0: status.events.jsonl diary reducer (issue #41)
         "work_observation",  # durable live-work contracts (#55, 10.1.0)
+        "ledger_append",  # local-ledger write contract (#118, 10.8.0)
     }
 )
 
@@ -46,6 +47,7 @@ _SPECIAL_FIXTURE_TYPES: frozenset[str] = frozenset(
         "replay_stream",
         "reducer_output",
         "timestamp_semantics",
+        "ledger_append",
     }
 )
 
@@ -130,6 +132,27 @@ def load_fixtures(category: str) -> List[FixtureCase]:
         )
 
     return fixtures
+
+
+def load_ledger_append_cases() -> List[Dict[str, Any]]:
+    """Load the ``ledger_append`` write-contract documents (#118, 10.8.0).
+
+    Each returned dict is the fixture document (``input_kind``, ``input``,
+    optional ``model`` / ``existing_ledger`` / ``nan_field``, and either
+    ``expected_line`` or ``expected_error``) plus the manifest ``id`` and
+    ``expected_result``. These are append specifications, not event payloads,
+    so :func:`load_fixtures` skips them.
+    """
+    with open(_MANIFEST_PATH, "r", encoding="utf-8") as fh:
+        manifest: Dict[str, Any] = json.load(fh)
+    cases: List[Dict[str, Any]] = []
+    for entry in manifest["fixtures"]:
+        if entry.get("fixture_type") != "ledger_append":
+            continue
+        with open(_FIXTURES_DIR / entry["path"], "r", encoding="utf-8") as fh:
+            document: Dict[str, Any] = json.load(fh)
+        cases.append({**document, "id": entry["id"], "expected_result": entry["expected_result"]})
+    return cases
 
 
 def load_replay_stream(fixture_id: str) -> List[Dict[str, Any]]:

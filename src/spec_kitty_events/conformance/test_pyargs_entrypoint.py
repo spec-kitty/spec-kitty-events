@@ -102,6 +102,10 @@ def _event_fixture_entries() -> List[Dict[str, Any]]:
             "replay_stream",
             "reducer_output",
             "timestamp_semantics",
+            # ledger_append (#118): {input_kind, input, expected_line |
+            # expected_error} write-contract documents, run by the packaged
+            # test_ledger_append.py runner -- not event envelopes.
+            "ledger_append",
             # envelope_strict_journal (F1-T1) class_taxonomy fixtures: these
             # assert strict-profile-only rejections (e.g. an envelope-level
             # extra key, a naive timestamp) that the lenient Event model /
@@ -154,6 +158,16 @@ def test_zeitgeist_attrs_codec_fixtures_stay_out_of_the_event_gate() -> None:
         "turns the packaged conformance entrypoint red for every consumer: "
         f"{leaked}"
     )
+
+
+def test_ledger_append_fixtures_stay_out_of_the_event_gate() -> None:
+    """Regression guard for the ledger_append exclusion above (#118)."""
+    manifest_paths = {
+        f["path"] for f in _MANIFEST["fixtures"] if f["path"].startswith("ledger_append/")
+    }
+    assert manifest_paths, "ledger_append fixtures vanished from the manifest"
+    leaked = sorted(manifest_paths & {f["path"] for f in _event_fixture_entries()})
+    assert not leaked, f"ledger_append documents reached the event gate: {leaked}"
 
 
 def _event_fixture_params() -> List[Dict[str, Any]]:

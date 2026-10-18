@@ -3545,6 +3545,141 @@
       "event_type": "WorkObservation",
       "notes": "Mission lifecycle record without a canonical mission.",
       "min_version": "10.1.0"
+    },
+    {
+      "id": "ledger-append-event-envelope",
+      "path": "ledger_append/valid/event_envelope.json",
+      "expected_result": "valid",
+      "event_type": "MissionReopened",
+      "notes": "Canonical Event envelope (schema 3.0.0) dumped in JSON mode",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-core-flat-glossary-dict",
+      "path": "ledger_append/valid/core_flat_glossary_dict.json",
+      "expected_result": "valid",
+      "event_type": "GlossaryScopeActivated",
+      "notes": "Flat dict shaped like core's glossary emitter; identity keys kept",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-mission-reopened-dict",
+      "path": "ledger_append/valid/mission_reopened_dict.json",
+      "expected_result": "valid",
+      "event_type": "MissionReopened",
+      "notes": "MissionReopened is canonical and appendable (LOCAL_ONLY_EVENT_TYPES deprecated in 10.8.0, removed in 11.0)",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-follow-up-recorded-dict",
+      "path": "ledger_append/valid/follow_up_recorded_dict.json",
+      "expected_result": "valid",
+      "event_type": "FollowUpRecorded",
+      "notes": "FollowUpRecorded is canonical and appendable",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-glossary-sense-updated-dict",
+      "path": "ledger_append/valid/glossary_sense_updated_dict.json",
+      "expected_result": "valid",
+      "event_type": "GlossarySenseUpdated",
+      "notes": "GlossarySenseUpdated is canonical and appendable",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-payload-model",
+      "path": "ledger_append/valid/payload_model.json",
+      "expected_result": "valid",
+      "event_type": "GlossaryScopeActivated",
+      "notes": "Registered payload model; event_type attached",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-non-ascii-text",
+      "path": "ledger_append/valid/non_ascii_text.json",
+      "expected_result": "valid",
+      "event_type": "GlossarySenseUpdated",
+      "notes": "Non-ASCII text written as \\uXXXX escapes (incl. surrogate pair)",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-float-values",
+      "path": "ledger_append/valid/float_values.json",
+      "expected_result": "valid",
+      "event_type": "SemanticCheckEvaluated",
+      "notes": "Floats rendered as shortest round-trip repr",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-append-after-existing-line",
+      "path": "ledger_append/valid/append_after_existing_line.json",
+      "expected_result": "valid",
+      "event_type": "MissionReopened",
+      "notes": "Appends after an LF-terminated ledger",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-unknown-event-type",
+      "path": "ledger_append/invalid/unknown_event_type.json",
+      "expected_result": "invalid",
+      "event_type": "NoSuchEvent",
+      "notes": "Unknown event type is refused",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-missing-event-type",
+      "path": "ledger_append/invalid/missing_event_type.json",
+      "expected_result": "invalid",
+      "event_type": "<missing>",
+      "notes": "Missing event_type is refused",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-invalid-payload",
+      "path": "ledger_append/invalid/invalid_payload.json",
+      "expected_result": "invalid",
+      "event_type": "MissionReopened",
+      "notes": "Payload failing model validation is refused",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-unregistered-model",
+      "path": "ledger_append/invalid/unregistered_model.json",
+      "expected_result": "invalid",
+      "event_type": "<unregistered-model>",
+      "notes": "Unregistered model class is refused",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-nan-value",
+      "path": "ledger_append/invalid/nan_value.json",
+      "expected_result": "invalid",
+      "event_type": "SemanticCheckEvaluated",
+      "notes": "Non-finite float is refused (nan_field injects NaN)",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
+    },
+    {
+      "id": "ledger-append-torn-tail",
+      "path": "ledger_append/invalid/torn_tail.json",
+      "expected_result": "invalid",
+      "event_type": "MissionReopened",
+      "notes": "Ledger whose last byte is not LF is refused",
+      "min_version": "10.8.0",
+      "fixture_type": "ledger_append"
     }
   ],
   "classes": {

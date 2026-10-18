@@ -78,6 +78,14 @@ Each fixture is a JSON file with the following minimum schema:
 exact rejection class, preventing a fixture from "passing" because validation
 rejected it for the wrong reason.
 
+## Ledger-append fixtures (10.8.0)
+
+`fixtures/ledger_append/` holds the local-ledger write contract (#118): input documents
+paired with the exact line `append_event` must write, or with the refusal it must
+raise. The format is defined for authors working in other languages in
+[`fixtures/ledger_append/README.md`](fixtures/ledger_append/README.md). The packaged
+runner is `test_ledger_append.py`.
+
 ## Determinism convention (R-06)
 
 Fixtures use repository-pinned values:

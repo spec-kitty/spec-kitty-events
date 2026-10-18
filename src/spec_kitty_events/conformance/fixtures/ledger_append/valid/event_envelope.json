@@ -1,0 +1,30 @@
+{
+  "input_kind": "event",
+  "input": {
+    "event_id": "01JMXXXXXXXXXXXXXXXXXXXXXX",
+    "event_type": "MissionReopened",
+    "aggregate_id": "mission-001",
+    "payload": {
+      "mission_id": "01KTESTMISSIONID0000000000",
+      "mission_slug": "mission-001",
+      "reason": "reviewer requested rework after merge",
+      "reopened_by": "claude",
+      "reopened_at": "2026-01-01T00:00:00+00:00",
+      "cleared_merge": {
+        "merged_pr": 42,
+        "merged_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    "timestamp": "2026-01-15T10:00:00Z",
+    "build_id": "build-test",
+    "node_id": "test-node",
+    "lamport_clock": 1,
+    "causation_id": null,
+    "project_uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "project_slug": null,
+    "correlation_id": "01JMYYYYYYYYYYYYYYYYYYYYYY",
+    "schema_version": "3.0.0",
+    "data_tier": 0
+  },
+  "expected_line": "{\"aggregate_id\": \"mission-001\", \"build_id\": \"build-test\", \"causation_id\": null, \"correlation_id\": \"01JMYYYYYYYYYYYYYYYYYYYYYY\", \"data_tier\": 0, \"event_id\": \"01JMXXXXXXXXXXXXXXXXXXXXXX\", \"event_type\": \"MissionReopened\", \"lamport_clock\": 1, \"node_id\": \"test-node\", \"payload\": {\"cleared_merge\": {\"merged_at\": \"2026-01-01T00:00:00+00:00\", \"merged_pr\": 42}, \"mission_id\": \"01KTESTMISSIONID0000000000\", \"mission_slug\": \"mission-001\", \"reason\": \"reviewer requested rework after merge\", \"reopened_at\": \"2026-01-01T00:00:00+00:00\", \"reopened_by\": \"claude\"}, \"project_slug\": null, \"project_uuid\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-01-15T10:00:00Z\"}\n"
+}

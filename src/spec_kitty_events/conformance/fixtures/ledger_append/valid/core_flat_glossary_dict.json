@@ -1,0 +1,13 @@
+{
+  "input_kind": "dict",
+  "input": {
+    "event_type": "GlossaryScopeActivated",
+    "event_id": "6f1c2a8e-7d1b-4b4e-9a53-0d2f2f6a1c11",
+    "timestamp": "2026-10-18T12:00:00+00:00",
+    "mission_id": "mission-fixture-001",
+    "scope_id": "scope-team-domain",
+    "scope_type": "team_domain",
+    "glossary_version_id": "v1.0.0"
+  },
+  "expected_line": "{\"event_id\": \"6f1c2a8e-7d1b-4b4e-9a53-0d2f2f6a1c11\", \"event_type\": \"GlossaryScopeActivated\", \"glossary_version_id\": \"v1.0.0\", \"mission_id\": \"mission-fixture-001\", \"scope_id\": \"scope-team-domain\", \"scope_type\": \"team_domain\", \"timestamp\": \"2026-10-18T12:00:00+00:00\"}\n"
+}
