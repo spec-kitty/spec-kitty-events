@@ -57,9 +57,18 @@ local file (network filesystems give no such guarantee). A non-empty ledger whos
 is not LF raises `LedgerTornTailError`, so the writer never extends a partial line. The
 torn-tail check is advisory under concurrent writers.
 
-## `LOCAL_ONLY_EVENT_TYPES` (deprecated)
+## Unclocked envelopes
 
-The local-only classification is retired. Every modelled event type is canonical,
-`MissionReopened` and `FollowUpRecorded` included, and whether a producer ships a record
-off-host is the producer's own decision. The empty set stays exported, with no runtime
-warning, through 10.x and is removed in 11.0.
+Since 11.0.0 `Event.lamport_clock` is optional, so a local ledger may hold envelopes
+without a clock. They order before clocked ones by `(timestamp, event_id)`, as in
+ADR 0001's total order (see
+`canonical_order_key`). They are valid for local ledgers only: the durable journal and
+TeamSpace ingress still require `lamport_clock` through the strict profile. A DecisionPoint
+ledger written with `append_event` folds back through `reduce_decision_point_records`.
+
+## `LOCAL_ONLY_EVENT_TYPES` (removed in 11.0.0)
+
+The local-only classification was retired in 10.8.0: every modelled event type is
+canonical, `MissionReopened` and `FollowUpRecorded` included, and whether a producer ships
+a record off-host is the producer's own decision. The empty set was deprecated through 10.x
+and is removed in 11.0.0, so the import now fails.

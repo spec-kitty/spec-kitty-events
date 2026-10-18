@@ -115,6 +115,7 @@ lane = state.wp_states["WP01"].lane
 | `reduce_collaboration_events` | `ReducedCollaborationState` | [collaboration](/events/collaboration/) |
 | `reduce_connector_events` | `ReducedConnectorState` | [runtime observation](/events/runtime-observation/) |
 | `reduce_glossary_events` | `ReducedGlossaryState` | [semantics & analytics](/events/semantics-and-analytics/) |
+| `reduce_decision_point_records` | `dict` of `ReducedDecisionPointState` by decision | [review, audit & decisions](/events/review-audit-decisions/) |
 
 The status-diary reducer that reads the CLI's on-disk `status.events.jsonl` is the standalone
 `spec_kitty_events.diary` module (`parse_diary`, `reduce`, `State`); it is the same fold the
@@ -151,12 +152,19 @@ root. See [Ledger write contract](/api/ledger-write-contract/).
 from spec_kitty_events.persistence import LedgerAppendError, append_event
 ```
 
-## `LOCAL_ONLY_EVENT_TYPES` (deprecated)
+## Glossary names and ordering
 
-The local-only classification is retired (10.8.0). Every modelled event type is canonical,
-`MissionReopened` and `FollowUpRecorded` included, and `append_event` does not consult the
-set. `LOCAL_ONLY_EVENT_TYPES` stays exported as an empty `frozenset`, with no runtime
-warning, through 10.x and is removed in 11.0.
+Glossary payloads are imported from the flat module, with the `*Payload` names, for example
+`from spec_kitty_events.glossary import TermCandidateObservedPayload, StepCheckpointedPayload`.
+There is no `glossary.events` submodule. `spec_kitty_events.ordering.canonical_order_key(event)`
+is the one ordering key: `(1 if clocked else 0, clock or 0, timestamp, event_id)`, so
+unclocked envelopes come first, ordered by `(timestamp, event_id)`, then clocked ones. This
+is the same rule as ADR 0001's total order (`spec_kitty_events.total_order.order_key`).
+
+## `LOCAL_ONLY_EVENT_TYPES` (removed)
+
+Removed in 11.0.0. The local-only classification was retired in 10.8.0; every modelled
+event type is canonical and `append_event` never consulted the set. Delete the import.
 
 ## See also
 

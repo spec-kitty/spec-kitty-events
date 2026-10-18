@@ -13,10 +13,25 @@
 > and no reducer uses it yet: the reducer sort-key switch is #92's.
 
 This order is distinct from the pre-existing `spec_kitty_events.conflict.total_order_key`,
-which keys `(lamportclock, event_id)` over the Pydantic `Event` model. This contract keys
+which keys `(lamport_clock, node_id)` over the Pydantic `Event` model. This contract keys
 `(h, c, t, i, s)` over CloudEvents-form row dictionaries and supersedes that key for rows
 in that form; a consumer ordering CloudEvents rows should use this one, not
 `total_order_key`.
+
+## Relation to the envelope ordering key (11.0.0)
+
+Since 11.0.0 the Pydantic `Event.lamport_clock` is optional, and
+`spec_kitty_events.ordering.canonical_order_key` orders envelopes by
+`(1 if clocked else 0, lamport_clock or 0, timestamp, event_id)`. Its leading part is this
+contract's `h`, and its time part is the instant in UTC, so the envelope order and the
+row order agree: every unclocked envelope sorts before every clocked one, and envelopes
+order by instant and then id. (A naive timestamp is compared as given; the strict
+profile refuses naive timestamps.)
+`status_event_sort_key` and the in-package reducers use that key, and
+`tests/test_ordering.py::test_canonical_key_agrees_with_adr_0001_total_order` pins the
+agreement. The two keys still differ in what they read (the envelope key has no `source`
+part and validates nothing; this one refuses error rows), and the reducer switch to
+CloudEvents rows remains #92's.
 
 ## Why a defined total order
 

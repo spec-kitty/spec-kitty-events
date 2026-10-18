@@ -46,10 +46,10 @@ flowchart TB
 ## How the CLI core produces events
 
 The CLI holds a single sanctioned path for emitting canonical events. Centralising it means
-one place enforces the envelope shape, the Lamport clock and the forbidden-key rules, so no
-corner of the CLI invents its own vocabulary. `spec_kitty_events.LOCAL_ONLY_EVENT_TYPES`
-classifies the event types that never cross the SaaS boundary (currently empty; every
-audited CLI event routes through the central, SaaS-bound path).
+one place enforces the envelope shape, the Lamport clock (optional for local ledgers since
+11.0.0) and the forbidden-key rules, so no corner of the CLI invents its own vocabulary.
+The local-only classification (`LOCAL_ONLY_EVENT_TYPES`) is removed in 11.0.0: every
+modelled event type is canonical.
 
 Identity on every envelope is build-scoped, not team-scoped: `build_id` is the checkout that
 produced the event and `node_id` is the causal emitter. Team routing, sharing and approval

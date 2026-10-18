@@ -1,118 +1,43 @@
-"""P1 (F1 contract-freeze draft F1.md §4): built-wheel content test.
+"""Every tracked conformance fixture must be shipped in the wheel (#120).
 
-Builds a real (non-editable) wheel using the exact ``[build-system]``
-backend already declared in ``pyproject.toml`` (``setuptools.build_meta``)
-with no network access, and asserts the artifacts F1-T1's acceptance
-criteria names are actually inside it: ``support_matrix.json``, the
-``HarnessObservation`` JSON schema, and the new
-``harness_observation/{valid,invalid,replay}`` fixture files. An editable
-install (what the rest of this test session runs against) never exercises
-``[tool.setuptools.package-data]`` the way a real distribution does, so
-this is the only test in the suite that would catch a stale/wrong
-package-data glob (the exact defect Renata's finding #2 flagged: three
-``harness_observation/*`` globs were added to ``pyproject.toml`` ahead of
-any file existing to match them).
-
-Uses ``setuptools.build_meta.build_wheel`` directly, not the ``build`` PEP
-517 orchestrator package, so no dependency beyond the project's own
-already-declared ``[build-system] requires = ["setuptools>=61.0", "wheel"]``
-is needed -- only ``setuptools``/``wheel`` must be present in the running
-interpreter (install offline via
-``UV_OFFLINE=1 uv pip install setuptools wheel`` if this test skips).
+Matches each git-tracked non-Python file under the conformance package against the
+``[tool.setuptools.package-data]`` globs, so a new fixture directory cannot be
+forgotten in packaging (the packaged gate runs from an installed wheel).
 """
 
 from __future__ import annotations
 
+import fnmatch
 import subprocess
-import sys
-import zipfile
+import tomllib
 from pathlib import Path
 
-import pytest
-
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-
-_REQUIRED_MEMBERS = (
-    "spec_kitty_events/support_matrix.json",
-    "spec_kitty_events/schemas/harness_observation_payload.schema.json",
-    "spec_kitty_events/schemas/mission_reopened_payload.schema.json",
-    "spec_kitty_events/schemas/follow_up_recorded_payload.schema.json",
-    "spec_kitty_events/conformance/fixtures/harness_observation/valid/presence_minimal.json",
-    "spec_kitty_events/conformance/fixtures/harness_observation/invalid/missing_kind.json",
-    "spec_kitty_events/conformance/fixtures/harness_observation/replay/lifecycle_with_observations.jsonl",
-    "spec_kitty_events/conformance/fixtures/harness_observation/replay/lifecycle_with_observations_output.json",
-    "spec_kitty_events/conformance/fixtures/class_taxonomy/envelope_strict_journal/valid_mission_started_with_slug.json",
-    # E2: volatile mission/WP moment codecs ship their fixture goldens.
-    "spec_kitty_events/zeitgeist_attrs.py",
-    "spec_kitty_events/conformance/fixtures/zeitgeist_attrs/valid/wp_status_changed_planned_doing.json",
-    "spec_kitty_events/conformance/fixtures/zeitgeist_attrs/invalid/wp_status_changed_unknown_attr.json",
-    # spec-kitty-events#92: the producer contract (registry, data schemas, envelope,
-    # fixtures) and the total-order comparator ship in the wheel.
-    "spec_kitty_events/producer_contract/registry.json",
-    "spec_kitty_events/producer_contract/envelope.schema.json",
-    "spec_kitty_events/producer_contract/data/lane.transitioned.v1.schema.json",
-    "spec_kitty_events/producer_contract/data/retrospective.skipped.v1.schema.json",
-    "spec_kitty_events/producer_contract/fixtures/rows/valid/lane.transitioned.v1.json",
-    "spec_kitty_events/producer_contract/fixtures/rows/invalid/lamportclock_overflow.json",
-    "spec_kitty_events/producer_contract/fixtures/rows/legacy_invalid/lane_unknown_member.json",
-    "spec_kitty_events/producer_contract/fixtures/total_order/04_naive_counter_example.json",
-    "spec_kitty_events/total_order.py",
-    "spec_kitty_events/conformance/test_total_order.py",
-    "spec_kitty_events/conformance/test_producer_contract.py",
-)
+ROOT = Path(__file__).resolve().parent.parent
+PKG = "src/spec_kitty_events/"
 
 
-def _build_backend_available() -> bool:
-    result = subprocess.run(
-        [sys.executable, "-c", "import setuptools.build_meta, wheel"],
-        capture_output=True,
-    )
-    return result.returncode == 0
+def _globs() -> list[str]:
+    data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    return list(data["tool"]["setuptools"]["package-data"]["spec_kitty_events"])
 
 
-@pytest.mark.skipif(
-    not _build_backend_available(),
-    reason=(
-        "setuptools/wheel not importable in this interpreter -- install "
-        "offline via `UV_OFFLINE=1 uv pip install setuptools wheel` to run "
-        "this test."
-    ),
-)
-def test_built_wheel_contains_f1_t1_package_data(tmp_path: Path) -> None:
-    build_script = (
-        f"from setuptools.build_meta import build_wheel\nprint(build_wheel({str(tmp_path)!r}))\n"
-    )
-    result = subprocess.run(
-        [sys.executable, "-c", build_script],
-        cwd=_REPO_ROOT,
+def _matches(rel: str, pattern: str) -> bool:
+    # setuptools globs do not let ``*`` cross a path separator.
+    return rel.count("/") == pattern.count("/") and fnmatch.fnmatchcase(rel, pattern)
+
+
+def test_every_tracked_conformance_file_is_packaged() -> None:
+    out = subprocess.run(
+        ["git", "ls-files", PKG + "conformance"],
+        cwd=ROOT,
+        check=True,
         capture_output=True,
         text=True,
-    )
-    assert result.returncode == 0, (
-        f"Wheel build failed:\nstdout={result.stdout}\nstderr={result.stderr}"
-    )
-    wheel_name = result.stdout.strip().splitlines()[-1]
-    wheel_path = tmp_path / wheel_name
-    assert wheel_path.is_file(), f"Expected wheel at {wheel_path}"
-
-    with zipfile.ZipFile(wheel_path) as zf:
-        names = set(zf.namelist())
-
-    # Every producer-contract data file on disk must be in the wheel, not only the sample
-    # members named above: a glob that stops one directory short would drop fixtures.
-    contract_root = _REPO_ROOT / "src" / "spec_kitty_events" / "producer_contract"
-    on_disk = {
-        "spec_kitty_events/producer_contract/" + path.relative_to(contract_root).as_posix()
-        for pattern in ("*.json", "*.md")
-        for path in contract_root.rglob(pattern)
-    }
-    assert on_disk, "no producer_contract data files found on disk"
-    absent = sorted(on_disk - names)
-    assert not absent, f"producer_contract files missing from the wheel: {absent}"
-
-    missing = [member for member in _REQUIRED_MEMBERS if member not in names]
-    assert not missing, (
-        f"Built wheel {wheel_name} is missing F1-T1 package-data member(s): "
-        f"{missing}. Check [tool.setuptools.package-data] globs in "
-        f"pyproject.toml against the files actually on disk."
-    )
+    ).stdout.split()
+    globs = _globs()
+    missing = [
+        rel
+        for rel in (f[len(PKG) :] for f in out)
+        if not rel.endswith((".py", ".pyc")) and not any(_matches(rel, g) for g in globs)
+    ]
+    assert not missing, f"not matched by package-data globs: {missing}"

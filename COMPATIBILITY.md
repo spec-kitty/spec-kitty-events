@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.8.0`
+**Current package version**: `11.0.0`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -24,6 +24,133 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty`
 
 
+## `11.0.0` — decision reopen, core-shaped glossary contracts, optional envelope clock (breaking)
+
+`11.0.0` is a SemVer major. It reconciles the package with what core actually writes
+into its local ledgers (spec-kitty/spec-kitty-events#120). The envelope `schema_version`
+is unchanged (`3.0.0`); the wire envelope did not move, only what the package accepts and
+how it folds. Fixtures added or rewritten for this release carry `min_version` `11.0.0`.
+
+### What changed
+
+Breaking:
+
+- **Glossary payloads adopt core's emitted shapes.** All seven existing glossary payload
+  models were renamed, retyped or reshaped. Old field names are not accepted beside the
+  new ones (no aliases). See the field map below.
+- **`SemanticConflictEntry` is removed** and `semantic_conflict_entry.schema.json` is
+  deleted. `GlossaryFinding` (with `GlossaryConflictType`, `SenseRef`) replaces it.
+  `ReducedGlossaryState` is re-keyed: term candidates by `term`, senses by
+  `(scope, term_surface)`, clarifications correlated by `conflict_id`; the old
+  conflict list is replaced by `semantic_checks` and `generation_blocks`.
+- **`LOCAL_ONLY_EVENT_TYPES` is removed** from the package root and `__all__`, as 10.8.0
+  announced. `from spec_kitty_events import LOCAL_ONLY_EVENT_TYPES` now raises `ImportError`.
+- **`Event.lamport_clock` is optional** (`Optional[int]`, default `None`, `>= 0` when
+  present), and `schemas/event.schema.json` no longer lists it as required. Code that
+  reads `event.lamport_clock` as an `int` must handle `None`.
+- **The DecisionPoint reducer allows the reopen deferred -> resolved** (an `invalid_transition`
+  before). A reduced state now always carries `reopened_from_deferred` (a bool).
+
+Additive:
+
+- `StepCheckpointed` is registered (payload `StepCheckpointedPayload`, committed schema,
+  conformance maps, member of `GLOSSARY_EVENT_TYPES`). The package now has one more event type.
+- `spec_kitty_events.ordering.canonical_order_key` and `node_order_key`: one deterministic
+  key `(1 if clocked else 0, clock or 0, timestamp, event_id)` for mixed clocked and
+  unclocked streams. Every in-package ordering site uses it.
+- `reduce_decision_point_records(records, *, strict=True)`, `DECISION_POINT_TERMINAL_REOPEN`
+  (`{(deferred, resolved)}`) and `DecisionPointFoldError`: a read-side fold over the ledger
+  records `append_event` writes.
+- New anomaly kind `unfoldable_terminal_combination`.
+- New packaged fixtures: core-shaped glossary records, `StepCheckpointed`, DecisionPoint reopen
+  streams, `ordering/`, unclocked envelopes and `ledger_append` cases for full
+  DecisionPoint envelopes and glossary records.
+- Packaging fix: conformance fixtures that earlier wheels omitted (`ordering/`,
+  `timestamp_semantics/`, `dossier/replay/canonical_output_snapshot.json`,
+  `zeitgeist_attrs/README.md`) are now shipped, and `tests/test_wheel_contents.py` guards it.
+
+### Why major
+
+The glossary renames and type changes flip the accept/reject boundary for every glossary
+producer and reader. The `lamport_clock` change widens the envelope contract. The reopen
+changes what a previously-`invalid_transition` stream reduces to. The removal of
+`LOCAL_ONLY_EVENT_TYPES` breaks every importer. No committed replay behaviour changed:
+existing reducer goldens differ only by the added `reopened_from_deferred: false` key.
+
+### Unaffected
+
+Consumers that never touch glossary events, `lamport_clock` as a required int, the
+reopen path or `LOCAL_ONLY_EVENT_TYPES`; the envelope wire format (`schema_version`
+`3.0.0`); the strict profile, which still requires `lamport_clock`; every non-glossary
+payload contract; and `GlossaryStrictnessSet`, which is unchanged.
+
+### Unclocked envelopes
+
+An envelope with `lamport_clock = None` is valid for local ledgers. It orders before all
+clocked envelopes, by `(timestamp, event_id)`, matching ADR 0001's total order
+(`total_order.order_key`, `contracts/total-order.md`), where every clockless row sorts
+first. It is never concurrent with another envelope
+and always forms a singleton group. It is **not** valid for the durable journal or
+TeamSpace ingress: `validate_strict_envelope` still requires `lamport_clock`, and the
+clock-required surfaces (`work_replay`, `WorkObservation`, `HarnessObservation`) refuse an
+unclocked envelope with a clear error. `merge` raises on unclocked input. The exported
+`status_event_sort_key` now returns the 4-tuple
+`(1 if clocked else 0, lamport_clock or 0, utc_timestamp_iso, event_id)`, where the time part is the instant in UTC, instead of a 3-tuple.
+`project_uuid` stays required.
+
+### Decision reopen
+
+One Resolved(deferred) plus one Resolved(resolved) for a decision fold to RESOLVED in
+either file order, using the resolved event's answer and time. The reduced state sets
+`reopened_from_deferred = True` and emits no anomaly. An Overridden is legal only after
+the effective resolve. Any other multi-Resolved set (two deferred, deferred plus
+canceled, three Resolved) reports `unfoldable_terminal_combination` for each extra, and
+the first Resolved by the canonical key stands. An Overridden before the effective resolve
+reports `invalid_transition`.
+`reduce_decision_point_records` raises `DecisionPointFoldError` on the latter under
+`strict=True`.
+
+### Migration
+
+**Producer (including core).**
+- Write the full `Event` envelope for DecisionPoint events. `lamport_clock` may be omitted
+  for local ledgers; keep it for the journal and TeamSpace.
+- Build glossary records in the new shapes (field map below).
+- Import glossary names from the flat `spec_kitty_events.glossary` module (there is no
+  `glossary.events` submodule), using the `*Payload` names.
+- Drop any `LOCAL_ONLY_EVENT_TYPES` import. Raise the pin to `>=11,<12`.
+
+**Reader / projector.**
+- Treat `lamport_clock` as optional; order with `canonical_order_key`. Update any code that
+  unpacks `status_event_sort_key`, which now returns 4 elements.
+- Do not pass unclocked envelopes to `merge` or `work_replay`.
+- Read `ReducedGlossaryState` through its new keys:
+  - `term_candidates[term]`
+  - `term_senses[(scope, term_surface)]`
+  - `checkpoints[step_id]`
+- Read `ClarificationRecord.conflict_id`; its `semantic_check_event_id` may be `None`.
+- Fold ledger records with `reduce_decision_point_records`. Accept `reopened_from_deferred`
+  and the new anomaly kind.
+
+**Binding author.** Implement the ordering key and the unclocked rules, then run the new
+`ordering`, `decisionpoint` reopen, `glossary` and `ledger_append` fixtures.
+
+### Glossary field map (old 10.8.0 -> new 11.0.0)
+
+| Model | Old -> new |
+|---|---|
+| `GlossaryScopeActivatedPayload` | remove `scope_type`; add `run_id` |
+| `TermCandidateObservedPayload` | `term_surface` -> `term`; `step_id` -> `source_step`; `actor` -> `actor_id`; remove `scope_id`, `step_metadata`; add `extraction_method`, `context`, `run_id` |
+| `SemanticCheckEvaluatedPayload` | `conflicts` -> `findings` (`GlossaryFinding`); `severity` -> `overall_severity`; recommended action `pass` -> `proceed`; remove `scope_id`, `step_metadata`; add `run_id`, `blocked` |
+| `GenerationBlockedBySemanticConflictPayload` | remove `conflict_event_ids`, `blocking_strictness`, `step_metadata`; add `conflicts` (`GlossaryFinding`), `strictness_mode`, `effective_strictness`, `run_id` |
+| `GlossaryClarificationRequestedPayload` | remove `scope_id`, `actor`; add `run_id`, `conflict_id`; `semantic_check_event_id` is optional but never empty |
+| `GlossaryClarificationResolvedPayload` | remove `mission_id`, `clarification_event_id`, `selected_meaning`; add `conflict_id`, `term_surface`, `selected_sense` (`SenseRef`), `resolution_mode`, `provenance`; `actor` is now an object (`actor_id`, `actor_type`, `display_name`) |
+| `GlossarySenseUpdatedPayload` | remove `mission_id`, `scope_id`, `before_sense`, `after_sense`, `reason`; add `scope`, `new_sense`, `update_type`, `provenance`; `actor` is now an object |
+| `StepCheckpointedPayload` | new: `mission_id`, `run_id`, `step_id`, `strictness`, `scope_refs`, `input_hash`, `cursor`, `retry_token` |
+| `GlossaryStrictnessSetPayload` | unchanged |
+
+The envelope `schema_version` is unchanged (`3.0.0`).
+
 ## `10.8.0` — local-ledger write contract; `LOCAL_ONLY_EVENT_TYPES` deprecated
 
 `10.8.0` is a SemVer minor, additive. A new module, `spec_kitty_events.persistence`,
@@ -39,7 +166,7 @@ along with `build_record`, `serialize_record` and the `LedgerAppendError` /
 - The new `ledger_append` conformance fixtures (min_version `10.8.0`) pin those bytes,
   so every binding is held to the same lines.
 
-`LOCAL_ONLY_EVENT_TYPES` is **deprecated** and will be removed in `11.0`. It stays
+`LOCAL_ONLY_EVENT_TYPES` was **deprecated** in 10.8.0 and is removed in `11.0.0`. It stayed
 exported, empty and silent (no runtime warning) through 10.x. `MissionReopened`,
 `FollowUpRecorded` and `GlossarySenseUpdated` are canonical. The envelope
 `schema_version` is unchanged. No existing export, schema or fixture changed, and

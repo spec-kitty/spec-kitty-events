@@ -15,7 +15,9 @@ recording one application of a policy.
 |---|---|
 | [`lane-vocabulary.md`](./lane-vocabulary.md) | The canonical `Lane` vocabulary, its authoritative location, and the major-bump rule for changing it |
 | [`versioning-and-compatibility.md`](./versioning-and-compatibility.md) | Package version vs on-wire envelope schema version; what requires a major bump; required artifacts on bump |
-| [`total-order.md`](./total-order.md) | The total order over event-log rows in CloudEvents form (Lamport clock, time, id, source), its error rows and dedupe rule (proposed; non-normative until the ADR 0001 cutover) |
+| [`total-order.md`](./total-order.md) | The total order over event-log rows in CloudEvents form (Lamport clock, time, id, source), its error rows and dedupe rule (proposed; non-normative until the ADR 0001 cutover), and its agreement with the 11.0.0 envelope ordering key (clockless first) |
+| [`durable-work-observation.md`](./durable-work-observation.md) | The durable live-work observation contract and its Lamport-ordered replay (`work_replay`, LW-10: a clock is required) |
+| [`coordination-message.md`](./coordination-message.md) | The bounded, volatile cross-mission coordination message and its relay projection |
 
 See also [`../COMPATIBILITY.md`](../COMPATIBILITY.md) — the public compatibility
 policy and the single declaration of the current package version.
@@ -29,6 +31,25 @@ from the top-level package. The mission-audit family documented below has been
 available since **v2.5.0**; this section has not been extended to cover families
 added in later releases — consult `CHANGELOG.md` and the package's
 `__all__` for the current surface.
+
+---
+
+## 11.0.0 contract changes
+
+`11.0.0` is a major release (#120). The full migration for each role is in
+[`../COMPATIBILITY.md`](../COMPATIBILITY.md); in short:
+
+- **Envelope clock:** `Event.lamport_clock` is optional. Unclocked envelopes sort before
+  clocked ones (see [`total-order.md`](./total-order.md)), are never concurrent, and are
+  valid for local ledgers only. The strict profile and `work_replay` still require a clock.
+- **Glossary family:** the payloads take the shapes core emits, and
+  `StepCheckpointedPayload` is added. `SemanticConflictEntry` and its schema are removed.
+- **DecisionPoint family:** a deferred decision can be reopened by a resolve, and the
+  `reduce_decision_point_records` fold reads ledger records.
+- **Removed:** `LOCAL_ONLY_EVENT_TYPES`.
+
+The normative bytes are the committed schemas under `src/spec_kitty_events/schemas/` and the
+fixtures under `src/spec_kitty_events/conformance/fixtures/`.
 
 ---
 
