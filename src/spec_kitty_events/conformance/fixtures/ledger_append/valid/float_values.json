@@ -1,0 +1,23 @@
+{
+  "input_kind": "dict",
+  "input": {
+    "event_type": "SemanticCheckEvaluated",
+    "mission_id": "mission-fixture-001",
+    "scope_id": "scope-team-domain",
+    "step_id": "step-003",
+    "conflicts": [
+      {
+        "term": "endpoint",
+        "nature": "drift",
+        "severity": "medium",
+        "description": "Term meaning has shifted from original definition"
+      }
+    ],
+    "severity": "medium",
+    "confidence": 1e-05,
+    "recommended_action": "warn",
+    "effective_strictness": "medium",
+    "step_metadata": {}
+  },
+  "expected_line": "{\"confidence\": 1e-05, \"conflicts\": [{\"description\": \"Term meaning has shifted from original definition\", \"nature\": \"drift\", \"severity\": \"medium\", \"term\": \"endpoint\"}], \"effective_strictness\": \"medium\", \"event_type\": \"SemanticCheckEvaluated\", \"mission_id\": \"mission-fixture-001\", \"recommended_action\": \"warn\", \"scope_id\": \"scope-team-domain\", \"severity\": \"medium\", \"step_id\": \"step-003\", \"step_metadata\": {}}\n"
+}

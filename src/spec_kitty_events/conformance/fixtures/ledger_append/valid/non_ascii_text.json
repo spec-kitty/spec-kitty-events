@@ -1,0 +1,14 @@
+{
+  "input_kind": "dict",
+  "input": {
+    "event_type": "GlossarySenseUpdated",
+    "mission_id": "mission-fixture-001",
+    "scope_id": "scope-team-domain",
+    "term_surface": "dashboard",
+    "before_sense": "Generic display panel",
+    "after_sense": "Café — übersicht 😀",
+    "reason": "Clarified after team discussion",
+    "actor": "human-reviewer-001"
+  },
+  "expected_line": "{\"actor\": \"human-reviewer-001\", \"after_sense\": \"Caf\\u00e9 \\u2014 \\u00fcbersicht \\ud83d\\ude00\", \"before_sense\": \"Generic display panel\", \"event_type\": \"GlossarySenseUpdated\", \"mission_id\": \"mission-fixture-001\", \"reason\": \"Clarified after team discussion\", \"scope_id\": \"scope-team-domain\", \"term_surface\": \"dashboard\"}\n"
+}

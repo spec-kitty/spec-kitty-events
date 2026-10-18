@@ -1,0 +1,17 @@
+{
+  "input_kind": "dict",
+  "input": {
+    "event_type": "MissionReopened",
+    "mission_id": "01KTESTMISSIONID0000000000",
+    "mission_slug": "mission-001",
+    "reason": "reviewer requested rework after merge",
+    "reopened_by": "claude",
+    "reopened_at": "2026-01-01T00:00:00+00:00",
+    "cleared_merge": {
+      "merged_pr": 42,
+      "merged_at": "2026-01-01T00:00:00+00:00"
+    }
+  },
+  "existing_ledger": "{\"partial\": ",
+  "expected_error": "LedgerTornTailError"
+}

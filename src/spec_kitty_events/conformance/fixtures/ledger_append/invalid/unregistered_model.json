@@ -1,0 +1,6 @@
+{
+  "input_kind": "model",
+  "model": "NotARegisteredModel",
+  "input": {},
+  "expected_error": "LedgerValidationError"
+}

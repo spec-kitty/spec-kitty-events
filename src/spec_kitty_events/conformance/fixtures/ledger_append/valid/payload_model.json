@@ -1,0 +1,11 @@
+{
+  "input_kind": "model",
+  "model": "GlossaryScopeActivatedPayload",
+  "input": {
+    "mission_id": "mission-fixture-001",
+    "scope_id": "scope-team-domain",
+    "scope_type": "team_domain",
+    "glossary_version_id": "v1.0.0"
+  },
+  "expected_line": "{\"event_type\": \"GlossaryScopeActivated\", \"glossary_version_id\": \"v1.0.0\", \"mission_id\": \"mission-fixture-001\", \"scope_id\": \"scope-team-domain\", \"scope_type\": \"team_domain\"}\n"
+}
