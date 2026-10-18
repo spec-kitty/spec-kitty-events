@@ -24,9 +24,9 @@ Profile id: `STRICT_PROFILE_ID = "journal/v1"`.
 ```python
 from spec_kitty_events.strict import validate_strict_envelope
 
-errors = validate_strict_envelope(envelope)   # a tuple of ValidationError
+errors = validate_strict_envelope(envelope)  # a tuple of ValidationError
 if errors:
-    reject(errors)        # fail closed — do not admit the row
+    reject(errors)  # fail closed — do not admit the row
 ```
 
 ## What it enforces

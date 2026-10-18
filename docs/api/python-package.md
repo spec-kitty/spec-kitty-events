@@ -37,7 +37,7 @@ from spec_kitty_events import Event, WP_STATUS_CHANGED
 
 event = Event(
     event_id="01ARZ3NDEKTSV4RRFFQ69G5FAV",
-    event_type=WP_STATUS_CHANGED,            # == "WPStatusChanged"
+    event_type=WP_STATUS_CHANGED,  # == "WPStatusChanged"
     aggregate_id="mission/WP01",
     payload={
         "mission_slug": "mission-001",
@@ -85,7 +85,7 @@ TeamSpace ingress. It is intentionally separate from `validate_event`.
 from spec_kitty_events.strict import validate_strict_envelope, STRICT_PROFILE_ID
 
 errors = validate_strict_envelope(event.to_dict())
-assert not errors            # empty list == admitted
+assert not errors  # empty list == admitted
 assert STRICT_PROFILE_ID == "journal/v1"
 ```
 
@@ -100,7 +100,7 @@ snapshot. Reducers order, de-duplicate and fold deterministically — see
 ```python
 from spec_kitty_events import reduce_status_events
 
-state = reduce_status_events(events)        # -> ReducedStatus
+state = reduce_status_events(events)  # -> ReducedStatus
 lane = state.wp_states["WP01"].lane
 ```
 
@@ -148,6 +148,7 @@ classify future local-only types without re-shipping a contract.
 
 ```python
 from spec_kitty_events import LOCAL_ONLY_EVENT_TYPES
+
 assert LOCAL_ONLY_EVENT_TYPES == frozenset()
 ```
 
