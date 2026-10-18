@@ -9,6 +9,7 @@ interview-origin transitions with anomaly coverage.
 
 from __future__ import annotations
 
+import itertools
 import json
 import uuid
 from datetime import datetime, timezone
@@ -16,6 +17,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 from ulid import ULID
 
 from spec_kitty_events.decision_moment import (
@@ -31,6 +34,8 @@ from spec_kitty_events.decisionpoint import (
     DECISION_POINT_WIDENED,
     DecisionAuthorityRole,
     DecisionPointState,
+    _select_effective_terminal,
+    _TerminalPlan,
     reduce_decision_point_events,
 )
 from spec_kitty_events.models import Event
@@ -1287,3 +1292,244 @@ def test_reducer_widened_then_resolved_with_summary_produces_no_anomaly() -> Non
     assert len(missing_summary_anomalies) == 0, (
         f"Expected 0 missing_summary anomalies, got {state.anomalies}"
     )
+
+
+# ── #120: deferred -> resolved reopen fold ────────────────────────────────────
+
+
+def _terminal(outcome: str, lamport: int) -> Event:
+    if outcome == "resolved":
+        payload = _interview_resolved_payload(
+            terminal_outcome="resolved", final_answer=f"A{lamport}", lamport=lamport
+        )
+    else:
+        payload = _interview_resolved_payload(
+            terminal_outcome=outcome, final_answer=None, rationale="why", lamport=lamport
+        )
+    return _make_event(DECISION_POINT_RESOLVED, payload, lamport=lamport)
+
+
+def _opened(lamport: int = 1) -> Event:
+    return _make_event(
+        DECISION_POINT_OPENED, _interview_opened_payload(lamport=lamport), lamport=lamport
+    )
+
+
+def _anomaly_kinds(result: Any) -> list[str]:
+    return [a.kind for a in result.anomalies]
+
+
+def test_issue_120_deferred_then_resolved_reduces_to_resolved() -> None:
+    result = reduce_decision_point_events(
+        [_opened(), _terminal("deferred", 2), _terminal("resolved", 3)]
+    )
+    assert result.state == DecisionPointState.RESOLVED
+    assert result.terminal_outcome == TerminalOutcome.RESOLVED
+    assert result.final_answer == "A3"
+    assert result.reopened_from_deferred is True
+    assert result.anomalies == ()
+    assert result.last_state_entered_at == datetime(2026, 3, 1, 10, 0, 3, tzinfo=timezone.utc)
+
+
+def test_resolved_then_deferred_by_clock_still_reduces_to_resolved() -> None:
+    result = reduce_decision_point_events(
+        [_opened(), _terminal("resolved", 2), _terminal("deferred", 3)]
+    )
+    assert result.terminal_outcome == TerminalOutcome.RESOLVED
+    assert result.final_answer == "A2"
+    assert result.reopened_from_deferred is True
+    assert result.anomalies == ()
+    assert result.last_state_entered_at == datetime(2026, 3, 1, 10, 0, 2, tzinfo=timezone.utc)
+
+
+def test_plain_deferred_is_not_a_reopen() -> None:
+    result = reduce_decision_point_events([_opened(), _terminal("deferred", 2)])
+    assert result.terminal_outcome == TerminalOutcome.DEFERRED
+    assert result.reopened_from_deferred is False
+    assert result.model_dump(mode="json")["reopened_from_deferred"] is False
+
+
+@pytest.mark.parametrize(
+    "outcomes",
+    [
+        ("deferred", "deferred"),
+        ("deferred", "canceled"),
+        ("resolved", "canceled"),
+        ("resolved", "resolved"),
+    ],
+)
+def test_unfoldable_pair_first_stands(outcomes: tuple[str, str]) -> None:
+    events = [_opened(), _terminal(outcomes[0], 2), _terminal(outcomes[1], 3)]
+    result = reduce_decision_point_events(events)
+    assert result.terminal_outcome == TerminalOutcome(outcomes[0])
+    assert _anomaly_kinds(result) == ["unfoldable_terminal_combination"]
+    assert result.reopened_from_deferred is False
+
+
+def test_three_resolved_is_unfoldable_even_with_a_reopen_pair() -> None:
+    events = [
+        _opened(),
+        _terminal("deferred", 2),
+        _terminal("resolved", 3),
+        _terminal("resolved", 4),
+    ]
+    result = reduce_decision_point_events(events)
+    assert result.terminal_outcome == TerminalOutcome.DEFERRED
+    assert _anomaly_kinds(result) == ["unfoldable_terminal_combination"] * 2
+    assert result.reopened_from_deferred is False
+
+
+def test_overridden_after_effective_resolve_is_valid() -> None:
+    events = [
+        _opened(),
+        _terminal("deferred", 2),
+        _terminal("resolved", 3),
+        _make_event(DECISION_POINT_OVERRIDDEN, _overridden_payload(lamport=4), lamport=4),
+    ]
+    result = reduce_decision_point_events(events)
+    assert result.state == DecisionPointState.OVERRIDDEN
+    assert result.anomalies == ()
+    assert result.reopened_from_deferred is True
+
+
+@pytest.mark.parametrize(
+    ("override_lamport", "deferred_lamport"),
+    [(2, 3), (3, 2)],
+    ids=["before-both", "between-deferred-and-resolved"],
+)
+def test_overridden_before_effective_resolve_is_invalid_transition(
+    override_lamport: int, deferred_lamport: int
+) -> None:
+    events = [
+        _opened(),
+        _terminal("deferred", deferred_lamport),
+        _make_event(
+            DECISION_POINT_OVERRIDDEN,
+            _overridden_payload(lamport=override_lamport),
+            lamport=override_lamport,
+        ),
+        _terminal("resolved", 4),
+    ]
+    result = reduce_decision_point_events(events)
+    assert "invalid_transition" in _anomaly_kinds(result)
+    assert result.state == DecisionPointState.RESOLVED
+    assert result.terminal_outcome == TerminalOutcome.RESOLVED
+
+
+def test_discussing_after_deferred_applies_normally() -> None:
+    events = [
+        _opened(),
+        _terminal("deferred", 2),
+        _make_event(DECISION_POINT_DISCUSSING, _interview_discussing_payload(lamport=3), lamport=3),
+        _terminal("resolved", 4),
+    ]
+    result = reduce_decision_point_events(events)
+    assert result.state == DecisionPointState.RESOLVED
+    assert result.terminal_outcome == TerminalOutcome.RESOLVED
+    assert result.anomalies == ()
+    assert result.reopened_from_deferred is True
+
+
+def test_reopen_order_independent_under_shuffle() -> None:
+    events = [_opened(), _terminal("deferred", 2), _terminal("resolved", 3)]
+    expected = reduce_decision_point_events(events).model_dump(mode="json")
+    for perm in itertools.permutations(events):
+        assert reduce_decision_point_events(list(perm)).model_dump(mode="json") == expected
+
+
+@settings(max_examples=150, deadline=None)
+@given(
+    outcomes=st.lists(
+        st.sampled_from(["resolved", "deferred", "canceled"]), min_size=0, max_size=4
+    ),
+    seed=st.randoms(use_true_random=False),
+)
+def test_property_shuffled_terminals_reduce_identically(outcomes: list[str], seed: Any) -> None:
+    events = [_opened()] + [_terminal(o, 2 + i) for i, o in enumerate(outcomes)]
+    events.append(_make_event(DECISION_POINT_OVERRIDDEN, _overridden_payload(lamport=9), lamport=9))
+    baseline = reduce_decision_point_events(events).model_dump(mode="json")
+    shuffled = list(events)
+    seed.shuffle(shuffled)
+    assert reduce_decision_point_events(shuffled).model_dump(mode="json") == baseline
+
+
+def test_select_effective_terminal_is_pure() -> None:
+    d, r = TerminalOutcome.DEFERRED, TerminalOutcome.RESOLVED
+    assert _select_effective_terminal([]) == _TerminalPlan()
+    assert _select_effective_terminal([("a", r)]) == _TerminalPlan()
+    plan = _select_effective_terminal([("a", d), ("b", r)])
+    assert (plan.demoted, plan.effective, plan.extras) == (frozenset({"a"}), "b", frozenset())
+    plan = _select_effective_terminal([("a", r), ("b", d)])
+    assert (plan.demoted, plan.effective) == (frozenset({"b"}), "a")
+    plan = _select_effective_terminal([("a", d), ("b", d), ("c", r)])
+    assert plan.extras == frozenset({"b", "c"}) and plan.effective is None
+
+
+# ── #120 review: only valid terminals compete for the reopen ──────────────────
+
+
+def _adr_resolved(lamport: int, **overrides: Any) -> Event:
+    payload = {**_adr_resolved_payload(lamport=lamport), **overrides}
+    return _make_event(DECISION_POINT_RESOLVED, payload, lamport=lamport)
+
+
+@pytest.mark.regression
+def test_regression_issue_120_unauthorized_resolved_after_deferred_keeps_deferred() -> None:
+    events = [
+        _opened(),
+        _terminal("deferred", 2),
+        _adr_resolved(
+            3, actor_type="service", authority_role="advisory", mission_owner_authority_flag=False
+        ),
+    ]
+    result = reduce_decision_point_events(events)
+    assert result.terminal_outcome == TerminalOutcome.DEFERRED
+    assert result.reopened_from_deferred is False
+    assert _anomaly_kinds(result) != []
+
+
+@pytest.mark.regression
+def test_regression_issue_120_llm_resolved_after_deferred_keeps_deferred() -> None:
+    events = [_opened(), _terminal("deferred", 2), _adr_resolved(3, actor_type="llm", phase="P1")]
+    result = reduce_decision_point_events(events)
+    assert result.terminal_outcome == TerminalOutcome.DEFERRED
+    assert result.reopened_from_deferred is False
+    assert _anomaly_kinds(result) != []
+
+
+@pytest.mark.regression
+def test_regression_issue_120_overridden_then_resolved_and_deferred() -> None:
+    """Overridden (invalid, nothing resolved yet) then deferred + resolved: reopen still folds."""
+    events = [
+        _opened(),
+        _make_event(DECISION_POINT_OVERRIDDEN, _overridden_payload(lamport=2), lamport=2),
+        _terminal("deferred", 3),
+        _terminal("resolved", 4),
+    ]
+    result = reduce_decision_point_events(events)
+    assert result.terminal_outcome == TerminalOutcome.RESOLVED
+    assert result.reopened_from_deferred is True
+    assert _anomaly_kinds(result) == ["invalid_transition"]
+
+
+@pytest.mark.regression
+def test_regression_issue_120_terminals_without_opened_are_not_a_reopen() -> None:
+    """Neither terminal can apply without an Opened: both get anomalies, no reopen."""
+    result = reduce_decision_point_events([_terminal("deferred", 1), _terminal("resolved", 2)])
+    assert result.state is None
+    assert result.reopened_from_deferred is False
+    assert _anomaly_kinds(result) == ["invalid_transition", "invalid_transition"]
+
+
+def test_malformed_opened_does_not_make_terminals_reachable() -> None:
+    bad_opened = _make_event(DECISION_POINT_OPENED, {"decision_point_id": _DP_ID}, lamport=1)
+    result = reduce_decision_point_events(
+        [bad_opened, _terminal("deferred", 2), _terminal("resolved", 3)]
+    )
+    assert result.state is None
+    assert result.reopened_from_deferred is False
+    assert _anomaly_kinds(result) == [
+        "malformed_payload",
+        "invalid_transition",
+        "invalid_transition",
+    ]
