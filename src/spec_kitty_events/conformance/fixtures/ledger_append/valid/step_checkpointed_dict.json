@@ -1,0 +1,22 @@
+{
+  "input_kind": "dict",
+  "input": {
+    "cursor": "pre_generation_gate",
+    "event_id": "6aac9ca5-94c2-5c5c-a0d3-e2bc5bc18292",
+    "event_type": "StepCheckpointed",
+    "input_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "mission_id": "01M57TCP-mission",
+    "retry_token": "5f6a7b8c-9d0e-4f1a-8b2c-3d4e5f6a7b8c",
+    "run_id": "run-0001",
+    "scope_refs": [
+      {
+        "scope": "team_domain",
+        "version_id": "v3"
+      }
+    ],
+    "step_id": "specify",
+    "strictness": "medium",
+    "timestamp": "2026-10-18T12:00:00+00:00"
+  },
+  "expected_line": "{\"cursor\": \"pre_generation_gate\", \"event_id\": \"6aac9ca5-94c2-5c5c-a0d3-e2bc5bc18292\", \"event_type\": \"StepCheckpointed\", \"input_hash\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", \"mission_id\": \"01M57TCP-mission\", \"retry_token\": \"5f6a7b8c-9d0e-4f1a-8b2c-3d4e5f6a7b8c\", \"run_id\": \"run-0001\", \"scope_refs\": [{\"scope\": \"team_domain\", \"version_id\": \"v3\"}], \"step_id\": \"specify\", \"strictness\": \"medium\", \"timestamp\": \"2026-10-18T12:00:00+00:00\"}\n"
+}

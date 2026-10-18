@@ -58,7 +58,7 @@ _ENTRIES = _load_entries()
 
 
 def test_envelope_strict_journal_fixtures_exist() -> None:
-    assert len(_ENTRIES) == 7
+    assert len(_ENTRIES) == 8
 
 
 def test_every_entry_declares_class_envelope_strict_journal() -> None:

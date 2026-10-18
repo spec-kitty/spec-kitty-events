@@ -62,10 +62,18 @@
       "type": "string"
     },
     "lamport_clock": {
-      "description": "Lamport logical clock value (monotonically increasing)",
-      "minimum": 0,
-      "title": "Lamport Clock",
-      "type": "integer"
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Optional Lamport logical clock value (monotonically increasing). An envelope without it is unclocked and orders before clocked ones.",
+      "title": "Lamport Clock"
     },
     "node_id": {
       "description": "Required causal emitter identity used for Lamport ordering and deterministic tie-breaking",
@@ -119,7 +127,6 @@
     "timestamp",
     "build_id",
     "node_id",
-    "lamport_clock",
     "project_uuid",
     "correlation_id"
   ],

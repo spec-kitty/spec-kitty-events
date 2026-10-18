@@ -1,0 +1,12 @@
+{
+  "mission_id": "01M57TCP-mission",
+  "options": [
+    "Shipping a build",
+    "A rollout step"
+  ],
+  "question": "Which sense of deployment?",
+  "run_id": "run-0001",
+  "step_id": "specify",
+  "term": "deployment",
+  "urgency": "high"
+}

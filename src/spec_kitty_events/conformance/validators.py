@@ -75,6 +75,7 @@ from spec_kitty_events.glossary import (
     GlossarySenseUpdatedPayload,
     GenerationBlockedBySemanticConflictPayload,
     GlossaryStrictnessSetPayload,
+    StepCheckpointedPayload,
 )
 from spec_kitty_events.mission_next import (
     MissionRunStartedPayload,
@@ -214,6 +215,7 @@ _EVENT_TYPE_TO_MODEL: Dict[str, Any] = {
     "GlossarySenseUpdated": GlossarySenseUpdatedPayload,
     "GenerationBlockedBySemanticConflict": GenerationBlockedBySemanticConflictPayload,
     "GlossaryStrictnessSet": GlossaryStrictnessSetPayload,
+    "StepCheckpointed": StepCheckpointedPayload,
     # Mission-next runtime contracts
     "MissionRunStarted": MissionRunStartedPayload,
     "NextStepIssued": NextStepIssuedPayload,
@@ -340,6 +342,7 @@ _EVENT_TYPE_TO_SCHEMA: Dict[str, str] = {
     "GlossarySenseUpdated": "glossary_sense_updated_payload",
     "GenerationBlockedBySemanticConflict": "generation_blocked_by_semantic_conflict_payload",
     "GlossaryStrictnessSet": "glossary_strictness_set_payload",
+    "StepCheckpointed": "step_checkpointed_payload",
     # Mission-next runtime contracts
     "MissionRunStarted": "mission_run_started_payload",
     "NextStepIssued": "next_step_issued_payload",

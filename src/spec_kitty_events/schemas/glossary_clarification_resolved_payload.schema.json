@@ -1,38 +1,174 @@
 {
+  "$defs": {
+    "GlossaryActor": {
+      "additionalProperties": false,
+      "description": "Identity of the actor behind a glossary action.",
+      "properties": {
+        "actor_id": {
+          "description": "Stable actor identifier",
+          "minLength": 1,
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "actor_type": {
+          "$ref": "#/$defs/GlossaryActorType",
+          "description": "Kind of actor"
+        },
+        "display_name": {
+          "description": "Human-readable actor name",
+          "minLength": 1,
+          "title": "Display Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "actor_id",
+        "actor_type",
+        "display_name"
+      ],
+      "title": "GlossaryActor",
+      "type": "object"
+    },
+    "GlossaryActorType": {
+      "description": "Kind of actor behind a glossary action.",
+      "enum": [
+        "human",
+        "llm",
+        "service"
+      ],
+      "title": "GlossaryActorType",
+      "type": "string"
+    },
+    "GlossaryProvenance": {
+      "additionalProperties": false,
+      "description": "Where a clarification or sense update came from.",
+      "properties": {
+        "actor_id": {
+          "description": "Actor who produced the record",
+          "minLength": 1,
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "source": {
+          "description": "Origin, e.g. user_clarification",
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "timestamp": {
+          "description": "ISO-8601 time the action happened",
+          "minLength": 1,
+          "title": "Timestamp",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "timestamp",
+        "actor_id"
+      ],
+      "title": "GlossaryProvenance",
+      "type": "object"
+    },
+    "GlossaryResolutionMode": {
+      "description": "How a clarification was resolved.",
+      "enum": [
+        "interactive",
+        "async"
+      ],
+      "title": "GlossaryResolutionMode",
+      "type": "string"
+    },
+    "GlossaryScope": {
+      "description": "Glossary scope levels.",
+      "enum": [
+        "mission_local",
+        "team_domain",
+        "audience_domain",
+        "spec_kitty_core"
+      ],
+      "title": "GlossaryScope",
+      "type": "string"
+    },
+    "SenseRef": {
+      "additionalProperties": false,
+      "description": "Reference to one sense (meaning) of a term within a scope.",
+      "properties": {
+        "confidence": {
+          "description": "Confidence (0.0-1.0)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "definition": {
+          "description": "Definition of the sense",
+          "minLength": 1,
+          "title": "Definition",
+          "type": "string"
+        },
+        "scope": {
+          "$ref": "#/$defs/GlossaryScope",
+          "description": "Scope that owns the sense"
+        },
+        "surface": {
+          "description": "Term surface text",
+          "minLength": 1,
+          "title": "Surface",
+          "type": "string"
+        }
+      },
+      "required": [
+        "surface",
+        "scope",
+        "definition",
+        "confidence"
+      ],
+      "title": "SenseRef",
+      "type": "object"
+    }
+  },
   "$id": "spec-kitty-events/glossary_clarification_resolved_payload",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
   "description": "Payload for GlossaryClarificationResolved event.",
   "properties": {
     "actor": {
-      "description": "Identity of the resolving actor",
+      "$ref": "#/$defs/GlossaryActor",
+      "description": "Resolving actor"
+    },
+    "conflict_id": {
+      "description": "conflict_id of the originating request",
       "minLength": 1,
-      "title": "Actor",
+      "title": "Conflict Id",
       "type": "string"
     },
-    "clarification_event_id": {
-      "description": "Event ID of the originating clarification request",
-      "minLength": 1,
-      "title": "Clarification Event Id",
-      "type": "string"
+    "provenance": {
+      "$ref": "#/$defs/GlossaryProvenance",
+      "description": "Where the resolution came from"
     },
-    "mission_id": {
-      "description": "Mission context",
-      "minLength": 1,
-      "title": "Mission Id",
-      "type": "string"
+    "resolution_mode": {
+      "$ref": "#/$defs/GlossaryResolutionMode",
+      "description": "How it was resolved"
     },
-    "selected_meaning": {
-      "description": "The chosen or entered meaning",
+    "selected_sense": {
+      "$ref": "#/$defs/SenseRef",
+      "description": "The chosen sense"
+    },
+    "term_surface": {
+      "description": "Term that was clarified",
       "minLength": 1,
-      "title": "Selected Meaning",
+      "title": "Term Surface",
       "type": "string"
     }
   },
   "required": [
-    "mission_id",
-    "clarification_event_id",
-    "selected_meaning",
-    "actor"
+    "conflict_id",
+    "term_surface",
+    "selected_sense",
+    "actor",
+    "resolution_mode",
+    "provenance"
   ],
   "title": "GlossaryClarificationResolvedPayload",
   "type": "object"

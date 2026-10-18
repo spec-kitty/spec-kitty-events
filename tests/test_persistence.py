@@ -37,14 +37,15 @@ MISSION_REOPENED: Dict[str, Any] = {
     "cleared_merge": {"merged_pr": 42, "merged_at": "2026-01-01T00:00:00+00:00"},
 }
 
-# Shaped like core's flat glossary dict (spec-kitty src/glossary/events.py).
+# Shaped like core's flat glossary dict (spec-kitty src/glossary/events.py),
+# 11.0.0 shape: run_id present, no scope_type (static capture, core 0746bec3).
 CORE_GLOSSARY_DICT: Dict[str, Any] = {
     "event_type": "GlossaryScopeActivated",
-    "event_id": "6f1c2a8e-7d1b-4b4e-9a53-0d2f2f6a1c11",
+    "event_id": "83f49bb3-70e7-58e9-8d57-a6686f81284c",
     "timestamp": "2026-10-18T12:00:00+00:00",
-    "mission_id": "mission-001",
-    "scope_id": "spec_kitty_core",
-    "scope_type": "spec_kitty_core",
+    "mission_id": "01M57TCP-mission",
+    "run_id": "run-0001",
+    "scope_id": "team_domain",
     "glossary_version_id": "v3",
 }
 
@@ -104,7 +105,7 @@ def test_envelope_shaped_dict_validates_inner_payload() -> None:
 
 def test_registered_payload_model_gets_event_type_attached() -> None:
     model = GlossaryScopeActivatedPayload(
-        mission_id="m", scope_id="s", scope_type="team_domain", glossary_version_id="v1"
+        mission_id="m", run_id="r", scope_id="team_domain", glossary_version_id="v1"
     )
     record = build_record(model)
     assert record == {"event_type": "GlossaryScopeActivated", **model.model_dump(mode="json")}

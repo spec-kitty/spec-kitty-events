@@ -40,5 +40,6 @@
   "actual_participants": [],
   "resolved_by": null,
   "closed_locally_while_widened": false,
-  "closure_message": null
+  "closure_message": null,
+  "reopened_from_deferred": false
 }

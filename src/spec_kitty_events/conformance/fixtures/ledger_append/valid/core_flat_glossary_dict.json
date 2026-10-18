@@ -1,13 +1,13 @@
 {
   "input_kind": "dict",
   "input": {
+    "event_id": "83f49bb3-70e7-58e9-8d57-a6686f81284c",
     "event_type": "GlossaryScopeActivated",
-    "event_id": "6f1c2a8e-7d1b-4b4e-9a53-0d2f2f6a1c11",
-    "timestamp": "2026-10-18T12:00:00+00:00",
-    "mission_id": "mission-fixture-001",
-    "scope_id": "scope-team-domain",
-    "scope_type": "team_domain",
-    "glossary_version_id": "v1.0.0"
+    "glossary_version_id": "v3",
+    "mission_id": "01M57TCP-mission",
+    "run_id": "run-0001",
+    "scope_id": "team_domain",
+    "timestamp": "2026-10-18T12:00:00+00:00"
   },
-  "expected_line": "{\"event_id\": \"6f1c2a8e-7d1b-4b4e-9a53-0d2f2f6a1c11\", \"event_type\": \"GlossaryScopeActivated\", \"glossary_version_id\": \"v1.0.0\", \"mission_id\": \"mission-fixture-001\", \"scope_id\": \"scope-team-domain\", \"scope_type\": \"team_domain\", \"timestamp\": \"2026-10-18T12:00:00+00:00\"}\n"
+  "expected_line": "{\"event_id\": \"83f49bb3-70e7-58e9-8d57-a6686f81284c\", \"event_type\": \"GlossaryScopeActivated\", \"glossary_version_id\": \"v3\", \"mission_id\": \"01M57TCP-mission\", \"run_id\": \"run-0001\", \"scope_id\": \"team_domain\", \"timestamp\": \"2026-10-18T12:00:00+00:00\"}\n"
 }

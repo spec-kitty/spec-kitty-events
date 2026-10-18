@@ -1,0 +1,28 @@
+{
+  "input_kind": "dict",
+  "input": {
+    "actor": {
+      "actor_id": "agent-1",
+      "actor_type": "llm",
+      "display_name": "Claude"
+    },
+    "conflict_id": "0b1c2d3e-4f50-4a6b-8c7d-9e0f1a2b3c4d",
+    "event_id": "664f03d5-ce2c-5651-8f70-88a93dbaff1b",
+    "event_type": "GlossaryClarificationResolved",
+    "provenance": {
+      "actor_id": "agent-1",
+      "source": "user_clarification",
+      "timestamp": "2026-10-18T12:00:00+00:00"
+    },
+    "resolution_mode": "interactive",
+    "selected_sense": {
+      "confidence": 0.9,
+      "definition": "Shipping a build to an environment",
+      "scope": "team_domain",
+      "surface": "deployment"
+    },
+    "term_surface": "deployment",
+    "timestamp": "2026-10-18T12:00:00+00:00"
+  },
+  "expected_line": "{\"actor\": {\"actor_id\": \"agent-1\", \"actor_type\": \"llm\", \"display_name\": \"Claude\"}, \"conflict_id\": \"0b1c2d3e-4f50-4a6b-8c7d-9e0f1a2b3c4d\", \"event_id\": \"664f03d5-ce2c-5651-8f70-88a93dbaff1b\", \"event_type\": \"GlossaryClarificationResolved\", \"provenance\": {\"actor_id\": \"agent-1\", \"source\": \"user_clarification\", \"timestamp\": \"2026-10-18T12:00:00+00:00\"}, \"resolution_mode\": \"interactive\", \"selected_sense\": {\"confidence\": 0.9, \"definition\": \"Shipping a build to an environment\", \"scope\": \"team_domain\", \"surface\": \"deployment\"}, \"term_surface\": \"deployment\", \"timestamp\": \"2026-10-18T12:00:00+00:00\"}\n"
+}

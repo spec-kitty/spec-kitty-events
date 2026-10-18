@@ -4,7 +4,8 @@ Covers:
 - Valid fixture validation (18 cases: 8 legacy ADR + 10 V1) -> ConformanceResult(valid=True)
 - Invalid fixture rejection (11 cases: 6 legacy + 5 V1) -> ConformanceResult(valid=False)
 - Invalid fixtures include authority-policy, missing audit field, and V1 cross-field failures
-- Replay stream validation + golden reducer output comparison (3 streams)
+- Replay stream validation + golden reducer output comparison (3 streams, plus the
+  11.0.0 reopen and unfoldable streams)
 - Schema drift checks (5 payload models including V1 Widened)
 - V1-specific conformance: valid fixtures pass both schema and Pydantic (T021)
 - V1-specific conformance: invalid fixtures fail schema or Pydantic (T021)
@@ -149,6 +150,18 @@ def test_v1_invalid_fixture_count() -> None:
 # Section 4 -- Replay stream validation + golden comparison
 # ---------------------------------------------------------------------------
 
+# 11.0.0 reopen / unfoldable streams (unclocked envelopes), manifest id slugs.
+_REOPEN_STREAM_SLUGS = [
+    "reopen-deferred-first",
+    "reopen-resolved-first",
+    "reopen-then-overridden",
+    "reopen-overridden-between",
+    "reopen-discussing-after-deferred",
+    "unfoldable-triple",
+    "unfoldable-two-deferred",
+    "unfoldable-deferred-canceled",
+]
+
 
 @pytest.mark.parametrize(
     "stream_id,output_id",
@@ -165,6 +178,10 @@ def test_v1_invalid_fixture_count() -> None:
             "decisionpoint-replay-with-anomaly",
             "decisionpoint-replay-with-anomaly-output",
         ),
+        *[
+            (f"decisionpoint-replay-{slug}", f"decisionpoint-replay-{slug}-output")
+            for slug in _REOPEN_STREAM_SLUGS
+        ],
     ],
 )
 def test_replay_stream_validates_and_matches_golden(stream_id: str, output_id: str) -> None:
@@ -348,3 +365,83 @@ def test_v1_resolved_interview_deferred_with_final_answer_rejected() -> None:
     # We accept either outcome from JSON Schema; the Pydantic check above is authoritative
     # If schema rejects it too, that's a bonus — both are correct behavior
     _ = schema_valid  # explicit: we don't assert on schema_valid here
+
+
+# ---------------------------------------------------------------------------
+# Section 8 -- 11.0.0 reopen fold: streams are unclocked, outputs are pinned
+# ---------------------------------------------------------------------------
+
+
+def _reduce_stream(slug: str) -> dict[str, Any]:
+    raw = load_replay_stream(f"decisionpoint-replay-{slug}")
+    events = [Event(**e) for e in raw]
+    return reduce_decision_point_events(events).model_dump(mode="json")
+
+
+def _anomaly_kinds(state: dict[str, Any]) -> list[str]:
+    return [a["kind"] for a in state["anomalies"]]
+
+
+@pytest.mark.parametrize("slug", _REOPEN_STREAM_SLUGS)
+def test_reopen_streams_are_unclocked(slug: str) -> None:
+    raw = load_replay_stream(f"decisionpoint-replay-{slug}")
+    assert raw and all("lamport_clock" not in e for e in raw)
+
+
+def test_reopen_both_file_orders_have_identical_output() -> None:
+    first = _FIXTURES_DIR / "decisionpoint" / "replay" / "reopen_deferred_first_output.json"
+    second = _FIXTURES_DIR / "decisionpoint" / "replay" / "reopen_resolved_first_output.json"
+    assert first.read_bytes() == second.read_bytes()
+    deferred_first = load_replay_stream("decisionpoint-replay-reopen-deferred-first")
+    resolved_first = load_replay_stream("decisionpoint-replay-reopen-resolved-first")
+    assert [e["payload"]["terminal_outcome"] for e in deferred_first[1:]] == [
+        "deferred",
+        "resolved",
+    ]
+    assert [e["payload"]["terminal_outcome"] for e in resolved_first[1:]] == [
+        "resolved",
+        "deferred",
+    ]
+
+
+def test_valid_reopen_resolves_without_anomaly() -> None:
+    for slug in (
+        "reopen-deferred-first",
+        "reopen-resolved-first",
+        "reopen-discussing-after-deferred",
+    ):
+        state = _reduce_stream(slug)
+        assert state["state"] == "resolved", slug
+        assert state["terminal_outcome"] == "resolved", slug
+        assert state["reopened_from_deferred"] is True, slug
+        assert state["anomalies"] == [], slug
+
+
+def test_overridden_after_the_effective_resolve_is_legal() -> None:
+    state = _reduce_stream("reopen-then-overridden")
+    assert state["state"] == "overridden"
+    assert state["reopened_from_deferred"] is True
+    assert state["anomalies"] == []
+
+
+def test_overridden_between_the_resolved_events_is_invalid_transition() -> None:
+    state = _reduce_stream("reopen-overridden-between")
+    assert state["state"] == "resolved"
+    assert _anomaly_kinds(state) == ["invalid_transition"]
+
+
+@pytest.mark.parametrize(
+    "slug,extra_count",
+    [
+        ("unfoldable-triple", 2),
+        ("unfoldable-two-deferred", 1),
+        ("unfoldable-deferred-canceled", 1),
+    ],
+)
+def test_unfoldable_combinations_report_anomaly_and_first_resolved_stands(
+    slug: str, extra_count: int
+) -> None:
+    state = _reduce_stream(slug)
+    assert _anomaly_kinds(state) == ["unfoldable_terminal_combination"] * extra_count
+    assert state["terminal_outcome"] == "deferred"
+    assert state["reopened_from_deferred"] is False

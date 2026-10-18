@@ -1,0 +1,118 @@
+{
+  "$defs": {
+    "GlossaryScope": {
+      "description": "Glossary scope levels.",
+      "enum": [
+        "mission_local",
+        "team_domain",
+        "audience_domain",
+        "spec_kitty_core"
+      ],
+      "title": "GlossaryScope",
+      "type": "string"
+    },
+    "GlossaryStrictness": {
+      "description": "Glossary enforcement strictness.",
+      "enum": [
+        "off",
+        "medium",
+        "max"
+      ],
+      "title": "GlossaryStrictness",
+      "type": "string"
+    },
+    "ScopeRef": {
+      "additionalProperties": false,
+      "description": "A glossary scope pinned to a version, as recorded in a checkpoint.",
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/GlossaryScope",
+          "description": "Scope level"
+        },
+        "version_id": {
+          "description": "Glossary version of the scope",
+          "minLength": 1,
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scope",
+        "version_id"
+      ],
+      "title": "ScopeRef",
+      "type": "object"
+    }
+  },
+  "$id": "spec-kitty-events/step_checkpointed_payload",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Payload for StepCheckpointed event (resumable step checkpoint).",
+  "properties": {
+    "cursor": {
+      "description": "Execution stage reached",
+      "enum": [
+        "pre_generation_gate",
+        "post_clarification",
+        "post_gate"
+      ],
+      "title": "Cursor",
+      "type": "string"
+    },
+    "input_hash": {
+      "description": "SHA-256 hex digest of the step inputs",
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Input Hash",
+      "type": "string"
+    },
+    "mission_id": {
+      "description": "Mission context",
+      "minLength": 1,
+      "title": "Mission Id",
+      "type": "string"
+    },
+    "retry_token": {
+      "description": "Idempotent retry token; 36 characters, as core enforces (a UUID string)",
+      "maxLength": 36,
+      "minLength": 36,
+      "title": "Retry Token",
+      "type": "string"
+    },
+    "run_id": {
+      "description": "Run context",
+      "minLength": 1,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "scope_refs": {
+      "description": "Active scope versions",
+      "items": {
+        "$ref": "#/$defs/ScopeRef"
+      },
+      "title": "Scope Refs",
+      "type": "array"
+    },
+    "step_id": {
+      "description": "Checkpointed step",
+      "minLength": 1,
+      "title": "Step Id",
+      "type": "string"
+    },
+    "strictness": {
+      "$ref": "#/$defs/GlossaryStrictness",
+      "description": "Resolved strictness mode"
+    }
+  },
+  "required": [
+    "mission_id",
+    "run_id",
+    "step_id",
+    "strictness",
+    "scope_refs",
+    "input_hash",
+    "cursor",
+    "retry_token"
+  ],
+  "title": "StepCheckpointedPayload",
+  "type": "object"
+}

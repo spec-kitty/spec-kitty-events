@@ -1,54 +1,170 @@
 {
   "$defs": {
-    "SemanticConflictEntry": {
-      "description": "Single conflict finding within a semantic check evaluation.",
+    "GlossaryConflictType": {
+      "description": "Kind of semantic conflict a finding reports.",
+      "enum": [
+        "unknown",
+        "ambiguous",
+        "inconsistent",
+        "unresolved_critical"
+      ],
+      "title": "GlossaryConflictType",
+      "type": "string"
+    },
+    "GlossaryFinding": {
+      "additionalProperties": false,
+      "description": "One semantic-conflict finding within a check or a generation block.",
       "properties": {
-        "description": {
-          "description": "Human-readable explanation of the conflict",
-          "title": "Description",
-          "type": "string"
+        "candidate_senses": {
+          "default": [],
+          "description": "Candidate senses (required for ambiguous findings)",
+          "items": {
+            "$ref": "#/$defs/SenseRef"
+          },
+          "title": "Candidate Senses",
+          "type": "array"
         },
-        "nature": {
-          "description": "Classification of the conflict",
-          "enum": [
-            "overloaded",
-            "drift",
-            "ambiguous"
-          ],
-          "title": "Nature",
+        "confidence": {
+          "description": "Confidence in the detection",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "conflict_type": {
+          "$ref": "#/$defs/GlossaryConflictType",
+          "description": "Kind of conflict"
+        },
+        "context": {
+          "default": "",
+          "description": "Where the term was used",
+          "title": "Context",
           "type": "string"
         },
         "severity": {
-          "description": "Severity level of this conflict",
-          "enum": [
-            "low",
-            "medium",
-            "high"
-          ],
-          "title": "Severity",
-          "type": "string"
+          "$ref": "#/$defs/GlossarySeverity",
+          "description": "Severity of this finding"
         },
         "term": {
-          "description": "The conflicting term surface text",
-          "minLength": 1,
-          "title": "Term",
-          "type": "string"
+          "$ref": "#/$defs/GlossaryTermSurface",
+          "description": "The conflicting term"
         }
       },
       "required": [
         "term",
-        "nature",
+        "conflict_type",
         "severity",
-        "description"
+        "confidence"
       ],
-      "title": "SemanticConflictEntry",
+      "title": "GlossaryFinding",
+      "type": "object"
+    },
+    "GlossaryRecommendedAction": {
+      "description": "Action a semantic check recommends (``proceed`` is core's spelling of pass).",
+      "enum": [
+        "proceed",
+        "warn",
+        "block"
+      ],
+      "title": "GlossaryRecommendedAction",
+      "type": "string"
+    },
+    "GlossaryScope": {
+      "description": "Glossary scope levels.",
+      "enum": [
+        "mission_local",
+        "team_domain",
+        "audience_domain",
+        "spec_kitty_core"
+      ],
+      "title": "GlossaryScope",
+      "type": "string"
+    },
+    "GlossarySeverity": {
+      "description": "Severity of a conflict finding or of a whole semantic check.",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "GlossarySeverity",
+      "type": "string"
+    },
+    "GlossaryStrictness": {
+      "description": "Glossary enforcement strictness.",
+      "enum": [
+        "off",
+        "medium",
+        "max"
+      ],
+      "title": "GlossaryStrictness",
+      "type": "string"
+    },
+    "GlossaryTermSurface": {
+      "additionalProperties": false,
+      "description": "A term as written in the text under check.",
+      "properties": {
+        "surface_text": {
+          "description": "Raw text form of the term",
+          "minLength": 1,
+          "title": "Surface Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "surface_text"
+      ],
+      "title": "GlossaryTermSurface",
+      "type": "object"
+    },
+    "SenseRef": {
+      "additionalProperties": false,
+      "description": "Reference to one sense (meaning) of a term within a scope.",
+      "properties": {
+        "confidence": {
+          "description": "Confidence (0.0-1.0)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "definition": {
+          "description": "Definition of the sense",
+          "minLength": 1,
+          "title": "Definition",
+          "type": "string"
+        },
+        "scope": {
+          "$ref": "#/$defs/GlossaryScope",
+          "description": "Scope that owns the sense"
+        },
+        "surface": {
+          "description": "Term surface text",
+          "minLength": 1,
+          "title": "Surface",
+          "type": "string"
+        }
+      },
+      "required": [
+        "surface",
+        "scope",
+        "definition",
+        "confidence"
+      ],
+      "title": "SenseRef",
       "type": "object"
     }
   },
   "$id": "spec-kitty-events/semantic_check_evaluated_payload",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
   "description": "Payload for SemanticCheckEvaluated event (step-level semantic check).",
   "properties": {
+    "blocked": {
+      "description": "Whether generation was blocked",
+      "title": "Blocked",
+      "type": "boolean"
+    },
     "confidence": {
       "description": "Overall confidence score",
       "maximum": 1.0,
@@ -56,23 +172,17 @@
       "title": "Confidence",
       "type": "number"
     },
-    "conflicts": {
-      "description": "List of detected conflicts",
-      "items": {
-        "$ref": "#/$defs/SemanticConflictEntry"
-      },
-      "title": "Conflicts",
-      "type": "array"
-    },
     "effective_strictness": {
-      "description": "Strictness mode used for this evaluation",
-      "enum": [
-        "off",
-        "medium",
-        "max"
-      ],
-      "title": "Effective Strictness",
-      "type": "string"
+      "$ref": "#/$defs/GlossaryStrictness",
+      "description": "Strictness mode used for this evaluation"
+    },
+    "findings": {
+      "description": "Detected conflicts",
+      "items": {
+        "$ref": "#/$defs/GlossaryFinding"
+      },
+      "title": "Findings",
+      "type": "array"
     },
     "mission_id": {
       "description": "Mission context",
@@ -80,30 +190,18 @@
       "title": "Mission Id",
       "type": "string"
     },
+    "overall_severity": {
+      "$ref": "#/$defs/GlossarySeverity",
+      "description": "Overall check severity (max of findings)"
+    },
     "recommended_action": {
-      "description": "Action recommendation based on severity and strictness",
-      "enum": [
-        "block",
-        "warn",
-        "pass"
-      ],
-      "title": "Recommended Action",
-      "type": "string"
+      "$ref": "#/$defs/GlossaryRecommendedAction",
+      "description": "Action recommendation based on severity and strictness"
     },
-    "scope_id": {
-      "description": "Scope checked against",
+    "run_id": {
+      "description": "Run context",
       "minLength": 1,
-      "title": "Scope Id",
-      "type": "string"
-    },
-    "severity": {
-      "description": "Overall check severity (max of conflicts)",
-      "enum": [
-        "low",
-        "medium",
-        "high"
-      ],
-      "title": "Severity",
+      "title": "Run Id",
       "type": "string"
     },
     "step_id": {
@@ -111,25 +209,18 @@
       "minLength": 1,
       "title": "Step Id",
       "type": "string"
-    },
-    "step_metadata": {
-      "additionalProperties": {
-        "type": "string"
-      },
-      "description": "Mission primitive metadata (no hardcoded step names)",
-      "title": "Step Metadata",
-      "type": "object"
     }
   },
   "required": [
     "mission_id",
-    "scope_id",
+    "run_id",
     "step_id",
-    "conflicts",
-    "severity",
+    "findings",
+    "overall_severity",
     "confidence",
+    "effective_strictness",
     "recommended_action",
-    "effective_strictness"
+    "blocked"
   ],
   "title": "SemanticCheckEvaluatedPayload",
   "type": "object"

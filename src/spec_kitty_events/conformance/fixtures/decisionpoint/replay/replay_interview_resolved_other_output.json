@@ -28,6 +28,7 @@
   "other_answer": true,
   "phase": "P1",
   "question": "Which SSO mechanism should we implement?",
+  "reopened_from_deferred": false,
   "resolved_by": "human-owner-6",
   "run_id": "run-iv-006",
   "state": "resolved",

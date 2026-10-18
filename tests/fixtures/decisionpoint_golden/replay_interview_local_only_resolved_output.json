@@ -27,6 +27,7 @@
   "other_answer": false,
   "phase": "P1",
   "question": "Which authentication protocol should we adopt?",
+  "reopened_from_deferred": false,
   "resolved_by": "human-owner-1",
   "run_id": "run-iv-001",
   "state": "resolved",

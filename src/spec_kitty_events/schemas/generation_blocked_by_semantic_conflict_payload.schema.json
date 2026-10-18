@@ -1,30 +1,177 @@
 {
-  "$id": "spec-kitty-events/generation_blocked_by_semantic_conflict_payload",
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "Payload for GenerationBlockedBySemanticConflict event.",
-  "properties": {
-    "blocking_strictness": {
-      "description": "Policy mode that triggered the block (never 'off')",
+  "$defs": {
+    "GlossaryConflictType": {
+      "description": "Kind of semantic conflict a finding reports.",
       "enum": [
+        "unknown",
+        "ambiguous",
+        "inconsistent",
+        "unresolved_critical"
+      ],
+      "title": "GlossaryConflictType",
+      "type": "string"
+    },
+    "GlossaryFinding": {
+      "additionalProperties": false,
+      "description": "One semantic-conflict finding within a check or a generation block.",
+      "properties": {
+        "candidate_senses": {
+          "default": [],
+          "description": "Candidate senses (required for ambiguous findings)",
+          "items": {
+            "$ref": "#/$defs/SenseRef"
+          },
+          "title": "Candidate Senses",
+          "type": "array"
+        },
+        "confidence": {
+          "description": "Confidence in the detection",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "conflict_type": {
+          "$ref": "#/$defs/GlossaryConflictType",
+          "description": "Kind of conflict"
+        },
+        "context": {
+          "default": "",
+          "description": "Where the term was used",
+          "title": "Context",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/GlossarySeverity",
+          "description": "Severity of this finding"
+        },
+        "term": {
+          "$ref": "#/$defs/GlossaryTermSurface",
+          "description": "The conflicting term"
+        }
+      },
+      "required": [
+        "term",
+        "conflict_type",
+        "severity",
+        "confidence"
+      ],
+      "title": "GlossaryFinding",
+      "type": "object"
+    },
+    "GlossaryScope": {
+      "description": "Glossary scope levels.",
+      "enum": [
+        "mission_local",
+        "team_domain",
+        "audience_domain",
+        "spec_kitty_core"
+      ],
+      "title": "GlossaryScope",
+      "type": "string"
+    },
+    "GlossarySeverity": {
+      "description": "Severity of a conflict finding or of a whole semantic check.",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "GlossarySeverity",
+      "type": "string"
+    },
+    "GlossaryStrictness": {
+      "description": "Glossary enforcement strictness.",
+      "enum": [
+        "off",
         "medium",
         "max"
       ],
-      "title": "Blocking Strictness",
+      "title": "GlossaryStrictness",
       "type": "string"
     },
-    "conflict_event_ids": {
-      "description": "Event IDs of unresolved SemanticCheckEvaluated events",
-      "items": {
-        "type": "string"
+    "GlossaryTermSurface": {
+      "additionalProperties": false,
+      "description": "A term as written in the text under check.",
+      "properties": {
+        "surface_text": {
+          "description": "Raw text form of the term",
+          "minLength": 1,
+          "title": "Surface Text",
+          "type": "string"
+        }
       },
-      "minItems": 1,
-      "title": "Conflict Event Ids",
+      "required": [
+        "surface_text"
+      ],
+      "title": "GlossaryTermSurface",
+      "type": "object"
+    },
+    "SenseRef": {
+      "additionalProperties": false,
+      "description": "Reference to one sense (meaning) of a term within a scope.",
+      "properties": {
+        "confidence": {
+          "description": "Confidence (0.0-1.0)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "definition": {
+          "description": "Definition of the sense",
+          "minLength": 1,
+          "title": "Definition",
+          "type": "string"
+        },
+        "scope": {
+          "$ref": "#/$defs/GlossaryScope",
+          "description": "Scope that owns the sense"
+        },
+        "surface": {
+          "description": "Term surface text",
+          "minLength": 1,
+          "title": "Surface",
+          "type": "string"
+        }
+      },
+      "required": [
+        "surface",
+        "scope",
+        "definition",
+        "confidence"
+      ],
+      "title": "SenseRef",
+      "type": "object"
+    }
+  },
+  "$id": "spec-kitty-events/generation_blocked_by_semantic_conflict_payload",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Payload for GenerationBlockedBySemanticConflict event.",
+  "properties": {
+    "conflicts": {
+      "description": "Blocking findings",
+      "items": {
+        "$ref": "#/$defs/GlossaryFinding"
+      },
+      "title": "Conflicts",
       "type": "array"
+    },
+    "effective_strictness": {
+      "$ref": "#/$defs/GlossaryStrictness",
+      "description": "Strictness in force when the block happened"
     },
     "mission_id": {
       "description": "Mission context",
       "minLength": 1,
       "title": "Mission Id",
+      "type": "string"
+    },
+    "run_id": {
+      "description": "Run context",
+      "minLength": 1,
+      "title": "Run Id",
       "type": "string"
     },
     "step_id": {
@@ -33,20 +180,18 @@
       "title": "Step Id",
       "type": "string"
     },
-    "step_metadata": {
-      "additionalProperties": {
-        "type": "string"
-      },
-      "description": "Mission primitive metadata",
-      "title": "Step Metadata",
-      "type": "object"
+    "strictness_mode": {
+      "$ref": "#/$defs/GlossaryStrictness",
+      "description": "Configured strictness mode"
     }
   },
   "required": [
     "mission_id",
+    "run_id",
     "step_id",
-    "conflict_event_ids",
-    "blocking_strictness"
+    "conflicts",
+    "strictness_mode",
+    "effective_strictness"
   ],
   "title": "GenerationBlockedBySemanticConflictPayload",
   "type": "object"

@@ -1,0 +1,62 @@
+{
+  "input_kind": "event",
+  "input": {
+    "aggregate_id": "dp/dp-ro-001",
+    "build_id": "test-build",
+    "causation_id": null,
+    "correlation_id": "01J2B0000000000000000000W2",
+    "data_tier": 0,
+    "event_id": "01J2B0000000000000000000W1",
+    "event_type": "DecisionPointWidened",
+    "node_id": "node-1",
+    "payload": {
+      "origin_surface": "planning_interview",
+      "decision_point_id": "dp-ro-001",
+      "mission_id": "m-1",
+      "run_id": "run-1",
+      "mission_slug": "reopen-fold",
+      "mission_type": "software-dev",
+      "channel": "slack",
+      "teamspace_ref": {
+        "teamspace_id": "ts-01J10000000000000000000020",
+        "name": "Acme Engineering"
+      },
+      "default_channel_ref": {
+        "channel_id": "C01J10000000000000000000030",
+        "name": "spec-kitty-decisions"
+      },
+      "thread_ref": {
+        "slack_team_id": "T01J10000000000000000000040",
+        "channel_id": "C01J10000000000000000000030",
+        "thread_ts": "1745395200.000100",
+        "url": "https://acme.slack.com/archives/C01J10000000000000000000030/p1745395200000100"
+      },
+      "invited_participants": [
+        {
+          "participant_id": "01J10000000000000000000011",
+          "participant_type": "human",
+          "display_name": "Alice Liddell",
+          "external_refs": {
+            "teamspace_member_id": "tm-01J10000000000000000000051"
+          }
+        },
+        {
+          "participant_id": "01J10000000000000000000012",
+          "participant_type": "human",
+          "display_name": "Bob Marley",
+          "external_refs": {
+            "teamspace_member_id": "tm-01J10000000000000000000052"
+          }
+        }
+      ],
+      "widened_by": "01J10000000000000000000011",
+      "widened_at": "2026-04-23T10:02:00+00:00",
+      "recorded_at": "2026-04-23T10:02:01+00:00"
+    },
+    "project_slug": null,
+    "project_uuid": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+    "schema_version": "3.0.0",
+    "timestamp": "2026-04-23T10:00:00+00:00"
+  },
+  "expected_line": "{\"aggregate_id\": \"dp/dp-ro-001\", \"build_id\": \"test-build\", \"causation_id\": null, \"correlation_id\": \"01J2B0000000000000000000W2\", \"data_tier\": 0, \"event_id\": \"01J2B0000000000000000000W1\", \"event_type\": \"DecisionPointWidened\", \"lamport_clock\": null, \"node_id\": \"node-1\", \"payload\": {\"channel\": \"slack\", \"decision_point_id\": \"dp-ro-001\", \"default_channel_ref\": {\"channel_id\": \"C01J10000000000000000000030\", \"name\": \"spec-kitty-decisions\"}, \"invited_participants\": [{\"display_name\": \"Alice Liddell\", \"external_refs\": {\"teamspace_member_id\": \"tm-01J10000000000000000000051\"}, \"participant_id\": \"01J10000000000000000000011\", \"participant_type\": \"human\"}, {\"display_name\": \"Bob Marley\", \"external_refs\": {\"teamspace_member_id\": \"tm-01J10000000000000000000052\"}, \"participant_id\": \"01J10000000000000000000012\", \"participant_type\": \"human\"}], \"mission_id\": \"m-1\", \"mission_slug\": \"reopen-fold\", \"mission_type\": \"software-dev\", \"origin_surface\": \"planning_interview\", \"recorded_at\": \"2026-04-23T10:02:01+00:00\", \"run_id\": \"run-1\", \"teamspace_ref\": {\"name\": \"Acme Engineering\", \"teamspace_id\": \"ts-01J10000000000000000000020\"}, \"thread_ref\": {\"channel_id\": \"C01J10000000000000000000030\", \"slack_team_id\": \"T01J10000000000000000000040\", \"thread_ts\": \"1745395200.000100\", \"url\": \"https://acme.slack.com/archives/C01J10000000000000000000030/p1745395200000100\"}, \"widened_at\": \"2026-04-23T10:02:00+00:00\", \"widened_by\": \"01J10000000000000000000011\"}, \"project_slug\": null, \"project_uuid\": \"bbbbbbbb-cccc-dddd-eeee-ffffffffffff\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-04-23T10:00:00Z\"}\n"
+}
