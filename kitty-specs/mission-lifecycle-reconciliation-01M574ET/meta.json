@@ -1,4 +1,16 @@
 {
+  "acceptance_history": [
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-18T09:37:39.869767+00:00",
+      "accepted_by": "stijn-dejongh",
+      "accepted_from_commit": "57b5971787f2b6a0cf665334e76eb48d5124da23"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-18T09:37:39.869767+00:00",
+  "accepted_by": "stijn-dejongh",
+  "accepted_from_commit": "57b5971787f2b6a0cf665334e76eb48d5124da23",
   "contracts": "none",
   "contracts_rationale": "Event contracts are the committed JSON Schemas under src/spec_kitty_events/schemas/ (generated from the Pydantic models and guarded by tests/integration/test_schema_drift.py); this mission introduces no service/API interface, so no kitty-specs/contracts/ directory applies.",
   "coordination_branch": "kitty/mission-mission-lifecycle-reconciliation-01M574ET",
