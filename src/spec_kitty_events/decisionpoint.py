@@ -1,5 +1,8 @@
 """DecisionPoint Lifecycle Event Contracts domain module.
 
+Events are ordered by ``ordering.canonical_order_key`` (unclocked first,
+then by clock; ties by timestamp and event_id).
+
 Provides enums, event type constants, payload models,
 the ReducedDecisionPointState output model, and a deterministic reducer
 for the DecisionPoint Lifecycle contract.
@@ -19,13 +22,17 @@ V1 changes (spec-kitty-events 4.0.0):
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import (
     Annotated,
     Any,
+    Dict,
     FrozenSet,
+    Iterable,
     List,
+    Mapping,
     Literal,
     Optional,
     Sequence,
@@ -34,7 +41,13 @@ from typing import (
     cast,
 )
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    TypeAdapter,
+    model_validator,
+)
 
 from spec_kitty_events.collaboration import ParticipantIdentity
 from spec_kitty_events.decision_moment import (
@@ -50,8 +63,10 @@ from spec_kitty_events.decision_moment import (
     WideningChannel,
     WideningProjection,
 )
-from spec_kitty_events.models import Event
-from spec_kitty_events.status import dedup_events, status_event_sort_key
+from spec_kitty_events.models import Event, SpecKittyEventsError
+from spec_kitty_events.ordering import canonical_order_key
+from spec_kitty_events.persistence import LedgerValidationError, build_record
+from spec_kitty_events.status import dedup_events
 
 # ── Section 1: Schema Version ─────────────────────────────────────────────────
 
@@ -136,6 +151,52 @@ _AUTHORITY_REQUIRED_STATES: FrozenSet[DecisionPointState] = frozenset(
     }
 )
 
+#: Legal terminal-to-terminal reopens as ``(current, target)`` outcome pairs.
+#: Today the only one is a deferred decision later being explicitly resolved.
+DECISION_POINT_TERMINAL_REOPEN: FrozenSet[Tuple[TerminalOutcome, TerminalOutcome]] = frozenset(
+    {(TerminalOutcome.DEFERRED, TerminalOutcome.RESOLVED)}
+)
+
+_ANOMALY_UNFOLDABLE_TERMINAL = "unfoldable_terminal_combination"
+
+
+class DecisionPointFoldError(SpecKittyEventsError):
+    """A strict ledger-records fold met a decision it cannot fold."""
+
+
+@dataclass(frozen=True)
+class _TerminalPlan:
+    """Pass-1 verdict over one decision's terminal ``Resolved`` events."""
+
+    demoted: FrozenSet[str] = frozenset()  # reopen-point deferred event ids
+    extras: FrozenSet[str] = frozenset()  # unfoldable surplus Resolved event ids
+    effective: Optional[str] = None  # event id of the reopen's resolving event
+
+
+def _select_effective_terminal(
+    candidates: Sequence[Tuple[str, TerminalOutcome]],
+) -> _TerminalPlan:
+    """Pure: decide which terminal events fold, from ``(event_id, outcome)`` pairs.
+
+    *candidates* are in canonical order. Zero or one candidate needs no plan.
+    Exactly two (a duplicate deferred with a different event_id plus a resolved
+    is three, hence unfoldable by design) whose outcomes form a pair in
+    :data:`DECISION_POINT_TERMINAL_REOPEN` (in either arrival order) demote the
+    deferred event to a non-terminal entry and make the resolved one effective.
+    Any other multi-candidate set is unfoldable: the first stands, the rest
+    are surplus.
+    """
+    if len(candidates) < 2:
+        return _TerminalPlan()
+    if len(candidates) == 2:
+        (id_a, out_a), (id_b, out_b) = candidates
+        if (out_a, out_b) in DECISION_POINT_TERMINAL_REOPEN:
+            return _TerminalPlan(demoted=frozenset({id_a}), effective=id_b)
+        if (out_b, out_a) in DECISION_POINT_TERMINAL_REOPEN:
+            return _TerminalPlan(demoted=frozenset({id_b}), effective=id_a)
+    return _TerminalPlan(extras=frozenset(eid for eid, _ in candidates[1:]))
+
+
 # ── Section 4: Anomaly Model ─────────────────────────────────────────────────
 
 
@@ -144,7 +205,7 @@ class DecisionPointAnomaly(BaseModel):
 
     Valid kind values: "invalid_transition", "authority_policy_violation",
     "llm_policy_violation", "malformed_payload", "event_after_terminal",
-    "origin_mismatch", "missing_summary".
+    "origin_mismatch", "missing_summary", "unfoldable_terminal_combination".
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -569,9 +630,128 @@ class ReducedDecisionPointState(BaseModel):
     resolved_by: Optional[str] = None
     closed_locally_while_widened: bool = False
     closure_message: Optional[ClosureMessageRef] = None
+    reopened_from_deferred: bool = False
 
 
 # ── Section 7: Reducer (FR-003, FR-014) ─────────────────────────────────────
+
+
+def _policy_violation(
+    event_type: str, target_state: DecisionPointState, payload: Any
+) -> Optional[Tuple[str, str]]:
+    """Pure: ``(anomaly_kind, message)`` when *payload* breaks authority/LLM policy.
+
+    Shared by pass 1 (so only policy-valid terminals compete) and pass 2.
+    Applies to ADR variants only (they carry ``authority_role``).
+    """
+    if not isinstance(
+        payload,
+        (
+            DecisionPointOpenedAdrPayload,
+            DecisionPointDiscussingAdrPayload,
+            DecisionPointResolvedAdrPayload,
+            DecisionPointOverriddenPayload,
+        ),
+    ):
+        return None
+    role = payload.authority_role
+    if target_state in _AUTHORITY_REQUIRED_STATES and (
+        payload.actor_type != "human"
+        or role != DecisionAuthorityRole.MISSION_OWNER
+        or not payload.mission_owner_authority_flag
+    ):
+        return (
+            "authority_policy_violation",
+            f"{event_type!r} requires actor_type='human', "
+            f"authority_role='mission_owner', and "
+            f"mission_owner_authority_flag=True; got "
+            f"actor_type={payload.actor_type!r}, "
+            f"authority_role={role.value!r}, "
+            f"mission_owner_authority_flag={payload.mission_owner_authority_flag!r}",
+        )
+    if payload.actor_type != "llm":
+        return None
+    if payload.phase != "P0":
+        return (
+            "llm_policy_violation",
+            f"LLM actor only allowed in phase='P0'; got phase={payload.phase!r}",
+        )
+    if role not in (DecisionAuthorityRole.ADVISORY, DecisionAuthorityRole.INFORMED):
+        return (
+            "llm_policy_violation",
+            f"LLM actor must have advisory or informed role; got authority_role={role.value!r}",
+        )
+    if payload.mission_owner_authority_flag:
+        return ("llm_policy_violation", "LLM actor must not carry mission-owner authority")
+    return None
+
+
+def _unfoldable_anomaly(event_id: str) -> DecisionPointAnomaly:
+    return DecisionPointAnomaly(
+        kind=_ANOMALY_UNFOLDABLE_TERMINAL,
+        event_id=event_id,
+        message=(
+            "Unfoldable combination of DecisionPointResolved events for one "
+            "decision_point_id; the first Resolved stands"
+        ),
+    )
+
+
+def _terminal_candidate(
+    event: Event, state_before: Optional[DecisionPointState]
+) -> Optional[Tuple[str, TerminalOutcome]]:
+    """``(event_id, outcome)`` for a terminal Resolved that pass 2 could apply.
+
+    Valid means: payload parses, policy holds, and RESOLVED is reachable from
+    *state_before* (the state after the non-terminal events preceding it).
+    """
+    if event.event_type != DECISION_POINT_RESOLVED or not isinstance(event.payload, dict):
+        return None
+    if DecisionPointState.RESOLVED not in _ALLOWED_TRANSITIONS.get(state_before, frozenset()):
+        return None
+    try:
+        payload = _RESOLVED_ADAPTER.validate_python(event.payload)
+    except Exception:
+        return None
+    outcome = getattr(payload, "terminal_outcome", None)
+    if not isinstance(outcome, TerminalOutcome):
+        return None
+    if _policy_violation(event.event_type, DecisionPointState.RESOLVED, payload) is not None:
+        return None
+    return (event.event_id, outcome)
+
+
+def _is_applicable(event: Event, target: DecisionPointState) -> bool:
+    """True when pass 2 would parse *event*'s payload and accept it under policy."""
+    payload_dict = event.payload if isinstance(event.payload, dict) else {}
+    handler = _EVENT_TO_PAYLOAD[event.event_type]
+    try:
+        if isinstance(handler, TypeAdapter):
+            if "origin_surface" not in payload_dict:
+                payload_dict = {**payload_dict, "origin_surface": OriginSurface.ADR.value}
+            payload: Any = handler.validate_python(payload_dict)
+        else:
+            payload = handler.model_validate(payload_dict)
+    except Exception:
+        return False
+    return _policy_violation(event.event_type, target, payload) is None
+
+
+def _plan_terminals(ordered: Sequence[Event]) -> _TerminalPlan:
+    """Pass 1: pick the effective terminal among VALID terminals (canonical order)."""
+    state: Optional[DecisionPointState] = None
+    candidates: List[Tuple[str, TerminalOutcome]] = []
+    for event in ordered:
+        candidate = _terminal_candidate(event, state)
+        if candidate is not None:
+            candidates.append(candidate)
+            continue
+        target = _EVENT_TO_STATE.get(event.event_type)
+        if target in (None, DecisionPointState.RESOLVED, DecisionPointState.OVERRIDDEN):
+            continue
+        if target in _ALLOWED_TRANSITIONS.get(state, frozenset()) and _is_applicable(event, target):
+            state = target
+    return _select_effective_terminal(candidates)
 
 
 def reduce_decision_point_events(
@@ -616,7 +796,7 @@ def reduce_decision_point_events(
       - "origin_mismatch": event's origin_surface differs from first-seen for this decision_point_id.
     """
     # Step 1: Sort for determinism
-    sorted_events = sorted(events, key=status_event_sort_key)
+    sorted_events = sorted(events, key=canonical_order_key)
 
     # Step 2: Deduplicate by event_id
     deduped = dedup_events(sorted_events)
@@ -626,6 +806,10 @@ def reduce_decision_point_events(
 
     # Step 4: Filter to DecisionPoint family
     dp_events = [e for e in deduped if e.event_type in DECISION_POINT_EVENT_TYPES]
+
+    # Step 4b: pass 1 -- choose the effective terminal (deferred -> resolved reopen)
+    plan = _plan_terminals(dp_events)
+    reopened = False
 
     # Step 5: Mutable accumulator for fold
     anomalies: List[DecisionPointAnomaly] = []
@@ -677,6 +861,13 @@ def reduce_decision_point_events(
                     message=f"Unknown event type in DecisionPoint family: {event_type!r}",
                 )
             )
+            continue
+
+        # Pass-1 verdict: reopen-point deferred is skipped; surplus terminals are anomalies.
+        if event_id in plan.demoted:
+            continue
+        if event_id in plan.extras:
+            anomalies.append(_unfoldable_anomaly(event_id))
             continue
 
         # Check: event after terminal (overridden)
@@ -753,79 +944,18 @@ def reduce_decision_point_events(
                 )
                 # still apply the event per spec
 
-        # Authority policy check for resolved/overridden (FR-003)
-        # Apply only to ADR variants (which have authority_role field)
-        is_adr_variant = isinstance(
-            payload,
-            (
-                DecisionPointOpenedAdrPayload,
-                DecisionPointDiscussingAdrPayload,
-                DecisionPointResolvedAdrPayload,
-                DecisionPointOverriddenPayload,
-            ),
-        )
-        if target_state in _AUTHORITY_REQUIRED_STATES and is_adr_variant:
-            if (
-                payload.actor_type != "human"
-                or payload.authority_role != DecisionAuthorityRole.MISSION_OWNER
-                or not payload.mission_owner_authority_flag
-            ):
-                anomalies.append(
-                    DecisionPointAnomaly(
-                        kind="authority_policy_violation",
-                        event_id=event_id,
-                        message=(
-                            f"{event_type!r} requires actor_type='human', "
-                            f"authority_role='mission_owner', and "
-                            f"mission_owner_authority_flag=True; got "
-                            f"actor_type={payload.actor_type!r}, "
-                            f"authority_role={payload.authority_role.value!r}, "
-                            f"mission_owner_authority_flag={payload.mission_owner_authority_flag!r}"
-                        ),
-                    )
-                )
-                continue
-
-        # LLM policy check (FR-003) — ADR variants only
-        if is_adr_variant and payload.actor_type == "llm":
-            if payload.phase != "P0":
-                anomalies.append(
-                    DecisionPointAnomaly(
-                        kind="llm_policy_violation",
-                        event_id=event_id,
-                        message=(
-                            f"LLM actor only allowed in phase='P0'; got phase={payload.phase!r}"
-                        ),
-                    )
-                )
-                continue
-            if payload.authority_role not in (
-                DecisionAuthorityRole.ADVISORY,
-                DecisionAuthorityRole.INFORMED,
-            ):
-                anomalies.append(
-                    DecisionPointAnomaly(
-                        kind="llm_policy_violation",
-                        event_id=event_id,
-                        message=(
-                            f"LLM actor must have advisory or informed role; "
-                            f"got authority_role={payload.authority_role.value!r}"
-                        ),
-                    )
-                )
-                continue
-            if payload.mission_owner_authority_flag:
-                anomalies.append(
-                    DecisionPointAnomaly(
-                        kind="llm_policy_violation",
-                        event_id=event_id,
-                        message="LLM actor must not carry mission-owner authority",
-                    )
-                )
-                continue
+        # Authority (FR-003) and LLM policy -- shared with pass 1
+        violation = _policy_violation(event_type, target_state, payload)
+        if violation is not None:
+            anomalies.append(
+                DecisionPointAnomaly(kind=violation[0], event_id=event_id, message=violation[1])
+            )
+            continue
 
         # Apply transition
         current_state = target_state
+        if event_id == plan.effective:
+            reopened = True
 
         # Branch per event type for projection
         if isinstance(payload, DecisionPointOpenedAdrPayload):
@@ -1021,4 +1151,73 @@ def reduce_decision_point_events(
         resolved_by=proj_resolved_by,
         closed_locally_while_widened=proj_closed_locally_while_widened,
         closure_message=proj_closure_message,
+        reopened_from_deferred=reopened,
     )
+
+
+# ── Section 8: Ledger-records fold ───────────────────────────────────────────
+
+
+def _record_to_decision_event(record: Mapping[str, Any]) -> Optional[Event]:
+    """Validate one ledger record; return its DecisionPoint envelope or ``None``.
+
+    Non-DecisionPoint records yield ``None``. A DecisionPoint record must be a
+    full envelope (a flat payload record lacks ``aggregate_id`` and friends),
+    otherwise :class:`LedgerValidationError` is raised.
+    """
+    normalised = build_record(record)
+    if normalised.get("event_type") not in DECISION_POINT_EVENT_TYPES:
+        return None
+    if not (isinstance(normalised.get("payload"), dict) and "aggregate_id" in normalised):
+        raise LedgerValidationError(
+            f"{normalised.get('event_type')!r} record is not a full envelope "
+            "(missing aggregate_id or payload object)"
+        )
+    try:
+        event = Event.model_validate(normalised)
+    except ValueError as exc:
+        raise LedgerValidationError(f"record is not a valid Event envelope: {exc}") from exc
+    if not isinstance(event.payload.get("decision_point_id"), str):
+        raise LedgerValidationError("record payload has no string 'decision_point_id'")
+    return event
+
+
+def _group_decision_events(
+    records: Iterable[Mapping[str, Any]], strict: bool
+) -> Dict[str, List[Event]]:
+    groups: Dict[str, List[Event]] = {}
+    for record in records:
+        try:
+            event = _record_to_decision_event(record)
+        except LedgerValidationError:
+            if strict:
+                raise
+            continue
+        if event is not None:
+            groups.setdefault(event.payload["decision_point_id"], []).append(event)
+    return groups
+
+
+def reduce_decision_point_records(
+    records: Iterable[Mapping[str, Any]], *, strict: bool = True
+) -> Dict[str, ReducedDecisionPointState]:
+    """Fold ledger records into one reduced state per ``decision_point_id``.
+
+    Each record is validated with :func:`spec_kitty_events.persistence.build_record`
+    and must be a full :class:`Event` envelope when it is a DecisionPoint event;
+    records of other event types are skipped. Order of *records* is irrelevant.
+
+    ``strict=True`` raises :class:`LedgerValidationError` for a malformed or
+    non-envelope record and :class:`DecisionPointFoldError` when a decision has
+    an ``unfoldable_terminal_combination`` anomaly. ``strict=False`` skips
+    malformed records and returns the reduced states with anomalies recorded.
+    """
+    result: Dict[str, ReducedDecisionPointState] = {}
+    for decision_id, events in _group_decision_events(records, strict).items():
+        state = reduce_decision_point_events(events)
+        if strict and any(a.kind == _ANOMALY_UNFOLDABLE_TERMINAL for a in state.anomalies):
+            raise DecisionPointFoldError(
+                f"unfoldable terminal combination for decision_point_id={decision_id!r}"
+            )
+        result[decision_id] = state
+    return result
