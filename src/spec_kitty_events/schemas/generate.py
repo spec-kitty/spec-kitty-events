@@ -34,6 +34,7 @@ from spec_kitty_events.project_lifecycle import (
     PlanCompletedPayload,
     PlanStartedPayload,
     ProjectInitializedPayload,
+    ReviewerSelfApprovalPayload,
     SpecifyCompletedPayload,
     SpecifyStartedPayload,
     TasksCompletedPayload,
@@ -205,6 +206,9 @@ PYDANTIC_MODELS: List[tuple[str, Type[BaseModel]]] = [
     ("tasks_started_payload", TasksStartedPayload),
     ("tasks_completed_payload", TasksCompletedPayload),
     ("wp_created_payload", WPCreatedPayload),
+    # Reviewer self-approval fallback (mission
+    # mission-lifecycle-reconciliation-01M574ET, WP01)
+    ("reviewer_self_approval_payload", ReviewerSelfApprovalPayload),
     # Collaboration identity models (V1: ParticipantIdentity gains external_refs)
     ("participant_identity", ParticipantIdentity),
     ("participant_external_refs", ParticipantExternalRefs),

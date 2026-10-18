@@ -170,6 +170,126 @@
       "min_version": "5.1.0"
     },
     {
+      "id": "mission-reopened-valid",
+      "path": "events/valid/mission_reopened.json",
+      "expected_result": "valid",
+      "event_type": "MissionReopened",
+      "notes": "Valid MissionReopenedPayload with cleared_merge snapshot",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "mission-reopened-missing-reason-invalid",
+      "path": "events/invalid/mission_reopened_missing_reason.json",
+      "expected_result": "invalid",
+      "event_type": "MissionReopened",
+      "notes": "MissionReopenedPayload missing required reason",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "mission-reopened-empty-reason-invalid",
+      "path": "events/invalid/mission_reopened_empty_reason.json",
+      "expected_result": "invalid",
+      "event_type": "MissionReopened",
+      "notes": "MissionReopenedPayload with empty reason (min_length=1)",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "mission-reopened-bad-cleared-merge-invalid",
+      "path": "events/invalid/mission_reopened_bad_cleared_merge.json",
+      "expected_result": "invalid",
+      "event_type": "MissionReopened",
+      "notes": "MissionReopenedPayload cleared_merge wrong type (string, not object/null)",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "mission-reopened-extra-key-invalid",
+      "path": "events/invalid/mission_reopened_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "MissionReopened",
+      "notes": "MissionReopenedPayload unknown extra key (extra=forbid)",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "follow-up-recorded-commit-valid",
+      "path": "events/valid/follow_up_recorded_commit.json",
+      "expected_result": "valid",
+      "event_type": "FollowUpRecorded",
+      "notes": "Valid FollowUpRecordedPayload commit variant (commit_sha set)",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "follow-up-recorded-pr-valid",
+      "path": "events/valid/follow_up_recorded_pr.json",
+      "expected_result": "valid",
+      "event_type": "FollowUpRecorded",
+      "notes": "Valid FollowUpRecordedPayload pr variant (pr_number set)",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "follow-up-recorded-commit-without-sha-invalid",
+      "path": "events/invalid/follow_up_recorded_commit_without_sha.json",
+      "expected_result": "invalid",
+      "event_type": "FollowUpRecorded",
+      "notes": "FollowUpRecordedPayload follow_up_type=commit without commit_sha",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "follow-up-recorded-pr-without-number-invalid",
+      "path": "events/invalid/follow_up_recorded_pr_without_number.json",
+      "expected_result": "invalid",
+      "event_type": "FollowUpRecorded",
+      "notes": "FollowUpRecordedPayload follow_up_type=pr without pr_number",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "follow-up-recorded-pr-number-zero-invalid",
+      "path": "events/invalid/follow_up_recorded_pr_number_zero.json",
+      "expected_result": "invalid",
+      "event_type": "FollowUpRecorded",
+      "notes": "FollowUpRecordedPayload pr_number < 1 (ge=1)",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "follow-up-recorded-extra-key-invalid",
+      "path": "events/invalid/follow_up_recorded_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "FollowUpRecorded",
+      "notes": "FollowUpRecordedPayload unknown extra key (extra=forbid)",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "reviewer-self-approval-valid",
+      "path": "events/valid/reviewer_self_approval.json",
+      "expected_result": "valid",
+      "event_type": "ReviewerSelfApproval",
+      "notes": "Valid ReviewerSelfApprovalPayload mirroring producer row wp.reviewer.selfapproved.v1",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "reviewer-self-approval-missing-wp-id-invalid",
+      "path": "events/invalid/reviewer_self_approval_missing_wp_id.json",
+      "expected_result": "invalid",
+      "event_type": "ReviewerSelfApproval",
+      "notes": "ReviewerSelfApprovalPayload missing required wp_id",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "reviewer-self-approval-bad-fallback-type-invalid",
+      "path": "events/invalid/reviewer_self_approval_bad_fallback_type.json",
+      "expected_result": "invalid",
+      "event_type": "ReviewerSelfApproval",
+      "notes": "ReviewerSelfApprovalPayload fallback_approved wrong type (non-bool string)",
+      "min_version": "10.6.0"
+    },
+    {
+      "id": "reviewer-self-approval-extra-key-invalid",
+      "path": "events/invalid/reviewer_self_approval_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "ReviewerSelfApproval",
+      "notes": "ReviewerSelfApprovalPayload unknown extra key (extra=forbid)",
+      "min_version": "10.6.0"
+    },
+    {
       "id": "event-missing-correlation-id",
       "path": "events/invalid/event_missing_correlation_id.json",
       "expected_result": "invalid",

@@ -1,0 +1,9 @@
+{
+  "mission_slug": "041-reducer-unification",
+  "wp_id": "WP01",
+  "implementing_actor": "claude",
+  "intended_reviewer": "renata",
+  "failure_reason": "reviewer unavailable",
+  "fallback_approved": "not-a-boolean",
+  "timestamp": "2026-01-01T00:00:00+00:00"
+}

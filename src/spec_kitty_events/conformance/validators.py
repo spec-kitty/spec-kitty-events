@@ -41,6 +41,7 @@ from spec_kitty_events.project_lifecycle import (
     PlanCompletedPayload,
     PlanStartedPayload,
     ProjectInitializedPayload,
+    ReviewerSelfApprovalPayload,
     SpecifyCompletedPayload,
     SpecifyStartedPayload,
     TasksCompletedPayload,
@@ -275,10 +276,16 @@ _EVENT_TYPE_TO_MODEL: Dict[str, Any] = {
     # Post-mission lifecycle events (mission
     # mission-lifecycle-dispatch-drg-closeout-01KV0S99). Producer call sites:
     # spec-kitty/src/specify_cli/status/lifecycle_events.py
-    # (emit_mission_reopened / emit_follow_up_recorded). Model-layer only —
-    # no JSON schema entry yet (the schema layer is optional secondary).
+    # (emit_mission_reopened / emit_follow_up_recorded). Schema-backed as of
+    # mission mission-lifecycle-reconciliation-01M574ET (WP01): both carry a
+    # generated JSON schema entry in _EVENT_TYPE_TO_SCHEMA below.
     "MissionReopened": MissionReopenedPayload,
     "FollowUpRecorded": FollowUpRecordedPayload,
+    # Reviewer self-approval fallback (mission
+    # mission-lifecycle-reconciliation-01M574ET, WP01). Producer call site:
+    # spec-kitty/src/specify_cli/status/lifecycle_events.py. Mirrors the
+    # producer-contract row wp.reviewer.selfapproved.v1 (mirror-not-depend).
+    "ReviewerSelfApproval": ReviewerSelfApprovalPayload,
     # HarnessObservation vocabulary (F1-T1, 7.0.0). F1 is the single owner
     # of this vocabulary; see spec_kitty_events.harness_observation.
     HARNESS_OBSERVATION: HarnessObservationPayload,
@@ -384,6 +391,12 @@ _EVENT_TYPE_TO_SCHEMA: Dict[str, str] = {
     HARNESS_OBSERVATION: "harness_observation_payload",
     # Durable live-work vocabulary (spec-kitty-events#55).
     WORK_OBSERVATION: "work_observation_payload",
+    # Post-mission + reviewer-fallback lifecycle events, schema-backed as of
+    # mission mission-lifecycle-reconciliation-01M574ET (WP01). Schemas are
+    # generated from the canonical models by schemas/generate.py.
+    "MissionReopened": "mission_reopened_payload",
+    "FollowUpRecorded": "follow_up_recorded_payload",
+    "ReviewerSelfApproval": "reviewer_self_approval_payload",
 }
 
 
