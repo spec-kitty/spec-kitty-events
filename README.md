@@ -2,7 +2,7 @@
 
 # spec-kitty-events
 
-**Package Version**: `10.6.0` | **Envelope Schema Version**: `3.0.0` | **Python**: `>=3.10`
+**Package Version**: `10.7.0` | **Envelope Schema Version**: `3.0.0` | **Python**: `>=3.10`
 
 The **event contracts** of Spec Kitty: the canonical vocabulary the Spec Kitty CLI and
 runtime emit as a Mission moves through its lifecycle. This repository is the
@@ -70,9 +70,9 @@ From PyPI (pin an explicit version — see [`COMPATIBILITY.md`](COMPATIBILITY.md
 current release and what a major bump means):
 
 ```bash
-pip install "spec-kitty-events==10.6.0"
+pip install "spec-kitty-events==10.7.0"
 # with conformance-validation support:
-pip install "spec-kitty-events[conformance]==10.6.0"
+pip install "spec-kitty-events[conformance]==10.7.0"
 ```
 
 With [uv](https://docs.astral.sh/uv/), install the exact versions pinned by the committed

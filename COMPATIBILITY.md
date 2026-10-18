@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `10.6.0`
+**Current package version**: `10.7.0`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,17 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `10.7.0` — mission-lifecycle event schema + fixture reconciliation
+
+`10.7.0` is a SemVer minor, additive. Three mission-lifecycle events core emits now
+have committed JSON Schemas and conformance fixtures: `MissionReopened` and
+`FollowUpRecorded` (previously model-layer-only — no schema, no fixtures) are now
+schema-backed, and a new `ReviewerSelfApproval` payload is modelled in the lifecycle
+layer (`project_lifecycle`), mirroring the committed `producer_contract` row. No existing
+event type, model, schema, or fixture changed; the package adds nothing it imports from
+`spec-kitty`/`-saas`/`-tracker`/`-runtime`. Consumers on `10.6.0` are unaffected; the new
+contracts gate from `10.7.0`. (mission-lifecycle-reconciliation; spec-kitty/spec-kitty-events#119)
 
 ## `10.6.0` — subtask status vocabulary with terminal `skipped`
 
