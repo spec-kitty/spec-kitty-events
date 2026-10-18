@@ -1,0 +1,29 @@
+{
+  "rows": {
+    "#117": {
+      "evidence_ref": "parent epic, context only",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#118": {
+      "evidence_ref": "WP01 persistence seam; WP02 fixtures; WP03 release",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "in-mission",
+      "wp": "WP03"
+    }
+  },
+  "schema_version": 1
+}

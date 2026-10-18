@@ -1,0 +1,129 @@
+{
+  "mission_slug": "ledger-write-contract-seam-01M57P5Q",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "test",
+      "evidence": "tests/test_persistence.py::test_core_import_site_resolves_and_appends",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T14:49:24.752264+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "test",
+      "evidence": "test_persistence: envelope, flat dict, registered model, unregistered model refused",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T14:49:14.138997+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "test",
+      "evidence": "strict validate_event; envelope+payload; identity keys; test_envelope_shaped_dict_validates_inner_payload",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T14:49:19.685560+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "test",
+      "evidence": "test_invalid_inputs_raise_and_write_nothing (10 cases) + hypothesis no-partial property",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T14:49:40.811004+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "test",
+      "evidence": "test_serialize_record_pins_ascii_escapes_and_float_repr; core-fallback byte equality",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T14:49:46.237706+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "test",
+      "evidence": "torn tail / empty file / mkdir / short write tests",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T14:49:30.152914+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "test",
+      "evidence": "15 ledger_append fixtures, min_version 10.8.0, README",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T14:49:35.334666+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "test",
+      "evidence": "conformance/test_ledger_append.py: packaged gate 708 passed, clean-wheel install",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T14:49:51.903070+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "test",
+      "evidence": "tests/test_local_only_deprecation.py (-W error subprocess, empty, not consulted)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T14:49:57.555921+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "test",
+      "evidence": "fixtures mission_reopened/follow_up_recorded/glossary_sense_updated valid",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T14:50:08.368642+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "test",
+      "evidence": "10.8.0 on all surfaces; test_version_not_amended + test_compatibility_doc green",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T14:50:02.897976+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "test",
+      "evidence": "docs/api/ledger-write-contract.md + python-package.md deprecation",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-18T14:50:13.761716+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}
