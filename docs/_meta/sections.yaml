@@ -1,0 +1,52 @@
+# Authored section registry for this docs tree, following doc-kitty's convention
+# (doc-kitty ADR-0004 and docs/architecture/section-registry.md in spec-kitty/doc-kitty).
+# It decouples display (label, order, feeds) and section type from the folder layout.
+# Reserved, non-content: a doc-kitty build excludes it from the docs collection.
+version: 1
+sections:
+  - id: context
+    label: Context
+    order: 10
+    type: Context
+    purpose: What spec-kitty-events is, where it sits in the Build Kitty product line, and how it is produced by the CLI and consumed by other systems.
+
+  - id: events
+    label: Event families
+    order: 20
+    type: Integration
+    purpose: The event families the Spec Kitty runtime emits, grouped by concern, each with its event types, payloads and reducer.
+
+  - id: api
+    label: API & Contracts
+    order: 30
+    type: API
+    purpose: The consumable contract surface — the envelope, the Python package, lane vocabulary, versioning policy and the fail-closed strict profile.
+
+  - id: architecture
+    label: Architecture
+    order: 40
+    type: Architecture
+    purpose: How the contract is shaped — the CloudEvents envelope, total order and reduction, and the journal-versus-volatile durability split.
+
+  - id: glossary
+    label: Glossary
+    order: 50
+    purpose: The vocabulary of the event contract — envelope, aggregate, Lamport clock, lane, reducer, journal and volatile, and the relay.
+
+  - id: adr
+    label: Decision Records
+    order: 60
+    type: ADR
+    purpose: The immutable log of decisions taken in this repository.
+
+  - id: guides
+    label: Guides
+    order: 90
+    type: Guide
+    purpose: Task-oriented how-tos for contributors and consumers of the contract.
+
+  - id: changelog
+    label: Changelog
+    order: 120
+    type: Changelog
+    purpose: What changed and when, newest first.
