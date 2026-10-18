@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "mission_slug": "mission-lifecycle-reconciliation-01M574ET",
+  "mission_id": "01M574ET5QJEBJC6N9RD7BYVJA",
+  "mission_branch": "kitty/mission-mission-lifecycle-reconciliation-01M574ET",
+  "target_branch": "issue-119-mission-lifecycle-reconciliation",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "src/spec_kitty_events/conformance/fixtures/events/**",
+        "src/spec_kitty_events/conformance/validators.py",
+        "src/spec_kitty_events/project_lifecycle.py",
+        "src/spec_kitty_events/schemas/follow_up_recorded_payload.schema.json",
+        "src/spec_kitty_events/schemas/mission_reopened_payload.schema.json",
+        "src/spec_kitty_events/schemas/reviewer_self_approval_payload.schema.json"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "legacy-cleanup",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-10-18T09:17:32.476041+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "9cf8cf82c16fe9afa36a7463c3429aa6b0ee75ff"
+}
