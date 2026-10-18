@@ -25,6 +25,7 @@ from spec_kitty_events import (
     DEPENDENCY_RESOLVED,
     ERROR_LOGGED,
     HISTORY_ADDED,
+    REVIEWER_SELF_APPROVAL,
     WP_ASSIGNED,
     WP_CREATED,
     WP_LIFECYCLE_EVENT_TYPES,
@@ -58,6 +59,7 @@ class TestEventTypeConstants:
             HISTORY_ADDED,
             ERROR_LOGGED,
             DEPENDENCY_RESOLVED,
+            REVIEWER_SELF_APPROVAL,
         }
         assert CANONICAL_LIFECYCLE_EVENT_TYPES == (
             PROJECT_LIFECYCLE_EVENT_TYPES

@@ -66,7 +66,7 @@ The offline sync/cutover surfaces (``spec_kitty_events.sync``, ``legacy``,
 lives in ``spec_kitty_events.strict.validate_strict_envelope``.
 """
 
-__version__ = "10.6.0"
+__version__ = "10.7.0"
 
 # Core data models
 from spec_kitty_events.models import (
@@ -168,6 +168,7 @@ from spec_kitty_events.project_lifecycle import (
     HISTORY_ADDED,
     ERROR_LOGGED,
     DEPENDENCY_RESOLVED,
+    REVIEWER_SELF_APPROVAL,
     PROJECT_LIFECYCLE_EVENT_TYPES,
     ARTIFACT_LIFECYCLE_EVENT_TYPES,
     WP_LIFECYCLE_EVENT_TYPES,
@@ -185,6 +186,7 @@ from spec_kitty_events.project_lifecycle import (
     HistoryAddedPayload,
     ErrorLoggedPayload,
     DependencyResolvedPayload,
+    ReviewerSelfApprovalPayload,
 )
 
 # Ops/Invocations bounded moment contracts (E-post-MVP, events#78). Shares
@@ -1053,10 +1055,12 @@ __all__ = [
     "HISTORY_ADDED",
     "ERROR_LOGGED",
     "DEPENDENCY_RESOLVED",
+    "REVIEWER_SELF_APPROVAL",
     "WPAssignedPayload",
     "HistoryAddedPayload",
     "ErrorLoggedPayload",
     "DependencyResolvedPayload",
+    "ReviewerSelfApprovalPayload",
     "MISSION_ORIGIN_BOUND",
     "MissionOriginBoundPayload",
     # Post-mission lifecycle events

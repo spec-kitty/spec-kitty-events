@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [10.7.0] - 2026-10-18
+
+### Added
+
+- **Three mission-lifecycle events core emits are now validatable against the packaged
+  contract.** `MissionReopened` and `FollowUpRecorded` were modelled in Python but had no
+  committed JSON Schema or conformance fixtures (they were "model-layer only"), so a
+  consumer could not validate them against the shipped corpus; and `ReviewerSelfApproval`
+  was modelled only in the `producer_contract` subsystem, not the lifecycle layer. This
+  release adds committed schemas and valid/invalid fixtures for all three plus a
+  `ReviewerSelfApproval` payload in `project_lifecycle` (mirroring the committed producer
+  row), so the core ledger read-side, SaaS projectors and future bindings validate them
+  from one source of truth. Additive and fail-closed; no existing contract changed.
+  (mission-lifecycle-reconciliation; [#119](https://github.com/spec-kitty/spec-kitty-events/issues/119))
+
 ## [10.6.0] - 2026-10-17
 
 ### Added
