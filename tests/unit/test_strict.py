@@ -839,3 +839,10 @@ def test_r5_purity_holds_with_legacy_aggregate_prefix() -> None:
     assert len(first) == 1
     assert first[0].code == ValidationErrorCode.FORBIDDEN_AGGREGATE_NAME
     assert envelope == snapshot
+
+
+def test_required_schema_version_is_bound_to_lifecycle_schema_version() -> None:
+    """#130: strict mode reads the one lifecycle-owned schema version."""
+    from spec_kitty_events import lifecycle, strict
+
+    assert strict._REQUIRED_SCHEMA_VERSION == lifecycle.SCHEMA_VERSION
