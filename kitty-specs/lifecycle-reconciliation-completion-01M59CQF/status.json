@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -38,8 +38,8 @@
         "verdict": "changes_requested"
       },
       "role": "implementer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
+      "shell_pid": 12826,
+      "shell_pid_created_at": "1792391964.63",
       "subtasks": {
         "T001": "done",
         "T002": "done",
