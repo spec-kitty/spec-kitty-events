@@ -39,10 +39,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-      - name: Set up Node 22 with the GitHub Packages registry
+      - name: Set up Node 22.22 with the GitHub Packages registry
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 22
+          node-version: '22.22'
           registry-url: https://npm.pkg.github.com
           scope: '@spec-kitty'
           cache: npm
@@ -60,6 +60,8 @@ jobs:
         # (as noindex pages) rather than dropped.
         env:
           DK_PUBLISH_DRAFTS: 'on'
+          # Mermaid renders in the browser; never switch to build-time rendering.
+          DK_DIAGRAM_BUILD_RENDER: client
         run: npm run build
       - name: Check links in the built site
         run: npm run check:built-links

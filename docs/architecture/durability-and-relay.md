@@ -2,7 +2,7 @@
 title: Durability and the relay
 description: The journal-versus-volatile split in spec-kitty-events — which families are durable, which are broadcast, and the Zeitgeist attrs codec for volatile moments.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Architecture
 kind: Explanation
 related:

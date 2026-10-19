@@ -2,7 +2,7 @@
 title: Runtime Observation Events
 description: The volatile presence family, the durable live-work vocabulary, and the build, profile, ops-invocation and connector families that observe the runtime around a mission.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Integration
 kind: Reference
 related:

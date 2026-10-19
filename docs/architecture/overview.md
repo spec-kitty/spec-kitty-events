@@ -2,7 +2,7 @@
 title: Overview
 description: The shape of the spec-kitty-events package — the envelope, the payload families, the reducers, the strict profile and the conformance corpus — and the producer-consumer flow.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Architecture
 kind: Explanation
 related:

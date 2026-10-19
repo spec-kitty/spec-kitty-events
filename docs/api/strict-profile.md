@@ -2,7 +2,7 @@
 title: The strict profile
 description: validate_strict_envelope, the opt-in fail-closed envelope gate for the durable journal and TeamSpace ingress, and exactly what it enforces.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: API
 kind: Reference
 related:

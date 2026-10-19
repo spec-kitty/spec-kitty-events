@@ -2,7 +2,7 @@
 title: The envelope
 description: Reference for Event, the single top-level envelope every spec-kitty-events family rides in, and the meaning of each of its context fields.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: API
 kind: Reference
 related:

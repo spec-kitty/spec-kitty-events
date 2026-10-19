@@ -2,7 +2,7 @@
 title: "11.1.0: decision-significance events and lifecycle conformance breadth"
 description: "Minor release: core's significance and timeout payloads get typed contracts with a RACI actor model, and every lifecycle event type gets invalid fixtures and a replay golden."
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Changelog
 kind: Changelog
 sidebar:

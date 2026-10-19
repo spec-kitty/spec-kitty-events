@@ -2,13 +2,13 @@
 title: "Reducer: an equal-timestamp approved -> done settles its approval (10.4.6)"
 description: "A done WP whose approved -> done shares its approval's timestamp, but sorts first by event_id, no longer reopens when a migration rollback seed follows (spec-kitty-events#87)."
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Changelog
 kind: Changelog
 sidebar:
   order: -202610132
 authors:
-  - ivan@spec-kitty.ai
+  - human:ivan
 tags: [diary, reducer, status-events, migration]
 related:
   - changelog/2026-10-13-diary-rollback-seed-lane-authority

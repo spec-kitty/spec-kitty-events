@@ -5,7 +5,7 @@
   "type": "module",
   "description": "The spec-kitty-events documentation site, built from ../docs with the published @spec-kitty/doc-toolkit.",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.22.0"
   },
   "scripts": {
     "dev": "astro dev",
@@ -15,10 +15,11 @@
     "check:built-links": "dockitty-assert-no-broken-links dist --base /spec-kitty-events --site https://spec-kitty.github.io"
   },
   "dependencies": {
-    "@astrojs/sitemap": "^3.2.0",
-    "@astrojs/starlight": "^0.32.6",
-    "@spec-kitty/doc-toolkit": "0.3.0",
-    "astro": "^5.2.0",
+    "@astrojs/markdown-remark": "^7.3.3",
+    "@astrojs/sitemap": "^3.7.4",
+    "@astrojs/starlight": "^0.42.6",
+    "@spec-kitty/doc-toolkit": "0.4.0",
+    "astro": "^7.4.0",
     "sharp": "^0.34.5"
   },
   "devDependencies": {

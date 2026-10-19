@@ -2,9 +2,10 @@
 title: Context
 description: Why spec-kitty-events exists, where it sits in the Build Kitty product line, and the producer-contract-consumer model that keeps its consumers orthogonal.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Context
 kind: Hub
+okf_version: "0.2"
 ---
 
 # Context

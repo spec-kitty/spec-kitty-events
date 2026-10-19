@@ -2,7 +2,7 @@
 title: Collaboration Events
 description: The in-mission collaboration family (presence, drive intent, focus, step execution, warnings, comments, decisions) plus the bounded cross-mission coordination message.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Integration
 kind: Reference
 related:

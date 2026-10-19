@@ -2,7 +2,7 @@
 title: The Python package
 description: The spec_kitty_events import surface — emitting an envelope, validating a payload, gating with the strict profile, reducing a stream, and loading schemas and fixtures.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: API
 kind: Reference
 related:

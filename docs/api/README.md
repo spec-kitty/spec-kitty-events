@@ -2,9 +2,10 @@
 title: API & Contracts
 description: The consumable contract surface of spec-kitty-events — the envelope, the Python package, the lane vocabulary, the versioning policy and the strict profile.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: API
 kind: Hub
+okf_version: "0.2"
 ---
 
 # API & Contracts

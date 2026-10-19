@@ -2,7 +2,7 @@
 title: Producer row schemas and the total order
 description: Design for the per-row-kind data schemas, the producer registry, the conformance fixtures and the total-order comparator (spec-kitty#6185). First slice of #92.
 doc_status: draft
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Architecture
 kind: Explanation
 ---

@@ -2,9 +2,10 @@
 title: Event families
 description: The event families the Spec Kitty runtime emits, grouped by concern — mission lifecycle, work and status, review and audit, runtime observation, collaboration, semantics.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Integration
 kind: Hub
+okf_version: "0.2"
 ---
 
 # Event families

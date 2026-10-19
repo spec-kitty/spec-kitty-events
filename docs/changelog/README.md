@@ -2,11 +2,12 @@
 title: Changelog
 description: Dated record of notable changes to the spec-kitty-events contract package.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Changelog
 kind: Hub
 agent:
   priority: 0.5
+okf_version: "0.2"
 ---
 
 # Changelog

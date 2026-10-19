@@ -2,7 +2,7 @@
 title: Versioning & compatibility
 description: The two version numbers in spec-kitty-events, what makes a change major versus additive, the artifacts a major bump must ship, and the two validity domains.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: API
 kind: Reference
 related:

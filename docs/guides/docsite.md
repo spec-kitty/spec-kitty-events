@@ -2,7 +2,7 @@
 title: Building the docsite
 description: How the docs/ tree becomes a doc-kitty site — building and checking it locally, the Build Kitty theme, writing links, and what the CI workflow runs.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-19T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -12,13 +12,13 @@ related:
 # Building the docsite
 
 The `docs/` tree is rendered by [doc-kitty](https://github.com/spec-kitty/doc-kitty)'s
-published toolkit, `@spec-kitty/doc-toolkit` (pinned to the latest release, `0.3.0`). The
+published toolkit, `@spec-kitty/doc-toolkit` (pinned to the latest release, `0.4.0`, on Astro 7 and Starlight 0.42). The
 Astro project that renders it lives in `site/`; it owns no content and reads `../docs`
 directly. The docs tree lives at the **repository root**, not under `site/`.
 
 ## Build locally
 
-You need Node 22 or later and a GitHub token with the `read:packages` scope, because the
+You need Node 22.22 or later and a GitHub token with the `read:packages` scope, because the
 toolkit is published to GitHub Packages.
 
 1. Put the token in your **user-level** `~/.npmrc`, never in the project file:
@@ -33,10 +33,17 @@ toolkit is published to GitHub Packages.
    cd site
    npm ci                      # installs exactly what package-lock.json records
    npm run validate            # frontmatter and source links in ../docs
-   npm run build               # writes site/dist
+   DK_DIAGRAM_BUILD_RENDER=client npm run build   # writes site/dist
    npm run check:built-links   # every link in the built site resolves under the base
    npm run preview
    ```
+
+Mermaid diagrams render in the browser. `DK_DIAGRAM_BUILD_RENDER=client` pins that mode;
+without it the toolkit switches to build-time rendering whenever it finds a Playwright
+Chromium, which this site does not use.
+
+Every build also writes the agent API (`api/index.json`, version 3), a content graph
+(`api/content-graph.json`) and an OKF bundle (`okf/`).
 
 `site/.npmrc` maps the `@spec-kitty` scope to GitHub Packages and everything else to the
 public npm registry; it holds no secret.

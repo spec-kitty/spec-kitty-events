@@ -2,13 +2,13 @@
 title: "Reducer: a reconstruction seed that loses the lane still folds its payload (10.4.4)"
 description: "A migration seed dropped by from_lane continuity now folds the claim attribution and verdict no real event wrote, so migrated missions keep them (spec-kitty#6058)."
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Changelog
 kind: Changelog
 sidebar:
   order: -202610122
 authors:
-  - ivan@spec-kitty.ai
+  - human:ivan
 tags: [diary, reducer, status-events, migration]
 related:
   - changelog/2026-10-12-diary-concurrent-approval-after-backfilled-rejection

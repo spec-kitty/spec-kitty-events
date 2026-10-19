@@ -2,9 +2,10 @@
 title: Architecture
 description: How the spec-kitty-events contract is shaped — the envelope, the total order and reduction pipeline, and the journal-versus-volatile durability split.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Architecture
 kind: Hub
+okf_version: "0.2"
 ---
 
 # Architecture

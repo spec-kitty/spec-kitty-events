@@ -2,7 +2,7 @@
 title: CloudEvents envelope design
 description: 'Proposed CloudEvents 1.0 envelope design: field mapping from the 3.0.0 envelope and status-diary row, upcaster principles, and a phased rollout.'
 doc_status: draft
-updated: 2026-10-13
+updated: 2026-10-13T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
