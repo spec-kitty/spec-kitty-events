@@ -28,7 +28,7 @@ immutable; this page is the correction.
 | `lifecycle` | spec-kitty `src/specify_cli/core/mission_payload.py:30` | Fields agree. New invalid fixtures and a replay golden added. |
 | `project_lifecycle` | spec-kitty `src/specify_cli/status/lifecycle_events.py:661,830,966` | Consumed by import. Core hand-copies the type constants (follow-up). |
 | `mission_audit` | none found | Recorded; module unchanged. |
-| `mission_next` | spec-kitty `src/runtime/next/_internal_runtime/{engine.py:26,events.py:17,schema.py:15}` | `RuntimeActorIdentity` unchanged. New sibling `decision_significance` module. |
+| `mission_next` | spec-kitty `src/runtime/next/_internal_runtime/engine.py:26`, `src/runtime/next/_internal_runtime/events.py:17`, `src/runtime/next/_internal_runtime/schema.py:15` | `RuntimeActorIdentity` unchanged. New sibling `decision_significance` module. |
 
 ## `lifecycle`
 
@@ -36,7 +36,7 @@ Core imports `MissionCreatedPayload` from `spec_kitty_events.lifecycle`
 (spec-kitty `src/specify_cli/core/mission_payload.py:30`) and shapes its payload through
 it. The field set agrees with the model, so no model changed.
 
-What 11.1.0 adds, all test and fixture coverage with no change to an accept boundary:
+As of 11.1.0 (the fixture manifest is the source for these counts), what 11.1.0 adds, all test and fixture coverage with no change to an accept boundary:
 
 - Invalid conformance fixtures for 18 lifecycle event types that had none (the Mission*
   types, `PhaseEntered`, `ReviewRollback`, the Specify/Plan/Tasks pairs, `WPAssigned`,
@@ -49,7 +49,7 @@ What 11.1.0 adds, all test and fixture coverage with no change to an accept boun
   ([#62](https://github.com/spec-kitty/spec-kitty-events/issues/62)).
 
 An unknown event type in a replay stream is counted in `event_count` but changes no state;
-the reducer skips it (fail-closed for state, not for the count).
+the reducer skips it (state ignores it; the count includes it).
 
 ## `project_lifecycle`
 
@@ -89,7 +89,11 @@ and the producer row `run.significance.evaluated.v1` in this package agrees with
 so it refuses a null or empty `actor_id` that core and the producer row still allow. This is
 a conscious narrowing; the producer row is unchanged because changing it would move an
 accept boundary. A test compares the two shapes and pins `actor_id` as the single exception.
+The rule applies to nested bindings too (`raci_snapshot`, `escalation_targets`), not only the top-level `actor`.
 Core must always set `actor_id` before it can adopt these models.
+
+A second documented narrowing is D6: core types `raci_snapshot` as `dict[str, Any]`, while the package types it as
+`ResolvedRaciSnapshot`, so a dict that is not a resolved RACI binding is refused.
 
 ## Follow-ups to file
 
@@ -105,3 +109,4 @@ Core must always set `actor_id` before it can adopt these models.
 6. events: valid, invalid and replay fixtures for payload modules with no consumer (merge,
    gates, build_lifecycle, topology and others) and for `decision_moment`.
 7. core: persist the timeout event as `DecisionTimeoutExpired` using the package model.
+8. events: converge the producer-row `run.significance.evaluated.v1` `actor_id` rule with the package model once core always sets `actor_id`.

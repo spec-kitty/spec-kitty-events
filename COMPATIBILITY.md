@@ -38,6 +38,16 @@ moves, following the `6.1.0` new-event-type precedent. The envelope `schema_vers
   with `min_version` `11.1.0` on the new decision fixtures.
 - Test and fixture coverage: lifecycle invalid fixtures, a lifecycle replay golden, and
   `WPStatusChanged` lane and `summary` breadth (#62).
+- The lifecycle replay golden pins existing reducer behaviour: an unknown event type is counted in `event_count` and changes no state.
+
+### Adopting 11.1.0
+
+- Widen the pin to `spec-kitty-events>=11.1.0,<12`. Nothing else is needed if you do not use the new types.
+- Import the new types from `spec_kitty_events.decision_significance`.
+- Every `RaciRoleBinding` needs a non-empty `actor_id`: the top-level `actor` and the nested bindings in `raci_snapshot` and `escalation_targets`. Null, absent or empty is refused (operator ruling; narrower than core's `RACIRoleBinding`, which allows None, e.g. inferred RACI defaults).
+- `raci_snapshot` is typed as `ResolvedRaciSnapshot`, so a dict that is not a resolved RACI binding is refused (core types it `dict[str, Any]`).
+- Consumers of the producer row `run.significance.evaluated.v1` see no change.
+- The new types are not in `STRICT_EVENT_TYPES`, so `validate_strict_envelope` still rejects them as unknown (same as `ReviewerSelfApproval`).
 
 ### Deliberate difference from the producer row and core (R2)
 
@@ -45,8 +55,6 @@ The package requires a non-empty `actor_id` on `RaciRoleBinding`. Core's `RACIRo
 and the `run.significance.evaluated.v1` producer row both allow a null or absent `actor_id`.
 A payload that core emits with a null `actor_id` is refused by this package. The producer row
 is unchanged. A core follow-up must make core always set `actor_id` before adopting these models.
-
-A reducer that meets an unknown event type counts it in `event_count` and changes no state.
 
 ## `11.0.0` — decision reopen, core-shaped glossary contracts, optional envelope clock (breaking)
 
