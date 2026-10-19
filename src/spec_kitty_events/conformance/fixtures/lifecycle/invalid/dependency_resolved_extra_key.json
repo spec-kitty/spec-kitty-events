@@ -1,0 +1,6 @@
+{
+  "dependency_wp_id": "WP01",
+  "resolution_type": "merged",
+  "wp_id": "WP02",
+  "unexpected_extra_key": "x"
+}

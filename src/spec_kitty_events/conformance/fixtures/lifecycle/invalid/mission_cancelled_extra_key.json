@@ -1,0 +1,7 @@
+{
+  "mission_id": "mission-001",
+  "reason": "Requirements changed",
+  "actor": "test-agent",
+  "cancelled_wp_ids": [],
+  "unexpected_extra_key": "x"
+}

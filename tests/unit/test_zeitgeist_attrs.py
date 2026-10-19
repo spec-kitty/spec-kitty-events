@@ -679,6 +679,61 @@ def test_wp_status_changed_summary_rides_as_the_bounded_attr() -> None:
     assert moment.attrs["summary"] == attrs["summary"]
 
 
+def _assert_summary_projection(payload: StatusTransitionPayload, expected: str) -> None:
+    """Shared #62 assertions: bounded normalized ``summary``, no raw ``reason``,
+    decode round-trip (same properties the approved-lane case pins)."""
+    attrs = to_zeitgeist_attrs(payload, _envelope("WPStatusChanged"))
+    assert attrs["summary"] == expected
+    assert len(attrs["summary"].encode("utf-8")) <= ZEITGEIST_ATTRS_MAX_BYTES
+    assert "reason" not in attrs
+    moment = from_zeitgeist_attrs("WPStatusChanged", attrs)
+    assert moment.attrs["summary"] == attrs["summary"]
+
+
+def test_wp_status_changed_summary_rides_on_a_rework_lane() -> None:
+    """#62: a rework rewind ``in_review -> in_progress`` carries the summary."""
+    payload = _transition(
+        from_lane="in_review",
+        to_lane="in_progress",
+        reason="Two findings.\nSee the review cycle.",
+        review_ref="review-cycle://demo-mission/WP01/2026-10-19a",
+        summary="Back to implementation:\n  two findings   to address",
+    )
+    _assert_summary_projection(payload, "Back to implementation: two findings to address")
+
+
+def test_wp_status_changed_summary_rides_on_the_canonical_rejection() -> None:
+    """#62: the canonical rejection ``in_review -> planned`` carries the summary."""
+    payload = _transition(
+        from_lane="in_review",
+        to_lane="planned",
+        force=True,
+        reason="Rejected: scope drift.\nDetails stay local.",
+        summary="Rejected for scope drift",
+    )
+    _assert_summary_projection(payload, "Rejected for scope drift")
+
+
+def test_wp_status_changed_summary_rides_on_done_without_leaking_evidence() -> None:
+    """#62: ``-> done`` with a summary and DoneEvidence projects the summary
+    while the evidence bundle stays in the journal."""
+    from spec_kitty_events.status import DoneEvidence, RepoEvidence, ReviewVerdict
+
+    payload = _transition(
+        from_lane="for_review",
+        to_lane="done",
+        summary="Merged and verified\non the lane",
+        evidence=DoneEvidence(
+            repos=[RepoEvidence(repo="r", branch="b", commit="c" * 40)],
+            verification=[],
+            review=ReviewVerdict(reviewer="robert", verdict="approved"),
+        ),
+    )
+    _assert_summary_projection(payload, "Merged and verified on the lane")
+    attrs = to_zeitgeist_attrs(payload, _envelope("WPStatusChanged"))
+    assert not any(key.startswith("evidence") for key in attrs)
+
+
 def test_wp_status_changed_summary_absent_when_producer_supplies_none() -> None:
     """Deterministic omission: no ``summary`` attr when the producer
     supplied none, and pre-#4327 frames (which never carried the key)

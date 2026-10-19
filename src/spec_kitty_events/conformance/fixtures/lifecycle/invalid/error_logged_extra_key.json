@@ -1,0 +1,8 @@
+{
+  "agent_id": "claude",
+  "error_message": "Invalid input received.",
+  "error_type": "ValueError",
+  "stack_trace": null,
+  "wp_id": "WP01",
+  "unexpected_extra_key": "x"
+}
