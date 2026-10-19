@@ -15,6 +15,10 @@ from typing import Any, Callable, Dict, Tuple, Type, Union
 
 from pydantic import BaseModel, ValidationError as PydanticValidationError
 
+from spec_kitty_events.decision_significance import (
+    DecisionTimeoutExpiredPayload,
+    SignificanceEvaluatedPayload,
+)
 from spec_kitty_events.build_lifecycle import (
     BuildHeartbeatPayload,
     BuildRegisteredPayload,
@@ -288,6 +292,9 @@ _EVENT_TYPE_TO_MODEL: Dict[str, Any] = {
     # spec-kitty/src/specify_cli/status/lifecycle_events.py. Mirrors the
     # producer-contract row wp.reviewer.selfapproved.v1 (mirror-not-depend).
     "ReviewerSelfApproval": ReviewerSelfApprovalPayload,
+    # Decision-significance (RACI) events (mission lifecycle-reconciliation-completion-01M59CQF, WP01).
+    "SignificanceEvaluated": SignificanceEvaluatedPayload,
+    "DecisionTimeoutExpired": DecisionTimeoutExpiredPayload,
     # HarnessObservation vocabulary (F1-T1, 7.0.0). F1 is the single owner
     # of this vocabulary; see spec_kitty_events.harness_observation.
     HARNESS_OBSERVATION: HarnessObservationPayload,
@@ -400,6 +407,8 @@ _EVENT_TYPE_TO_SCHEMA: Dict[str, str] = {
     "MissionReopened": "mission_reopened_payload",
     "FollowUpRecorded": "follow_up_recorded_payload",
     "ReviewerSelfApproval": "reviewer_self_approval_payload",
+    "SignificanceEvaluated": "significance_evaluated_payload",
+    "DecisionTimeoutExpired": "decision_timeout_expired_payload",
 }
 
 

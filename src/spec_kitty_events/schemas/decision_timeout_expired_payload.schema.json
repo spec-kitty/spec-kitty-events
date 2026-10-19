@@ -1,0 +1,165 @@
+{
+  "$defs": {
+    "RaciRoleBinding": {
+      "additionalProperties": false,
+      "description": "Single actor-role binding; ``actor_id`` is required (R2).",
+      "properties": {
+        "actor_id": {
+          "minLength": 1,
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "actor_type": {
+          "enum": [
+            "human",
+            "llm",
+            "service"
+          ],
+          "title": "Actor Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "actor_type",
+        "actor_id"
+      ],
+      "title": "RaciRoleBinding",
+      "type": "object"
+    },
+    "ResolvedRaciSnapshot": {
+      "additionalProperties": false,
+      "description": "Fully resolved RACI binding with provenance (core ``ResolvedRACIBinding``).\n\nCore enforces no accountable-is-human rule on the resolved binding (that\nbelongs to ``RACIAssignment``), so none is enforced here.",
+      "properties": {
+        "accountable": {
+          "$ref": "#/$defs/RaciRoleBinding"
+        },
+        "consulted": {
+          "items": {
+            "$ref": "#/$defs/RaciRoleBinding"
+          },
+          "title": "Consulted",
+          "type": "array"
+        },
+        "inferred_rule": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inferred Rule"
+        },
+        "informed": {
+          "items": {
+            "$ref": "#/$defs/RaciRoleBinding"
+          },
+          "title": "Informed",
+          "type": "array"
+        },
+        "override_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Override Reason"
+        },
+        "responsible": {
+          "$ref": "#/$defs/RaciRoleBinding"
+        },
+        "source": {
+          "enum": [
+            "inferred",
+            "explicit"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "step_id": {
+          "title": "Step Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step_id",
+        "responsible",
+        "accountable",
+        "source"
+      ],
+      "title": "ResolvedRaciSnapshot",
+      "type": "object"
+    }
+  },
+  "$id": "spec-kitty-events/decision_timeout_expired_payload",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A decision exceeded its configured timeout window.",
+  "properties": {
+    "actor": {
+      "$ref": "#/$defs/RaciRoleBinding"
+    },
+    "decision_id": {
+      "minLength": 1,
+      "title": "Decision Id",
+      "type": "string"
+    },
+    "effective_band": {
+      "enum": [
+        "medium",
+        "high"
+      ],
+      "title": "Effective Band",
+      "type": "string"
+    },
+    "escalation_targets": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/RaciRoleBinding"
+      },
+      "title": "Escalation Targets",
+      "type": "array"
+    },
+    "raci_snapshot": {
+      "$ref": "#/$defs/ResolvedRaciSnapshot"
+    },
+    "run_id": {
+      "minLength": 1,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "significance_score": {
+      "additionalProperties": true,
+      "title": "Significance Score",
+      "type": "object"
+    },
+    "step_id": {
+      "minLength": 1,
+      "title": "Step Id",
+      "type": "string"
+    },
+    "timeout_configured_seconds": {
+      "exclusiveMinimum": 0,
+      "title": "Timeout Configured Seconds",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "run_id",
+    "decision_id",
+    "step_id",
+    "significance_score",
+    "effective_band",
+    "timeout_configured_seconds",
+    "raci_snapshot",
+    "actor"
+  ],
+  "title": "DecisionTimeoutExpiredPayload",
+  "type": "object"
+}

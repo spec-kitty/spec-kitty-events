@@ -1,0 +1,86 @@
+{
+  "$defs": {
+    "RaciRoleBinding": {
+      "additionalProperties": false,
+      "description": "Single actor-role binding; ``actor_id`` is required (R2).",
+      "properties": {
+        "actor_id": {
+          "minLength": 1,
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "actor_type": {
+          "enum": [
+            "human",
+            "llm",
+            "service"
+          ],
+          "title": "Actor Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "actor_type",
+        "actor_id"
+      ],
+      "title": "RaciRoleBinding",
+      "type": "object"
+    }
+  },
+  "$id": "spec-kitty-events/significance_evaluated_payload",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A decision's significance was scored and routed.",
+  "properties": {
+    "actor": {
+      "$ref": "#/$defs/RaciRoleBinding"
+    },
+    "decision_id": {
+      "minLength": 1,
+      "title": "Decision Id",
+      "type": "string"
+    },
+    "effective_band": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "Effective Band",
+      "type": "string"
+    },
+    "hard_trigger_classes": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Hard Trigger Classes",
+      "type": "array"
+    },
+    "run_id": {
+      "minLength": 1,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "significance_score": {
+      "additionalProperties": true,
+      "title": "Significance Score",
+      "type": "object"
+    },
+    "step_id": {
+      "minLength": 1,
+      "title": "Step Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "decision_id",
+    "step_id",
+    "significance_score",
+    "effective_band",
+    "actor"
+  ],
+  "title": "SignificanceEvaluatedPayload",
+  "type": "object"
+}

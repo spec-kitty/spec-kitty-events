@@ -35,6 +35,8 @@ _VALID_CATEGORIES = frozenset(
         "work_observation",  # durable live-work contracts (#55, 10.1.0)
         "ledger_append",  # local-ledger write contract (#118, 10.8.0)
         "ordering",  # canonical order of unclocked / mixed envelopes (#120, 11.0.0)
+        "decision_significance",  # 11.1.0 (#119)
+        "lifecycle",  # 11.1.0 (#119)
     }
 )
 

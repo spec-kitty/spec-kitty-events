@@ -410,6 +410,17 @@ from spec_kitty_events.mission_next import (
     reduce_mission_next_events,
 )
 
+# Decision-significance (RACI) event contracts
+from spec_kitty_events.decision_significance import (
+    SIGNIFICANCE_EVALUATED,
+    DECISION_TIMEOUT_EXPIRED,
+    DECISION_SIGNIFICANCE_EVENT_TYPES,
+    RaciRoleBinding,
+    ResolvedRaciSnapshot,
+    SignificanceEvaluatedPayload,
+    DecisionTimeoutExpiredPayload,
+)
+
 # Analytics event contracts
 from spec_kitty_events.analytics import (
     TOKEN_USAGE_RECORDED,
@@ -919,6 +930,14 @@ __all__ = [
     "MissionNextAnomaly",
     "ReducedMissionRunState",
     "reduce_mission_next_events",
+    # Decision-significance (RACI) event contracts
+    "SIGNIFICANCE_EVALUATED",
+    "DECISION_TIMEOUT_EXPIRED",
+    "DECISION_SIGNIFICANCE_EVENT_TYPES",
+    "RaciRoleBinding",
+    "ResolvedRaciSnapshot",
+    "SignificanceEvaluatedPayload",
+    "DecisionTimeoutExpiredPayload",
     # Analytics event contracts
     "TOKEN_USAGE_RECORDED",
     "DIFF_SUMMARY_RECORDED",
