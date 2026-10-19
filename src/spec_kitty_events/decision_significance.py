@@ -24,7 +24,7 @@ Deliberate differences from the producer (operator rulings) — three narrowings
 
 from __future__ import annotations
 
-from typing import Any, Dict, FrozenSet, List, Literal, Optional, Tuple
+from typing import Any, Dict, Final, FrozenSet, List, Literal, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -34,6 +34,17 @@ DECISION_TIMEOUT_EXPIRED: str = "DecisionTimeoutExpired"
 DECISION_SIGNIFICANCE_EVENT_TYPES: FrozenSet[str] = frozenset(
     {SIGNIFICANCE_EVALUATED, DECISION_TIMEOUT_EXPIRED}
 )
+
+# RACI actor-id sentinels (operator ruling 2026-10-19, #136). A producer that
+# resolves a binding with no actor_id maps it before emitting, since R2 refuses
+# a null or empty actor_id:
+#   * an inferred HUMAN binding -> HUMAN_IN_CHARGE_ACTOR_ID (the built-in
+#     human-in-charge agent profile, i.e. the human operator);
+#   * any other binding that cannot be attributed to the human operator
+#     (llm/service with no id) -> UNKNOWN_ACTOR_ID.
+# These are conventions only: actor_id stays any non-empty string.
+HUMAN_IN_CHARGE_ACTOR_ID: Final = "human-in-charge"
+UNKNOWN_ACTOR_ID: Final = "UNKNOWN"
 
 
 class RaciRoleBinding(BaseModel):
@@ -109,6 +120,8 @@ __all__ = [
     "SIGNIFICANCE_EVALUATED",
     "DECISION_TIMEOUT_EXPIRED",
     "DECISION_SIGNIFICANCE_EVENT_TYPES",
+    "HUMAN_IN_CHARGE_ACTOR_ID",
+    "UNKNOWN_ACTOR_ID",
     "RaciRoleBinding",
     "ResolvedRaciSnapshot",
     "SignificanceEvaluatedPayload",

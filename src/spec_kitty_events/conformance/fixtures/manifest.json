@@ -4121,6 +4121,22 @@
       "min_version": "11.1.0"
     },
     {
+      "id": "decision-significance-significance-evaluated-sentinel-actor-valid",
+      "path": "decision_significance/valid/significance_evaluated_sentinel_actor.json",
+      "expected_result": "valid",
+      "event_type": "SignificanceEvaluated",
+      "notes": "Unattributable service actor carries the UNKNOWN sentinel (#136)",
+      "min_version": "11.2.0"
+    },
+    {
+      "id": "decision-significance-decision-timeout-expired-sentinel-actors-valid",
+      "path": "decision_significance/valid/decision_timeout_expired_sentinel_actors.json",
+      "expected_result": "valid",
+      "event_type": "DecisionTimeoutExpired",
+      "notes": "human-in-charge and UNKNOWN sentinels in escalation_targets and nested raci_snapshot bindings (#136)",
+      "min_version": "11.2.0"
+    },
+    {
       "id": "lifecycle-mission-created-missing-mission-slug-invalid",
       "path": "lifecycle/invalid/mission_created_missing_mission_slug.json",
       "expected_result": "invalid",

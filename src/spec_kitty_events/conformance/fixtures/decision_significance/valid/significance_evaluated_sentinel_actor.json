@@ -1,0 +1,59 @@
+{
+  "run_id": "run-001",
+  "decision_id": "decision-001",
+  "step_id": "plan",
+  "significance_score": {
+    "dimensions": [
+      {
+        "name": "architectural_system_impact",
+        "score": 1,
+        "description": ""
+      },
+      {
+        "name": "cross_team_blast_radius",
+        "score": 2,
+        "description": ""
+      },
+      {
+        "name": "data_security_compliance_impact",
+        "score": 3,
+        "description": ""
+      },
+      {
+        "name": "financial_commercial_impact",
+        "score": 0,
+        "description": ""
+      },
+      {
+        "name": "operational_reliability_impact",
+        "score": 1,
+        "description": ""
+      },
+      {
+        "name": "user_customer_impact",
+        "score": 2,
+        "description": ""
+      }
+    ],
+    "composite": 9,
+    "band": {
+      "name": "medium",
+      "min_score": 7,
+      "max_score": 11
+    },
+    "hard_trigger_classes": [],
+    "effective_band": {
+      "name": "medium",
+      "min_score": 7,
+      "max_score": 11
+    }
+  },
+  "hard_trigger_classes": [
+    "security"
+  ],
+  "effective_band": "medium",
+  "actor": {
+    "actor_type": "service",
+    "actor_id": "UNKNOWN"
+  }
+}
