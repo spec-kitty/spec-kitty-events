@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -30,6 +30,7 @@
       "last_transition_at": "2026-10-19T06:37:46.667412+00:00",
       "model": "__resolved_model_absent__",
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-events/.worktrees/lifecycle-reconciliation-completion-01M59CQF-coord/kitty-specs/lifecycle-reconciliation-completion-01M59CQF/tasks/WP01-raci-decision-events/review-cycle-1.md",
         "reference": "review-cycle://lifecycle-reconciliation-completion-01M59CQF/WP01-raci-decision-events/review-cycle-1.md",
@@ -37,16 +38,16 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 9802,
-      "shell_pid_created_at": "1792391686.2",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T001": "done",
-        "T002": "done",
-        "T003": "done",
-        "T004": "done",
-        "T005": "done",
-        "T006": "done",
-        "T007": "done"
+        "T001": "planned",
+        "T002": "planned",
+        "T003": "planned",
+        "T004": "planned",
+        "T005": "planned",
+        "T006": "planned",
+        "T007": "planned"
       }
     },
     "WP02": {
