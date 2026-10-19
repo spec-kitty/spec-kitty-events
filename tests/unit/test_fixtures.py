@@ -482,7 +482,9 @@ class TestLoadFixtures:
         # + 11 mission-lifecycle reconciliation invalid fixtures (4 MissionReopened,
         # 4 FollowUpRecorded, 3 ReviewerSelfApproval) shipped by WP01 of
         # mission-lifecycle-reconciliation-01M574ET.
-        assert len(invalid_cases) == 18
+        # + 3 gates/build_lifecycle invalid fixtures (GatePassed, BuildRegistered,
+        # BuildHeartbeat) closing the fixture-breadth gap of #132.
+        assert len(invalid_cases) == 21
 
     def test_fixture_case_has_payload(self) -> None:
         cases = load_fixtures("events")

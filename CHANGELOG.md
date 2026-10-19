@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `strict._REQUIRED_SCHEMA_VERSION` is bound to `lifecycle.SCHEMA_VERSION`, one source for
+  the value, pinned by a unit test.
+  ([#130](https://github.com/spec-kitty/spec-kitty-events/issues/130))
+
+### Added
+
+- Invalid conformance fixtures for `GatePassed`, `BuildRegistered` and `BuildHeartbeat`.
+  ([#132](https://github.com/spec-kitty/spec-kitty-events/issues/132))
+
 ## [11.2.0] - 2026-10-19
 
 Minor release, additive. One new producer-row kind and two exported RACI actor-id sentinel
