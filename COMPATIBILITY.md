@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `11.1.0`
+**Current package version**: `11.2.0`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,29 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `11.2.0` — producer row for the decision timeout (minor)
+
+`11.2.0` is additive. It adds one producer-row kind, `run.decision.timeoutexpired.v1`; no
+existing accept boundary moves. The envelope `schema_version` stays `3.0.0`, and the payload
+model `DecisionTimeoutExpired` is unchanged.
+
+### What changed
+
+- New producer-row registry entry, `data` schema, composed row and legacy schemas, and row
+  fixtures for `ai.spec-kitty.run.decision.timeoutexpired.v1` (legacy discriminator
+  `DecisionTimeoutExpired`).
+- The row accepts what core's `TimeoutExpiredPayload` writes, so it is wider than the package
+  payload in two places: `actor_id` may be null or absent (in `actor` and in each
+  `escalation_targets` item), and `raci_snapshot` is any object. Both are pinned by a test;
+  converging `actor_id` is #131, gated on core always setting it (spec-kitty/spec-kitty#6445).
+
+### Adopting 11.2.0
+
+- Widen the pin to `spec-kitty-events>=11.2.0,<12`. Nothing else is needed unless you
+  validate producer rows of this kind.
+- Producers writing the timeout row validate against
+  `producer_contract/composed/rows/run.decision.timeoutexpired.v1.row.schema.json`.
 
 ## `11.1.0` — decision-significance events and lifecycle conformance breadth (minor)
 

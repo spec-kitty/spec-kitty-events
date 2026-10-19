@@ -87,6 +87,7 @@ also projected onto the volatile relay (`VOLATILE_EVENT_TYPES`).
 
 Added in 11.1.0. `SignificanceEvaluated` mirrors the event core persists. `DecisionTimeoutExpired` mirrors core's
 `TimeoutExpiredPayload` model under a name this package chose, because core does not yet persist a timeout event.
+Since 11.2.0 the timeout has a producer row, `run.decision.timeoutexpired.v1`, cross-anchored to this payload.
 See [Lifecycle reconciliation](/architecture/lifecycle-reconciliation/). Both sit beside `mission_next` and use a new
 RACI actor model rather than `RuntimeActorIdentity`.
 

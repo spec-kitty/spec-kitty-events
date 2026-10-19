@@ -53,6 +53,7 @@ EXPECTED_NAMES = {
     "run.decision.answered.v1",
     "run.completed.v1",
     "run.significance.evaluated.v1",
+    "run.decision.timeoutexpired.v1",
     "run.decision.denied.v1",
     "retrospective.captured.v1",
     "retrospective.capturefailed.v1",
@@ -85,7 +86,7 @@ def _valid_fixtures() -> List[Dict[str, Any]]:
 def test_registry_holds_exactly_the_producer_types() -> None:
     registry = pc.load_registry()
     assert {t["name"] for t in registry["types"]} == EXPECTED_NAMES
-    assert len(registry["types"]) == len(EXPECTED_NAMES) == 27
+    assert len(registry["types"]) == len(EXPECTED_NAMES) == 28
     assert pc.registered_types() == tuple(t["type"] for t in registry["types"])
 
 
@@ -145,7 +146,7 @@ def test_loaders_return_copies() -> None:
     pc.get_entry("lane.transitioned.v1")["lifted"].clear()
     pc.data_schema("lane.transitioned.v1")["properties"].clear()
     pc.envelope_schema()["properties"].clear()
-    assert len(pc.registered_types()) == 27
+    assert len(pc.registered_types()) == 28
     assert pc.get_entry("lane.transitioned.v1")["lifted"]
     assert pc.data_schema("lane.transitioned.v1")["properties"]
     assert pc.envelope_schema()["properties"]
@@ -730,7 +731,7 @@ def test_composed_schemas_on_disk_equal_what_the_functions_return() -> None:
         )
         assert rows == pc.row_schema(name), name
         assert legacy == pc.legacy_row_form_schema(name), name
-    assert len(list((_ROOT / "composed").rglob("*.json"))) == 54
+    assert len(list((_ROOT / "composed").rglob("*.json"))) == 56
 
 
 def test_the_packaged_total_order_contract_is_a_copy_of_the_contract() -> None:

@@ -27,7 +27,7 @@ that #6185 needs first. It carries:
 
 | Piece | Where |
 |---|---|
-| One `data` JSON Schema per emitted row kind (27 types, all `v1`) | `src/spec_kitty_events/producer_contract/data/<name>.schema.json` |
+| One `data` JSON Schema per emitted row kind (28 types, all `v1`) | `src/spec_kitty_events/producer_contract/data/<name>.schema.json` |
 | The registry: type, scope, `subject` rule, lifted members, legacy shape, schema file, `dataschema` URI | `src/spec_kitty_events/producer_contract/registry.json` |
 | The minimal envelope subset (attribute rules for rows the producer writes) | `src/spec_kitty_events/producer_contract/envelope.schema.json` |
 | Python loaders, and the two composed schemas (full CloudEvent row; legacy-row form) | `src/spec_kitty_events/producer_contract/__init__.py` |
@@ -157,7 +157,7 @@ consumer, as the versioning contract already says for new event types.
   "optional in the schema, because diary writers stamp none today"). The producer stamps
   both on every row it writes; #92 reconciles this when it absorbs the subset. The total
   order still defines clockless rows, which come from legacy and upcast rows.
-- Eight of the 27 data schemas (lane, annotation, reviewer self-approval, significance,
+- Eight of the 28 data schemas (lane, annotation, reviewer self-approval, significance,
   denied, the three retrospective rows) have no typed model in this package to compare
   with. Their member and required lists are pinned by hand-written lists in the tests.
 - The lane schema carries the members of the diary row only. The design's shape-A `summary`

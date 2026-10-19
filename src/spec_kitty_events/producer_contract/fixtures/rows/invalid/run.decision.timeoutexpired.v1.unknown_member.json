@@ -1,0 +1,62 @@
+{
+  "class": "producer_row_invalid",
+  "expected": "invalid",
+  "type": "ai.spec-kitty.run.decision.timeoutexpired.v1",
+  "base": "run.decision.timeoutexpired.v1",
+  "violation": "data_unknown_member",
+  "expected_error_path": "/data",
+  "expected_keyword": "additionalProperties",
+  "input": {
+    "specversion": "1.0",
+    "id": "01J0000000000000000000F032",
+    "source": "/spec-kitty/missions/01J0000000000000000000MSN1",
+    "type": "ai.spec-kitty.run.decision.timeoutexpired.v1",
+    "time": "2026-01-01T00:00:00+00:00",
+    "datacontenttype": "application/json",
+    "dataschema": "https://schemas.example.invalid/spec-kitty/run.decision.timeoutexpired.v1",
+    "schemaversion": "4.0.0",
+    "lamportclock": 32,
+    "nodeid": "0123456789ab",
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-reducer-unification",
+    "data": {
+      "run_id": "run-001",
+      "decision_id": "dec-001",
+      "step_id": "step-review",
+      "significance_score": {
+        "total": 11,
+        "band": "high"
+      },
+      "effective_band": "high",
+      "timeout_configured_seconds": 900,
+      "escalation_targets": [
+        {
+          "actor_type": "human",
+          "actor_id": "operator-1"
+        }
+      ],
+      "raci_snapshot": {
+        "step_id": "step-review",
+        "responsible": {
+          "actor_type": "llm",
+          "actor_id": "claude"
+        },
+        "accountable": {
+          "actor_type": "human",
+          "actor_id": "operator-1"
+        },
+        "consulted": [],
+        "informed": [],
+        "source": "inferred",
+        "inferred_rule": "default",
+        "override_reason": null
+      },
+      "actor": {
+        "actor_type": "service",
+        "actor_id": "runtime"
+      },
+      "zz_unknown": 1
+    }
+  },
+  "notes": "An undeclared data member."
+}
