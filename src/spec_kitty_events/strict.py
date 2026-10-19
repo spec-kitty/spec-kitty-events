@@ -32,7 +32,7 @@ from spec_kitty_events.harness_observation import (
     ObservationKind,
     PAYLOAD_ID_BY_KIND,
 )
-from spec_kitty_events.lifecycle import MISSION_EVENT_TYPES
+from spec_kitty_events.lifecycle import MISSION_EVENT_TYPES, SCHEMA_VERSION
 from spec_kitty_events.mission_next import (
     DECISION_INPUT_ANSWERED,
     DECISION_INPUT_REQUESTED,
@@ -141,7 +141,8 @@ STRICT_TIMESTAMP_RULES: str = "iso8601-tz-aware"
 # change under contracts/versioning-and-compatibility.md.
 FORBIDDEN_LEGACY_AGGREGATE_NAMES: frozenset[str] = frozenset({"feature", "feature_catalog"})
 
-_REQUIRED_SCHEMA_VERSION = "3.0.0"
+# Single source: the lifecycle contract owns the schema version (#130).
+_REQUIRED_SCHEMA_VERSION: str = SCHEMA_VERSION
 
 # E2 lands inside the same unreleased wave as epic E2's major bump
 # (planning repo issue #3: delete sync/legacy/cutover, "new major; both
