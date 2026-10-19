@@ -1,0 +1,28 @@
+{
+  "$id": "spec-kitty-events/raci_role_binding",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Single actor-role binding; ``actor_id`` is required (R2).",
+  "properties": {
+    "actor_id": {
+      "minLength": 1,
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "actor_type": {
+      "enum": [
+        "human",
+        "llm",
+        "service"
+      ],
+      "title": "Actor Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "actor_type",
+    "actor_id"
+  ],
+  "title": "RaciRoleBinding",
+  "type": "object"
+}
