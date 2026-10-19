@@ -86,6 +86,12 @@ from spec_kitty_events.mission_next import (
     DecisionInputAnsweredPayload,
     MissionRunCompletedPayload,
 )
+from spec_kitty_events.decision_significance import (
+    DecisionTimeoutExpiredPayload,
+    RaciRoleBinding,
+    ResolvedRaciSnapshot,
+    SignificanceEvaluatedPayload,
+)
 from spec_kitty_events.analytics import (
     TokenUsageRecordedPayload,
     DiffSummaryRecordedPayload,
@@ -194,6 +200,11 @@ PYDANTIC_MODELS: List[tuple[str, Type[BaseModel]]] = [
     ("phase_entered_payload", PhaseEnteredPayload),
     ("review_rollback_payload", ReviewRollbackPayload),
     ("mission_reopened_payload", MissionReopenedPayload),
+    # mission lifecycle-reconciliation-completion-01M59CQF (#119): RACI decision events
+    ("raci_role_binding", RaciRoleBinding),
+    ("resolved_raci_snapshot", ResolvedRaciSnapshot),
+    ("significance_evaluated_payload", SignificanceEvaluatedPayload),
+    ("decision_timeout_expired_payload", DecisionTimeoutExpiredPayload),
     ("follow_up_recorded_payload", FollowUpRecordedPayload),
     # HarnessObservation vocabulary (F1-T1, 7.0.0)
     ("harness_observation_payload", HarnessObservationPayload),

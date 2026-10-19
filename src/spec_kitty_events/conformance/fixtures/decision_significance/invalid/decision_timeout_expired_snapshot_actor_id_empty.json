@@ -1,0 +1,54 @@
+{
+  "run_id": "run-001",
+  "decision_id": "decision-001",
+  "step_id": "plan",
+  "significance_score": {
+    "score": 7,
+    "factors": {
+      "scope": 3,
+      "risk": 4
+    }
+  },
+  "effective_band": "high",
+  "timeout_configured_seconds": 900,
+  "escalation_targets": [
+    {
+      "actor_type": "human",
+      "actor_id": "user-robert"
+    },
+    {
+      "actor_type": "human",
+      "actor_id": "user-ana"
+    }
+  ],
+  "raci_snapshot": {
+    "step_id": "plan",
+    "responsible": {
+      "actor_type": "llm",
+      "actor_id": ""
+    },
+    "accountable": {
+      "actor_type": "human",
+      "actor_id": "user-robert"
+    },
+    "consulted": [
+      {
+        "actor_type": "human",
+        "actor_id": "user-ana"
+      }
+    ],
+    "informed": [
+      {
+        "actor_type": "service",
+        "actor_id": "runtime"
+      }
+    ],
+    "source": "inferred",
+    "inferred_rule": "default-accountable-human",
+    "override_reason": null
+  },
+  "actor": {
+    "actor_type": "service",
+    "actor_id": "runtime"
+  }
+}

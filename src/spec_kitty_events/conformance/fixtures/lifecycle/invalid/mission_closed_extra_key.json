@@ -1,0 +1,6 @@
+{
+  "mission_slug": "mission-001",
+  "mission_number": 1,
+  "mission_type": "software-dev",
+  "unexpected_extra_key": "x"
+}

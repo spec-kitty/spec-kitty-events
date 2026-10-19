@@ -1,0 +1,20 @@
+{
+  "run_id": "run-001",
+  "decision_id": "decision-001",
+  "step_id": "plan",
+  "significance_score": {
+    "score": 7,
+    "factors": {
+      "scope": 3,
+      "risk": 4
+    }
+  },
+  "hard_trigger_classes": [
+    "security"
+  ],
+  "effective_band": "medium",
+  "actor": {
+    "actor_type": "service",
+    "actor_id": null
+  }
+}
