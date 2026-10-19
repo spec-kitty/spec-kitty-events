@@ -15,7 +15,7 @@ boundary, and the envelope `schema_version` is unchanged.
 ### Added
 
 - **Decision-significance events.** New `decision_significance` module with the event types
-  `SignificanceEvaluated` and `DecisionTimeoutExpired`, mirroring core's payload models (`SignificanceEvaluated` as core persists it; `DecisionTimeoutExpired` ahead of any core producer, under a name chosen by this package), plus the
+  `SignificanceEvaluated` and `DecisionTimeoutExpired`, mirroring core's payload models. `SignificanceEvaluated` matches what core persists; `DecisionTimeoutExpired` has no core producer yet and its name is this package's. Also adds the
   `RaciRoleBinding` and `ResolvedRaciSnapshot` models, generated JSON Schemas, and validator
   dispatch. `actor_id` is required and non-empty, which is narrower than core
   (`str | None`); a core follow-up is filed. `RuntimeActorIdentity` is unchanged.

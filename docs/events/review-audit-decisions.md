@@ -85,10 +85,10 @@ also projected onto the volatile relay (`VOLATILE_EVENT_TYPES`).
 
 ## Decision significance — `decision_significance.py`
 
-Added in 11.1.0. `SignificanceEvaluated` mirrors what core persists; `DecisionTimeoutExpired` mirrors core's
-`TimeoutExpiredPayload` model ahead of any core producer, under a name chosen by this package
-(core has no persisted timeout event yet) (see [Lifecycle reconciliation](/architecture/lifecycle-reconciliation/)). They sit
-beside `mission_next` and use a new RACI actor model rather than `RuntimeActorIdentity`.
+Added in 11.1.0. `SignificanceEvaluated` mirrors the event core persists. `DecisionTimeoutExpired` mirrors core's
+`TimeoutExpiredPayload` model under a name this package chose, because core does not yet persist a timeout event.
+See [Lifecycle reconciliation](/architecture/lifecycle-reconciliation/). Both sit beside `mission_next` and use a new
+RACI actor model rather than `RuntimeActorIdentity`.
 
 | Event type | Payload model | Meaning |
 |---|---|---|
