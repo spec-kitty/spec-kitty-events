@@ -15,6 +15,7 @@ requirement_refs:
 - C-002
 - C-004
 - C-005
+- SC-001
 planning_base_branch: issue-119-lifecycle-reconciliation-completion
 merge_target_branch: issue-119-lifecycle-reconciliation-completion
 branch_strategy: Planning artifacts were generated on issue-119-lifecycle-reconciliation-completion; completed changes must merge back into issue-119-lifecycle-reconciliation-completion. Execution worktrees are allocated per computed lane from lanes.json.
