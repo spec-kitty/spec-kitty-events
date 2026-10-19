@@ -3,10 +3,49 @@
   "decision_id": "decision-001",
   "step_id": "plan",
   "significance_score": {
-    "score": 7,
-    "factors": {
-      "scope": 3,
-      "risk": 4
+    "dimensions": [
+      {
+        "name": "architectural_system_impact",
+        "score": 2,
+        "description": ""
+      },
+      {
+        "name": "cross_team_blast_radius",
+        "score": 3,
+        "description": ""
+      },
+      {
+        "name": "data_security_compliance_impact",
+        "score": 3,
+        "description": ""
+      },
+      {
+        "name": "financial_commercial_impact",
+        "score": 1,
+        "description": ""
+      },
+      {
+        "name": "operational_reliability_impact",
+        "score": 3,
+        "description": ""
+      },
+      {
+        "name": "user_customer_impact",
+        "score": 3,
+        "description": ""
+      }
+    ],
+    "composite": 15,
+    "band": {
+      "name": "high",
+      "min_score": 12,
+      "max_score": 18
+    },
+    "hard_trigger_classes": [],
+    "effective_band": {
+      "name": "high",
+      "min_score": 12,
+      "max_score": 18
     }
   },
   "effective_band": "high",
