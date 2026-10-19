@@ -34,6 +34,17 @@
       "tool_key": "claude"
     },
     {
+      "file_hash": "00adcaf20a1c0887d99344d1c310684db1be095d99e647a8524e3a7eb3e8d48e",
+      "format": "claude-agent",
+      "output_path": ".claude/agents/curator-carla.md",
+      "profile_urn": "agent_profile:curator-carla",
+      "projection_version": 1,
+      "source_hash": "e12b8469266434d833978274b10b1b0bea34f96282553a5d3fd9c6145e363088",
+      "source_layer": "built-in",
+      "source_path": "${SPEC_KITTY_PACKS_ROOT}/built-in/agent_profiles/curator-carla.agent.yaml",
+      "tool_key": "claude"
+    },
+    {
       "file_hash": "92294ad835fc1fb021dac94190edd5d078c3cbd5959e34d4d173f7ab518dee01",
       "format": "claude-agent",
       "output_path": ".claude/agents/debugger-debbie.md",
@@ -251,6 +262,17 @@
       "source_hash": "280238243c6ff359aae39d06a99db9f5775c5c1fff91bffbfa014329de1c9620",
       "source_layer": "built-in",
       "source_path": "${SPEC_KITTY_PACKS_ROOT}/built-in/agent_profiles/comms-cleo.agent.yaml",
+      "tool_key": "codex"
+    },
+    {
+      "file_hash": "54131ebb2d89bb19671a3081a735477d0be99a7e6d5c7e36a327bbdc77ee832a",
+      "format": "codex-agent",
+      "output_path": ".codex/agents/curator-carla.toml",
+      "profile_urn": "agent_profile:curator-carla",
+      "projection_version": 1,
+      "source_hash": "e12b8469266434d833978274b10b1b0bea34f96282553a5d3fd9c6145e363088",
+      "source_layer": "built-in",
+      "source_path": "${SPEC_KITTY_PACKS_ROOT}/built-in/agent_profiles/curator-carla.agent.yaml",
       "tool_key": "codex"
     },
     {

@@ -43,7 +43,7 @@ and `node ../doc-kitty/src/scripts/check-links.mjs docs`.
 
 
 <!-- spec-kitty:orientation -->
-**Spec Kitty v4.0.0rc7** — project: spec-kitty-events (healthy)
+**Spec Kitty v4.0.0rc8** — project: spec-kitty-events (healthy)
 
 Two usage patterns:
 - **Full mission** (spec → plan → tasks → implement → review → merge):
