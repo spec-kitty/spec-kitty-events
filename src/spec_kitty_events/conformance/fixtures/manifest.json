@@ -4119,6 +4119,376 @@
       "event_type": "DecisionTimeoutExpired",
       "notes": "Provenance: inferred must not carry override_reason",
       "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-mission-created-missing-mission-slug-invalid",
+      "path": "lifecycle/invalid/mission_created_missing_mission_slug.json",
+      "expected_result": "invalid",
+      "event_type": "MissionCreated",
+      "notes": "MissionCreated payload without required field mission_slug; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-mission-created-extra-key-invalid",
+      "path": "lifecycle/invalid/mission_created_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "MissionCreated",
+      "notes": "MissionCreated payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-mission-started-missing-mission-id-invalid",
+      "path": "lifecycle/invalid/mission_started_missing_mission_id.json",
+      "expected_result": "invalid",
+      "event_type": "MissionStarted",
+      "notes": "MissionStarted payload without required field mission_id; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-mission-started-extra-key-invalid",
+      "path": "lifecycle/invalid/mission_started_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "MissionStarted",
+      "notes": "MissionStarted payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-mission-closed-missing-mission-slug-invalid",
+      "path": "lifecycle/invalid/mission_closed_missing_mission_slug.json",
+      "expected_result": "invalid",
+      "event_type": "MissionClosed",
+      "notes": "MissionClosed payload without required field mission_slug; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-mission-closed-extra-key-invalid",
+      "path": "lifecycle/invalid/mission_closed_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "MissionClosed",
+      "notes": "MissionClosed payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-mission-completed-missing-mission-id-invalid",
+      "path": "lifecycle/invalid/mission_completed_missing_mission_id.json",
+      "expected_result": "invalid",
+      "event_type": "MissionCompleted",
+      "notes": "MissionCompleted payload without required field mission_id; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-mission-completed-extra-key-invalid",
+      "path": "lifecycle/invalid/mission_completed_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "MissionCompleted",
+      "notes": "MissionCompleted payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-mission-cancelled-missing-mission-id-invalid",
+      "path": "lifecycle/invalid/mission_cancelled_missing_mission_id.json",
+      "expected_result": "invalid",
+      "event_type": "MissionCancelled",
+      "notes": "MissionCancelled payload without required field mission_id; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-mission-cancelled-extra-key-invalid",
+      "path": "lifecycle/invalid/mission_cancelled_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "MissionCancelled",
+      "notes": "MissionCancelled payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-mission-origin-bound-missing-mission-slug-invalid",
+      "path": "lifecycle/invalid/mission_origin_bound_missing_mission_slug.json",
+      "expected_result": "invalid",
+      "event_type": "MissionOriginBound",
+      "notes": "MissionOriginBound payload without required field mission_slug; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-mission-origin-bound-extra-key-invalid",
+      "path": "lifecycle/invalid/mission_origin_bound_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "MissionOriginBound",
+      "notes": "MissionOriginBound payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-phase-entered-missing-phase-name-invalid",
+      "path": "lifecycle/invalid/phase_entered_missing_phase_name.json",
+      "expected_result": "invalid",
+      "event_type": "PhaseEntered",
+      "notes": "PhaseEntered payload without required field phase_name; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-phase-entered-extra-key-invalid",
+      "path": "lifecycle/invalid/phase_entered_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "PhaseEntered",
+      "notes": "PhaseEntered payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-review-rollback-missing-target-phase-invalid",
+      "path": "lifecycle/invalid/review_rollback_missing_target_phase.json",
+      "expected_result": "invalid",
+      "event_type": "ReviewRollback",
+      "notes": "ReviewRollback payload without required field target_phase; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-review-rollback-extra-key-invalid",
+      "path": "lifecycle/invalid/review_rollback_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "ReviewRollback",
+      "notes": "ReviewRollback payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-specify-started-missing-mission-slug-invalid",
+      "path": "lifecycle/invalid/specify_started_missing_mission_slug.json",
+      "expected_result": "invalid",
+      "event_type": "SpecifyStarted",
+      "notes": "SpecifyStarted payload without required field mission_slug; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-specify-started-extra-key-invalid",
+      "path": "lifecycle/invalid/specify_started_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "SpecifyStarted",
+      "notes": "SpecifyStarted payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-specify-completed-missing-mission-slug-invalid",
+      "path": "lifecycle/invalid/specify_completed_missing_mission_slug.json",
+      "expected_result": "invalid",
+      "event_type": "SpecifyCompleted",
+      "notes": "SpecifyCompleted payload without required field mission_slug; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-specify-completed-extra-key-invalid",
+      "path": "lifecycle/invalid/specify_completed_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "SpecifyCompleted",
+      "notes": "SpecifyCompleted payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-plan-started-missing-mission-slug-invalid",
+      "path": "lifecycle/invalid/plan_started_missing_mission_slug.json",
+      "expected_result": "invalid",
+      "event_type": "PlanStarted",
+      "notes": "PlanStarted payload without required field mission_slug; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-plan-started-extra-key-invalid",
+      "path": "lifecycle/invalid/plan_started_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "PlanStarted",
+      "notes": "PlanStarted payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-plan-completed-missing-mission-slug-invalid",
+      "path": "lifecycle/invalid/plan_completed_missing_mission_slug.json",
+      "expected_result": "invalid",
+      "event_type": "PlanCompleted",
+      "notes": "PlanCompleted payload without required field mission_slug; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-plan-completed-extra-key-invalid",
+      "path": "lifecycle/invalid/plan_completed_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "PlanCompleted",
+      "notes": "PlanCompleted payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-tasks-started-missing-mission-slug-invalid",
+      "path": "lifecycle/invalid/tasks_started_missing_mission_slug.json",
+      "expected_result": "invalid",
+      "event_type": "TasksStarted",
+      "notes": "TasksStarted payload without required field mission_slug; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-tasks-started-extra-key-invalid",
+      "path": "lifecycle/invalid/tasks_started_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "TasksStarted",
+      "notes": "TasksStarted payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-tasks-completed-missing-mission-slug-invalid",
+      "path": "lifecycle/invalid/tasks_completed_missing_mission_slug.json",
+      "expected_result": "invalid",
+      "event_type": "TasksCompleted",
+      "notes": "TasksCompleted payload without required field mission_slug; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-tasks-completed-extra-key-invalid",
+      "path": "lifecycle/invalid/tasks_completed_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "TasksCompleted",
+      "notes": "TasksCompleted payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-wp-assigned-missing-wp-id-invalid",
+      "path": "lifecycle/invalid/wp_assigned_missing_wp_id.json",
+      "expected_result": "invalid",
+      "event_type": "WPAssigned",
+      "notes": "WPAssigned payload without required field wp_id; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-wp-assigned-extra-key-invalid",
+      "path": "lifecycle/invalid/wp_assigned_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "WPAssigned",
+      "notes": "WPAssigned payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-history-added-missing-wp-id-invalid",
+      "path": "lifecycle/invalid/history_added_missing_wp_id.json",
+      "expected_result": "invalid",
+      "event_type": "HistoryAdded",
+      "notes": "HistoryAdded payload without required field wp_id; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-history-added-extra-key-invalid",
+      "path": "lifecycle/invalid/history_added_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "HistoryAdded",
+      "notes": "HistoryAdded payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-error-logged-missing-error-message-invalid",
+      "path": "lifecycle/invalid/error_logged_missing_error_message.json",
+      "expected_result": "invalid",
+      "event_type": "ErrorLogged",
+      "notes": "ErrorLogged payload without required field error_message; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-error-logged-extra-key-invalid",
+      "path": "lifecycle/invalid/error_logged_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "ErrorLogged",
+      "notes": "ErrorLogged payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-dependency-resolved-missing-wp-id-invalid",
+      "path": "lifecycle/invalid/dependency_resolved_missing_wp_id.json",
+      "expected_result": "invalid",
+      "event_type": "DependencyResolved",
+      "notes": "DependencyResolved payload without required field wp_id; refused by the payload model.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-dependency-resolved-extra-key-invalid",
+      "path": "lifecycle/invalid/dependency_resolved_extra_key.json",
+      "expected_result": "invalid",
+      "event_type": "DependencyResolved",
+      "notes": "DependencyResolved payload carrying an undeclared key; refused because the model forbids extra fields.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-wp-status-changed-genesis-to-planned-valid",
+      "path": "lifecycle/valid/wp_status_changed_genesis_to_planned.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Genesis seed: genesis -> planned, the only legal non-cancel edge out of genesis.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-wp-status-changed-genesis-to-canceled-valid",
+      "path": "lifecycle/valid/wp_status_changed_genesis_to_canceled.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "genesis -> canceled, the other legal edge out of genesis.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-wp-status-changed-for-review-to-in-review-valid",
+      "path": "lifecycle/valid/wp_status_changed_for_review_to_in_review.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Review claim: for_review -> in_review.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-wp-status-changed-in-review-to-approved-valid",
+      "path": "lifecycle/valid/wp_status_changed_in_review_to_approved.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Approval: in_review -> approved with the evidence bundle approved requires.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-wp-status-changed-in-progress-to-blocked-valid",
+      "path": "lifecycle/valid/wp_status_changed_in_progress_to_blocked.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Any non-terminal lane may move to blocked; in_progress -> blocked.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-wp-status-changed-in-progress-to-canceled-valid",
+      "path": "lifecycle/valid/wp_status_changed_in_progress_to_canceled.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Any lane may move to canceled; in_progress -> canceled.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-wp-status-changed-summary-rework-valid",
+      "path": "lifecycle/valid/wp_status_changed_summary_rework.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Rework rewind in_review -> in_progress (review-ref gated) carrying a one-line summary (#62).",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-wp-status-changed-summary-done-valid",
+      "path": "lifecycle/valid/wp_status_changed_summary_done.json",
+      "expected_result": "valid",
+      "event_type": "WPStatusChanged",
+      "notes": "Terminal transition to done carrying a one-line summary and DoneEvidence (#62).",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-replay-mission-lifecycle",
+      "path": "lifecycle/replay/mission_lifecycle.jsonl",
+      "expected_result": "valid",
+      "event_type": "MixedLifecycle",
+      "fixture_type": "replay_stream",
+      "notes": "One mission end to end: created, started, phases, WP01 lane walk, review rollback, WP02 seed, completed; includes one duplicated event_id (PhaseEntered) and one unknown event type the reducer ignores.",
+      "min_version": "11.1.0"
+    },
+    {
+      "id": "lifecycle-replay-mission-lifecycle-output",
+      "path": "lifecycle/replay/mission_lifecycle_output.json",
+      "expected_result": "valid",
+      "event_type": "ReducedMissionState",
+      "fixture_type": "reducer_output",
+      "notes": "Golden reduce_lifecycle_events output for mission_lifecycle.jsonl.",
+      "min_version": "11.1.0"
     }
   ],
   "classes": {

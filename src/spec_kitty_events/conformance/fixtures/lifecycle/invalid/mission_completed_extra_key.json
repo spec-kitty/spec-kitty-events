@@ -1,0 +1,7 @@
+{
+  "mission_id": "mission-001",
+  "mission_type": "software-dev",
+  "final_phase": "done",
+  "actor": "test-agent",
+  "unexpected_extra_key": "x"
+}

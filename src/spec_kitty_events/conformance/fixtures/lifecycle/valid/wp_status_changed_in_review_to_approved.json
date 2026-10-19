@@ -1,0 +1,27 @@
+{
+  "wp_id": "WP01",
+  "from_lane": "in_review",
+  "to_lane": "approved",
+  "actor": "test-agent",
+  "force": false,
+  "reason": null,
+  "execution_mode": "worktree",
+  "review_ref": null,
+  "evidence": {
+    "repos": [
+      {
+        "repo": "demo-repo",
+        "branch": "mission/mission-001",
+        "commit": "cccccccccccccccccccccccccccccccccccccccc",
+        "files_touched": null
+      }
+    ],
+    "verification": [],
+    "review": {
+      "reviewer": "robert",
+      "verdict": "approved",
+      "reference": null
+    }
+  },
+  "mission_slug": "mission-001"
+}

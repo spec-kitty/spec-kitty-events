@@ -1,0 +1,13 @@
+{
+  "wp_id": "WP01",
+  "from_lane": "in_review",
+  "to_lane": "in_progress",
+  "actor": "test-agent",
+  "force": false,
+  "reason": "Review found two issues.",
+  "execution_mode": "worktree",
+  "review_ref": "review-cycle://mission-001/WP01/2026-10-19a",
+  "evidence": null,
+  "mission_slug": "mission-001",
+  "summary": "Back to implementation: two review findings addressed in the next pass"
+}
