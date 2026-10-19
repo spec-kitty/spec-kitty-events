@@ -14,7 +14,9 @@ import spec_kitty_events
 from spec_kitty_events import (
     DECISION_SIGNIFICANCE_EVENT_TYPES,
     DECISION_TIMEOUT_EXPIRED,
+    HUMAN_IN_CHARGE_ACTOR_ID,
     SIGNIFICANCE_EVALUATED,
+    UNKNOWN_ACTOR_ID,
     DecisionTimeoutExpiredPayload,
     RaciRoleBinding,
     ResolvedRaciSnapshot,
@@ -224,3 +226,29 @@ def test_runtime_actor_identity_schema_unchanged() -> None:
     live = RuntimeActorIdentity.model_json_schema()
     for key in ("properties", "required", "additionalProperties"):
         assert live.get(key) == committed.get(key)
+
+
+def test_raci_actor_id_sentinel_values() -> None:
+    assert HUMAN_IN_CHARGE_ACTOR_ID == "human-in-charge"
+    assert UNKNOWN_ACTOR_ID == "UNKNOWN"
+
+
+def test_raci_actor_id_sentinels_exported() -> None:
+    from spec_kitty_events import decision_significance
+
+    for name in ("HUMAN_IN_CHARGE_ACTOR_ID", "UNKNOWN_ACTOR_ID"):
+        assert name in spec_kitty_events.__all__
+        assert name in decision_significance.__all__
+
+
+@pytest.mark.parametrize(
+    ("actor_type", "actor_id"),
+    [
+        ("human", HUMAN_IN_CHARGE_ACTOR_ID),
+        ("llm", UNKNOWN_ACTOR_ID),
+        ("service", UNKNOWN_ACTOR_ID),
+    ],
+)
+def test_raci_binding_accepts_sentinels(actor_type: str, actor_id: str) -> None:
+    binding = RaciRoleBinding.model_validate({"actor_type": actor_type, "actor_id": actor_id})
+    assert binding.actor_id == actor_id
