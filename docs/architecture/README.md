@@ -2,7 +2,7 @@
 title: Architecture
 description: How the spec-kitty-events contract is shaped — the envelope, the total order and reduction pipeline, and the journal-versus-volatile durability split.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-19
 type: Architecture
 kind: Hub
 ---
@@ -28,3 +28,5 @@ these documents support live in the [decision records](/adr/).
   1.0 as the event-log envelope, supporting [ADR-0001](/adr/0001-cloudevents-envelope/).
 - [Producer row schemas and the total order](/architecture/producer-row-schemas/) — the
   per-row-kind data schemas, the producer registry and the total-order comparator.
+- [Lifecycle reconciliation](/architecture/lifecycle-reconciliation/) — how the lifecycle,
+  project_lifecycle, mission_audit and mission_next modules line up with core's use.

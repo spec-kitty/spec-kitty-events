@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `11.0.0`
+**Current package version**: `11.1.0`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,30 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `11.1.0` — decision-significance events and lifecycle conformance breadth (minor)
+
+`11.1.0` is additive. It adds two event types and fixtures; no existing accept boundary
+moves, following the `6.1.0` new-event-type precedent. The envelope `schema_version` stays
+`3.0.0`. `STRICT_EVENT_TYPES`, `MISSION_NEXT_EVENT_TYPES` and the support matrix are unchanged.
+
+### What changed
+
+- New event types `SignificanceEvaluated` and `DecisionTimeoutExpired`, with the models
+  `RaciRoleBinding` and `ResolvedRaciSnapshot` (module `decision_significance`).
+- New fixture categories `decision_significance` and `lifecycle` (valid, invalid, replay),
+  with `min_version` `11.1.0` on the new decision fixtures.
+- Test and fixture coverage: lifecycle invalid fixtures, a lifecycle replay golden, and
+  `WPStatusChanged` lane and `summary` breadth (#62).
+
+### Deliberate difference from the producer row and core (R2)
+
+The package requires a non-empty `actor_id` on `RaciRoleBinding`. Core's `RACIRoleBinding`
+and the `run.significance.evaluated.v1` producer row both allow a null or absent `actor_id`.
+A payload that core emits with a null `actor_id` is refused by this package. The producer row
+is unchanged. A core follow-up must make core always set `actor_id` before adopting these models.
+
+A reducer that meets an unknown event type counts it in `event_count` and changes no state.
 
 ## `11.0.0` — decision reopen, core-shaped glossary contracts, optional envelope clock (breaking)
 
