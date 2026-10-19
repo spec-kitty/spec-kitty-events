@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail if this checkout reuses a package version from main while changing ``src/``.
+"""Fail if this checkout changes ``src/`` while reusing an already-*released* version.
 
 PROGRAM.md §2: "a shared package's version number is spent once — an
 in-place amendment to an already-adopted version is forbidden ... bump the
@@ -9,16 +9,21 @@ changed ``from_zeitgeist_attrs``'s decode behaviour under ``src/`` without
 bumping the version — this script is the follow-up CI check issue #170 asked
 for (issue #175).
 
-Compares the working tree against ``origin/main`` (or ``main`` if there is no
-``origin`` remote): if anything under ``src/`` differs, the proposed package
-version must not have appeared anywhere in that ref's ``pyproject.toml``
-history. Docs-only, test-only, or config-only changes are unaffected — the
-version is free to stay put until something under ``src/`` actually changes.
+Operator ruling 2026-10-19: a version is no longer spent the moment it appears
+at a ``main`` SHA. External and internal consumers now pin *release tags*, not
+``main`` SHAs, so an unreleased version sitting on ``main`` is still open to
+change — it freezes only once it is released, i.e. once a ``v<version>`` git
+tag exists. The policy therefore moved from "declared on main" to
+"released as a tag": the old ``pyproject.toml`` main-declaration/merge-walk
+machinery (issue #175's spent-version set, extended for merge commits in
+issues #212/#213) is gone, because a version's presence in main history no
+longer settles whether it is frozen.
 
-This does walk commits that changed ``pyproject.toml``, but only to build the
-set of versions already declared on main. It does not judge those historical
-commits themselves, so ordinary commits that legitimately share one version
-do not become false positives (the noisy strategy rejected by issue #175).
+Compares the working tree against ``origin/main`` (or ``main`` if there is no
+``origin`` remote): if anything under ``src/`` differs AND the working-tree
+version has already been released as a ``v<version>`` tag, the amendment is
+rejected. Docs-only, test-only, or config-only changes are unaffected, and an
+unreleased version is free to change in place until it is tagged.
 """
 
 from __future__ import annotations
@@ -64,23 +69,10 @@ def _version_at(ref: str) -> str:
     return _version_from_text(_run("show", f"{ref}:pyproject.toml"), where=ref)
 
 
-def _declared_versions(ref: str) -> dict[str, str]:
-    """Map every package version declared in ``ref``'s history to one commit."""
-    versions: dict[str, str] = {}
-    # --full-history, not --follow: --follow prunes merge commits, and a merge
-    # resolution can itself declare a version (or revert a side branch's bump)
-    # that no non-merge commit ever carries — the "re-spend as X.Y.Z" shapes
-    # this repo's history is full of.
-    commits = _run("log", "--full-history", "--format=%H", ref, "--", "pyproject.toml").splitlines()
-    for commit in commits:
-        try:
-            version = _version_at(commit)
-        except (RuntimeError, subprocess.CalledProcessError):
-            # Pre-package history may contain pyproject.toml without a
-            # project version, or a commit where the file is absent.
-            continue
-        versions.setdefault(version, commit)
-    return versions
+def _released_versions() -> set[str]:
+    """Versions already released, derived from the ``v<version>`` git tags."""
+    tags = _run("tag", "--list", "v*").splitlines()
+    return {tag[1:] for tag in tags if tag.startswith("v")}
 
 
 def _current_version() -> str:
@@ -104,24 +96,21 @@ def check() -> str | None:
     if _run("rev-parse", "--is-shallow-repository") == "true":
         return (
             "src/ changed, but this is a shallow checkout, so the guard cannot "
-            f"prove that the proposed version is unused across {base_ref}'s full history — "
-            "fetch the full history before validating the package version"
+            "prove whether the proposed version is already released (its release "
+            "tags are not present) — fetch the full history and tags before "
+            "validating the package version"
         )
 
     head_version = _current_version()
-    base_version = _version_at(base_sha)
-    declared_versions = _declared_versions(base_sha)
-    declared_versions.setdefault(base_version, base_sha)
-    prior_commit = declared_versions.get(head_version)
-    if prior_commit is None:
-        return None  # a new version was declared
+    if head_version not in _released_versions():
+        return None  # this version is unreleased, so amending it in place is fine
 
     return (
         f"src/ changed ({len(changed)} file(s)) but pyproject.toml's version "
-        f"({head_version!r}) was already declared on {base_ref} at "
-        f"{prior_commit[:8]} ({base_ref}'s tip {base_sha[:8]} declares "
-        f"{base_version!r}) — this reuses an already-spent version. "
-        "PROGRAM.md §2: declare a new version. Changed files:\n  " + "\n  ".join(changed)
+        f"({head_version!r}) is already released — tag v{head_version} exists. "
+        "A released version is frozen; declare a new version. "
+        "PROGRAM.md §2: consumers pin release tags, not main SHAs. Changed files:\n  "
+        + "\n  ".join(changed)
     )
 
 
