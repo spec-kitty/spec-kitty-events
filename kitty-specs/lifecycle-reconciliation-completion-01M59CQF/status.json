@@ -64,6 +64,9 @@
       "last_event_id": "01M59ETH1HAMZ4BCNM2Y0R6GDG",
       "last_transition_at": "2026-10-19T06:50:43.633347+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP02 approved: 36 invalid fixtures each single-cause (verified); replay golden independently consistent with reduce_lifecycle_events (dedup, initial_phase, rollback, unknown counted in event_count); all 10 lanes covered; #62 rework/rejection/done summary tests; additions-only; package-data + wheel test green; out-of-map pyproject/manifest edits are necessary registrations."
+      ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-events/.worktrees/lifecycle-reconciliation-completion-01M59CQF-coord/kitty-specs/lifecycle-reconciliation-completion-01M59CQF/tasks/WP02-lifecycle-conformance-breadth/review-cycle-1.md",
