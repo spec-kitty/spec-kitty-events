@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.2.1] - 2026-10-19
+
+Patch release. No model or schema changes its accept or reject boundary, and the envelope
+`schema_version` is unchanged.
+
 ### Changed
 
 - `strict._REQUIRED_SCHEMA_VERSION` is bound to `lifecycle.SCHEMA_VERSION`, one source for

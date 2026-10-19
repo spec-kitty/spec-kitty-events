@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `11.2.0`
+**Current package version**: `11.2.1`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,16 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `11.2.1` — one schema-version source, gate and build invalid fixtures (patch)
+
+`11.2.1` changes no accept or reject boundary. `strict._REQUIRED_SCHEMA_VERSION` now reads
+`lifecycle.SCHEMA_VERSION` (same value), and `GatePassed`, `BuildRegistered` and
+`BuildHeartbeat` gain invalid conformance fixtures that pin behaviour the models already had.
+
+### Adopting 11.2.1
+
+- Nothing to change. Widen the pin to `spec-kitty-events>=11.2.1,<12` to run the new fixtures.
 
 ## `11.2.0` — decision-timeout producer row and RACI actor-id sentinels (minor)
 

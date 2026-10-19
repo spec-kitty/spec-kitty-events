@@ -22,7 +22,7 @@ Each page sets `sidebar.order` to minus `YYYYMMDD` plus a same-day sequence
 digit (`-202610132` is the second page of 2026-10-13), so the sidebar lists the
 newest first without renumbering older pages.
 
-- [2026-10-19 — Unreleased: one schema-version source, gate and build invalid fixtures](./2026-10-19-unreleased-schema-version-source-fixture-breadth.md)
+- [2026-10-19 — 11.2.1: one schema-version source, gate and build invalid fixtures](./2026-10-19-11-2-1-schema-version-source-fixture-breadth.md)
 - [2026-10-19 — 11.2.0 release overview: everything new since v11.0.0, fully additive](./2026-10-19-11-2-0-release-overview.md)
 - [2026-10-19 — 11.2.0: producer row for the decision timeout](./2026-10-19-11-2-0-decision-timeout-producer-row.md)
 - [2026-10-19 — 11.2.0: RACI actor-id sentinels human-in-charge and UNKNOWN](./2026-10-19-11-2-0-raci-actor-id-sentinels.md)

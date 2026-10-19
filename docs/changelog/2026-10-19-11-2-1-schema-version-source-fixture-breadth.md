@@ -1,5 +1,5 @@
 ---
-title: "Unreleased: one schema-version source, gate and build invalid fixtures"
+title: "11.2.1: one schema-version source, gate and build invalid fixtures"
 description: "Strict mode reads lifecycle.SCHEMA_VERSION instead of its own copy, and GatePassed, BuildRegistered and BuildHeartbeat gain invalid conformance fixtures."
 doc_status: active
 updated: 2026-10-19
@@ -10,9 +10,9 @@ sidebar:
 tags: [conformance, strict, fixtures]
 ---
 
-# 2026-10-19 — Unreleased: one schema-version source, gate and build invalid fixtures
+# 2026-10-19 — 11.2.1: one schema-version source, gate and build invalid fixtures
 
-**Package version unchanged (`11.2.0`)** · spec-kitty-events#130, #132 · envelope
+**Package `11.2.0` → `11.2.1` (patch)** · spec-kitty-events#130, #132 · envelope
 `schema_version` unchanged (`3.0.0`). No model or schema changes its accept or reject boundary.
 
 ## What changed
