@@ -56,5 +56,5 @@
       }
     }
   },
-  "notes": "data member run_id is required."
+  "notes": "data member timeout_configured_seconds is required."
 }
