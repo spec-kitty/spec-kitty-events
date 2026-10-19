@@ -1982,6 +1982,30 @@
       "min_version": "5.2.0"
     },
     {
+      "id": "gate-passed-invalid-conclusion",
+      "path": "events/invalid/gate_passed_invalid_conclusion.json",
+      "expected_result": "invalid",
+      "event_type": "GatePassed",
+      "notes": "GatePassedPayload with conclusion='failure' (invalid for GatePassed)",
+      "min_version": "2.0.0"
+    },
+    {
+      "id": "build-registered-invalid-empty-repo-slug",
+      "path": "events/invalid/build_registered_invalid_empty_repo_slug.json",
+      "expected_result": "invalid",
+      "event_type": "BuildRegistered",
+      "notes": "BuildRegisteredPayload with empty repo_slug (min_length=1)",
+      "min_version": "5.2.0"
+    },
+    {
+      "id": "build-heartbeat-invalid-negative-behind",
+      "path": "events/invalid/build_heartbeat_invalid_negative_behind.json",
+      "expected_result": "invalid",
+      "event_type": "BuildHeartbeat",
+      "notes": "BuildHeartbeatPayload with behind_remote=-1 (ge=0)",
+      "min_version": "5.2.0"
+    },
+    {
       "id": "history-added-valid",
       "path": "events/valid/history_added.json",
       "expected_result": "valid",
