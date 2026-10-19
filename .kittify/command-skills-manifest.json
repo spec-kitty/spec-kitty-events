@@ -58,7 +58,7 @@
       "agents": [
         "codex"
       ],
-      "content_hash": "b171c4d34eb68d92ec53a2b2bc5b29a3e774e5853d9536fee6b6c1827d00b02f",
+      "content_hash": "ec5894e7477fc3553ff56750abca013070de4e55bc70cc0d2ad18099743792df",
       "installed_at": "2026-10-13T16:54:54.649664+00:00",
       "path": ".agents/skills/spec-kitty.research/SKILL.md",
       "spec_kitty_version": "4.0.0rc7"
@@ -103,7 +103,7 @@
       "agents": [
         "codex"
       ],
-      "content_hash": "f9ea19370e4c9c2ac6a1b4b5d1671c077aac306c5064e24d06ec4b3ad6d551b4",
+      "content_hash": "378818fed5e9d25b97c326aa2c157e09e14ee4f641064cc8047f025d01e630bf",
       "installed_at": "2026-10-13T16:54:54.649664+00:00",
       "path": ".agents/skills/spec-kitty.tasks-outline/SKILL.md",
       "spec_kitty_version": "4.0.0rc7"
