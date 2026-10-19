@@ -75,6 +75,22 @@ present tense that the current release was `5.0.0` — a documented requirement
 that nothing in CI checked. State the version in that one place and reference it
 elsewhere; do not restate it in prose.
 
+## When a package version is frozen (release tags, not mainline SHAs)
+
+A package version is **spent the moment it is released — tagged `v<version>`** — not when
+it first lands on `main`. An unreleased version sitting on `main` is still open: a later
+change under `src/` may keep the same version until the release is cut. Once `v<version>`
+is tagged, that version is frozen, and any further `src/` change must declare a new version.
+
+Consumers pin **release tags** (external consumers) or the tag-resolved version (internal
+consumers) — they do not pin mainline SHAs. This is the operator ruling of 2026-10-19 and
+supersedes the earlier main-SHA-pin reading of PROGRAM.md §2; any consumer still pinning a
+mainline SHA must move to release tags.
+
+`scripts/check_version_not_amended.py` enforces exactly this: a `src/` change fails the
+guard only when a `v<version>` tag already exists for the working-tree version. It walks
+`git tag --list "v*"`, so CI must fetch tags (and full history) for the check to be sound.
+
 ## Local-CLI compatibility vs TeamSpace ingress validity
 
 Two distinct validity domains. A row acceptable in one is not necessarily
@@ -94,6 +110,7 @@ have been canonicalized.
 
 ## Forbidden patterns
 
+- Changing `src/` under an already-**released** (tagged `v<version>`) version without declaring a new version.
 - Bumping any version without updating `CHANGELOG.md`.
 - Updating Pydantic models without regenerating `*.schema.json`.
 - Documenting a breaking change as additive.

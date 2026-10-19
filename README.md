@@ -66,6 +66,10 @@ authoritative version-and-compatibility reference.
 
 ## Installation
 
+Pin a **released version** (a `v<version>` tag), not a mainline commit — a package version
+is frozen only when it is tagged, so `main` may still move an unreleased version
+([versioning policy](contracts/versioning-and-compatibility.md)).
+
 From PyPI (pin an explicit version — see [`COMPATIBILITY.md`](COMPATIBILITY.md) for the
 current release and what a major bump means):
 
