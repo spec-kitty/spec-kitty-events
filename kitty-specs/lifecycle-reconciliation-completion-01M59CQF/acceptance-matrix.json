@@ -1,0 +1,149 @@
+{
+  "mission_slug": "lifecycle-reconciliation-completion-01M59CQF",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "tests/unit/test_decision_significance.py RaciRoleBinding; schemas/raci_role_binding.schema.json",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T07:05:07.316877+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "schemas/resolved_raci_snapshot.schema.json; tests/unit/test_decision_significance.py",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T07:05:11.453873+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "schemas/significance_evaluated_payload.schema.json; conformance fixtures decision_significance/valid/significance_evaluated*.json",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T07:05:15.752042+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "schemas/decision_timeout_expired_payload.schema.json; fixtures decision_timeout_expired*.json incl low_band/timeout_zero invalid",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T07:05:20.131717+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "conformance gate 795 passed; invalid fixtures significance_evaluated_actor_id_null/_empty, decision_timeout_expired_*actor_id_null/_empty",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T07:05:24.610266+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "no diff vs target in runtime actor identity schema/fixtures (git diff --name-only empty)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T07:05:29.244341+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "tests/test_decision_significance_producer_row.py passes",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T07:05:33.441293+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "lifecycle/invalid/*_extra_key.json and *_missing_*.json for all FR-008 types; conformance 795 passed",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T07:05:37.716700+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "lifecycle/replay/mission_lifecycle.jsonl + mission_lifecycle_output.json compared in conformance gate",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T07:05:42.213423+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "wp_status_changed_summary_rework.json, wp_status_changed_summary_done.json; tests/unit/test_status.py",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T07:05:46.618665+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "wp_status_changed_genesis_to_planned/_canceled, for_review_to_in_review, in_review_to_approved, in_progress_to_blocked fixtures",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T07:05:51.041476+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "docs/architecture/lifecycle-reconciliation.md (mission_audit: no core consumer, unchanged)",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T07:05:55.564451+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "pyproject.toml version 11.1.0; CHANGELOG.md and COMPATIBILITY.md entries",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T07:05:59.845643+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "manual_review",
+      "evidence": "no '>=10.5.1,<11' claim in maintained docs except the correction note in lifecycle-reconciliation.md",
+      "pass_fail": "pass",
+      "verified_by": "claude",
+      "verified_at": "2026-10-19T07:06:04.288775+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}

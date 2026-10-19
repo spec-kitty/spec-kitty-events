@@ -1,0 +1,72 @@
+{
+  "event_count": 31,
+  "last_event_id": "01M59FSAPCTS8FEJ1Z2VS73M16",
+  "materialized_at": "2026-10-19T07:07:32.940367+00:00",
+  "mission_number": "",
+  "mission_slug": "lifecycle-reconciliation-completion-01M59CQF",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 3,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M59FS7VS4E8X8HATXGWJADR4",
+      "last_transition_at": "2026-10-19T07:07:30.041326+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/.worktrees/lifecycle-reconciliation-completion-01M59CQF-coord/kitty-specs/lifecycle-reconciliation-completion-01M59CQF/tasks/WP01-raci-decision-events/review-cycle-2.md",
+        "reference": "review-cycle://lifecycle-reconciliation-completion-01M59CQF/WP01-raci-decision-events/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 12186,
+      "shell_pid_created_at": "1792391901.82"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M59FS99W49JQDZT0C60C9C32",
+      "last_transition_at": "2026-10-19T07:07:31.516814+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/.worktrees/lifecycle-reconciliation-completion-01M59CQF-coord/kitty-specs/lifecycle-reconciliation-completion-01M59CQF/tasks/WP02-lifecycle-conformance-breadth/review-cycle-1.md",
+        "reference": "review-cycle://lifecycle-reconciliation-completion-01M59CQF/WP02-lifecycle-conformance-breadth/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 15711,
+      "shell_pid_created_at": "1792392200.1"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "done",
+      "last_event_id": "01M59FSAPCTS8FEJ1Z2VS73M16",
+      "last_transition_at": "2026-10-19T07:07:32.940367+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/.worktrees/lifecycle-reconciliation-completion-01M59CQF-coord/kitty-specs/lifecycle-reconciliation-completion-01M59CQF/tasks/WP03-reconciliation-and-release/review-cycle-2.md",
+        "reference": "review-cycle://lifecycle-reconciliation-completion-01M59CQF/WP03-reconciliation-and-release/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "shell_pid": 27417,
+      "shell_pid_created_at": "1792393173.43"
+    }
+  }
+}

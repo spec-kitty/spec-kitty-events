@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "mission_slug": "lifecycle-reconciliation-completion-01M59CQF",
+  "mission_id": "01M59CQF9X79HKSNKW61WC5SWY",
+  "mission_branch": "kitty/mission-lifecycle-reconciliation-completion-01M59CQF",
+  "target_branch": "issue-119-lifecycle-reconciliation-completion",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "src/spec_kitty_events/__init__.py",
+        "src/spec_kitty_events/conformance/fixtures/decision_significance/**",
+        "src/spec_kitty_events/conformance/fixtures/manifest.json",
+        "src/spec_kitty_events/conformance/loader.py",
+        "src/spec_kitty_events/conformance/validators.py",
+        "src/spec_kitty_events/decision_significance.py",
+        "src/spec_kitty_events/schemas/decision_timeout_expired_payload.schema.json",
+        "src/spec_kitty_events/schemas/generate.py",
+        "src/spec_kitty_events/schemas/raci_role_binding.schema.json",
+        "src/spec_kitty_events/schemas/resolved_raci_snapshot.schema.json",
+        "src/spec_kitty_events/schemas/significance_evaluated_payload.schema.json",
+        "tests/test_decision_significance_producer_row.py",
+        "tests/unit/test_decision_significance.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "tracker-integration",
+        "workspace"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "src/spec_kitty_events/conformance/fixtures/lifecycle/**",
+        "src/spec_kitty_events/conformance/test_lifecycle_reducer_replay.py",
+        "tests/test_lifecycle_conformance.py",
+        "tests/unit/test_zeitgeist_attrs.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "CHANGELOG.md",
+        "COMPATIBILITY.md",
+        "docs/architecture/README.md",
+        "docs/architecture/lifecycle-reconciliation.md",
+        "docs/events/review-audit-decisions.md",
+        "pyproject.toml",
+        "uv.lock"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b"
+      ],
+      "parallel_group": 2
+    }
+  ],
+  "computed_at": "2026-10-19T06:24:04.739232+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "c6ecc1e4dd3becf62f2ae0ee48e3a59bba93d7e2"
+}

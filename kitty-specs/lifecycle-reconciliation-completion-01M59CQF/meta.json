@@ -1,0 +1,35 @@
+{
+  "accept_commit": "3517d4cb47cb4409cddb2e93a2cf024a7a610cf9",
+  "acceptance_history": [
+    {
+      "accept_commit": "3517d4cb47cb4409cddb2e93a2cf024a7a610cf9",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-10-19T07:06:25.799474+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "2907bd3bd71d78e4fcc1ce18bd6e75dfe041d927"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-10-19T07:06:25.799474+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "2907bd3bd71d78e4fcc1ce18bd6e75dfe041d927",
+  "baseline_merge_commit": "22397b684c7e06613a5e0c3c7b7198b6e67f5a25",
+  "created_at": "2026-10-19T06:14:06.441816+00:00",
+  "flattened": true,
+  "friendly_name": "Lifecycle reconciliation completion and RACI decision events",
+  "merged_at": "2026-10-19T07:07:40.042901+00:00",
+  "merged_commit": "e08f237889322ae0c4071929e551ee1b54e66a04",
+  "mid8": "01M59CQF",
+  "mission_id": "01M59CQF9X79HKSNKW61WC5SWY",
+  "mission_number": 22,
+  "mission_slug": "lifecycle-reconciliation-completion-01M59CQF",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "PR #124 shipped part of #119. This mission completes its acceptance criteria additively (reconciliation doc, invalid fixtures, reducer replay, WPStatusChanged lane breadth from #62) and, per operator rulings, mirrors SignificanceEvaluated and DecisionTimeoutExpired with a new RaciRoleBinding (actor_id required), leaving RuntimeActorIdentity unchanged. Minor release 11.1.0.",
+  "purpose_tldr": "Finish #119: reconcile the four lifecycle modules with core, fill fixture gaps, fold #62, and mirror core's SignificanceEvaluated/DecisionTimeoutExpired with a RACI actor model.",
+  "slug": "lifecycle-reconciliation-completion-01M59CQF",
+  "status_phase": "1",
+  "target_branch": "issue-119-lifecycle-reconciliation-completion",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-19T06:27:54.614562+00:00"
+}
