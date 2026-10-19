@@ -1,0 +1,54 @@
+{
+  "class": "producer_row_legacy_invalid",
+  "expected": "invalid",
+  "type": "ai.spec-kitty.run.decision.timeoutexpired.v1",
+  "base": "run.decision.timeoutexpired.v1",
+  "violation": "unknown_member",
+  "expected_error_path": "/payload",
+  "expected_keyword": "additionalProperties",
+  "input": {
+    "event_id": "01J0000000000000000000F032",
+    "row_version": 1,
+    "event_type": "DecisionTimeoutExpired",
+    "timestamp": "2026-01-01T00:00:00+00:00",
+    "payload": {
+      "run_id": "run-001",
+      "decision_id": "dec-001",
+      "step_id": "step-review",
+      "significance_score": {
+        "total": 11,
+        "band": "high"
+      },
+      "effective_band": "high",
+      "timeout_configured_seconds": 900,
+      "escalation_targets": [
+        {
+          "actor_type": "human",
+          "actor_id": "operator-1"
+        }
+      ],
+      "raci_snapshot": {
+        "step_id": "step-review",
+        "responsible": {
+          "actor_type": "llm",
+          "actor_id": "claude"
+        },
+        "accountable": {
+          "actor_type": "human",
+          "actor_id": "operator-1"
+        },
+        "consulted": [],
+        "informed": [],
+        "source": "inferred",
+        "inferred_rule": "default",
+        "override_reason": null
+      },
+      "actor": {
+        "actor_type": "service",
+        "actor_id": "runtime"
+      },
+      "zz_unknown": 1
+    }
+  },
+  "notes": "A persisted line with a member the schema does not know."
+}

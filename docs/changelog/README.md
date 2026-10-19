@@ -22,6 +22,7 @@ Each page sets `sidebar.order` to minus `YYYYMMDD` plus a same-day sequence
 digit (`-202610132` is the second page of 2026-10-13), so the sidebar lists the
 newest first without renumbering older pages.
 
+- [2026-10-19 — 11.2.0: producer row for the decision timeout](./2026-10-19-11-2-0-decision-timeout-producer-row.md)
 - [2026-10-19 — 11.1.0: decision-significance events and lifecycle conformance breadth](./2026-10-19-11-1-0-decision-significance-lifecycle-conformance.md)
 - [2026-10-18 — 11.0.0: decision reopen, core-shaped glossary contracts, optional envelope clock](./2026-10-18-11-0-0-decision-glossary-envelope-clock.md)
 - [2026-10-15 — Reducer: a departure from approved outranks a clock-ahead approval (10.5.1)](./2026-10-15-diary-clock-ahead-approval-departure.md)

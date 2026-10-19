@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.2.0] - 2026-10-19
+
+Minor release, additive. One new producer-row kind; no existing schema, fixture or model
+changes its accept or reject boundary, and the envelope `schema_version` is unchanged.
+
+### Added
+
+- **Producer row `run.decision.timeoutexpired.v1`** (type
+  `ai.spec-kitty.run.decision.timeoutexpired.v1`, legacy discriminator
+  `DecisionTimeoutExpired`). Its `data` schema mirrors core's `TimeoutExpiredPayload`, with
+  valid, invalid and legacy-invalid row fixtures and generated composed schemas. The
+  registry now holds 28 row kinds. The name drops the underscore because the registry's
+  name grammar is `[a-z0-9]` segments (as in `capturefailed`).
+  ([#134](https://github.com/spec-kitty/spec-kitty-events/issues/134))
+- **Cross-anchor test** `tests/test_decision_timeout_producer_row.py`: the row and the
+  `DecisionTimeoutExpired` payload schema must agree on property names, required members,
+  enums and bounds, and the two deliberate differences are pinned (row `actor_id` nullable,
+  operator ruling R2; row `raci_snapshot` an open object).
+
 ## [11.1.0] - 2026-10-19
 
 Minor release, additive. No existing schema, fixture or model changes its accept or reject

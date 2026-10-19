@@ -922,6 +922,33 @@
       ]
     },
     {
+      "type": "ai.spec-kitty.run.decision.timeoutexpired.v1",
+      "name": "run.decision.timeoutexpired.v1",
+      "dataschema": "https://schemas.example.invalid/spec-kitty/run.decision.timeoutexpired.v1",
+      "schema": "data/run.decision.timeoutexpired.v1.schema.json",
+      "scope": "mission",
+      "subject": "none",
+      "required_attributes": [],
+      "legacy": {
+        "shape": "journal_envelope",
+        "discriminator_value": "DecisionTimeoutExpired"
+      },
+      "lifted": [
+        {
+          "member": "event_id",
+          "attribute": "id"
+        },
+        {
+          "member": "timestamp",
+          "attribute": "time"
+        },
+        {
+          "member": "event_type",
+          "attribute": "type"
+        }
+      ]
+    },
+    {
       "type": "ai.spec-kitty.run.decision.denied.v1",
       "name": "run.decision.denied.v1",
       "dataschema": "https://schemas.example.invalid/spec-kitty/run.decision.denied.v1",
