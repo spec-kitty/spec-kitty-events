@@ -2,7 +2,7 @@
 title: Changelog
 description: Dated record of notable changes to the spec-kitty-events contract package.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-19
 type: Changelog
 kind: Hub
 agent:
@@ -22,6 +22,7 @@ Each page sets `sidebar.order` to minus `YYYYMMDD` plus a same-day sequence
 digit (`-202610132` is the second page of 2026-10-13), so the sidebar lists the
 newest first without renumbering older pages.
 
+- [2026-10-19 — 11.1.0: decision-significance events and lifecycle conformance breadth](./2026-10-19-11-1-0-decision-significance-lifecycle-conformance.md)
 - [2026-10-18 — 11.0.0: decision reopen, core-shaped glossary contracts, optional envelope clock](./2026-10-18-11-0-0-decision-glossary-envelope-clock.md)
 - [2026-10-15 — Reducer: a departure from approved outranks a clock-ahead approval (10.5.1)](./2026-10-15-diary-clock-ahead-approval-departure.md)
 - [2026-10-13 — Reducer: an equal-timestamp approved -> done settles its approval (10.4.6)](./2026-10-13-diary-equal-at-approved-done-settles-approval.md)
