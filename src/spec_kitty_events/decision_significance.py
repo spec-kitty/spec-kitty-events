@@ -1,12 +1,14 @@
 """Decision-significance event contracts (RACI-aware).
 
-Mirrors, by shape and never by import (C-002), the spec-kitty runtime payloads
-``SignificanceEvaluatedPayload`` and ``TimeoutExpiredPayload`` from
+``SignificanceEvaluated`` mirrors, by shape and never by import (C-002), core's
+emitted ``SignificanceEvaluatedPayload`` from
 ``src/runtime/next/_internal_runtime/significance.py`` (lines 485-522) and the
-RACI value objects from ``schema.py`` (lines 79-140).
+RACI value objects from ``schema.py`` (lines 79-140). ``DecisionTimeoutExpired``
+has no core emitter yet — core defines ``TimeoutExpiredPayload`` in that file but
+does not emit it, so the event-type name and this payload's contract are the
+package's own (see COMPATIBILITY.md / CHANGELOG 11.1.0).
 
-Deliberate differences from the producer (operator rulings). R2 and D6 are the two
-documented narrowings:
+Deliberate differences from the producer (operator rulings) — three narrowings:
 
 * R1: ``RuntimeActorIdentity`` is untouched; a new ``RaciRoleBinding`` is used.
 * R2: ``RaciRoleBinding.actor_id`` is REQUIRED and non-empty, where core emits
@@ -15,6 +17,9 @@ documented narrowings:
   null, empty or absent ``actor_id`` is refused until core sets it.
 * D6: core carries ``raci_snapshot`` as an untyped ``dict``; here it is the
   typed ``ResolvedRaciSnapshot`` so nested actors are validated.
+* T1: ``DecisionTimeoutExpired.effective_band`` is ``Literal["medium", "high"]``
+  — never ``"low"``, because a low-significance decision auto-proceeds and so
+  never times out.
 """
 
 from __future__ import annotations
