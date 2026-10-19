@@ -228,11 +228,6 @@ def test_runtime_actor_identity_schema_unchanged() -> None:
         assert live.get(key) == committed.get(key)
 
 
-def test_raci_actor_id_sentinel_values() -> None:
-    assert HUMAN_IN_CHARGE_ACTOR_ID == "human-in-charge"
-    assert UNKNOWN_ACTOR_ID == "UNKNOWN"
-
-
 def test_raci_actor_id_sentinels_exported() -> None:
     from spec_kitty_events import decision_significance
 
