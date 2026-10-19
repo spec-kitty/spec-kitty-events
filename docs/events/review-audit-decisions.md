@@ -2,7 +2,7 @@
 title: Review, Audit and Decision Events
 description: The families that record decision points, mission audits, retrospectives, mission-dossier artifact parity and CI gate outcomes — the review and governance surface of a mission.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-19
 type: Integration
 kind: Reference
 related:
@@ -82,6 +82,22 @@ anomalies.
 
 **Durability.** Journaled. `DecisionPointOpened` and `DecisionPointResolved` are
 also projected onto the volatile relay (`VOLATILE_EVENT_TYPES`).
+
+## Decision significance — `decision_significance.py`
+
+Added in 11.1.0. `SignificanceEvaluated` mirrors what core persists; `DecisionTimeoutExpired` mirrors core's
+`TimeoutExpiredPayload` model ahead of any core producer, under a name chosen by this package
+(core has no persisted timeout event yet) (see [Lifecycle reconciliation](/architecture/lifecycle-reconciliation/)). They sit
+beside `mission_next` and use a new RACI actor model rather than `RuntimeActorIdentity`.
+
+| Event type | Payload model | Meaning |
+|---|---|---|
+| `SignificanceEvaluated` | `SignificanceEvaluatedPayload` | A decision's significance score and effective band (`low`, `medium`, `high`) were evaluated. |
+| `DecisionTimeoutExpired` | `DecisionTimeoutExpiredPayload` | A decision at band `medium` or `high` timed out; carries `timeout_configured_seconds`, `escalation_targets` and the resolved RACI snapshot. |
+
+`RaciRoleBinding` (`actor_type` of `human`, `llm` or `service`, plus `actor_id`) and
+`ResolvedRaciSnapshot` are the shared value objects. Unlike core, `actor_id` is required and
+non-empty. There is no reducer. These types are not part of `STRICT_EVENT_TYPES`.
 
 ## Mission audit — `mission_audit.py`
 

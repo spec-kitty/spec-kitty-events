@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.1.0] - 2026-10-19
+
+Minor release, additive. No existing schema, fixture or model changes its accept or reject
+boundary, and the envelope `schema_version` is unchanged.
+
+### Added
+
+- **Decision-significance events.** New `decision_significance` module with the event types
+  `SignificanceEvaluated` and `DecisionTimeoutExpired`, mirroring core's payload models (`SignificanceEvaluated` as core persists it; `DecisionTimeoutExpired` ahead of any core producer, under a name chosen by this package), plus the
+  `RaciRoleBinding` and `ResolvedRaciSnapshot` models, generated JSON Schemas, and validator
+  dispatch. `actor_id` is required and non-empty, which is narrower than core
+  (`str | None`); a core follow-up is filed. `RuntimeActorIdentity` is unchanged.
+- **Conformance fixtures.** New categories `decision_significance` and `lifecycle`; invalid
+  fixtures for 18 lifecycle event types that had none; a lifecycle replay stream with a golden
+  snapshot and a packaged runner; valid `WPStatusChanged` fixtures for the genesis, in_review,
+  approved, blocked and canceled lanes.
+- **`WPStatusChanged` `summary` coverage** on rework and `done` transitions.
+  ([#62](https://github.com/spec-kitty/spec-kitty-events/issues/62))
+- **Reconciliation record** `docs/architecture/lifecycle-reconciliation.md` covering
+  `lifecycle`, `project_lifecycle`, `mission_audit` and `mission_next` against core's use, and
+  correcting the stale core pin (`>=11.0.0,<12`, not `>=10.5.1,<11`).
+  ([#119](https://github.com/spec-kitty/spec-kitty-events/issues/119))
+
 ## [11.0.0] - 2026-10-18
 
 ### Breaking
