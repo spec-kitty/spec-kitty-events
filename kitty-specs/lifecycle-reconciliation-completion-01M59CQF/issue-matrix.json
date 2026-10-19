@@ -1,7 +1,7 @@
 {
   "rows": {
     "#114": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "spec.md C-006: two-Lane-enum cleanup out of scope",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -9,7 +9,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#117": {
