@@ -1,7 +1,7 @@
 {
-  "event_count": 15,
-  "last_event_id": "01M59ED50NKXZ0GFVJVDEKVT8D",
-  "materialized_at": "2026-10-19T06:43:25.321711+00:00",
+  "event_count": 17,
+  "last_event_id": "01M59EPJ2H8ZTVA783H8WR2MQM",
+  "materialized_at": "2026-10-19T06:48:33.617646+00:00",
   "mission_number": "",
   "mission_slug": "lifecycle-reconciliation-completion-01M59CQF",
   "mission_type": "software-dev",
@@ -13,8 +13,8 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 1,
-    "in_review": 0,
+    "in_progress": 0,
+    "in_review": 1,
     "planned": 1
   },
   "work_packages": {
@@ -60,14 +60,22 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "in_progress",
-      "last_event_id": "01M59ED50NKXZ0GFVJVDEKVT8D",
-      "last_transition_at": "2026-10-19T06:43:25.321711+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M59EPJ2H8ZTVA783H8WR2MQM",
+      "last_transition_at": "2026-10-19T06:48:33.617646+00:00",
       "model": "__resolved_model_absent__",
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 15711,
-      "shell_pid_created_at": "1792392200.1"
+      "role": "reviewer",
+      "shell_pid": 18644,
+      "shell_pid_created_at": "1792392510.2",
+      "subtasks": {
+        "T008": "done",
+        "T009": "done",
+        "T010": "done",
+        "T011": "done",
+        "T012": "done",
+        "T013": "done"
+      }
     },
     "WP03": {
       "actor": "finalize-tasks",
