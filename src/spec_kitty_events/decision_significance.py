@@ -5,11 +5,13 @@ Mirrors, by shape and never by import (C-002), the spec-kitty runtime payloads
 ``src/runtime/next/_internal_runtime/significance.py`` (lines 485-522) and the
 RACI value objects from ``schema.py`` (lines 79-140).
 
-Deliberate differences from the producer (operator rulings):
+Deliberate differences from the producer (operator rulings). R2 and D6 are the two
+documented narrowings:
 
 * R1: ``RuntimeActorIdentity`` is untouched; a new ``RaciRoleBinding`` is used.
 * R2: ``RaciRoleBinding.actor_id`` is REQUIRED and non-empty, where core emits
-  ``str | None = None``. This is the single narrowing; a payload with a
+  ``str | None = None``. It applies to every binding, including nested
+  ones in ``raci_snapshot`` and ``escalation_targets``; a payload with a
   null, empty or absent ``actor_id`` is refused until core sets it.
 * D6: core carries ``raci_snapshot`` as an untyped ``dict``; here it is the
   typed ``ResolvedRaciSnapshot`` so nested actors are validated.
