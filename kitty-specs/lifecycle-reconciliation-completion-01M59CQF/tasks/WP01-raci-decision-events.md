@@ -31,7 +31,7 @@ phase: Phase 1 - Foundational contracts
 agent: ''
 history:
 - '2026-10-19: created by /spec-kitty.tasks'
-agent_profile: reviewer-renata
+agent_profile: python-pedro
 authoritative_surface: src/spec_kitty_events/decision_significance.py
 create_intent:
 - src/spec_kitty_events/decision_significance.py
@@ -56,7 +56,7 @@ owned_files:
 - src/spec_kitty_events/schemas/decision_timeout_expired_payload.schema.json
 - tests/unit/test_decision_significance.py
 - tests/test_decision_significance_producer_row.py
-role: reviewer
+role: implementer
 ---
 
 # WP01 - RACI decision events: models, schemas, fixtures
