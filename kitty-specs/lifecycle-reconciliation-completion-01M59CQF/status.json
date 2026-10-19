@@ -29,6 +29,9 @@
       "last_event_id": "01M59EBP5SF19NQWA6KHESD4D5",
       "last_transition_at": "2026-10-19T06:42:37.369910+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Cycle 2: MAJOR fixed (package-data globs; test_wheel_contents green); MINOR fixed (valid fixtures carry core SignificanceScore, core model_validate passes). Fidelity, R1/R2, additivity and gates all verified."
+      ],
       "provider": "__resolved_provider_absent__",
       "review": null,
       "review_result": {
