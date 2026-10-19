@@ -1,0 +1,29 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-19T06:17:08.726816Z",
+      "decision_id": "01M59CX1BP8MDR765VS6NHBQVM",
+      "final_answer": "Confirmed as written: the operator's committed mission brief (rulings R1/R2 dated 2026-10-19, commit 83d2ef2) is the Intent Summary. Brief-intake mode, comprehensive brief, no gap-filling questions; scope not widened.",
+      "input_key": "intent_confirmation",
+      "mission_id": "01M59CQF9X79HKSNKW61WC5SWY",
+      "mission_slug": "lifecycle-reconciliation-completion-01M59CQF",
+      "opened_by": "cli",
+      "options": [
+        "Confirmed as written",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Is the committed mission brief (research/mission-brief.md, operator rulings R1/R2, invariants, escalations) the confirmed Intent Summary for this mission, with no scope widening?",
+      "rationale": null,
+      "resolved_at": "2026-10-19T06:17:16.599744Z",
+      "resolved_by": null,
+      "slot_key": "specify.intent.confirm-brief",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M59CQF9X79HKSNKW61WC5SWY",
+  "version": 1
+}
