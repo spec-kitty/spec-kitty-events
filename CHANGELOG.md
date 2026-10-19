@@ -9,8 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [11.2.0] - 2026-10-19
 
-Minor release, additive. One new producer-row kind; no existing schema, fixture or model
-changes its accept or reject boundary, and the envelope `schema_version` is unchanged.
+Minor release, additive. One new producer-row kind and two exported RACI actor-id sentinel
+constants; no existing schema, fixture or model changes its accept or reject boundary, and
+the envelope `schema_version` is unchanged.
 
 ### Added
 
@@ -25,6 +26,13 @@ changes its accept or reject boundary, and the envelope `schema_version` is unch
   `DecisionTimeoutExpired` payload schema must agree on property names, required members,
   enums and bounds, and the two deliberate differences are pinned (row `actor_id` nullable,
   operator ruling R2; row `raci_snapshot` an open object).
+- **RACI actor-id sentinels.** `HUMAN_IN_CHARGE_ACTOR_ID` (`"human-in-charge"`) and
+  `UNKNOWN_ACTOR_ID` (`"UNKNOWN"`), exported from `spec_kitty_events` and
+  `spec_kitty_events.decision_significance`. A producer that resolves a RACI binding with no
+  `actor_id` maps an inferred human binding to `human-in-charge` and any other unattributable
+  binding (llm/service with no id) to `UNKNOWN`. `actor_id` stays any non-empty string.
+  Two valid `decision_significance` fixtures use the sentinels.
+  ([#136](https://github.com/spec-kitty/spec-kitty-events/issues/136))
 
 ## [11.1.0] - 2026-10-19
 

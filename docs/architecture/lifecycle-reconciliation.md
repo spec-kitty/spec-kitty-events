@@ -90,7 +90,11 @@ so it refuses a null or empty `actor_id` that core and the producer row still al
 a conscious narrowing; the producer row is unchanged because changing it would move an
 accept boundary. A test compares the two shapes and pins `actor_id` as the single exception.
 The rule applies to nested bindings too (`raci_snapshot`, `escalation_targets`), not only the top-level `actor`.
-Core must always set `actor_id` before it can adopt these models.
+Core must always set `actor_id` before it can adopt these models. Since `11.2.0` the package
+exports the sentinels core uses for that (operator ruling 2026-10-19, #136): an inferred human
+binding with no id gets `HUMAN_IN_CHARGE_ACTOR_ID` (`"human-in-charge"`, the built-in
+`human-in-charge` profile), and any other binding with no id (`llm` or `service`) gets
+`UNKNOWN_ACTOR_ID` (`"UNKNOWN"`). The rule itself is unchanged: both are ordinary non-empty strings.
 
 A second documented narrowing is D6: core types `raci_snapshot` as `dict[str, Any]`, while the package types it as
 `ResolvedRaciSnapshot`, so a dict that is not a resolved RACI binding is refused.

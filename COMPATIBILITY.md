@@ -24,11 +24,11 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty`
 
 
-## `11.2.0` — producer row for the decision timeout (minor)
+## `11.2.0` — decision-timeout producer row and RACI actor-id sentinels (minor)
 
-`11.2.0` is additive. It adds one producer-row kind, `run.decision.timeoutexpired.v1`; no
-existing accept boundary moves. The envelope `schema_version` stays `3.0.0`, and the payload
-model `DecisionTimeoutExpired` is unchanged.
+`11.2.0` is additive. It adds one producer-row kind, `run.decision.timeoutexpired.v1`, and
+exports two RACI actor-id sentinel constants; no existing accept boundary moves. The envelope
+`schema_version` stays `3.0.0`, and the payload model `DecisionTimeoutExpired` is unchanged.
 
 ### What changed
 
@@ -39,11 +39,27 @@ model `DecisionTimeoutExpired` is unchanged.
   payload in two places: `actor_id` may be null or absent (in `actor` and in each
   `escalation_targets` item), and `raci_snapshot` is any object. Both are pinned by a test;
   converging `actor_id` is #131, gated on core always setting it (spec-kitty/spec-kitty#6445).
+- New constants `HUMAN_IN_CHARGE_ACTOR_ID = "human-in-charge"` and
+  `UNKNOWN_ACTOR_ID = "UNKNOWN"` (module `decision_significance`, re-exported from the package),
+  with valid fixtures `significance_evaluated_sentinel_actor` and
+  `decision_timeout_expired_sentinel_actors` (`min_version` `11.2.0`).
+
+### Mapping rule for producers
+
+R2 still refuses a null, empty or absent `actor_id`. A producer that resolves a RACI binding
+with no `actor_id` maps it before emitting (operator ruling 2026-10-19):
+
+- an inferred `human` binding gets `HUMAN_IN_CHARGE_ACTOR_ID` (the built-in `human-in-charge`
+  agent profile, the human operator);
+- any binding that cannot reasonably be attributed to the human operator (`llm` or `service`
+  with no id) gets `UNKNOWN_ACTOR_ID`.
+
+The sentinels are conventions, not validation: any other non-empty `actor_id` stays valid.
 
 ### Adopting 11.2.0
 
 - Widen the pin to `spec-kitty-events>=11.2.0,<12`. Nothing else is needed unless you
-  validate producer rows of this kind.
+  validate producer rows of this kind or import the sentinels.
 - Producers writing the timeout row validate against
   `producer_contract/composed/rows/run.decision.timeoutexpired.v1.row.schema.json`.
 
