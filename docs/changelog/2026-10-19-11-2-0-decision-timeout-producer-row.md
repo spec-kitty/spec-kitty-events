@@ -2,7 +2,7 @@
 title: "11.2.0: producer row for the decision timeout"
 description: "Minor release: the decision-timeout payload gets a producer-row contract, cross-anchored to the package payload so a transcription slip fails a gate."
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Changelog
 kind: Changelog
 sidebar:

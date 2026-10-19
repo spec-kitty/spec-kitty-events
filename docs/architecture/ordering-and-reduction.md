@@ -2,7 +2,7 @@
 title: Ordering and reduction
 description: Why events order by Lamport clock not wall-clock, the total order over CloudEvents rows, and the deterministic filter-sort-dedup-fold-freeze reducer pipeline.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Architecture
 kind: Explanation
 related:

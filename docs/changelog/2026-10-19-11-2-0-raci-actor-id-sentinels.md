@@ -2,7 +2,7 @@
 title: "11.2.0: RACI actor-id sentinels"
 description: "Minor release: the package exports human-in-charge and UNKNOWN, the actor_id values a producer uses for a RACI binding it resolved with no id."
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Changelog
 kind: Changelog
 sidebar:

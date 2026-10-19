@@ -2,7 +2,7 @@
 title: Mission Lifecycle Events
 description: The durable event families that open, advance, suspend and close a mission and its planning artifacts, plus the run-execution family that drives a mission step by step.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Integration
 kind: Reference
 related:

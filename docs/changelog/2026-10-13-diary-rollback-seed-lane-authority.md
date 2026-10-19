@@ -2,13 +2,13 @@
 title: "Reducer: a rollback seed never takes a lane against the real lifecycle (10.4.5)"
 description: "A migration seed restating a rejection applies only when it continues the lane in force, so it can no longer reopen a done WP or undo a later repair (spec-kitty#6061)."
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Changelog
 kind: Changelog
 sidebar:
   order: -202610131
 authors:
-  - ivan@spec-kitty.ai
+  - human:ivan
 tags: [diary, reducer, status-events, migration]
 related:
   - changelog/2026-10-12-diary-losing-seed-folds-payload

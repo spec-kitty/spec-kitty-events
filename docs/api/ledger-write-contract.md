@@ -2,7 +2,7 @@
 title: Ledger write contract
 description: persistence.append_event, the fail-closed and fixture-pinned way to append one event to a local JSONL ledger, and the retired LOCAL_ONLY_EVENT_TYPES registry.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: API
 kind: Reference
 ---

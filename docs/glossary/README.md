@@ -2,8 +2,9 @@
 title: Glossary
 description: The vocabulary of the Spec Kitty event contract — envelope, aggregate, Lamport clock, lane, reducer, journal and volatile, the strict profile and the relay.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 kind: Glossary
+okf_version: "0.2"
 ---
 
 # Glossary

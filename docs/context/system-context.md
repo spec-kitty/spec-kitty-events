@@ -2,7 +2,7 @@
 title: System context
 description: The systems around the event contract — the CLI core that produces events, the transports they travel on, and the consumers that validate and reduce them.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Context
 kind: Explanation
 related:

@@ -2,7 +2,7 @@
 title: Work and Status Events
 description: The work-package lane-transition family and the append-only status diary reducer that together track where every work package sits on the kanban board.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Integration
 kind: Reference
 related:

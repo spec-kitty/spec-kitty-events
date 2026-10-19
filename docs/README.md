@@ -2,8 +2,9 @@
 title: spec-kitty-events documentation
 description: Documentation home for the Spec Kitty event contracts — the envelope, event families, reducers and compatibility policy of the Build Kitty product line.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 kind: Hub
+okf_version: "0.2"
 ---
 
 # spec-kitty-events documentation

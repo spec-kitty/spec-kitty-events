@@ -2,7 +2,7 @@
 title: Review, Audit and Decision Events
 description: The families that record decision points, mission audits, retrospectives, mission-dossier artifact parity and CI gate outcomes — the review and governance surface of a mission.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Integration
 kind: Reference
 related:

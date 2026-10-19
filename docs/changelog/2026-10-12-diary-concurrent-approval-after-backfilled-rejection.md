@@ -2,7 +2,7 @@
 title: "Reducer: a backfilled rejection is never overwritten by a bare concurrent approval (10.4.3)"
 description: "A bare in_review -> approved approval no longer overwrites a backfilled rejection it is causally concurrent with (spec-kitty#4941)."
 doc_status: active
-updated: 2026-10-14
+updated: 2026-10-14T00:00:00Z
 type: Changelog
 kind: Changelog
 sidebar:

@@ -2,9 +2,10 @@
 title: Guides
 description: Task-oriented how-tos for contributors to and consumers of the spec-kitty-events contract — contributing, and building the documentation site.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Guide
 kind: Hub
+okf_version: "0.2"
 ---
 
 # Guides

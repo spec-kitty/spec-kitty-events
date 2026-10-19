@@ -2,7 +2,7 @@
 title: "11.0.0: decision reopen, core-shaped glossary contracts, optional envelope clock"
 description: "Major release: decisions and glossary records core writes now append and replay through the contract; the envelope clock is optional and clockless rows sort first."
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Changelog
 kind: Changelog
 sidebar:

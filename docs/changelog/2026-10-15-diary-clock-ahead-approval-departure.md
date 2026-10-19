@@ -2,7 +2,7 @@
 title: "Reducer: a departure from approved outranks a clock-ahead approval (10.5.1)"
 description: "A rejection or done recorded after an approval is no longer lost when the approval row carries a later wall-clock timestamp (spec-kitty-events#101)."
 doc_status: active
-updated: 2026-10-15
+updated: 2026-10-15T00:00:00Z
 type: Changelog
 kind: Changelog
 sidebar:

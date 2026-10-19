@@ -2,7 +2,7 @@
 title: Lifecycle reconciliation
 description: Record of how the lifecycle, project_lifecycle, mission_audit and mission_next modules line up with what spec-kitty core consumes, with citations and open follow-ups.
 doc_status: active
-updated: 2026-10-19
+updated: 2026-10-19T00:00:00Z
 type: Architecture
 kind: Reference
 ---

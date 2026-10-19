@@ -2,7 +2,7 @@
 title: Semantics and Analytics Events
 description: The glossary semantic-integrity family that gates generation on term consistency, and the lightweight analytics family that records token usage and diff summaries.
 doc_status: active
-updated: 2026-10-18
+updated: 2026-10-18T00:00:00Z
 type: Integration
 kind: Reference
 related:
