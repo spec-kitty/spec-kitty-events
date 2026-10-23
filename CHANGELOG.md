@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The `LICENSE` copyright holder now reads `Spec Kitty, Inc.`** It briefly read
+  `Spec Kitty, Inc. and contributors` (#47). The Repo Licensing Policy settles the
+  holder line as the legal entity alone and rules out contributor-style holders, so
+  this repo no longer differs from the rest of the org. The MIT grant and warranty
+  disclaimer are byte-for-byte unchanged, and contributor copyright is unaffected:
+  the holder line never conveyed it, and git history remains the record.
+
 ## [11.2.1] - 2026-10-19
 
 Patch release. No model or schema changes its accept or reject boundary, and the envelope
