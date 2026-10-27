@@ -459,6 +459,11 @@ def upcast(
     unchanged as a ``passthrough`` with the named issue. Strict (ingress, and validating a
     row before it is written): the same row raises :class:`UpcastError`. A row that is
     already a CloudEvent is a pass-through in both modes.
+
+    Strict mode refuses a row that does not map; it does **not** validate the mapped
+    event's ``data`` payload against its schema. Flat-shape rows (lane, annotation,
+    retrospective) fold any unexpected top-level member into ``data``, so ingress that
+    must reject such members has to also call :func:`validate_cloudevent` on the result.
     """
     ctx = context if context is not None else UpcastContext()
     detection = detect(row)
