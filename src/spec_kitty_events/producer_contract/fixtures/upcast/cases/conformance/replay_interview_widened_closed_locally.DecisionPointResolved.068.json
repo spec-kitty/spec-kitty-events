@@ -1,0 +1,17 @@
+{
+  "case": "replay_interview_widened_closed_locally.DecisionPointResolved.068",
+  "group": "conformance",
+  "origin": "conformance/fixtures/decisionpoint/replay/replay_interview_widened_closed_locally.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"dp/dp-iv-003\", \"build_id\": \"test-build\", \"causation_id\": null, \"correlation_id\": \"01J2A0000000000000000000C6\", \"data_tier\": 0, \"event_id\": \"01J2A0000000000000000000C5\", \"event_type\": \"DecisionPointResolved\", \"lamport_clock\": 3, \"node_id\": \"node-1\", \"payload\": {\"actual_participants\": [], \"closed_locally_while_widened\": true, \"closure_message\": {\"channel_id\": \"C9876543210\", \"message_ts\": \"1714464200.000300\", \"thread_ts\": \"1714464100.000100\", \"url\": \"https://acme.slack.com/archives/C9876543210/p1714464200000300\"}, \"decision_point_id\": \"dp-iv-003\", \"final_answer\": \"kubernetes\", \"mission_id\": \"m-interview-003\", \"mission_slug\": \"infra-redesign\", \"mission_type\": \"software-dev\", \"origin_surface\": \"planning_interview\", \"other_answer\": false, \"rationale\": null, \"recorded_at\": \"2026-04-23T10:00:02+00:00\", \"resolved_by\": \"human-owner-3\", \"run_id\": \"run-iv-003\", \"state_entered_at\": \"2026-04-23T10:00:02+00:00\", \"summary\": {\"candidate_answer\": null, \"extracted_at\": null, \"source\": \"mission_owner_override\", \"text\": \"Mission owner overrode: Kubernetes is the approved platform per infrastructure policy.\"}, \"terminal_outcome\": \"resolved\"}, \"project_slug\": null, \"project_uuid\": \"bbbbbbbb-cccc-dddd-eeee-ffffffffffff\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-04-23T10:00:02+00:00\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

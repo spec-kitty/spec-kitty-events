@@ -1,0 +1,17 @@
+{
+  "case": "unfoldable_deferred_canceled.DecisionPointOpened.073",
+  "group": "conformance",
+  "origin": "conformance/fixtures/decisionpoint/replay/unfoldable_deferred_canceled.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"dp/dp-ro-008\", \"build_id\": \"test-build\", \"causation_id\": null, \"correlation_id\": \"01J2B000000000000000000081\", \"data_tier\": 0, \"event_id\": \"01J2B000000000000000000082\", \"event_type\": \"DecisionPointOpened\", \"node_id\": \"node-1\", \"payload\": {\"actor_id\": \"human-owner\", \"actor_type\": \"human\", \"decision_point_id\": \"dp-ro-008\", \"input_key\": \"auth_protocol\", \"mission_id\": \"m-8\", \"mission_slug\": \"reopen-fold\", \"mission_type\": \"software-dev\", \"options\": [\"session\", \"oauth2\", \"oidc\"], \"origin_flow\": \"specify\", \"origin_surface\": \"planning_interview\", \"phase\": \"P1\", \"question\": \"Which authentication protocol should we adopt?\", \"recorded_at\": \"2026-04-23T10:00:00+00:00\", \"run_id\": \"run-8\", \"state_entered_at\": \"2026-04-23T10:00:00+00:00\", \"step_id\": \"step-auth-001\"}, \"project_slug\": null, \"project_uuid\": \"bbbbbbbb-cccc-dddd-eeee-ffffffffffff\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-04-23T10:00:00+00:00\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

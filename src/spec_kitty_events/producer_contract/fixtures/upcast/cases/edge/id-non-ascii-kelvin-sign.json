@@ -1,0 +1,20 @@
+{
+  "case": "id-non-ascii-kelvin-sign",
+  "group": "edge",
+  "origin": "scripts/generate_upcast_corpus.py",
+  "notes": "Ids are ASCII: a KELVIN SIGN does not case-fold to K.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-demo"
+  },
+  "line": "{\"event_id\": \"01J0000000000000000000K101\", \"mission_slug\": \"041-demo\", \"wp_id\": \"WP01\", \"from_lane\": \"planned\", \"to_lane\": \"claimed\", \"at\": \"2026-01-01T00:00:00+00:00\", \"actor\": \"claude\", \"force\": false, \"execution_mode\": \"worktree\", \"reason\": null, \"review_ref\": null, \"evidence\": null}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "flat",
+    "codes": [
+      "INVALID_ID"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

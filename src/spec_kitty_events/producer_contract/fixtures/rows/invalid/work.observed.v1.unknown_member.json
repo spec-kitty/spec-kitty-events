@@ -1,0 +1,70 @@
+{
+  "class": "producer_row_invalid",
+  "expected": "invalid",
+  "type": "ai.spec-kitty.work.observed.v1",
+  "base": "work.observed.v1",
+  "violation": "data_unknown_member",
+  "expected_error_path": "/data",
+  "expected_keyword": "additionalProperties",
+  "input": {
+    "specversion": "1.0",
+    "id": "01J0000000000000000000T007",
+    "source": "/spec-kitty/missions/01J0000000000000000000MSN1",
+    "type": "ai.spec-kitty.work.observed.v1",
+    "time": "2026-01-01T00:00:00+00:00",
+    "datacontenttype": "application/json",
+    "dataschema": "urn:ai.spec-kitty:schema:work.observed.v1",
+    "schemaversion": "4.0.0",
+    "lamportclock": 40,
+    "nodeid": "0123456789ab",
+    "missionid": "01J0000000000000000000MSN1",
+    "data": {
+      "kind": "narrative.progress_reported",
+      "producer": {
+        "producer_id": "cli-install-r1",
+        "instance_id": "proc-002",
+        "sequence": 2
+      },
+      "session": {
+        "session_id": "sess-human-1",
+        "reconnect_epoch": 0,
+        "credential_epoch": 0,
+        "delegated_from": null
+      },
+      "actor": {
+        "principal_kind": "human",
+        "principal_id": "acct-robert",
+        "display_name": "Robert",
+        "agent_profile": null,
+        "factory_attempt": null
+      },
+      "repository": {
+        "provider": "github",
+        "repository_id": "99001",
+        "display_slug": "spec-kitty/spec-kitty-saas"
+      },
+      "provenance": {
+        "source": "cli_wrapper",
+        "capability": "work-observation",
+        "limitation": null
+      },
+      "mission": {
+        "mission_id": "01J0000000000000000000MSN1",
+        "display_label": "Fix auth flow"
+      },
+      "context": null,
+      "activity": null,
+      "programme": null,
+      "artifact": null,
+      "text": "Working on the auth fix.",
+      "action": null,
+      "recipient": null,
+      "reply_to": null,
+      "ref": null,
+      "coverage": null,
+      "extensions": null,
+      "zz_unknown": 1
+    }
+  },
+  "notes": "data carries a member its schema does not name."
+}

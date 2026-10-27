@@ -1,0 +1,17 @@
+{
+  "case": "project.initialized.v1",
+  "group": "cli",
+  "origin": "producer_contract/fixtures/rows/valid/project.initialized.v1.json",
+  "notes": "The persisted legacy line of a producer fixture.",
+  "context": {
+    "projectuuid": "5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11"
+  },
+  "line": "{\"event_id\": \"01J0000000000000000000F006\", \"event_type\": \"ProjectInitialized\", \"aggregate_id\": \"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\", \"aggregate_type\": \"Project\", \"schema_version\": \"5.0.0\", \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"payload\": {\"project_uuid\": \"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\", \"project_slug\": \"demo\", \"actor\": \"cli\", \"runtime_version\": \"4.0.0\", \"initialized_at\": \"2026-01-01T00:00:00Z\"}, \"project_uuid\": \"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\", \"project_slug\": \"demo\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "lifecycle_envelope",
+    "codes": [],
+    "golden": "{\"data\":{\"actor\":\"cli\",\"initialized_at\":\"2026-01-01T00:00:00Z\",\"project_slug\":\"demo\",\"project_uuid\":\"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\",\"runtime_version\":\"4.0.0\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:project.initialized.v1\",\"id\":\"01J0000000000000000000F006\",\"projectslug\":\"demo\",\"projectuuid\":\"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/projects/5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\",\"specversion\":\"1.0\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.project.initialized.v1\"}",
+    "valid": true
+  }
+}

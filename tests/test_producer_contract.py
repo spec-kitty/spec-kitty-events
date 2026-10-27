@@ -17,10 +17,13 @@ import pytest
 from jsonschema import Draft202012Validator
 
 from spec_kitty_events import decisionpoint as dp
+from spec_kitty_events import harness_observation as ho
 from spec_kitty_events import lifecycle as lc
 from spec_kitty_events import mission_next as mn
 from spec_kitty_events import producer_contract as pc
 from spec_kitty_events import project_lifecycle as pl
+from spec_kitty_events import work_observation as wo
+from spec_kitty_events.strict import STRICT_EVENT_TYPES
 from spec_kitty_events.status import Lane
 
 _ROOT = Path(pc.__file__).resolve().parent
@@ -59,6 +62,21 @@ EXPECTED_NAMES = {
     "retrospective.capturefailed.v1",
     "retrospective.skipped.v1",
 }
+# spec-kitty-events#92: the strict types without a CLI legacy form, read from the 3.0.0
+# transport envelope only (registry ``legacy: null``).
+TRANSPORT_ONLY = {
+    "mission.started.v1",
+    "mission.completed.v1",
+    "mission.cancelled.v1",
+    "mission.closed.v1",
+    "mission.phase.entered.v1",
+    "wp.review.rolledback.v1",
+    "harness.observed.v1",
+    "work.observed.v1",
+}
+EXPECTED_NAMES = EXPECTED_NAMES | TRANSPORT_ONLY
+WITH_LEGACY = EXPECTED_NAMES - TRANSPORT_ONLY
+URN_BASE = "urn:ai.spec-kitty:schema:"
 
 
 def _validator(schema: Dict[str, Any]) -> Draft202012Validator:
@@ -86,7 +104,7 @@ def _valid_fixtures() -> List[Dict[str, Any]]:
 def test_registry_holds_exactly_the_producer_types() -> None:
     registry = pc.load_registry()
     assert {t["name"] for t in registry["types"]} == EXPECTED_NAMES
-    assert len(registry["types"]) == len(EXPECTED_NAMES) == 28
+    assert len(registry["types"]) == len(EXPECTED_NAMES) == 36
     assert pc.registered_types() == tuple(t["type"] for t in registry["types"])
 
 
@@ -96,8 +114,13 @@ def test_registry_header() -> None:
     assert registry["specversion"] == "1.0"
     assert registry["schemaversion"] == "4.0.0"
     assert registry["datacontenttype"] == "application/json"
-    assert registry["dataschema_base"].startswith("https://")
-    assert registry["dataschema_base"].endswith("/")
+    assert registry["dataschema_base"] == URN_BASE
+    assert "INTERIM" not in registry["description"]
+    assert registry["envelope_schemas"] == {
+        "write": "envelope.schema.json",
+        "read": "envelope.read.schema.json",
+    }
+    assert registry["envelope_schema"] == registry["envelope_schemas"]["write"]
 
 
 @pytest.mark.parametrize("name", sorted(EXPECTED_NAMES))
@@ -112,7 +135,14 @@ def test_entry_is_well_formed(name: str) -> None:
     if entry["scope"] == "project":
         assert entry["subject"] == "none"
     assert (_ROOT / entry["schema"]).is_file()
-    assert entry["legacy"]["shape"] in registry["legacy_shapes"]
+    assert (entry["legacy"] is None) == (name in TRANSPORT_ONLY)
+    if entry["legacy"] is not None:
+        assert entry["legacy"]["shape"] in registry["legacy_shapes"]
+    transport = entry["transport"]
+    if transport is not None:
+        assert set(transport) == {"event_type", "lifted", "lane_aliases"}
+        for lifted in transport["lifted"]:
+            assert _CE_NAME.fullmatch(lifted["attribute"]), lifted
     attributes = [lifted["attribute"] for lifted in entry["lifted"]]
     assert len(attributes) == len(set(attributes)), "an attribute is lifted twice"
     members = [lifted["member"] for lifted in entry["lifted"]]
@@ -123,6 +153,47 @@ def test_entry_is_well_formed(name: str) -> None:
     for lifted in entry["lifted"]:
         if registry["legacy_shapes"][entry["legacy"]["shape"]]["form"] == "flat":
             assert {"required", "legacy_schema"} <= set(lifted)
+
+
+def test_every_strict_type_has_exactly_one_transport_entry() -> None:
+    by_event_type: Dict[str, List[str]] = {}
+    for entry in pc.load_registry()["types"]:
+        if entry["transport"] is not None:
+            by_event_type.setdefault(entry["transport"]["event_type"], []).append(entry["name"])
+    assert set(by_event_type) == set(STRICT_EVENT_TYPES)
+    assert all(len(names) == 1 for names in by_event_type.values()), by_event_type
+    assert by_event_type["WPStatusChanged"] == ["lane.transitioned.v1"]
+    for name in TRANSPORT_ONLY:
+        assert pc.get_entry(name)["transport"] is not None, name
+
+
+def test_lane_transport_lifts_the_repeated_members_and_resolves_the_alias() -> None:
+    transport = pc.get_entry("lane.transitioned.v1")["transport"]
+    assert [(item["member"], item["attribute"]) for item in transport["lifted"]] == [
+        ("mission_slug", "missionslug"),
+        ("mission_id", "missionid"),
+        ("wp_id", "subject"),
+        ("actor", "actor"),
+        ("execution_mode", "executionmode"),
+    ]
+    actor = transport["lifted"][3]
+    assert actor["projection"] == "actor_identity"
+    assert actor["binding_member"] == "actorbinding"
+    assert transport["lane_aliases"] == {
+        "from_lane": {"doing": "in_progress"},
+        "to_lane": {"doing": "in_progress"},
+    }
+    for entry in pc.load_registry()["types"]:
+        if entry["transport"] is not None and entry["name"] != "lane.transitioned.v1":
+            assert entry["transport"]["lifted"] == [] and entry["transport"]["lane_aliases"] == {}
+
+
+def test_every_dataschema_is_a_urn_and_equals_the_schema_id() -> None:
+    for name in EXPECTED_NAMES:
+        entry = pc.get_entry(name)
+        assert entry["dataschema"] == URN_BASE + name
+        assert pc.data_schema(name)["$id"] == entry["dataschema"]
+    assert "example.invalid" not in json.dumps(pc.load_registry())
 
 
 def test_lookup_by_name_and_by_type_and_unknown() -> None:
@@ -146,7 +217,7 @@ def test_loaders_return_copies() -> None:
     pc.get_entry("lane.transitioned.v1")["lifted"].clear()
     pc.data_schema("lane.transitioned.v1")["properties"].clear()
     pc.envelope_schema()["properties"].clear()
-    assert len(pc.registered_types()) == 28
+    assert len(pc.registered_types()) == 36
     assert pc.get_entry("lane.transitioned.v1")["lifted"]
     assert pc.data_schema("lane.transitioned.v1")["properties"]
     assert pc.envelope_schema()["properties"]
@@ -183,7 +254,12 @@ def test_data_schema_is_self_contained_and_closed(name: str) -> None:
 @pytest.mark.parametrize("name", sorted(EXPECTED_NAMES))
 def test_composed_schemas_are_valid_schemas(name: str) -> None:
     _validator(pc.row_schema(name))
-    _validator(pc.legacy_row_form_schema(name))
+    _validator(pc.row_schema(name, profile="read"))
+    if name in WITH_LEGACY:
+        _validator(pc.legacy_row_form_schema(name))
+    else:
+        with pytest.raises(pc.RegistryError):
+            pc.legacy_row_form_schema(name)
 
 
 def test_envelope_schema_rules() -> None:
@@ -204,6 +280,66 @@ def test_envelope_schema_rules() -> None:
         "data",
     ):
         assert required in schema["required"]
+
+
+_CLOCKLESS_UUID_ROW: Dict[str, Any] = {
+    "specversion": "1.0",
+    "id": "0f8fad5b-d9cb-469f-a165-70867728950e",
+    "source": "/spec-kitty/missions/01J0000000000000000000MSN1",
+    "type": "ai.spec-kitty.lane.transitioned.v1",
+    "time": "2026-01-01T00:00:00+00:00",
+    "datacontenttype": "application/json",
+    "dataschema": URN_BASE + "lane.transitioned.v1",
+    "schemaversion": "4.0.0",
+    "subject": "WP01",
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-demo",
+    "actor": "claude",
+    "executionmode": "worktree",
+    "data": {"from_lane": "planned", "to_lane": "claimed"},
+}
+
+
+def test_read_profile_accepts_what_a_legacy_row_can_carry_and_write_does_not() -> None:
+    read = _validator(pc.row_schema("lane.transitioned.v1", profile="read"))
+    write = _validator(pc.row_schema("lane.transitioned.v1"))
+    assert read.is_valid(_CLOCKLESS_UUID_ROW)
+    assert not write.is_valid(_CLOCKLESS_UUID_ROW)
+    transport = dict(
+        _CLOCKLESS_UUID_ROW,
+        id="01J0000000000000000000F001",
+        buildid="b-1",
+        nodeid="node-a",
+        lamportclock=3,
+        causationid="01J0000000000000000000F000",
+        correlationid="01J0000000000000000000C000",
+        projectuuid="5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11",
+        projectslug="demo",
+        datatier=2,
+    )
+    assert read.is_valid(transport)
+    assert not write.is_valid(transport)
+    assert not read.is_valid(dict(transport, datatier=5))
+    assert not read.is_valid(dict(transport, id="0F8FAD5B-D9CB-469F-A165-70867728950E"))
+    assert not read.is_valid(dict(transport, dataschema="https://x/lane.transitioned.v1"))
+    with pytest.raises(ValueError):
+        pc.row_schema("lane.transitioned.v1", profile="other")
+
+
+def test_read_and_write_profiles_differ_only_where_the_data_model_says() -> None:
+    read, write = pc.envelope_schema(profile="read"), pc.envelope_schema()
+    assert set(read["properties"]) - set(write["properties"]) == {
+        "buildid",
+        "causationid",
+        "correlationid",
+        "projectuuid",
+        "projectslug",
+        "datatier",
+    }
+    assert set(write["required"]) - set(read["required"]) == {"lamportclock", "nodeid"}
+    assert set(read["required"]) <= set(write["required"])
+    for attribute in set(write["properties"]) - {"id", "nodeid"}:
+        assert read["properties"][attribute] == write["properties"][attribute], attribute
 
 
 def test_lane_schema_matches_the_canonical_enum() -> None:
@@ -249,6 +385,14 @@ _MODELS: Dict[str, Any] = {
     "run.decision.requested.v1": mn.DecisionInputRequestedPayload,
     "run.decision.answered.v1": mn.DecisionInputAnsweredPayload,
     "run.completed.v1": mn.MissionRunCompletedPayload,
+    "mission.started.v1": lc.MissionStartedPayload,
+    "mission.completed.v1": lc.MissionCompletedPayload,
+    "mission.cancelled.v1": lc.MissionCancelledPayload,
+    "mission.closed.v1": lc.MissionClosedPayload,
+    "mission.phase.entered.v1": lc.PhaseEnteredPayload,
+    "wp.review.rolledback.v1": lc.ReviewRollbackPayload,
+    "harness.observed.v1": ho.HarnessObservationPayload,
+    "work.observed.v1": wo.WorkObservationPayload,
 }
 _LOCAL_ONLY = {
     "mission.specify.started.v1": {"artifact_path"},
@@ -303,7 +447,9 @@ def _independent_projection(entry: Dict[str, Any], legacy: Dict[str, Any]) -> Di
 
 
 @pytest.mark.parametrize(
-    "fixture", _valid_fixtures(), ids=lambda f: f["input"]["type"] + ":" + f["input"]["id"][-4:]
+    "fixture",
+    [f for f in _valid_fixtures() if "legacy_row" in f],
+    ids=lambda f: f["input"]["type"] + ":" + f["input"]["id"][-4:],
 )
 def test_legacy_row_projects_to_the_fixtures_data_and_attributes(fixture: Dict[str, Any]) -> None:
     entry = pc.get_entry(fixture["type"])
@@ -447,7 +593,7 @@ def test_legacy_form_constants_and_discriminators() -> None:
 
 
 def test_every_payload_envelope_type_distinguishes_its_event_type() -> None:
-    names = [n for n in EXPECTED_NAMES if pc.get_entry(n)["legacy"]["shape"] != "flat"]
+    names = [n for n in WITH_LEGACY if pc.get_entry(n)["legacy"]["shape"] != "flat"]
     discriminators = {pc.get_entry(n)["legacy"]["discriminator_value"] for n in names}
     assert len(discriminators) == len(names)
 
@@ -594,6 +740,7 @@ EXPECTED_LIFTED: Dict[str, List[str]] = {
     "retrospective.skipped.v1": ["id", "time", "actor", "missionid", "missionslug"],
     "wp.created.v1": _LIFE + ["subject"],
     "wp.reviewer.selfapproved.v1": _LIFE + ["subject"],
+    **{name: [] for name in TRANSPORT_ONLY},
 }
 
 
@@ -720,18 +867,19 @@ def test_mission_scoped_types_on_a_project_source_need_the_fallback_shape() -> N
 
 
 def test_composed_schemas_on_disk_equal_what_the_functions_return() -> None:
+    def on_disk(*parts: str) -> Any:
+        return json.loads((_ROOT / "composed").joinpath(*parts).read_text(encoding="utf-8"))
+
     for name in EXPECTED_NAMES:
-        rows = json.loads(
-            (_ROOT / "composed" / "rows" / f"{name}.row.schema.json").read_text(encoding="utf-8")
+        assert on_disk("rows", f"{name}.row.schema.json") == pc.row_schema(name), name
+        assert on_disk("read", f"{name}.row.schema.json") == pc.row_schema(name, profile="read"), (
+            name
         )
-        legacy = json.loads(
-            (_ROOT / "composed" / "legacy" / f"{name}.legacy.schema.json").read_text(
-                encoding="utf-8"
-            )
+    for name in WITH_LEGACY:
+        assert on_disk("legacy", f"{name}.legacy.schema.json") == pc.legacy_row_form_schema(name), (
+            name
         )
-        assert rows == pc.row_schema(name), name
-        assert legacy == pc.legacy_row_form_schema(name), name
-    assert len(list((_ROOT / "composed").rglob("*.json"))) == 56
+    assert len(list((_ROOT / "composed").rglob("*.json"))) == 2 * 36 + 28
 
 
 def test_the_packaged_total_order_contract_is_a_copy_of_the_contract() -> None:
@@ -750,4 +898,5 @@ def test_every_type_has_invalid_fixtures_in_both_forms() -> None:
         json.loads(p.read_text(encoding="utf-8"))["type"]
         for p in (_ROWS / "legacy_invalid").glob("*.json")
     }
-    assert invalid == set(pc.registered_types()) == legacy
+    assert invalid == set(pc.registered_types())
+    assert legacy == {pc.get_entry(name)["type"] for name in WITH_LEGACY}

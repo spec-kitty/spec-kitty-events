@@ -1,0 +1,18 @@
+{
+  "case": "annotation-structured-actor",
+  "group": "edge",
+  "origin": "scripts/generate_upcast_corpus.py",
+  "notes": "An annotation row with a structured actor.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-demo"
+  },
+  "line": "{\"event_id\": \"01J0000000000000000000A001\", \"at\": \"2026-01-01T00:00:02+00:00\", \"wp_id\": \"WP01\", \"actor\": {\"role\": \"implementer\", \"profile\": \"implementer-ivan\", \"tool\": \"codex\", \"model\": \"m\"}, \"kind\": \"annotation\", \"delta\": {\"subtasks\": {\"T001\": \"done\"}}}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"codex\",\"data\":{\"actorbinding\":{\"model\":\"m\",\"profile\":\"implementer-ivan\",\"role\":\"implementer\",\"tool\":\"codex\"},\"delta\":{\"subtasks\":{\"T001\":\"done\"}}},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:wp.innerstate.changed.v1\",\"id\":\"01J0000000000000000000A001\",\"missionid\":\"01J0000000000000000000MSN1\",\"missionslug\":\"041-demo\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"subject\":\"WP01\",\"time\":\"2026-01-01T00:00:02+00:00\",\"type\":\"ai.spec-kitty.wp.innerstate.changed.v1\"}",
+    "valid": true
+  }
+}

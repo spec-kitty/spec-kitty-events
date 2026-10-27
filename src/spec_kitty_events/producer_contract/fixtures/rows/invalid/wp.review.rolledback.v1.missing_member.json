@@ -1,0 +1,31 @@
+{
+  "class": "producer_row_invalid",
+  "expected": "invalid",
+  "type": "ai.spec-kitty.wp.review.rolledback.v1",
+  "base": "wp.review.rolledback.v1",
+  "violation": "data_missing_required",
+  "expected_error_path": "/data",
+  "expected_keyword": "required",
+  "input": {
+    "specversion": "1.0",
+    "id": "01J0000000000000000000T005",
+    "source": "/spec-kitty/missions/01J0000000000000000000MSN1",
+    "type": "ai.spec-kitty.wp.review.rolledback.v1",
+    "time": "2026-01-01T00:00:00+00:00",
+    "datacontenttype": "application/json",
+    "dataschema": "urn:ai.spec-kitty:schema:wp.review.rolledback.v1",
+    "schemaversion": "4.0.0",
+    "lamportclock": 38,
+    "nodeid": "0123456789ab",
+    "missionid": "01J0000000000000000000MSN1",
+    "data": {
+      "mission_id": "01J0000000000000000000MSN1",
+      "target_phase": "implement",
+      "affected_wp_ids": [
+        "WP02"
+      ],
+      "actor": "reviewer-1"
+    }
+  },
+  "notes": "data member review_ref is required."
+}

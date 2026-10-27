@@ -1,0 +1,17 @@
+{
+  "case": "replay_interview_widened_resolved.DecisionPointWidened.070",
+  "group": "conformance",
+  "origin": "conformance/fixtures/decisionpoint/replay/replay_interview_widened_resolved.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"dp/dp-iv-002\", \"build_id\": \"test-build\", \"causation_id\": null, \"correlation_id\": \"01J2A0000000000000000000B4\", \"data_tier\": 0, \"event_id\": \"01J2A0000000000000000000B3\", \"event_type\": \"DecisionPointWidened\", \"lamport_clock\": 2, \"node_id\": \"node-1\", \"payload\": {\"channel\": \"slack\", \"decision_point_id\": \"dp-iv-002\", \"default_channel_ref\": {\"channel_id\": \"C0123456789\", \"name\": \"spec-kitty-decisions\"}, \"invited_participants\": [{\"display_name\": \"Alice Expert\", \"external_refs\": {\"slack_team_id\": \"T0123456789\", \"slack_user_id\": \"U0000000001\", \"teamspace_member_id\": null}, \"participant_id\": \"p-ext-001\", \"participant_type\": \"human\", \"session_id\": null}], \"mission_id\": \"m-interview-002\", \"mission_slug\": \"data-pipeline\", \"mission_type\": \"software-dev\", \"origin_surface\": \"planning_interview\", \"recorded_at\": \"2026-04-23T10:00:01+00:00\", \"run_id\": \"run-iv-002\", \"teamspace_ref\": {\"name\": \"Acme Engineering\", \"teamspace_id\": \"ts-acme-001\"}, \"thread_ref\": {\"channel_id\": \"C0123456789\", \"slack_team_id\": \"T0123456789\", \"thread_ts\": \"1714464000.000100\", \"url\": \"https://acme.slack.com/archives/C0123456789/p1714464000000100\"}, \"widened_at\": \"2026-04-23T10:00:01+00:00\", \"widened_by\": \"human-owner-2\"}, \"project_slug\": null, \"project_uuid\": \"bbbbbbbb-cccc-dddd-eeee-ffffffffffff\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-04-23T10:00:01+00:00\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

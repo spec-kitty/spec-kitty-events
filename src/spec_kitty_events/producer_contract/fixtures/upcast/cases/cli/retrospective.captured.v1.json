@@ -1,0 +1,18 @@
+{
+  "case": "retrospective.captured.v1",
+  "group": "cli",
+  "origin": "producer_contract/fixtures/rows/valid/retrospective.captured.v1.json",
+  "notes": "The persisted legacy line of a producer fixture.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-reducer-unification"
+  },
+  "line": "{\"type\": \"RetrospectiveCaptured\", \"schema_version\": 1, \"event_id\": \"01J0000000000000000000F029\", \"lamport\": 3, \"at\": \"2026-01-01T00:00:00+00:00\", \"actor\": {\"kind\": \"runtime\", \"id\": \"retro-runner\", \"display\": null}, \"mission_id\": \"01J0000000000000000000MSN1\", \"mission_slug\": \"041-reducer-unification\", \"wp_id\": null, \"force\": false, \"execution_mode\": \"main\", \"findings_status\": \"has_findings\", \"record_path\": \"kitty-specs/demo/retrospective.yaml\", \"generator_version\": \"4.0.0\", \"policy_source\": {\"timing\": \"default\"}, \"provenance_kind\": \"runtime_post_completion\", \"proposal_count\": 2, \"evidence_ref_count\": 5}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"retro-runner\",\"data\":{\"actorbinding\":{\"display\":null,\"id\":\"retro-runner\",\"kind\":\"runtime\"},\"evidence_ref_count\":5,\"execution_mode\":\"main\",\"findings_status\":\"has_findings\",\"force\":false,\"generator_version\":\"4.0.0\",\"lamport\":3,\"policy_source\":{\"timing\":\"default\"},\"proposal_count\":2,\"provenance_kind\":\"runtime_post_completion\",\"record_path\":\"kitty-specs/demo/retrospective.yaml\",\"schema_version\":1,\"wp_id\":null},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:retrospective.captured.v1\",\"id\":\"01J0000000000000000000F029\",\"missionid\":\"01J0000000000000000000MSN1\",\"missionslug\":\"041-reducer-unification\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.retrospective.captured.v1\"}",
+    "valid": true
+  }
+}

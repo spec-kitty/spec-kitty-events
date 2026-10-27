@@ -1,0 +1,17 @@
+{
+  "case": "mission_audit_replay_decision_checkpoint.MissionAuditDecisionRequested.140",
+  "group": "conformance",
+  "origin": "conformance/fixtures/mission_audit/replay/mission_audit_replay_decision_checkpoint.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"audit/mission-010/run-003\", \"build_id\": \"test-build\", \"causation_id\": \"01KJD1WFEVRJZGCKQH5N344ZCF\", \"correlation_id\": \"01KJD1WFEVRJZGCKQH5N344ZCD\", \"data_tier\": 0, \"event_id\": \"01KJD1WFEVRJZGCKQH5N344ZCG\", \"event_type\": \"MissionAuditDecisionRequested\", \"lamport_clock\": 3, \"node_id\": \"local-node-001\", \"payload\": {\"actor\": \"agent-claude\", \"context_summary\": \"Found 1 critical compliance gap in spec.md\", \"decision_id\": \"dec-001\", \"mission_id\": \"mission-010\", \"mission_number\": 10, \"mission_slug\": \"mission-010\", \"mission_type\": \"software-dev\", \"question\": \"Should this finding block the merge?\", \"run_id\": \"run-003\", \"severity\": \"critical\"}, \"project_slug\": null, \"project_uuid\": \"12345678-1234-5678-1234-567812345678\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-02-25T12:03:00.000000Z\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "case": "mission.created.v1.unresolved_mission",
+  "group": "cli",
+  "origin": "producer_contract/fixtures/rows/valid/mission.created.v1.unresolved_mission.json",
+  "notes": "The persisted legacy line of a producer fixture.",
+  "context": {
+    "missionslug": "041-reducer-unification",
+    "projectuuid": "5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11"
+  },
+  "line": "{\"event_id\": \"01J0000000000000000000F008\", \"event_type\": \"MissionCreated\", \"aggregate_id\": \"041-reducer-unification\", \"aggregate_type\": \"Mission\", \"schema_version\": \"5.0.0\", \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"payload\": {\"mission_id\": null, \"mission_slug\": \"041-reducer-unification\", \"mission_number\": null, \"mission_type\": \"software-dev\", \"target_branch\": \"main\", \"wp_count\": 0, \"actor\": \"claude@example.org\", \"friendly_name\": \"Reducer unification\", \"purpose_tldr\": \"Unify the reducers.\", \"purpose_context\": \"Two reducers ship today.\", \"created_at\": \"2026-01-01T00:00:00+00:00\"}, \"project_uuid\": \"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\", \"project_slug\": \"demo\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "lifecycle_envelope",
+    "codes": [],
+    "golden": "{\"data\":{\"actor\":\"claude@example.org\",\"created_at\":\"2026-01-01T00:00:00+00:00\",\"friendly_name\":\"Reducer unification\",\"mission_id\":null,\"mission_number\":null,\"mission_slug\":\"041-reducer-unification\",\"mission_type\":\"software-dev\",\"purpose_context\":\"Two reducers ship today.\",\"purpose_tldr\":\"Unify the reducers.\",\"target_branch\":\"main\",\"wp_count\":0},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:mission.created.v1\",\"id\":\"01J0000000000000000000F008\",\"missionslug\":\"041-reducer-unification\",\"projectslug\":\"demo\",\"projectuuid\":\"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/projects/5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\",\"specversion\":\"1.0\",\"subject\":\"041-reducer-unification\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.mission.created.v1\"}",
+    "valid": true
+  }
+}

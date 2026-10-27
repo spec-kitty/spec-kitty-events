@@ -1,0 +1,20 @@
+{
+  "case": "not-json",
+  "group": "edge",
+  "origin": "scripts/generate_upcast_corpus.py",
+  "notes": "A line that is not JSON.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-demo"
+  },
+  "line": "{broken",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "none",
+    "codes": [
+      "NOT_JSON"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

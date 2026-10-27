@@ -1,0 +1,17 @@
+{
+  "case": "replay_interview_widened_resolved.DecisionPointOpened.069",
+  "group": "conformance",
+  "origin": "conformance/fixtures/decisionpoint/replay/replay_interview_widened_resolved.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"dp/dp-iv-002\", \"build_id\": \"test-build\", \"causation_id\": null, \"correlation_id\": \"01J2A0000000000000000000B2\", \"data_tier\": 0, \"event_id\": \"01J2A0000000000000000000B1\", \"event_type\": \"DecisionPointOpened\", \"lamport_clock\": 1, \"node_id\": \"node-1\", \"payload\": {\"actor_id\": \"human-owner-2\", \"actor_type\": \"human\", \"decision_point_id\": \"dp-iv-002\", \"input_key\": \"migration_strategy\", \"mission_id\": \"m-interview-002\", \"mission_slug\": \"data-pipeline\", \"mission_type\": \"software-dev\", \"options\": [\"blue-green\", \"rolling\", \"canary\", \"Other\"], \"origin_flow\": \"plan\", \"origin_surface\": \"planning_interview\", \"phase\": \"P2\", \"question\": \"How should we handle schema migration in production?\", \"recorded_at\": \"2026-04-23T10:00:00+00:00\", \"run_id\": \"run-iv-002\", \"state_entered_at\": \"2026-04-23T10:00:00+00:00\", \"step_id\": \"step-mig-001\"}, \"project_slug\": null, \"project_uuid\": \"bbbbbbbb-cccc-dddd-eeee-ffffffffffff\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-04-23T10:00:00+00:00\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

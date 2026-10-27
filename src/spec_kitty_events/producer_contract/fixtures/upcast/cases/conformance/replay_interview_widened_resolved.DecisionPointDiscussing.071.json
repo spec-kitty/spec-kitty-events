@@ -1,0 +1,17 @@
+{
+  "case": "replay_interview_widened_resolved.DecisionPointDiscussing.071",
+  "group": "conformance",
+  "origin": "conformance/fixtures/decisionpoint/replay/replay_interview_widened_resolved.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"dp/dp-iv-002\", \"build_id\": \"test-build\", \"causation_id\": null, \"correlation_id\": \"01J2A0000000000000000000B6\", \"data_tier\": 0, \"event_id\": \"01J2A0000000000000000000B5\", \"event_type\": \"DecisionPointDiscussing\", \"lamport_clock\": 3, \"node_id\": \"node-1\", \"payload\": {\"actor_id\": \"human-owner-2\", \"actor_type\": \"human\", \"contributions\": [\"Alice: blue-green avoids in-flight request failures during cutover\", \"Bob: rolling is simpler but risks mixed schema versions hitting the DB simultaneously\"], \"decision_point_id\": \"dp-iv-002\", \"mission_id\": \"m-interview-002\", \"mission_slug\": \"data-pipeline\", \"mission_type\": \"software-dev\", \"origin_surface\": \"planning_interview\", \"recorded_at\": \"2026-04-23T10:00:02+00:00\", \"run_id\": \"run-iv-002\", \"snapshot_kind\": \"digest\", \"state_entered_at\": \"2026-04-23T10:00:02+00:00\"}, \"project_slug\": null, \"project_uuid\": \"bbbbbbbb-cccc-dddd-eeee-ffffffffffff\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-04-23T10:00:02+00:00\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai.spec-kitty:schema:mission.cancelled.v1",
+  "title": "ai.spec-kitty.mission.cancelled.v1 data",
+  "additionalProperties": false,
+  "description": "A Mission was cancelled.",
+  "properties": {
+    "actor": {
+      "description": "Actor who cancelled the mission",
+      "minLength": 1,
+      "type": "string"
+    },
+    "cancelled_wp_ids": {
+      "description": "WP IDs affected by cancellation",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "mission_id": {
+      "description": "Mission identifier",
+      "minLength": 1,
+      "type": "string"
+    },
+    "reason": {
+      "description": "Reason for cancellation (required)",
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "mission_id",
+    "reason",
+    "actor"
+  ],
+  "type": "object"
+}

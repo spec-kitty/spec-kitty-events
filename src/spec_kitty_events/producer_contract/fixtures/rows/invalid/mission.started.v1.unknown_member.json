@@ -1,0 +1,31 @@
+{
+  "class": "producer_row_invalid",
+  "expected": "invalid",
+  "type": "ai.spec-kitty.mission.started.v1",
+  "base": "mission.started.v1",
+  "violation": "data_unknown_member",
+  "expected_error_path": "/data",
+  "expected_keyword": "additionalProperties",
+  "input": {
+    "specversion": "1.0",
+    "id": "01J0000000000000000000T000",
+    "source": "/spec-kitty/missions/01J0000000000000000000MSN1",
+    "type": "ai.spec-kitty.mission.started.v1",
+    "time": "2026-01-01T00:00:00+00:00",
+    "datacontenttype": "application/json",
+    "dataschema": "urn:ai.spec-kitty:schema:mission.started.v1",
+    "schemaversion": "4.0.0",
+    "lamportclock": 33,
+    "nodeid": "0123456789ab",
+    "missionid": "01J0000000000000000000MSN1",
+    "data": {
+      "mission_id": "01J0000000000000000000MSN1",
+      "mission_type": "software-dev",
+      "initial_phase": "specify",
+      "actor": "user-1",
+      "mission_slug": "041-reducer-unification",
+      "zz_unknown": 1
+    }
+  },
+  "notes": "data carries a member its schema does not name."
+}

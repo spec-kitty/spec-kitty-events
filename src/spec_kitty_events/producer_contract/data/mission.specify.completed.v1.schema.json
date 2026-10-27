@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.example.invalid/spec-kitty/mission.specify.completed.v1",
+  "$id": "urn:ai.spec-kitty:schema:mission.specify.completed.v1",
   "title": "ai.spec-kitty.mission.specify.completed.v1 data",
   "additionalProperties": false,
   "description": "The specify phase of a Mission completed.",

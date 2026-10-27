@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai.spec-kitty:schema:wp.review.rolledback.v1.row",
+  "title": "ai.spec-kitty.wp.review.rolledback.v1 row",
+  "description": "Attribute rules for a CloudEvents 1.0 structured-JSON row a Spec Kitty producer writes (ADR 0001, write profile): upper-case ULID id, lamportclock and nodeid required. Non-normative until the cutover release. Cross-attribute rules that JSON Schema cannot state (missionid equals the id in source; subject is the aggregate only when source is project-scoped) are producer rules recorded in the registry.",
+  "type": "object",
+  "properties": {
+    "specversion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}(?![\\s\\S])",
+      "description": "Upper-case 26-character ULID."
+    },
+    "source": {
+      "type": "string",
+      "pattern": "^/spec-kitty/(missions|projects)/[^/\\s]+(?![\\s\\S])"
+    },
+    "type": {
+      "type": "string",
+      "const": "ai.spec-kitty.wp.review.rolledback.v1"
+    },
+    "subject": {
+      "type": "string",
+      "minLength": 1
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?([Zz]|[+-][0-9]{2}:[0-9]{2})(?![\\s\\S])"
+    },
+    "datacontenttype": {
+      "type": "string",
+      "const": "application/json"
+    },
+    "dataschema": {
+      "type": "string",
+      "const": "urn:ai.spec-kitty:schema:wp.review.rolledback.v1"
+    },
+    "schemaversion": {
+      "type": "string",
+      "const": "4.0.0"
+    },
+    "missionid": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}(?![\\s\\S])"
+    },
+    "missionslug": {
+      "type": "string",
+      "minLength": 1
+    },
+    "actor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "executionmode": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lamportclock": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "nodeid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{12}(?![\\s\\S])"
+    },
+    "data": {
+      "additionalProperties": false,
+      "description": "A review rolled a Mission back to an earlier phase.",
+      "properties": {
+        "actor": {
+          "description": "Actor triggering rollback",
+          "minLength": 1,
+          "type": "string"
+        },
+        "affected_wp_ids": {
+          "description": "WP IDs affected by rollback",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "mission_id": {
+          "description": "Mission identifier",
+          "minLength": 1,
+          "type": "string"
+        },
+        "review_ref": {
+          "description": "Reference to the review that triggered rollback",
+          "minLength": 1,
+          "type": "string"
+        },
+        "target_phase": {
+          "description": "Phase to roll back to",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "mission_id",
+        "review_ref",
+        "target_phase",
+        "actor"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "specversion",
+    "id",
+    "source",
+    "type",
+    "time",
+    "datacontenttype",
+    "dataschema",
+    "schemaversion",
+    "lamportclock",
+    "nodeid",
+    "data"
+  ],
+  "propertyNames": {
+    "pattern": "^[a-z0-9]{1,20}(?![\\s\\S])"
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "pattern": "^/spec-kitty/missions/"
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "then": {
+        "required": [
+          "missionid"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "missionid"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "pattern": "^/spec-kitty/missions/"
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "subject"
+          ]
+        }
+      },
+      "else": {
+        "required": [
+          "subject"
+        ]
+      }
+    }
+  ]
+}

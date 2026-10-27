@@ -1,0 +1,18 @@
+{
+  "case": "run.decision.denied.v1",
+  "group": "cli",
+  "origin": "producer_contract/fixtures/rows/valid/run.decision.denied.v1.json",
+  "notes": "The persisted legacy line of a producer fixture.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-reducer-unification"
+  },
+  "line": "{\"event_id\": \"01J0000000000000000000F028\", \"row_version\": 1, \"event_type\": \"DecisionAuthorityDenied\", \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"payload\": {\"run_id\": \"01J0000000000000000000RUN1\", \"decision_id\": \"d1\", \"actor_type\": \"llm\", \"actor_id\": \"agent-1\", \"authority_role\": \"mission_owner\", \"rationale_linkage\": null, \"reason\": \"audit decisions need a human owner\", \"raci_source\": null, \"override_reason\": null}}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "journal_envelope",
+    "codes": [],
+    "golden": "{\"data\":{\"actor_id\":\"agent-1\",\"actor_type\":\"llm\",\"authority_role\":\"mission_owner\",\"decision_id\":\"d1\",\"override_reason\":null,\"raci_source\":null,\"rationale_linkage\":null,\"reason\":\"audit decisions need a human owner\",\"run_id\":\"01J0000000000000000000RUN1\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:run.decision.denied.v1\",\"id\":\"01J0000000000000000000F028\",\"missionid\":\"01J0000000000000000000MSN1\",\"missionslug\":\"041-reducer-unification\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.run.decision.denied.v1\"}",
+    "valid": true
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "case": "already-cloudevent",
+  "group": "edge",
+  "origin": "scripts/generate_upcast_corpus.py",
+  "notes": "A CloudEvent row passes through unchanged.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-demo"
+  },
+  "line": "{\"actor\": \"claude\", \"data\": {\"actorbinding\": {\"model\": \"m\", \"profile\": \"reviewer-renata\", \"role\": \"reviewer\", \"tool\": \"claude\"}, \"evidence\": null, \"force\": false, \"from_lane\": \"planned\", \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\"}, \"datacontenttype\": \"application/json\", \"dataschema\": \"urn:ai.spec-kitty:schema:lane.transitioned.v1\", \"executionmode\": \"worktree\", \"id\": \"01J0000000000000000000E001\", \"missionid\": \"01J0000000000000000000MSN1\", \"missionslug\": \"041-demo\", \"schemaversion\": \"4.0.0\", \"source\": \"/spec-kitty/missions/01J0000000000000000000MSN1\", \"specversion\": \"1.0\", \"subject\": \"WP01\", \"time\": \"2026-01-01T00:00:00+00:00\", \"type\": \"ai.spec-kitty.lane.transitioned.v1\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "cloudevent",
+    "codes": [
+      "ALREADY_CLOUDEVENT"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai.spec-kitty:schema:mission.completed.v1.row.read",
+  "title": "ai.spec-kitty.mission.completed.v1 row (read profile)",
+  "description": "Attribute rules for a CloudEvents row as a reader may meet it, including the upcast form of a legacy row (ADR 0001, read profile): the id may be a normalized legacy UUID, lamportclock and nodeid are optional because legacy diary and CLI rows carry none, and the 3.0.0 transport envelope's remaining fields are optional extensions. Non-normative until the cutover release.",
+  "type": "object",
+  "properties": {
+    "specversion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^([0-9A-HJKMNP-TV-Z]{26}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?![\\s\\S])",
+      "description": "Upper-case ULID, or a legacy UUID normalized to lower-case hyphenated form."
+    },
+    "source": {
+      "type": "string",
+      "pattern": "^/spec-kitty/(missions|projects)/[^/\\s]+(?![\\s\\S])"
+    },
+    "type": {
+      "type": "string",
+      "const": "ai.spec-kitty.mission.completed.v1"
+    },
+    "subject": {
+      "type": "string",
+      "minLength": 1
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?([Zz]|[+-][0-9]{2}:[0-9]{2})(?![\\s\\S])"
+    },
+    "datacontenttype": {
+      "type": "string",
+      "const": "application/json"
+    },
+    "dataschema": {
+      "type": "string",
+      "const": "urn:ai.spec-kitty:schema:mission.completed.v1"
+    },
+    "schemaversion": {
+      "type": "string",
+      "const": "4.0.0"
+    },
+    "missionid": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}(?![\\s\\S])"
+    },
+    "missionslug": {
+      "type": "string",
+      "minLength": 1
+    },
+    "actor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "executionmode": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lamportclock": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "nodeid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "buildid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "causationid": {
+      "type": "string",
+      "pattern": "^([0-9A-HJKMNP-TV-Z]{26}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?![\\s\\S])",
+      "description": "Upper-case ULID, or a legacy UUID normalized to lower-case hyphenated form."
+    },
+    "correlationid": {
+      "type": "string",
+      "pattern": "^([0-9A-HJKMNP-TV-Z]{26}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?![\\s\\S])",
+      "description": "Upper-case ULID, or a legacy UUID normalized to lower-case hyphenated form."
+    },
+    "projectuuid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectslug": {
+      "type": "string",
+      "minLength": 1
+    },
+    "datatier": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "data": {
+      "additionalProperties": false,
+      "description": "A Mission was completed.",
+      "properties": {
+        "actor": {
+          "description": "Actor who completed the mission",
+          "minLength": 1,
+          "type": "string"
+        },
+        "final_phase": {
+          "description": "Last phase before completion",
+          "minLength": 1,
+          "type": "string"
+        },
+        "mission_id": {
+          "description": "Mission identifier",
+          "minLength": 1,
+          "type": "string"
+        },
+        "mission_slug": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Canonical mission slug (display/back-compat; mission_id is the identity)"
+        },
+        "mission_type": {
+          "description": "Mission type",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "mission_id",
+        "mission_type",
+        "final_phase",
+        "actor"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "specversion",
+    "id",
+    "source",
+    "type",
+    "time",
+    "datacontenttype",
+    "dataschema",
+    "schemaversion",
+    "data"
+  ],
+  "propertyNames": {
+    "pattern": "^[a-z0-9]{1,20}(?![\\s\\S])"
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "pattern": "^/spec-kitty/missions/"
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "then": {
+        "required": [
+          "missionid"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "missionid"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "pattern": "^/spec-kitty/missions/"
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "subject"
+          ]
+        }
+      },
+      "else": {
+        "required": [
+          "subject"
+        ]
+      }
+    }
+  ]
+}

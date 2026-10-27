@@ -1,0 +1,15 @@
+{
+  "case": "run.completed.v1",
+  "group": "transport",
+  "origin": "producer_contract/fixtures/rows/valid",
+  "notes": "MissionRunCompleted as a 3.0.0 transport envelope.",
+  "context": {},
+  "line": "{\"event_id\": \"01J0000000000000000000F026\", \"event_type\": \"MissionRunCompleted\", \"aggregate_id\": \"mission/01J0000000000000000000MSN1\", \"payload\": {\"run_id\": \"01J0000000000000000000RUN1\", \"mission_type\": \"software-dev\", \"actor\": {\"actor_id\": \"agent-1\", \"actor_type\": \"llm\", \"display_name\": \"Agent 1\", \"provider\": null, \"model\": null, \"tool\": null}, \"mission_id\": null, \"mission_slug\": null}, \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"build_id\": \"build-1\", \"node_id\": \"0123456789ab\", \"lamport_clock\": 26, \"causation_id\": null, \"project_uuid\": \"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\", \"project_slug\": \"demo\", \"correlation_id\": \"01J0000000000000000000C001\", \"schema_version\": \"3.0.0\", \"data_tier\": 0}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "transport_envelope",
+    "codes": [],
+    "golden": "{\"buildid\":\"build-1\",\"correlationid\":\"01J0000000000000000000C001\",\"data\":{\"actor\":{\"actor_id\":\"agent-1\",\"actor_type\":\"llm\",\"display_name\":\"Agent 1\",\"model\":null,\"provider\":null,\"tool\":null},\"mission_id\":null,\"mission_slug\":null,\"mission_type\":\"software-dev\",\"run_id\":\"01J0000000000000000000RUN1\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:run.completed.v1\",\"datatier\":0,\"id\":\"01J0000000000000000000F026\",\"lamportclock\":26,\"missionid\":\"01J0000000000000000000MSN1\",\"nodeid\":\"0123456789ab\",\"projectslug\":\"demo\",\"projectuuid\":\"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.run.completed.v1\"}",
+    "valid": true
+  }
+}

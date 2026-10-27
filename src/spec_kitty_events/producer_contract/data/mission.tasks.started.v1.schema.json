@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.example.invalid/spec-kitty/mission.tasks.started.v1",
+  "$id": "urn:ai.spec-kitty:schema:mission.tasks.started.v1",
   "title": "ai.spec-kitty.mission.tasks.started.v1 data",
   "additionalProperties": false,
   "description": "The tasks phase of a Mission started.",

@@ -1,0 +1,17 @@
+{
+  "case": "reopen_then_overridden.DecisionPointOverridden.057",
+  "group": "conformance",
+  "origin": "conformance/fixtures/decisionpoint/replay/reopen_then_overridden.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"dp/dp-ro-003\", \"build_id\": \"test-build\", \"causation_id\": null, \"correlation_id\": \"01J2B000000000000000000037\", \"data_tier\": 0, \"event_id\": \"01J2B000000000000000000038\", \"event_type\": \"DecisionPointOverridden\", \"node_id\": \"node-1\", \"payload\": {\"actor_id\": \"human-owner\", \"actor_type\": \"human\", \"alternatives_considered\": [\"Revert\", \"Patch forward\"], \"authority_role\": \"mission_owner\", \"decision_point_id\": \"dp-ro-003\", \"evidence_refs\": [\"ref-001\"], \"mission_id\": \"m-3\", \"mission_owner_authority_flag\": true, \"mission_owner_authority_path\": \"/missions/m-3/owner\", \"mission_slug\": \"reopen-fold\", \"mission_type\": \"software-dev\", \"origin_surface\": \"planning_interview\", \"phase\": \"P1\", \"rationale\": \"New information supersedes the resolution\", \"recorded_at\": \"2026-04-23T10:00:03+00:00\", \"run_id\": \"run-3\", \"state_entered_at\": \"2026-04-23T10:00:03+00:00\"}, \"project_slug\": null, \"project_uuid\": \"bbbbbbbb-cccc-dddd-eeee-ffffffffffff\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-04-23T10:00:03+00:00\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

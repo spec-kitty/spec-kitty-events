@@ -1,0 +1,48 @@
+{
+  "class": "producer_row_valid",
+  "expected": "valid",
+  "type": "ai.spec-kitty.mission.completed.v1",
+  "input": {
+    "specversion": "1.0",
+    "id": "01J0000000000000000000T001",
+    "source": "/spec-kitty/missions/01J0000000000000000000MSN1",
+    "type": "ai.spec-kitty.mission.completed.v1",
+    "time": "2026-01-01T00:00:00+00:00",
+    "datacontenttype": "application/json",
+    "dataschema": "urn:ai.spec-kitty:schema:mission.completed.v1",
+    "schemaversion": "4.0.0",
+    "lamportclock": 34,
+    "nodeid": "0123456789ab",
+    "missionid": "01J0000000000000000000MSN1",
+    "data": {
+      "mission_id": "01J0000000000000000000MSN1",
+      "mission_type": "software-dev",
+      "final_phase": "accept",
+      "actor": "user-1",
+      "mission_slug": "041-reducer-unification"
+    }
+  },
+  "transport_row": {
+    "event_id": "01J0000000000000000000T001",
+    "event_type": "MissionCompleted",
+    "aggregate_id": "mission/01J0000000000000000000MSN1",
+    "payload": {
+      "mission_id": "01J0000000000000000000MSN1",
+      "mission_slug": "041-reducer-unification",
+      "mission_type": "software-dev",
+      "final_phase": "accept",
+      "actor": "user-1"
+    },
+    "timestamp": "2026-01-01T00:00:00+00:00",
+    "build_id": "build-1",
+    "node_id": "0123456789ab",
+    "lamport_clock": 34,
+    "causation_id": null,
+    "project_uuid": "5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11",
+    "project_slug": "demo",
+    "correlation_id": "01J0000000000000000000C001",
+    "schema_version": "3.0.0",
+    "data_tier": 0
+  },
+  "notes": "MissionCompleted read from the 3.0.0 transport envelope (no CLI legacy form)."
+}

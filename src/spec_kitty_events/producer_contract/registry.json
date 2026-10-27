@@ -1,12 +1,16 @@
 {
-  "registry_version": "1.0.0",
-  "description": "Producer subset of the Spec Kitty event type registry (spec-kitty/spec-kitty#6185, spec-kitty-events#92). Non-normative until the cutover release of ADR 0001. Names, prefix, dataschema base and lifted members are INTERIM until the maintainer confirms.",
+  "registry_version": "1.1.0",
+  "description": "The Spec Kitty event type registry (ADR 0001; spec-kitty/spec-kitty#6185, spec-kitty-events#92): one entry per CloudEvents type, with the CLI legacy form it reads from (legacy) and the 3.0.0 transport-envelope mapping (transport). Names, prefix, dataschema base and lifted members confirmed by the maintainer on 2026-10-27. Non-normative until the cutover release of ADR 0001.",
   "specversion": "1.0",
   "type_prefix": "ai.spec-kitty",
-  "dataschema_base": "https://schemas.example.invalid/spec-kitty/",
+  "dataschema_base": "urn:ai.spec-kitty:schema:",
   "schemaversion": "4.0.0",
   "datacontenttype": "application/json",
   "envelope_schema": "envelope.schema.json",
+  "envelope_schemas": {
+    "write": "envelope.schema.json",
+    "read": "envelope.read.schema.json"
+  },
   "legacy_shapes": {
     "flat": {
       "form": "flat",
@@ -124,13 +128,17 @@
         "timestamp",
         "payload"
       ]
+    },
+    "transport_envelope": {
+      "form": "transport",
+      "description": "The 3.0.0 transport envelope Event (models.py). Read through each entry's transport mapping (design section 3); never a CLI legacy form."
     }
   },
   "types": [
     {
       "type": "ai.spec-kitty.lane.transitioned.v1",
       "name": "lane.transitioned.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/lane.transitioned.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:lane.transitioned.v1",
       "schema": "data/lane.transitioned.v1.schema.json",
       "scope": "mission",
       "subject": "wp_id",
@@ -248,12 +256,47 @@
             "minLength": 1
           }
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "WPStatusChanged",
+        "lifted": [
+          {
+            "member": "mission_slug",
+            "attribute": "missionslug"
+          },
+          {
+            "member": "mission_id",
+            "attribute": "missionid"
+          },
+          {
+            "member": "wp_id",
+            "attribute": "subject"
+          },
+          {
+            "member": "actor",
+            "attribute": "actor",
+            "projection": "actor_identity",
+            "binding_member": "actorbinding"
+          },
+          {
+            "member": "execution_mode",
+            "attribute": "executionmode"
+          }
+        ],
+        "lane_aliases": {
+          "from_lane": {
+            "doing": "in_progress"
+          },
+          "to_lane": {
+            "doing": "in_progress"
+          }
+        }
+      }
     },
     {
       "type": "ai.spec-kitty.wp.innerstate.changed.v1",
       "name": "wp.innerstate.changed.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/wp.innerstate.changed.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:wp.innerstate.changed.v1",
       "schema": "data/wp.innerstate.changed.v1.schema.json",
       "scope": "mission",
       "subject": "wp_id",
@@ -344,12 +387,13 @@
           "projection": "actor_identity",
           "binding_member": "actorbinding"
         }
-      ]
+      ],
+      "transport": null
     },
     {
       "type": "ai.spec-kitty.project.initialized.v1",
       "name": "project.initialized.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/project.initialized.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:project.initialized.v1",
       "schema": "data/project.initialized.v1.schema.json",
       "scope": "project",
       "subject": "none",
@@ -371,12 +415,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "ProjectInitialized",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.mission.created.v1",
       "name": "mission.created.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/mission.created.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:mission.created.v1",
       "schema": "data/mission.created.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -398,12 +447,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "MissionCreated",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.mission.specify.started.v1",
       "name": "mission.specify.started.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/mission.specify.started.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:mission.specify.started.v1",
       "schema": "data/mission.specify.started.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -425,12 +479,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "SpecifyStarted",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.mission.plan.started.v1",
       "name": "mission.plan.started.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/mission.plan.started.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:mission.plan.started.v1",
       "schema": "data/mission.plan.started.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -452,12 +511,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "PlanStarted",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.mission.tasks.started.v1",
       "name": "mission.tasks.started.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/mission.tasks.started.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:mission.tasks.started.v1",
       "schema": "data/mission.tasks.started.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -479,12 +543,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "TasksStarted",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.mission.specify.completed.v1",
       "name": "mission.specify.completed.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/mission.specify.completed.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:mission.specify.completed.v1",
       "schema": "data/mission.specify.completed.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -506,12 +575,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "SpecifyCompleted",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.mission.plan.completed.v1",
       "name": "mission.plan.completed.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/mission.plan.completed.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:mission.plan.completed.v1",
       "schema": "data/mission.plan.completed.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -533,12 +607,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "PlanCompleted",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.mission.tasks.completed.v1",
       "name": "mission.tasks.completed.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/mission.tasks.completed.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:mission.tasks.completed.v1",
       "schema": "data/mission.tasks.completed.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -560,12 +639,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "TasksCompleted",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.wp.created.v1",
       "name": "wp.created.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/wp.created.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:wp.created.v1",
       "schema": "data/wp.created.v1.schema.json",
       "scope": "mission",
       "subject": "wp_id",
@@ -591,12 +675,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "WPCreated",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.wp.reviewer.selfapproved.v1",
       "name": "wp.reviewer.selfapproved.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/wp.reviewer.selfapproved.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:wp.reviewer.selfapproved.v1",
       "schema": "data/wp.reviewer.selfapproved.v1.schema.json",
       "scope": "mission",
       "subject": "wp_id",
@@ -622,12 +711,13 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": null
     },
     {
       "type": "ai.spec-kitty.mission.reopened.v1",
       "name": "mission.reopened.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/mission.reopened.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:mission.reopened.v1",
       "schema": "data/mission.reopened.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -649,12 +739,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "MissionReopened",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.mission.followup.recorded.v1",
       "name": "mission.followup.recorded.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/mission.followup.recorded.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:mission.followup.recorded.v1",
       "schema": "data/mission.followup.recorded.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -676,12 +771,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "FollowUpRecorded",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.decision.opened.v1",
       "name": "decision.opened.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/decision.opened.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:decision.opened.v1",
       "schema": "data/decision.opened.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -703,12 +803,13 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": null
     },
     {
       "type": "ai.spec-kitty.decision.resolved.v1",
       "name": "decision.resolved.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/decision.resolved.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:decision.resolved.v1",
       "schema": "data/decision.resolved.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -730,12 +831,13 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": null
     },
     {
       "type": "ai.spec-kitty.run.started.v1",
       "name": "run.started.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/run.started.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:run.started.v1",
       "schema": "data/run.started.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -757,12 +859,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "MissionRunStarted",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.run.step.issued.v1",
       "name": "run.step.issued.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/run.step.issued.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:run.step.issued.v1",
       "schema": "data/run.step.issued.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -784,12 +891,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "NextStepIssued",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.run.step.autocompleted.v1",
       "name": "run.step.autocompleted.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/run.step.autocompleted.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:run.step.autocompleted.v1",
       "schema": "data/run.step.autocompleted.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -811,12 +923,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "NextStepAutoCompleted",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.run.decision.requested.v1",
       "name": "run.decision.requested.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/run.decision.requested.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:run.decision.requested.v1",
       "schema": "data/run.decision.requested.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -838,12 +955,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "DecisionInputRequested",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.run.decision.answered.v1",
       "name": "run.decision.answered.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/run.decision.answered.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:run.decision.answered.v1",
       "schema": "data/run.decision.answered.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -865,12 +987,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "DecisionInputAnswered",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.run.completed.v1",
       "name": "run.completed.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/run.completed.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:run.completed.v1",
       "schema": "data/run.completed.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -892,12 +1019,17 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": {
+        "event_type": "MissionRunCompleted",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     },
     {
       "type": "ai.spec-kitty.run.significance.evaluated.v1",
       "name": "run.significance.evaluated.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/run.significance.evaluated.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:run.significance.evaluated.v1",
       "schema": "data/run.significance.evaluated.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -919,12 +1051,13 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": null
     },
     {
       "type": "ai.spec-kitty.run.decision.timeoutexpired.v1",
       "name": "run.decision.timeoutexpired.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/run.decision.timeoutexpired.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:run.decision.timeoutexpired.v1",
       "schema": "data/run.decision.timeoutexpired.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -946,12 +1079,13 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": null
     },
     {
       "type": "ai.spec-kitty.run.decision.denied.v1",
       "name": "run.decision.denied.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/run.decision.denied.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:run.decision.denied.v1",
       "schema": "data/run.decision.denied.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -973,12 +1107,13 @@
           "member": "event_type",
           "attribute": "type"
         }
-      ]
+      ],
+      "transport": null
     },
     {
       "type": "ai.spec-kitty.retrospective.captured.v1",
       "name": "retrospective.captured.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/retrospective.captured.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:retrospective.captured.v1",
       "schema": "data/retrospective.captured.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -1064,12 +1199,13 @@
             "minLength": 1
           }
         }
-      ]
+      ],
+      "transport": null
     },
     {
       "type": "ai.spec-kitty.retrospective.capturefailed.v1",
       "name": "retrospective.capturefailed.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/retrospective.capturefailed.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:retrospective.capturefailed.v1",
       "schema": "data/retrospective.capturefailed.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -1155,12 +1291,13 @@
             "minLength": 1
           }
         }
-      ]
+      ],
+      "transport": null
     },
     {
       "type": "ai.spec-kitty.retrospective.skipped.v1",
       "name": "retrospective.skipped.v1",
-      "dataschema": "https://schemas.example.invalid/spec-kitty/retrospective.skipped.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:retrospective.skipped.v1",
       "schema": "data/retrospective.skipped.v1.schema.json",
       "scope": "mission",
       "subject": "none",
@@ -1246,7 +1383,136 @@
             "minLength": 1
           }
         }
-      ]
+      ],
+      "transport": null
+    },
+    {
+      "type": "ai.spec-kitty.mission.started.v1",
+      "name": "mission.started.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:mission.started.v1",
+      "schema": "data/mission.started.v1.schema.json",
+      "scope": "mission",
+      "subject": "none",
+      "required_attributes": [],
+      "legacy": null,
+      "lifted": [],
+      "transport": {
+        "event_type": "MissionStarted",
+        "lifted": [],
+        "lane_aliases": {}
+      }
+    },
+    {
+      "type": "ai.spec-kitty.mission.completed.v1",
+      "name": "mission.completed.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:mission.completed.v1",
+      "schema": "data/mission.completed.v1.schema.json",
+      "scope": "mission",
+      "subject": "none",
+      "required_attributes": [],
+      "legacy": null,
+      "lifted": [],
+      "transport": {
+        "event_type": "MissionCompleted",
+        "lifted": [],
+        "lane_aliases": {}
+      }
+    },
+    {
+      "type": "ai.spec-kitty.mission.cancelled.v1",
+      "name": "mission.cancelled.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:mission.cancelled.v1",
+      "schema": "data/mission.cancelled.v1.schema.json",
+      "scope": "mission",
+      "subject": "none",
+      "required_attributes": [],
+      "legacy": null,
+      "lifted": [],
+      "transport": {
+        "event_type": "MissionCancelled",
+        "lifted": [],
+        "lane_aliases": {}
+      }
+    },
+    {
+      "type": "ai.spec-kitty.mission.closed.v1",
+      "name": "mission.closed.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:mission.closed.v1",
+      "schema": "data/mission.closed.v1.schema.json",
+      "scope": "mission",
+      "subject": "none",
+      "required_attributes": [],
+      "legacy": null,
+      "lifted": [],
+      "transport": {
+        "event_type": "MissionClosed",
+        "lifted": [],
+        "lane_aliases": {}
+      }
+    },
+    {
+      "type": "ai.spec-kitty.mission.phase.entered.v1",
+      "name": "mission.phase.entered.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:mission.phase.entered.v1",
+      "schema": "data/mission.phase.entered.v1.schema.json",
+      "scope": "mission",
+      "subject": "none",
+      "required_attributes": [],
+      "legacy": null,
+      "lifted": [],
+      "transport": {
+        "event_type": "PhaseEntered",
+        "lifted": [],
+        "lane_aliases": {}
+      }
+    },
+    {
+      "type": "ai.spec-kitty.wp.review.rolledback.v1",
+      "name": "wp.review.rolledback.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:wp.review.rolledback.v1",
+      "schema": "data/wp.review.rolledback.v1.schema.json",
+      "scope": "mission",
+      "subject": "none",
+      "required_attributes": [],
+      "legacy": null,
+      "lifted": [],
+      "transport": {
+        "event_type": "ReviewRollback",
+        "lifted": [],
+        "lane_aliases": {}
+      }
+    },
+    {
+      "type": "ai.spec-kitty.harness.observed.v1",
+      "name": "harness.observed.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:harness.observed.v1",
+      "schema": "data/harness.observed.v1.schema.json",
+      "scope": "mission",
+      "subject": "none",
+      "required_attributes": [],
+      "legacy": null,
+      "lifted": [],
+      "transport": {
+        "event_type": "HarnessObservation",
+        "lifted": [],
+        "lane_aliases": {}
+      }
+    },
+    {
+      "type": "ai.spec-kitty.work.observed.v1",
+      "name": "work.observed.v1",
+      "dataschema": "urn:ai.spec-kitty:schema:work.observed.v1",
+      "schema": "data/work.observed.v1.schema.json",
+      "scope": "mission",
+      "subject": "none",
+      "required_attributes": [],
+      "legacy": null,
+      "lifted": [],
+      "transport": {
+        "event_type": "WorkObservation",
+        "lifted": [],
+        "lane_aliases": {}
+      }
     }
   ],
   "deferred": [

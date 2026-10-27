@@ -5,16 +5,19 @@ This package holds the machine-readable contract that a Spec Kitty event produce
 rows (spec-kitty/spec-kitty#6185, spec-kitty-events#92). The committed JSON files are the
 source of truth:
 
-* ``registry.json``: one entry per emitted type (type string, ``dataschema`` URI, schema
-  file, scope, ``subject`` rule, required attributes, legacy shape, lifted members).
+* ``registry.json``: one entry per type (type string, ``dataschema`` URN, schema file,
+  scope, ``subject`` rule, required attributes, CLI legacy form, lifted members, and the
+  ``transport`` mapping from the 3.0.0 envelope).
 * ``data/<name>.schema.json``: the JSON Schema (2020-12) of one type's ``data`` member.
   Self-contained: no ``$ref`` and no ``$defs``.
-* ``envelope.schema.json``: the minimal envelope subset for rows the producer writes.
+* ``envelope.schema.json``: the write profile, for rows a producer writes.
+* ``envelope.read.schema.json``: the read profile, for rows a reader meets, including the
+  upcast form of legacy rows (no clock required, legacy UUID ids, transport extensions).
 
 The functions below load those files and compose two further schemas from them, so that
-nothing is authored twice: :func:`row_schema` (a whole CloudEvents line of one type) and
-:func:`legacy_row_form_schema` (the persisted legacy line of one type, which is the data
-schema plus the registry's lifted members).
+nothing is authored twice: :func:`row_schema` (a whole CloudEvents line of one type, in
+either profile) and :func:`legacy_row_form_schema` (the persisted CLI legacy line of one
+type, which is the data schema plus the registry's lifted members).
 
 Status: non-normative until the cutover release of ADR 0001. Nothing here changes what
 ``validate_strict_envelope`` accepts. Validation against these schemas needs the optional
@@ -30,6 +33,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 __all__ = [
+    "PROFILES",
     "RegistryError",
     "data_schema",
     "envelope_schema",
@@ -44,6 +48,7 @@ _ROOT = Path(__file__).parent
 _MISSION_SOURCE = "^/spec-kitty/missions/"
 _PROJECT_SOURCE = "^/spec-kitty/projects/"
 _META_KEYS = ("$schema", "$id", "title")
+PROFILES = ("write", "read")
 
 
 class RegistryError(LookupError):
@@ -92,9 +97,15 @@ def data_schema(type_or_name: str) -> Dict[str, Any]:
     return copy.deepcopy(_data_schema(get_entry(type_or_name)["schema"]))
 
 
-def envelope_schema() -> Dict[str, Any]:
-    """Return a copy of the minimal envelope schema."""
-    return copy.deepcopy(_data_schema(_registry()["envelope_schema"]))
+def _check_profile(profile: str) -> None:
+    if profile not in PROFILES:
+        raise ValueError(f"profile must be one of {PROFILES}, not {profile!r}")
+
+
+def envelope_schema(profile: str = "write") -> Dict[str, Any]:
+    """Return a copy of the envelope schema of a profile (``write`` or ``read``)."""
+    _check_profile(profile)
+    return copy.deepcopy(_data_schema(_registry()["envelope_schemas"][profile]))
 
 
 def _embeddable(schema: Dict[str, Any]) -> Dict[str, Any]:
@@ -102,16 +113,17 @@ def _embeddable(schema: Dict[str, Any]) -> Dict[str, Any]:
     return {k: v for k, v in schema.items() if k not in _META_KEYS}
 
 
-def row_schema(type_or_name: str) -> Dict[str, Any]:
+def row_schema(type_or_name: str, profile: str = "write") -> Dict[str, Any]:
     """Compose the schema of a whole CloudEvents line of one registered type.
 
-    The envelope schema with ``type`` and ``dataschema`` pinned to the entry, ``data``
+    The envelope schema of the profile with ``type`` and ``dataschema`` pinned to the entry, ``data``
     replaced by the type's data schema, the entry's ``required_attributes`` required, and
     the ``subject`` and ``missionid`` rules of its scope applied.
     """
+    _check_profile(profile)
     registry = _registry()
     entry = get_entry(type_or_name)
-    row = envelope_schema()
+    row = envelope_schema(profile)
     props: Dict[str, Any] = row["properties"]
     props["type"] = {"type": "string", "const": entry["type"]}
     props["dataschema"] = {"type": "string", "const": entry["dataschema"]}
@@ -123,8 +135,9 @@ def row_schema(type_or_name: str) -> Dict[str, Any]:
     if entry["subject"] == "wp_id":
         required.append("subject")
     row["required"] = required
-    row["title"] = f"{entry['type']} row"
-    row["$id"] = registry["dataschema_base"] + entry["name"] + ".row"
+    suffix = ".row" if profile == "write" else ".row.read"
+    row["title"] = f"{entry['type']} row" + ("" if profile == "write" else " (read profile)")
+    row["$id"] = registry["dataschema_base"] + entry["name"] + suffix
 
     conditions: List[Dict[str, Any]] = []
     if entry["scope"] == "project":
@@ -167,11 +180,17 @@ def legacy_row_form_schema(type_or_name: str) -> Dict[str, Any]:
     back into the one object, and a data member the lifted actor replaces is removed.
     For a ``payload_envelope`` shape (lifecycle, decision and run-journal rows) the data
     schema becomes the ``payload`` member of the shape's envelope.
+
+    Raises:
+        RegistryError: If the type is unregistered or has no CLI legacy form (a type read
+            from the 3.0.0 transport envelope only).
     """
     registry = _registry()
     entry = get_entry(type_or_name)
-    data = _embeddable(data_schema(entry["name"]))
     legacy = entry["legacy"]
+    if legacy is None:
+        raise RegistryError(f"type has no CLI legacy form: {entry['type']!r}")
+    data = _embeddable(data_schema(entry["name"]))
     shape = registry["legacy_shapes"][legacy["shape"]]
     meta: Dict[str, Any] = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",

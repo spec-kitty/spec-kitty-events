@@ -1,0 +1,20 @@
+{
+  "case": "lifecycle-unexpected-member",
+  "group": "edge",
+  "origin": "scripts/generate_upcast_corpus.py",
+  "notes": "A CLI envelope member its form does not define.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-demo"
+  },
+  "line": "{\"event_id\": \"01J0000000000000000000G002\", \"event_type\": \"MissionReopened\", \"aggregate_id\": \"01J0000000000000000000MSN1\", \"aggregate_type\": \"Mission\", \"schema_version\": \"5.0.0\", \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"project_uuid\": \"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\", \"project_slug\": \"demo\", \"payload\": {}, \"origin\": \"x\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "lifecycle_envelope",
+    "codes": [
+      "UNEXPECTED_MEMBER"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

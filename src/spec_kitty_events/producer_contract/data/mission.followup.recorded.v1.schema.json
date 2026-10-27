@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.example.invalid/spec-kitty/mission.followup.recorded.v1",
+  "$id": "urn:ai.spec-kitty:schema:mission.followup.recorded.v1",
   "title": "ai.spec-kitty.mission.followup.recorded.v1 data",
   "additionalProperties": false,
   "description": "A follow-up commit or pull request was recorded against a Mission.",

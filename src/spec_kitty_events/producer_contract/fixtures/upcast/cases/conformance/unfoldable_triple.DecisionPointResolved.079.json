@@ -1,0 +1,17 @@
+{
+  "case": "unfoldable_triple.DecisionPointResolved.079",
+  "group": "conformance",
+  "origin": "conformance/fixtures/decisionpoint/replay/unfoldable_triple.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"dp/dp-ro-006\", \"build_id\": \"test-build\", \"causation_id\": null, \"correlation_id\": \"01J2B000000000000000000067\", \"data_tier\": 0, \"event_id\": \"01J2B000000000000000000068\", \"event_type\": \"DecisionPointResolved\", \"node_id\": \"node-1\", \"payload\": {\"actual_participants\": [], \"closed_locally_while_widened\": false, \"closure_message\": null, \"decision_point_id\": \"dp-ro-006\", \"final_answer\": \"oauth2\", \"mission_id\": \"m-6\", \"mission_slug\": \"reopen-fold\", \"mission_type\": \"software-dev\", \"origin_surface\": \"planning_interview\", \"other_answer\": false, \"rationale\": null, \"recorded_at\": \"2026-04-23T10:00:03+00:00\", \"resolved_by\": \"human-owner\", \"run_id\": \"run-6\", \"state_entered_at\": \"2026-04-23T10:00:03+00:00\", \"summary\": null, \"terminal_outcome\": \"resolved\"}, \"project_slug\": null, \"project_uuid\": \"bbbbbbbb-cccc-dddd-eeee-ffffffffffff\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-04-23T10:00:03+00:00\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

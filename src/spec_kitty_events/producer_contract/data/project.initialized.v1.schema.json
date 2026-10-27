@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.example.invalid/spec-kitty/project.initialized.v1",
+  "$id": "urn:ai.spec-kitty:schema:project.initialized.v1",
   "title": "ai.spec-kitty.project.initialized.v1 data",
   "additionalProperties": false,
   "description": "A project was initialized.",

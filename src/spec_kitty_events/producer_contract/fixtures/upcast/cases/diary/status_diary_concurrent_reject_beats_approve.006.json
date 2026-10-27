@@ -1,0 +1,17 @@
+{
+  "case": "status_diary_concurrent_reject_beats_approve.006",
+  "group": "diary",
+  "origin": "conformance/fixtures/status_diary/replay/status_diary_concurrent_reject_beats_approve.jsonl:6",
+  "notes": "A status.events.jsonl line, read with the Mission id from context.",
+  "context": {
+    "missionid": "01J0000000000000000000RP01"
+  },
+  "line": "{\"actor\": \"reviewer-a\", \"at\": \"2026-08-26T10:25:00+00:00\", \"event_id\": \"01JAAAA0000000000000000034\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_review\", \"mission_slug\": \"041-reducer-unification\", \"reason\": null, \"review_ref\": \"review://WP01/changes-requested\", \"to_lane\": \"planned\", \"wp_id\": \"WP01\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"reviewer-a\",\"data\":{\"evidence\":null,\"force\":false,\"from_lane\":\"in_review\",\"reason\":null,\"review_ref\":\"review://WP01/changes-requested\",\"to_lane\":\"planned\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:lane.transitioned.v1\",\"executionmode\":\"worktree\",\"id\":\"01JAAAA0000000000000000034\",\"missionid\":\"01J0000000000000000000RP01\",\"missionslug\":\"041-reducer-unification\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000RP01\",\"specversion\":\"1.0\",\"subject\":\"WP01\",\"time\":\"2026-08-26T10:25:00+00:00\",\"type\":\"ai.spec-kitty.lane.transitioned.v1\"}",
+    "valid": true
+  }
+}

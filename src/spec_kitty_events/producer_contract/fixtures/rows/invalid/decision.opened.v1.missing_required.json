@@ -13,7 +13,7 @@
     "type": "ai.spec-kitty.decision.opened.v1",
     "time": "2026-01-01T00:00:00+00:00",
     "datacontenttype": "application/json",
-    "dataschema": "https://schemas.example.invalid/spec-kitty/decision.opened.v1",
+    "dataschema": "urn:ai.spec-kitty:schema:decision.opened.v1",
     "schemaversion": "4.0.0",
     "lamportclock": 19,
     "nodeid": "0123456789ab",

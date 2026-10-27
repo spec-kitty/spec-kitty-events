@@ -1,0 +1,15 @@
+{
+  "case": "lamport_clock_absent.MissionStarted.001",
+  "group": "conformance",
+  "origin": "conformance/fixtures/class_taxonomy/envelope_strict_journal/lamport_clock_absent.json",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"event_id\": \"01M0HTQMTJGMFJ5ERG6T0G9KJK\", \"event_type\": \"MissionStarted\", \"aggregate_id\": \"mission/M-SJ\", \"payload\": {\"mission_id\": \"M-SJ\", \"mission_type\": \"software-dev\", \"initial_phase\": \"specify\", \"actor\": \"user-1\", \"mission_slug\": \"strict-journal-fixture\"}, \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"build_id\": \"build-fixture\", \"node_id\": \"fixture-node\", \"causation_id\": null, \"project_uuid\": \"12345678-1234-5678-1234-567812345678\", \"project_slug\": null, \"correlation_id\": \"01M0HTQMTJGMFJ5ERG6T0G9KJM\", \"schema_version\": \"3.0.0\", \"data_tier\": 0}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "transport_envelope",
+    "codes": [],
+    "golden": "{\"buildid\":\"build-fixture\",\"correlationid\":\"01M0HTQMTJGMFJ5ERG6T0G9KJM\",\"data\":{\"actor\":\"user-1\",\"initial_phase\":\"specify\",\"mission_id\":\"M-SJ\",\"mission_slug\":\"strict-journal-fixture\",\"mission_type\":\"software-dev\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:mission.started.v1\",\"datatier\":0,\"id\":\"01M0HTQMTJGMFJ5ERG6T0G9KJK\",\"nodeid\":\"fixture-node\",\"projectuuid\":\"12345678-1234-5678-1234-567812345678\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/projects/12345678-1234-5678-1234-567812345678\",\"specversion\":\"1.0\",\"subject\":\"mission/M-SJ\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.mission.started.v1\"}",
+    "valid": true
+  }
+}

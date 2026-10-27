@@ -1,0 +1,17 @@
+{
+  "case": "replay_interview_widened_resolved.DecisionPointResolved.072",
+  "group": "conformance",
+  "origin": "conformance/fixtures/decisionpoint/replay/replay_interview_widened_resolved.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"dp/dp-iv-002\", \"build_id\": \"test-build\", \"causation_id\": null, \"correlation_id\": \"01J2A0000000000000000000B8\", \"data_tier\": 0, \"event_id\": \"01J2A0000000000000000000B7\", \"event_type\": \"DecisionPointResolved\", \"lamport_clock\": 4, \"node_id\": \"node-1\", \"payload\": {\"actual_participants\": [{\"display_name\": \"Alice Expert\", \"external_refs\": {\"slack_team_id\": \"T0123456789\", \"slack_user_id\": \"U0000000001\", \"teamspace_member_id\": null}, \"participant_id\": \"p-ext-001\", \"participant_type\": \"human\", \"session_id\": null}, {\"display_name\": \"Bob Engineer\", \"external_refs\": {\"slack_team_id\": \"T0123456789\", \"slack_user_id\": \"U0000000002\", \"teamspace_member_id\": null}, \"participant_id\": \"p-ext-002\", \"participant_type\": \"human\", \"session_id\": null}], \"closed_locally_while_widened\": false, \"closure_message\": {\"channel_id\": \"C0123456789\", \"message_ts\": \"1714464300.000200\", \"thread_ts\": \"1714464000.000100\", \"url\": \"https://acme.slack.com/archives/C0123456789/p1714464300000200\"}, \"decision_point_id\": \"dp-iv-002\", \"final_answer\": \"blue-green\", \"mission_id\": \"m-interview-002\", \"mission_slug\": \"data-pipeline\", \"mission_type\": \"software-dev\", \"origin_surface\": \"planning_interview\", \"other_answer\": false, \"rationale\": null, \"recorded_at\": \"2026-04-23T10:00:03+00:00\", \"resolved_by\": \"human-owner-2\", \"run_id\": \"run-iv-002\", \"state_entered_at\": \"2026-04-23T10:00:03+00:00\", \"summary\": {\"candidate_answer\": \"blue-green\", \"extracted_at\": \"2026-04-23T10:00:03+00:00\", \"source\": \"slack_extraction\", \"text\": \"Team consensus: blue-green deployment avoids schema version conflicts during migration.\"}, \"terminal_outcome\": \"resolved\"}, \"project_slug\": null, \"project_uuid\": \"bbbbbbbb-cccc-dddd-eeee-ffffffffffff\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-04-23T10:00:03+00:00\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "case": "status_diary_unknown_kinds.003",
+  "group": "diary",
+  "origin": "conformance/fixtures/status_diary/replay/status_diary_unknown_kinds.jsonl:3",
+  "notes": "A status.events.jsonl line, read with the Mission id from context.",
+  "context": {
+    "missionid": "01J0000000000000000000RP08"
+  },
+  "line": "{\"at\": \"2026-08-26T13:00:00+00:00\", \"event_id\": \"retro-req-1\", \"event_name\": \"retrospective.requested\", \"payload\": {\"mode\": null}}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "none",
+    "codes": [
+      "UNRECOGNISED_ROW"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "class": "producer_row_invalid",
+  "expected": "invalid",
+  "type": "ai.spec-kitty.mission.completed.v1",
+  "base": "mission.completed.v1",
+  "violation": "data_missing_required",
+  "expected_error_path": "/data",
+  "expected_keyword": "required",
+  "input": {
+    "specversion": "1.0",
+    "id": "01J0000000000000000000T001",
+    "source": "/spec-kitty/missions/01J0000000000000000000MSN1",
+    "type": "ai.spec-kitty.mission.completed.v1",
+    "time": "2026-01-01T00:00:00+00:00",
+    "datacontenttype": "application/json",
+    "dataschema": "urn:ai.spec-kitty:schema:mission.completed.v1",
+    "schemaversion": "4.0.0",
+    "lamportclock": 34,
+    "nodeid": "0123456789ab",
+    "missionid": "01J0000000000000000000MSN1",
+    "data": {
+      "mission_id": "01J0000000000000000000MSN1",
+      "mission_type": "software-dev",
+      "actor": "user-1",
+      "mission_slug": "041-reducer-unification"
+    }
+  },
+  "notes": "data member final_phase is required."
+}

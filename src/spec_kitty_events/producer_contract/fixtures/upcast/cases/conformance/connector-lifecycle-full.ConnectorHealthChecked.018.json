@@ -1,0 +1,17 @@
+{
+  "case": "connector-lifecycle-full.ConnectorHealthChecked.018",
+  "group": "conformance",
+  "origin": "conformance/fixtures/connector/replay/connector-lifecycle-full.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"connector/conn-github-001\", \"build_id\": \"test-build\", \"causation_id\": null, \"correlation_id\": \"01KJFD7KY6ABA9ZNKAPDA9DCKE\", \"data_tier\": 0, \"event_id\": \"01KJFD7KY6ABA9ZNKAPDA9DCK5\", \"event_type\": \"ConnectorHealthChecked\", \"lamport_clock\": 5, \"node_id\": \"node-1\", \"payload\": {\"actor_id\": \"system-health-probe\", \"actor_type\": \"system\", \"connector_id\": \"conn-github-001\", \"connector_type\": \"github\", \"endpoint_url\": \"https://api.github.com\", \"health_status\": \"healthy\", \"latency_ms\": 38.0, \"mission_id\": \"m-001\", \"project_uuid\": \"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee\", \"provider\": \"github\", \"recorded_at\": \"2026-02-27T12:20:00+00:00\"}, \"project_slug\": null, \"project_uuid\": \"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-02-27T12:20:00Z\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

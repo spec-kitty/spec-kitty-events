@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.example.invalid/spec-kitty/wp.created.v1",
+  "$id": "urn:ai.spec-kitty:schema:wp.created.v1",
   "title": "ai.spec-kitty.wp.created.v1 data",
   "additionalProperties": false,
   "description": "A work package was created.",

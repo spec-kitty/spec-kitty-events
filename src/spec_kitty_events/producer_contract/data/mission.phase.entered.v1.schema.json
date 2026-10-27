@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai.spec-kitty:schema:mission.phase.entered.v1",
+  "title": "ai.spec-kitty.mission.phase.entered.v1 data",
+  "additionalProperties": false,
+  "description": "A Mission entered a phase.",
+  "properties": {
+    "actor": {
+      "description": "Actor triggering phase transition",
+      "minLength": 1,
+      "type": "string"
+    },
+    "mission_id": {
+      "description": "Mission identifier",
+      "minLength": 1,
+      "type": "string"
+    },
+    "mission_slug": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Canonical mission slug (display/back-compat; mission_id is the identity)"
+    },
+    "phase_name": {
+      "description": "Phase being entered",
+      "minLength": 1,
+      "type": "string"
+    },
+    "previous_phase": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Phase being exited (None for initial)"
+    }
+  },
+  "required": [
+    "mission_id",
+    "phase_name",
+    "actor"
+  ],
+  "type": "object"
+}

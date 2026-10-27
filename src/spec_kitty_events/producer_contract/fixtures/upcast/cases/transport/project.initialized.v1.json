@@ -1,0 +1,15 @@
+{
+  "case": "project.initialized.v1",
+  "group": "transport",
+  "origin": "producer_contract/fixtures/rows/valid",
+  "notes": "ProjectInitialized as a 3.0.0 transport envelope.",
+  "context": {},
+  "line": "{\"event_id\": \"01J0000000000000000000F006\", \"event_type\": \"ProjectInitialized\", \"aggregate_id\": \"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\", \"payload\": {\"project_uuid\": \"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\", \"project_slug\": \"demo\", \"actor\": \"cli\", \"runtime_version\": \"4.0.0\", \"initialized_at\": \"2026-01-01T00:00:00Z\"}, \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"build_id\": \"build-1\", \"node_id\": \"0123456789ab\", \"lamport_clock\": 6, \"causation_id\": null, \"project_uuid\": \"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\", \"project_slug\": \"demo\", \"correlation_id\": \"01J0000000000000000000C001\", \"schema_version\": \"3.0.0\", \"data_tier\": 0}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "transport_envelope",
+    "codes": [],
+    "golden": "{\"buildid\":\"build-1\",\"correlationid\":\"01J0000000000000000000C001\",\"data\":{\"actor\":\"cli\",\"initialized_at\":\"2026-01-01T00:00:00Z\",\"project_slug\":\"demo\",\"project_uuid\":\"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\",\"runtime_version\":\"4.0.0\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:project.initialized.v1\",\"datatier\":0,\"id\":\"01J0000000000000000000F006\",\"lamportclock\":6,\"nodeid\":\"0123456789ab\",\"projectslug\":\"demo\",\"projectuuid\":\"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/projects/5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\",\"specversion\":\"1.0\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.project.initialized.v1\"}",
+    "valid": true
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "case": "run.significance.evaluated.v1",
+  "group": "cli",
+  "origin": "producer_contract/fixtures/rows/valid/run.significance.evaluated.v1.json",
+  "notes": "The persisted legacy line of a producer fixture.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-reducer-unification"
+  },
+  "line": "{\"event_id\": \"01J0000000000000000000F027\", \"row_version\": 1, \"event_type\": \"SignificanceEvaluated\", \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"payload\": {\"run_id\": \"01J0000000000000000000RUN1\", \"decision_id\": \"d1\", \"step_id\": \"specify\", \"significance_score\": {\"composite\": 9, \"band\": \"medium\", \"effective_band\": \"medium\", \"hard_trigger_classes\": []}, \"hard_trigger_classes\": [], \"effective_band\": \"medium\", \"actor\": {\"actor_type\": \"service\", \"actor_id\": \"runtime\"}}}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "journal_envelope",
+    "codes": [],
+    "golden": "{\"data\":{\"actor\":{\"actor_id\":\"runtime\",\"actor_type\":\"service\"},\"decision_id\":\"d1\",\"effective_band\":\"medium\",\"hard_trigger_classes\":[],\"run_id\":\"01J0000000000000000000RUN1\",\"significance_score\":{\"band\":\"medium\",\"composite\":9,\"effective_band\":\"medium\",\"hard_trigger_classes\":[]},\"step_id\":\"specify\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:run.significance.evaluated.v1\",\"id\":\"01J0000000000000000000F027\",\"missionid\":\"01J0000000000000000000MSN1\",\"missionslug\":\"041-reducer-unification\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.run.significance.evaluated.v1\"}",
+    "valid": true
+  }
+}

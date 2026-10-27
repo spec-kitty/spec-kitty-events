@@ -1,0 +1,17 @@
+{
+  "case": "status_diary_concurrent_reject_beats_approve.007",
+  "group": "diary",
+  "origin": "conformance/fixtures/status_diary/replay/status_diary_concurrent_reject_beats_approve.jsonl:7",
+  "notes": "A status.events.jsonl line, read with the Mission id from context.",
+  "context": {
+    "missionid": "01J0000000000000000000RP01"
+  },
+  "line": "{\"actor\": \"reviewer-b\", \"at\": \"2026-08-26T10:30:00+00:00\", \"event_id\": \"01JAAAA0000000000000000035\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_review\", \"mission_slug\": \"041-reducer-unification\", \"reason\": null, \"review_ref\": null, \"review_result\": {\"reference\": \"feedback://041-reducer-unification/WP01/approved\", \"reviewer\": \"reviewer-b\", \"verdict\": \"approved\"}, \"to_lane\": \"approved\", \"wp_id\": \"WP01\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"reviewer-b\",\"data\":{\"evidence\":null,\"force\":false,\"from_lane\":\"in_review\",\"reason\":null,\"review_ref\":null,\"review_result\":{\"reference\":\"feedback://041-reducer-unification/WP01/approved\",\"reviewer\":\"reviewer-b\",\"verdict\":\"approved\"},\"to_lane\":\"approved\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:lane.transitioned.v1\",\"executionmode\":\"worktree\",\"id\":\"01JAAAA0000000000000000035\",\"missionid\":\"01J0000000000000000000RP01\",\"missionslug\":\"041-reducer-unification\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000RP01\",\"specversion\":\"1.0\",\"subject\":\"WP01\",\"time\":\"2026-08-26T10:30:00+00:00\",\"type\":\"ai.spec-kitty.lane.transitioned.v1\"}",
+    "valid": true
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "case": "lane.transitioned.v1",
+  "group": "transport",
+  "origin": "producer_contract/fixtures/rows/valid",
+  "notes": "WPStatusChanged as a 3.0.0 transport envelope.",
+  "context": {},
+  "line": "{\"event_id\": \"01J0000000000000000000F003\", \"event_type\": \"WPStatusChanged\", \"aggregate_id\": \"mission/01J0000000000000000000MSN1/wp/WP01\", \"payload\": {\"from_lane\": \"approved\", \"to_lane\": \"done\", \"force\": false, \"reason\": null, \"review_ref\": null, \"evidence\": {\"review\": {\"reviewer\": \"renata\", \"verdict\": \"approved\", \"reference\": \"approval://01J0000000000000000000AP01\"}, \"repos\": [{\"repo\": \"demo\", \"branch\": \"kitty/mission-demo-lane-a\", \"commit\": \"0123abc\", \"files_touched\": [\"src/a.py\"]}], \"verification\": [{\"command\": \"make test-fast\", \"result\": \"pass\", \"summary\": \"42 passed\"}]}, \"policy_metadata\": {\"agent\": \"claude\", \"shell_pid\": 4242, \"shell_pid_created_at\": \"2026-01-01T00:00:00+00:00\"}, \"mission_slug\": \"041-reducer-unification\", \"mission_id\": \"01J0000000000000000000MSN1\", \"wp_id\": \"WP01\", \"actor\": \"claude\", \"execution_mode\": \"worktree\"}, \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"build_id\": \"build-1\", \"node_id\": \"0123456789ab\", \"lamport_clock\": 3, \"causation_id\": null, \"project_uuid\": \"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\", \"project_slug\": \"demo\", \"correlation_id\": \"01J0000000000000000000C001\", \"schema_version\": \"3.0.0\", \"data_tier\": 0}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "transport_envelope",
+    "codes": [],
+    "golden": "{\"actor\":\"claude\",\"buildid\":\"build-1\",\"correlationid\":\"01J0000000000000000000C001\",\"data\":{\"evidence\":{\"repos\":[{\"branch\":\"kitty/mission-demo-lane-a\",\"commit\":\"0123abc\",\"files_touched\":[\"src/a.py\"],\"repo\":\"demo\"}],\"review\":{\"reference\":\"approval://01J0000000000000000000AP01\",\"reviewer\":\"renata\",\"verdict\":\"approved\"},\"verification\":[{\"command\":\"make test-fast\",\"result\":\"pass\",\"summary\":\"42 passed\"}]},\"force\":false,\"from_lane\":\"approved\",\"policy_metadata\":{\"agent\":\"claude\",\"shell_pid\":4242,\"shell_pid_created_at\":\"2026-01-01T00:00:00+00:00\"},\"reason\":null,\"review_ref\":null,\"to_lane\":\"done\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:lane.transitioned.v1\",\"datatier\":0,\"executionmode\":\"worktree\",\"id\":\"01J0000000000000000000F003\",\"lamportclock\":3,\"missionid\":\"01J0000000000000000000MSN1\",\"missionslug\":\"041-reducer-unification\",\"nodeid\":\"0123456789ab\",\"projectslug\":\"demo\",\"projectuuid\":\"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"subject\":\"WP01\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.lane.transitioned.v1\"}",
+    "valid": true
+  }
+}

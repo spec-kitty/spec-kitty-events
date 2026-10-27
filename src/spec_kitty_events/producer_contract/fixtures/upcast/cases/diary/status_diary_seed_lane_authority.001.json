@@ -1,0 +1,17 @@
+{
+  "case": "status_diary_seed_lane_authority.001",
+  "group": "diary",
+  "origin": "conformance/fixtures/status_diary/replay/status_diary_seed_lane_authority.jsonl:1",
+  "notes": "A status.events.jsonl line, read with the Mission id from context.",
+  "context": {
+    "missionid": "01J0000000000000000000RP05"
+  },
+  "line": "{\"actor\": \"finalize-tasks\", \"at\": \"2026-10-13T10:00:00+00:00\", \"event_id\": \"01JAAAA0000000000000000001\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"planned\", \"mission_slug\": \"061-seed-lane-authority\", \"reason\": null, \"review_ref\": null, \"to_lane\": \"planned\", \"wp_id\": \"WP01\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"finalize-tasks\",\"data\":{\"evidence\":null,\"force\":true,\"from_lane\":\"planned\",\"reason\":null,\"review_ref\":null,\"to_lane\":\"planned\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:lane.transitioned.v1\",\"executionmode\":\"worktree\",\"id\":\"01JAAAA0000000000000000001\",\"missionid\":\"01J0000000000000000000RP05\",\"missionslug\":\"061-seed-lane-authority\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000RP05\",\"specversion\":\"1.0\",\"subject\":\"WP01\",\"time\":\"2026-10-13T10:00:00+00:00\",\"type\":\"ai.spec-kitty.lane.transitioned.v1\"}",
+    "valid": true
+  }
+}

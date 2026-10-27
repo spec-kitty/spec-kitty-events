@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.example.invalid/spec-kitty/run.significance.evaluated.v1",
+  "$id": "urn:ai.spec-kitty:schema:run.significance.evaluated.v1",
   "title": "ai.spec-kitty.run.significance.evaluated.v1 data",
   "type": "object",
   "properties": {

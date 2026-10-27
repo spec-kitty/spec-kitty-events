@@ -1,0 +1,17 @@
+{
+  "case": "unknown_event_type.Sparkle.005",
+  "group": "conformance",
+  "origin": "conformance/fixtures/class_taxonomy/envelope_strict_journal/unknown_event_type.json",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"event_id\": \"01M0HTQMTJGMFJ5ERG6T0G9KJK\", \"event_type\": \"Sparkle\", \"aggregate_id\": \"mission/M-SJ\", \"payload\": {}, \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"build_id\": \"build-fixture\", \"node_id\": \"fixture-node\", \"lamport_clock\": 1, \"causation_id\": null, \"project_uuid\": \"12345678-1234-5678-1234-567812345678\", \"project_slug\": null, \"correlation_id\": \"01M0HTQMTJGMFJ5ERG6T0G9KJM\", \"schema_version\": \"3.0.0\", \"data_tier\": 0}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

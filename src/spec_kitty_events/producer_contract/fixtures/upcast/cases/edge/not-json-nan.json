@@ -1,0 +1,20 @@
+{
+  "case": "not-json-nan",
+  "group": "edge",
+  "origin": "scripts/generate_upcast_corpus.py",
+  "notes": "NaN is not JSON (RFC 8259), whatever a parser tolerates.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-demo"
+  },
+  "line": "{\"event_id\": \"01J0000000000000000000E001\", \"x\": NaN}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "none",
+    "codes": [
+      "NOT_JSON"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

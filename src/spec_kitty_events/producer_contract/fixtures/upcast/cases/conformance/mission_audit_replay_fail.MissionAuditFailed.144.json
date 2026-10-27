@@ -1,0 +1,17 @@
+{
+  "case": "mission_audit_replay_fail.MissionAuditFailed.144",
+  "group": "conformance",
+  "origin": "conformance/fixtures/mission_audit/replay/mission_audit_replay_fail.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"audit/mission-010/run-002\", \"build_id\": \"test-build\", \"causation_id\": \"01KJD1WFEVRJZGCKQH5N344ZCB\", \"correlation_id\": \"01KJD1WFEVRJZGCKQH5N344ZC9\", \"data_tier\": 0, \"event_id\": \"01KJD1WFEVRJZGCKQH5N344ZCC\", \"event_type\": \"MissionAuditFailed\", \"lamport_clock\": 3, \"node_id\": \"local-node-001\", \"payload\": {\"actor\": \"agent-claude\", \"error_code\": \"TIMEOUT\", \"error_message\": \"Audit timed out after 9 minutes\", \"mission_id\": \"mission-010\", \"mission_number\": 10, \"mission_slug\": \"mission-010\", \"mission_type\": \"software-dev\", \"partial_artifact_ref\": null, \"run_id\": \"run-002\"}, \"project_slug\": null, \"project_uuid\": \"12345678-1234-5678-1234-567812345678\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-02-25T11:10:00.000000Z\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}
