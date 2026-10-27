@@ -205,24 +205,40 @@ def _set_worktree_version(worktree: Path, version: str) -> None:
     )
 
 
+def _unreleased_version_after(version: str, released: set[str]) -> str:
+    """``version`` itself when untagged, else the first untagged ``.postN`` of it."""
+    candidate, n = version, 0
+    while candidate in released:
+        n += 1
+        candidate = f"{version}.post{n}"
+    return candidate
+
+
+def test_unreleased_version_after_skips_tagged_versions() -> None:
+    assert _unreleased_version_after("1.0.0", set()) == "1.0.0"
+    assert _unreleased_version_after("1.0.0", {"1.0.0", "1.0.0.post1"}) == "1.0.0.post2"
+
+
 def test_real_repo_unreleased_version_with_src_change_passes(tmp_path, monkeypatch) -> None:
     """Issue #213: force a real ``src/`` diff so ``check()`` runs against this
     repository's own history and tags, not just the early "nothing under src/
     changed" exit the plain smoke test takes.
 
-    The real head carries an unreleased version (11.2.0 is untagged), so a real
-    ``src/`` change against it must pass under the 2026-10-19 release-tag ruling.
+    The worktree declares a version no ``v*`` tag names, so a real ``src/``
+    change against it must pass under the 2026-10-19 release-tag ruling. The
+    version is derived rather than read from the tip: on a release-tag build
+    the tip version is tagged, and assuming otherwise failed the v11.2.0
+    publish run.
     """
     worktree = _add_real_repo_worktree(tmp_path)
     try:
         monkeypatch.setattr(_checker, "_REPO_ROOT", worktree)
-        head_version = _checker._current_version()
-        assert head_version not in _checker._released_versions(), (
-            "this test requires the current tip version to be unreleased (untagged)"
+        unreleased_version = _unreleased_version_after(
+            _checker._current_version(), _checker._released_versions()
         )
 
         _touch_tracked_src_file(worktree)
-        _set_worktree_version(worktree, head_version)
+        _set_worktree_version(worktree, unreleased_version)
 
         assert _checker.check() is None
     finally:
