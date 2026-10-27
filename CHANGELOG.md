@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.3.0] - 2026-10-27
+
+Minor release. It adds the CloudEvents envelope profiles, the full type registry, a
+read-time upcaster for legacy log rows, its corpus and a Java binding (#92, step 2 of
+spec-kitty/spec-kitty#6117). No 3.0.0 accept or reject boundary changes. The envelope
+`schema_version` stays `3.0.0`, and the status-diary reducer is unchanged.
+
+### Added
+
+- `spec_kitty_events.cloudevents`, which provides:
+  - `upcast()` and `upcast_line()`, which read a legacy row (the 3.0.0 envelope, diary
+    lane and annotation rows, and CLI lifecycle, decision, journal and retrospective rows)
+    as a CloudEvent. They never rewrite it. In strict use they raise `UpcastError`; in
+    permissive use they pass the row through with a named issue.
+  - `canonical_bytes()`.
+  - `validate_cloudevent()` (non-normative; needs the `conformance` extra).
+  - `diary_row()`.
+- Registry entries for the eight strict types that had none (`mission.started.v1`,
+  `mission.completed.v1`, `mission.cancelled.v1`, `mission.closed.v1`,
+  `mission.phase.entered.v1`, `wp.review.rolledback.v1`, `harness.observed.v1`,
+  `work.observed.v1`), with their data schemas and fixtures. Every entry gains a `transport`
+  mapping from the 3.0.0 envelope.
+- The read envelope profile (`envelope.read.schema.json`, `composed/read/`, and
+  `row_schema(..., profile="read")`).
+- The upcast corpus (`producer_contract/fixtures/upcast/`, 363 cases) and its packaged gate,
+  including equal reduced state on every status-diary replay fixture. It is regenerated and
+  checked by `scripts/generate_upcast_corpus.py`.
+- A Java 25 binding (`java/`, Maven, not published) that runs the same corpus, and
+  `make test-java`, which is part of `make test-full`. `scripts/ensure_jdk25.sh` provisions
+  Temurin 25 when no JDK 25 is present.
+
 ### Changed
 
 - **The `LICENSE` copyright holder now reads `Spec Kitty, Inc.`** It briefly read
@@ -15,6 +46,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   this repo no longer differs from the rest of the org. The MIT grant and warranty
   disclaimer are byte-for-byte unchanged, and contributor copyright is unaffected:
   the holder line never conveyed it, and git history remains the record.
+- ADR 0001 is Accepted with every question decided: writers switch on the 4.0 GA critical
+  path (3a), a later major retires `3.0.0` (3b), the further choices are confirmed, and the
+  reducer's switch to Lamport ordering is post-GA.
+- The non-normative producer contract's `dataschema` base is now
+  `urn:ai.spec-kitty:schema:`, replacing the placeholder `https://schemas.example.invalid/`.
+  The existing envelope schema is the write profile, and the `INTERIM` markers are lifted.
+- The lane data schema gains an optional `summary` member, taken from the 3.0.0 payload.
 
 ## [11.2.1] - 2026-10-19
 

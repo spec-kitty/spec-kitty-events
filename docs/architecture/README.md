@@ -27,6 +27,8 @@ these documents support live in the [decision records](/adr/).
 
 - [CloudEvents envelope design](/architecture/cloudevents-envelope/) — adopting CloudEvents
   1.0 as the event-log envelope, supporting [ADR-0001](/adr/0001-cloudevents-envelope/).
+  The registry, envelope profiles, upcaster and Java binding shipped in `11.3.0`; the
+  `12.0.0` cutover is next.
 - [Producer row schemas and the total order](/architecture/producer-row-schemas/) — the
   per-row-kind data schemas, the producer registry and the total-order comparator.
 - [Lifecycle reconciliation](/architecture/lifecycle-reconciliation/) — how the lifecycle,

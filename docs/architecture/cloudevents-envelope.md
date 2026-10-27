@@ -1,23 +1,26 @@
 ---
 title: CloudEvents envelope design
-description: 'Proposed CloudEvents 1.0 envelope design: field mapping from the 3.0.0 envelope and status-diary row, upcaster principles, and a phased rollout.'
-doc_status: draft
-updated: 2026-10-13T00:00:00Z
+description: 'CloudEvents 1.0 envelope design: field mapping from the 3.0.0 envelope and status-diary row, the upcaster contract, and a phased rollout.'
+doc_status: active
+updated: 2026-10-27T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
 
 # CloudEvents envelope design
 
-**Status:** Proposed design. Nothing here has shipped. This document supports
-[ADR-0001](../adr/0001-cloudevents-envelope.md), which is Accepted (2026-10-15).
-Where this document recommends, it says "recommendation". The ADR has decided ordering
-(option C), the id format (ULID only) and the type prefix (`ai.spec-kitty`); timing (3a and 3b) is still open, and the two embedded
-choices of section 4 (snake_case inside `data`; `actor` and `executionmode` as extensions)
-are proposals to confirm on the PR.
+**Status:** Phases 1 to 3 shipped in release `11.3.0` (spec-kitty-events#92): the full type
+registry, the read and write envelope profiles, the upcaster and its corpus, the
+non-normative validator and a Java binding. The Phase 4b cutover (`12.0.0`) and the writer
+switch have not. This document supports [ADR-0001](../adr/0001-cloudevents-envelope.md),
+which is Accepted with every question decided (2026-10-27): ordering option C, ULID-only
+ids, the `ai.spec-kitty` prefix, writer timing (3a), the retirement of `3.0.0` (3b) and the
+choices of section 4 (snake_case inside `data`; `actor` and `executionmode` as extensions).
+Where this document recommends, it says "recommendation"; where it says "proposal", the
+ADR has since confirmed it.
 
-This is a decision-level document. The row-level upcaster contract is deliberately not
-specified here (section 9).
+This document records the decisions; section 9 also states the row-level upcaster contract
+that #92 pinned.
 
 Spec claims below were checked on 2026-10-13 against the CloudEvents specification
 repository (`https://github.com/cloudevents/spec`) at the release tag `ce@v1.0.2` (spec
@@ -118,7 +121,7 @@ not enforce that: fixtures carry slug-like segments (`mission/replay-mission`,
 The split applies only to a segment that is a ULID; any other segment falls under the
 "any other prefix" rule below, with no `missionid`, so a slug is never presented as a
 mission id. Precedence when the aggregate segment and a payload `mission_id` disagree is a
-principle to settle in the first implementation mission: the registry-lifted payload value
+principle settled by the first implementation mission (section 9): the registry-lifted payload value
 and the caller context must not be silently overridden, and a disagreement is a named
 error in strict use. Fixtures for slug-segment and unprefixed aggregates are part of the
 Phase 1 mapping exit criterion.
@@ -174,7 +177,7 @@ fields, so several attributes are constants or supplied by context (the Mission'
 | annotation row (`kind: annotation`): `event_id`, `at`, `wp_id`, `actor` | `id`, `time`, `subject`, `actor` | as above | Same mapping as the lane row. The row has six fields (these four plus `kind` and `delta`) and carries no mission identity, so `source` and `missionid` (and `missionslug`, if supplied) come only from caller context (the Mission's `meta.json`); `executionmode` is omitted. A structured `actor` (`InnerStateChanged.actor` may be one) follows the same rule as the lane row: `actor` projection plus an optional `data.actorbinding` beside `delta`. | ok |
 | annotation row: `delta`, `kind` | `data.delta`, `type` | `WPInnerStateDelta`; String | `delta` copied whole; the `kind` discriminator is replaced by the registered annotation `type` (name fixed in Phase 1). | ok |
 
-Decisions embedded here, for the maintainer to confirm on the PR:
+Decisions embedded here (confirmed in ADR 0001, 2026-10-27):
 
 - `data` keeps the existing snake_case field names so the existing payload models and
   schemas carry over and the A-to-CloudEvents mapping stays a move, not a rename. The
@@ -219,7 +222,7 @@ question 1 (option C):
 - `source` + `id` uniqueness: the spec says nothing about equal ids from different sources,
   and a relative `source` weakens cross-repo uniqueness. Within one Mission's log every row
   has the same `source`, so deduping by `id` there equals deduping by `(source, id)`.
-  Proposal, to confirm on the PR: dedupe by `(source, id)`; keying on `id` alone
+  Decided (ADR 0001, 2026-10-27): dedupe by `(source, id)`; keying on `id` alone
   across sources would drop distinct events unless a global-id invariant is added. Where
   the key lives is for core to decide (section 9).
 - `subject` is the entity inside the source: `WP01` for a work package. Shape A's
@@ -229,7 +232,7 @@ question 1 (option C):
 ## 7. Type registry and naming
 
 `type` is `<prefix>.<noun>.<verb>.v<N>`, for example `ai.spec-kitty.lane.transitioned.v1`
-(the noun/verb name is a proposal to confirm on the PR, like the lifted members of section 3).
+(the noun/verb names and the lifted members of section 3 are confirmed in ADR 0001, 2026-10-27).
 `<prefix>` is the reverse-DNS name `ai.spec-kitty` (ADR question 4, decided).
 
 - The registry is a committed table: legacy `event_type` (A) and diary shape (B) to `type`,
@@ -239,7 +242,7 @@ question 1 (option C):
   an entry later is additive and moves that type from pass-through to mapped.
 - `.vN` is the payload major. A payload change that would make a previously valid `data`
   invalid is a new type with `.v(N+1)`; the old type is kept and still validates its
-  rows. This is a proposal to confirm on the PR (ADR, "Further choices"); it deliberately replaces the versioning contract's rule that changing or
+  rows. Confirmed in ADR 0001 ("Further choices", 2026-10-27); it deliberately replaces the versioning contract's rule that changing or
   renaming a typed payload field is major (there it makes the previous shape invalid) with
   new-type versioning: adding the new `.v(N+1)` type is additive (minor), the contract
   text is amended at cutover (section 14, Phase 4b), and emission of any new `.vN` type is
@@ -253,9 +256,10 @@ question 1 (option C):
 ## 8. `dataschema` and schema versioning
 
 `dataschema` is a URI naming the committed JSON Schema for `data`, one per registered
-type, for example the placeholder `https://schemas.example.invalid/spec-kitty/lane.transitioned.v1`
+type, for example `urn:ai.spec-kitty:schema:lane.transitioned.v1`
 (an absolute https URI; the spec only requires a non-empty URI, and a `.vN` suffix changes
-the URI on an incompatible schema change). The base is open (it moves with the prefix).
+the URI on an incompatible schema change). The base is `urn:ai.spec-kitty:schema:` (decided
+2026-10-27): an identifier with no hosting assumption that bindings resolve to the packaged files.
 Five version numbers stay separate:
 
 | Axis | Carried by | Moves when |
@@ -264,7 +268,7 @@ Five version numbers stay separate:
 | Spec Kitty envelope schema version | `schemaversion` (`4.0.0` at first) | The attribute set, mapping, ordering or id rules change. Major = accept/reject boundary change. |
 | Payload schema version | `type` suffix and `dataschema` | A payload model changes. |
 | Package version | `pyproject.toml` | Any release; independent of the above, per the versioning contract. |
-| Spec Kitty release line | not carried by an event | The core product's `4.x`/`5.0` line; informs the writer-timing question only (ADR open question 3a). |
+| Spec Kitty release line | not carried by an event | The core product's `4.x`/`5.0` line; informs the writer-timing question only (ADR question 3a, decided 2026-10-27). |
 
 The envelope schema (the context attributes) is itself a committed JSON Schema; the strict
 profile gains a CloudEvents validator beside, not inside, today's `validate_strict_envelope`
@@ -320,7 +324,61 @@ bind its design; they are the decisions, not the contract.
   change, complete in both respects, ships before any writer emits CloudEvents into a log
   (section 14, Phase 5).
 
-The row-level upcaster contract (detection, outcomes, error codes, fixtures) is specified and tested in the first implementation mission against the real reducer.
+The row-level contract below was specified and is pinned by the first implementation mission
+(spec-kitty-events#92, release `11.3.0`). Implementations: `spec_kitty_events.cloudevents`
+(Python) and `java/` (Java); both run the corpus `producer_contract/fixtures/upcast/`, which
+is the authority where this text and a binding differ.
+
+**Inputs.** One row (or one log line, kept as bytes), a caller context (`missionid`,
+`missionslug`, `projectuuid`, from the Mission's `meta.json` and project config) and a mode:
+permissive (the default; local reads and merges) or strict (ingress, and validating a row
+before it is written). Context fills a gap a row leaves; it never overrides a row value.
+
+**Detection, in this order.** Not a JSON object: `NOT_AN_OBJECT` (a line that does not parse:
+`NOT_JSON`). Has `specversion`: already a CloudEvent, `ALREADY_CLOUDEVENT`, passed through in
+both modes. Has `event_type`, `aggregate_id`, `payload`, `node_id` and `build_id`: shape A.
+Has `event_type` and `payload` and `row_version`, `aggregate_type` or `at`: the CLI journal,
+lifecycle or decision envelope. Equals a registered flat constant (`kind: annotation`, a
+retrospective `type`): that flat type. Has `to_lane` and `wp_id` and no `event_type`: the
+lane row. Anything else: `UNRECOGNISED_ROW` (shapes C and D).
+
+**Outcomes.** `mapped` (a new CloudEvent) or `passthrough` (the input, unchanged, with the
+named issue). Strict use raises the issue instead, except `ALREADY_CLOUDEVENT`. The input is
+never mutated; a writer that keeps a legacy row writes its original bytes.
+
+**Issue codes.** `NOT_JSON`, `NOT_AN_OBJECT`, `ALREADY_CLOUDEVENT`, `UNRECOGNISED_ROW`,
+`UNSUPPORTED_SCHEMA_VERSION` (shape A other than `3.0.0`), `UNREGISTERED_TYPE`,
+`UNEXPECTED_MEMBER` (a member the form does not map; nothing is dropped silently),
+`MISSING_MEMBER`, `INVALID_MEMBER`, `INVALID_ID`, `INVALID_TIME`, `CLOCK_OUT_OF_RANGE`,
+`MISSION_ID_CONFLICT`, `MISSION_SLUG_CONFLICT`, `SUBJECT_CONFLICT`, `AGGREGATE_UNMAPPABLE`
+(an aggregate the event's attributes cannot reproduce) and `MISSION_ID_MISSING`.
+
+**Mission id and aggregate (the precedence this section left open).** The candidates are a
+ULID aggregate segment (shape A `mission/<ULID>[/wp/<WP>]`, or a bare ULID aggregate of a CLI
+lifecycle row), the row's or payload's lifted `mission_id`, and the context; all present
+values must agree after id normalization (`MISSION_ID_CONFLICT`). With a Mission id the
+source is the Mission and the aggregate must be reproducible from the Mission id or slug and
+the subject (`AGGREGATE_UNMAPPABLE` otherwise). Without one, a project uuid (row, else
+context) gives the project-scoped fallback source and the aggregate becomes the subject; with
+neither, `MISSION_ID_MISSING`. A project-scoped type takes the project source and its
+aggregate must be the project.
+
+**What is not carried.** CLI envelope members whose content the type states
+(`aggregate_type`, the legacy payload `schema_version`, the journal `row_version`) are
+implied by `type` and not copied. Nothing else is dropped.
+
+**What the upcaster does not check.** It maps; it does not validate `data` against its
+schema. A mapped row that is not valid (for example a 3.0.0 `WPStatusChanged` payload
+without `from_lane`, which nothing defaults) is caught by `validate_cloudevent`, which strict
+ingress runs on the result. The corpus records such rows with `valid: false`.
+
+**Limits shared by every binding.** A line nested deeper than 256 (the root container is depth
+1) is `NOT_JSON`, as are NaN and the infinities. Outside the contract, and not pinned:
+integers longer than 1000 digits (the Java parser refuses them), numbers that overflow a
+double (`1e400`), and strings with unpaired surrogates (neither has a canonical form).
+
+**Equal reduced state** is pinned for every status-diary replay fixture: decoding the upcast
+lane and annotation rows (`diary_row`) gives the reducer the committed state.
 
 ## 10. Worked example
 
@@ -345,7 +403,7 @@ shown pretty-printed (the log line would be one line):
   "subject": "WP01",
   "time": "2026-08-26T10:05:00+00:00",
   "datacontenttype": "application/json",
-  "dataschema": "https://schemas.example.invalid/spec-kitty/lane.transitioned.v1",
+  "dataschema": "urn:ai.spec-kitty:schema:lane.transitioned.v1",
   "schemaversion": "4.0.0",
   "missionid": "01JAAAA00000000000000MSN01",
   "missionslug": "041-reducer-unification",
@@ -488,7 +546,7 @@ level; later phases are not started until the earlier one's exit holds.
 | 5. Writers (CLI releases, only after the 4b package release) | Precondition, owned by core: the merge driver release that accepts CloudEvent rows (an unchanged driver rejects them and conflicts), with fork detection and the sort key reading the upcast form (a partially adopted driver is blind to a concurrent fork), ships first. Then the first command group writes CloudEvents; a project schema bump stops older CLIs appending legacy rows. | Golden byte tests pass; a mixed old/new log merges without rejecting any row the current driver accepts; a log with CloudEvent rows merges with the released driver and does not conflict merely for lacking `event_id`; a concurrent cancel and advance on CloudEvent rows still conflicts; an older CLI refuses the upgraded project. |
 | 6. Streaming | Kafka and Spring spike against the verified libraries. | A round trip of a log line through Kafka and a Spring consumer, recorded; unverified items in section 12 resolved or struck. |
 
-**Cutover (the retirement step is ADR open question 3b; options, not decided).** The versioning contract
+**Cutover (the retirement step is ADR question 3b; decided 2026-10-27: option A, a later major retires `3.0.0`).** The versioning contract
 says producers must emit `3.0.0` and `validate_strict_envelope` requires
 `_REQUIRED_SCHEMA_VERSION = "3.0.0"` (`strict.py`). Phases 2 to 4 are additive and change
 neither. Two meanings of "release" are kept apart: the cutover release is a release of
@@ -507,9 +565,10 @@ State the accept/reject boundary per option in the release notes (4b: widened; r
 step: narrowed), so the major-bump rule stays traceable.
 
 Either way the 4b release is declared in `CHANGELOG.md` `### Breaking` and
-`COMPATIBILITY.md`, and the charter's "explicit cutover decision" is recorded when open
-question 3a (writer timing) is ruled. Question 3a, the product-line mapping of when
-writers switch, does not move 4b and is separate from the options above.
+`COMPATIBILITY.md`. The charter's "explicit cutover decision" for the live path is the
+writer switch that ADR question 3a (decided 2026-10-27) schedules: when the Mission Read
+and Write APIs are ready, on the 4.0 GA critical path. It does not move 4b and is separate
+from the options above.
 
 **Schemas as source versus Pydantic-generated (charter-level).** Today the schemas are
 generated from the Pydantic models (`src/spec_kitty_events/schemas/generate.py`).

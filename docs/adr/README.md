@@ -33,6 +33,6 @@ index.
 
 | ID | Title | Status | Date |
 |----|-------|--------|------|
-| [0001](./0001-cloudevents-envelope.md) | ADR-0001: Adopt CloudEvents 1.0 as the event envelope | Accepted | 2026-10-15 |
+| [0001](./0001-cloudevents-envelope.md) | ADR-0001: Adopt CloudEvents 1.0 as the event envelope | Accepted | 2026-10-27 |
 
 Design detail for the records above lives under [`docs/architecture/`](../architecture/).

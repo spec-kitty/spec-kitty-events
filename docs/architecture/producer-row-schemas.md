@@ -2,7 +2,7 @@
 title: Producer row schemas and the total order
 description: Design for the per-row-kind data schemas, the producer registry, the conformance fixtures and the total-order comparator (spec-kitty#6185). First slice of #92.
 doc_status: draft
-updated: 2026-10-14T00:00:00Z
+updated: 2026-10-27T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -18,6 +18,12 @@ spec-kitty/spec-kitty#6185 and still await maintainer confirmation. Nothing here
 
 **Reader:** the maintainer reviewing the PR for spec-kitty-events#92 step 2, and the
 author of the Java producer in spec-kitty#6185, which consumes the released artifact.
+
+> **Status after #92 (release `11.3.0`).** The INTERIM choices below are confirmed (ADR 0001,
+> 2026-10-27); the `dataschema` base is `urn:ai.spec-kitty:schema:`; the envelope subset is the
+> write profile beside a read profile; the registry covers every strict type; the upcaster,
+> its corpus and a Java binding have shipped (`docs/architecture/cloudevents-envelope.md`,
+> section 9). This document keeps the record of the `10.5.0` slice.
 
 ## 1. What this PR carries, and what it leaves to #92
 
