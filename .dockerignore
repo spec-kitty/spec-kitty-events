@@ -83,3 +83,7 @@
 
 # Local scratch (engineering notes, throwaway scripts)
 **/work
+
+# Java binding build output and the provisioned JDK (spec-kitty-events#92)
+**/java/target
+**/.cache/jdk-25

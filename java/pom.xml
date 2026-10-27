@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Java binding of the spec-kitty-events CloudEvents contract (spec-kitty-events#92).
+
+  It reads the Python package's producer_contract directory in place (registry, schemas,
+  upcast corpus): the committed files are the single source of truth and nothing is copied
+  or generated. Not published; built and tested by `make test-java`.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>ai.spec-kitty</groupId>
+  <artifactId>spec-kitty-events-java</artifactId>
+  <version>11.3.0</version>
+  <packaging>jar</packaging>
+  <name>spec-kitty-events (Java binding)</name>
+  <description>CloudEvents envelope validation and the legacy-row upcaster, against the
+    committed spec-kitty-events schemas and fixtures.</description>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>25</maven.compiler.release>
+    <contract.dir>${project.basedir}/../src/spec_kitty_events/producer_contract</contract.dir>
+    <version.jackson>3.2.4</version.jackson>
+    <version.json-schema-validator>3.0.8</version.json-schema-validator>
+    <version.junit>6.1.3</version.junit>
+    <version.slf4j>2.0.17</version.slf4j>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${version.jackson}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.networknt</groupId>
+      <artifactId>json-schema-validator</artifactId>
+      <version>${version.json-schema-validator}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${version.junit}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-nop</artifactId>
+      <version>${version.slf4j}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <resources>
+      <!-- the registry and schemas, read in place from the Python package -->
+      <resource>
+        <directory>${contract.dir}</directory>
+        <targetPath>spec_kitty_events/producer_contract</targetPath>
+        <includes>
+          <include>*.json</include>
+          <include>data/*.json</include>
+          <include>composed/rows/*.json</include>
+          <include>composed/read/*.json</include>
+        </includes>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.14.0</version>
+        <configuration>
+          <compilerArgs>
+            <arg>-Xlint:all</arg>
+            <arg>-Werror</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.4</version>
+        <configuration>
+          <systemPropertyVariables>
+            <upcast.cases>${contract.dir}/fixtures/upcast/cases</upcast.cases>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
