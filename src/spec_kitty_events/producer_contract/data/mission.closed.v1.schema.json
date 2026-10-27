@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai.spec-kitty:schema:mission.closed.v1",
+  "title": "ai.spec-kitty.mission.closed.v1 data",
+  "additionalProperties": false,
+  "description": "A Mission was closed.",
+  "properties": {
+    "actor": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Opaque actor identifier of who closed the mission (broadcast under the moment's ``actor`` key)"
+    },
+    "mission_id": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Canonical machine-facing mission identity (ULID); optional, rides alongside mission_slug so a consumer can join this moment against PhaseEntered (whose frame ref is mission_id) for the same mission aggregate (spec-kitty-events#69)"
+    },
+    "mission_number": {
+      "description": "Canonical mission number",
+      "minimum": 1,
+      "type": "integer"
+    },
+    "mission_slug": {
+      "description": "Canonical mission slug",
+      "minLength": 1,
+      "type": "string"
+    },
+    "mission_type": {
+      "description": "Canonical mission workflow/template type",
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "mission_slug",
+    "mission_number",
+    "mission_type"
+  ],
+  "type": "object"
+}

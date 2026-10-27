@@ -1,0 +1,17 @@
+{
+  "case": "transport-data-tier-out-of-range",
+  "group": "edge",
+  "origin": "scripts/generate_upcast_corpus.py",
+  "notes": "data_tier outside 0..4.",
+  "context": {},
+  "line": "{\"event_id\": \"01J0000000000000000000E101\", \"event_type\": \"WPStatusChanged\", \"aggregate_id\": \"mission/01J0000000000000000000MSN1/wp/WP01\", \"payload\": {\"mission_slug\": \"041-demo\", \"mission_id\": \"01J0000000000000000000MSN1\", \"wp_id\": \"WP01\", \"from_lane\": \"claimed\", \"to_lane\": \"in_progress\", \"actor\": \"claude\", \"force\": false, \"reason\": null, \"execution_mode\": \"worktree\", \"review_ref\": null, \"evidence\": null}, \"timestamp\": \"2026-01-01T00:00:01Z\", \"build_id\": \"build-1\", \"node_id\": \"node-a\", \"lamport_clock\": 7, \"causation_id\": null, \"project_uuid\": \"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\", \"project_slug\": \"demo\", \"correlation_id\": \"01J0000000000000000000C001\", \"schema_version\": \"3.0.0\", \"data_tier\": 5}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "INVALID_MEMBER"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

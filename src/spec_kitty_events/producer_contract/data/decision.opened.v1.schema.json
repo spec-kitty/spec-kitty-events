@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.example.invalid/spec-kitty/decision.opened.v1",
+  "$id": "urn:ai.spec-kitty:schema:decision.opened.v1",
   "title": "ai.spec-kitty.decision.opened.v1 data",
   "additionalProperties": false,
   "description": "A planning-interview decision point was opened.",

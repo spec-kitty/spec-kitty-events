@@ -1,0 +1,15 @@
+{
+  "case": "forbidden_key_nested_payload.MissionCreated.025",
+  "group": "conformance",
+  "origin": "conformance/fixtures/cutover_boundary/rejected_by_strict_profile/forbidden_key_nested_payload.json",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"event_id\": \"01J00000000000000000000001\", \"event_type\": \"MissionCreated\", \"aggregate_id\": \"mission/01J0000000000000000000MS1\", \"payload\": {\"mission_id\": \"01J0000000000000000000MS1\", \"mission_slug\": \"fixture-mission\", \"mission_number\": 1, \"mission_type\": \"software-dev\", \"target_branch\": \"main\", \"wp_count\": 3, \"friendly_name\": \"Fixture Mission\", \"purpose_tldr\": \"Strict boundary: forbidden legacy key nested in the payload.\", \"purpose_context\": \"Full strict-profile envelope (all 14 keys) with the forbidden legacy key feature_slug buried inside the payload. The recursive forbidden-key walk must reject it even though the top-level key set is intact; MissionCreatedPayload (extra=forbid) independently reports the unknown field.\", \"feature_slug\": \"legacy-feature\"}, \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"build_id\": \"build-2026-01-01-fixture\", \"node_id\": \"fixture-node\", \"lamport_clock\": 1, \"causation_id\": null, \"project_uuid\": \"00000000-0000-0000-0000-000000000001\", \"project_slug\": null, \"correlation_id\": \"01J0000000000000000000CR01\", \"schema_version\": \"3.0.0\", \"data_tier\": 0}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "transport_envelope",
+    "codes": [],
+    "golden": "{\"buildid\":\"build-2026-01-01-fixture\",\"correlationid\":\"01J0000000000000000000CR01\",\"data\":{\"feature_slug\":\"legacy-feature\",\"friendly_name\":\"Fixture Mission\",\"mission_id\":\"01J0000000000000000000MS1\",\"mission_number\":1,\"mission_slug\":\"fixture-mission\",\"mission_type\":\"software-dev\",\"purpose_context\":\"Full strict-profile envelope (all 14 keys) with the forbidden legacy key feature_slug buried inside the payload. The recursive forbidden-key walk must reject it even though the top-level key set is intact; MissionCreatedPayload (extra=forbid) independently reports the unknown field.\",\"purpose_tldr\":\"Strict boundary: forbidden legacy key nested in the payload.\",\"target_branch\":\"main\",\"wp_count\":3},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:mission.created.v1\",\"datatier\":0,\"id\":\"01J00000000000000000000001\",\"lamportclock\":1,\"nodeid\":\"fixture-node\",\"projectuuid\":\"00000000-0000-0000-0000-000000000001\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/projects/00000000-0000-0000-0000-000000000001\",\"specversion\":\"1.0\",\"subject\":\"mission/01J0000000000000000000MS1\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.mission.created.v1\"}",
+    "valid": false
+  }
+}

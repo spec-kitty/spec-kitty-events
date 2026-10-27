@@ -1,0 +1,1030 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai.spec-kitty:schema:work.observed.v1.row.read",
+  "title": "ai.spec-kitty.work.observed.v1 row (read profile)",
+  "description": "Attribute rules for a CloudEvents row as a reader may meet it, including the upcast form of a legacy row (ADR 0001, read profile): the id may be a normalized legacy UUID, lamportclock and nodeid are optional because legacy diary and CLI rows carry none, and the 3.0.0 transport envelope's remaining fields are optional extensions. Non-normative until the cutover release.",
+  "type": "object",
+  "properties": {
+    "specversion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^([0-9A-HJKMNP-TV-Z]{26}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?![\\s\\S])",
+      "description": "Upper-case ULID, or a legacy UUID normalized to lower-case hyphenated form."
+    },
+    "source": {
+      "type": "string",
+      "pattern": "^/spec-kitty/(missions|projects)/[^/\\s]+(?![\\s\\S])"
+    },
+    "type": {
+      "type": "string",
+      "const": "ai.spec-kitty.work.observed.v1"
+    },
+    "subject": {
+      "type": "string",
+      "minLength": 1
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?([Zz]|[+-][0-9]{2}:[0-9]{2})(?![\\s\\S])"
+    },
+    "datacontenttype": {
+      "type": "string",
+      "const": "application/json"
+    },
+    "dataschema": {
+      "type": "string",
+      "const": "urn:ai.spec-kitty:schema:work.observed.v1"
+    },
+    "schemaversion": {
+      "type": "string",
+      "const": "4.0.0"
+    },
+    "missionid": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}(?![\\s\\S])"
+    },
+    "missionslug": {
+      "type": "string",
+      "minLength": 1
+    },
+    "actor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "executionmode": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lamportclock": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "nodeid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "buildid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "causationid": {
+      "type": "string",
+      "pattern": "^([0-9A-HJKMNP-TV-Z]{26}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?![\\s\\S])",
+      "description": "Upper-case ULID, or a legacy UUID normalized to lower-case hyphenated form."
+    },
+    "correlationid": {
+      "type": "string",
+      "pattern": "^([0-9A-HJKMNP-TV-Z]{26}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?![\\s\\S])",
+      "description": "Upper-case ULID, or a legacy UUID normalized to lower-case hyphenated form."
+    },
+    "projectuuid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectslug": {
+      "type": "string",
+      "minLength": 1
+    },
+    "datatier": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "data": {
+      "additionalProperties": false,
+      "description": "A unit of agent work was observed.",
+      "properties": {
+        "action": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "description": "A tool invocation at any lifecycle state. Tool *name*, state,\noutcome (terminal only), duration — never the raw command environment\nor tool output (those are privacy keys).",
+              "properties": {
+                "duration_ms": {
+                  "anyOf": [
+                    {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "outcome": {
+                  "anyOf": [
+                    {
+                      "description": "Explicit outcome for every concluded action — failure and skip are\nfirst-class observations, never laundered into success or silence\n(LW-03/LW-10). Only carried once the action has actually concluded\n(``state='result'``): an observation emitted while a tool/test is still\nrunning must not be forced to invent one.",
+                      "enum": [
+                        "success",
+                        "failure",
+                        "skipped"
+                      ],
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "state": {
+                  "description": "Lifecycle state of an observed tool/test activity (LW-04/LW-09: the\nlive dashboard shows work *while it happens*, then correlates the\nconclusion to that same activity).\n\n``STARTED``/``RUNNING`` are the pre-result states — no outcome, no test\ncounts (nothing has concluded yet; forcing one would launder a live\nactivity into a completed-work feed). ``RESULT`` is the terminal state\nthat carries the :class:`ActionOutcome` (and test counts). ``CANCELLED``\nrecords the abandonment of a previously started activity — an honest\nterminal observation in its own right, never a missing result.\n\nStart→result/cancel correlation is the observation *pair* sharing one\n``activity`` (:class:`ActivityRef`): the start observation and the\nterminal observation name the same ``activity_id`` (the terminal one\nmay also ``reply_to`` the start observation's event ID).",
+                  "enum": [
+                    "started",
+                    "running",
+                    "result",
+                    "cancelled"
+                  ],
+                  "type": "string"
+                },
+                "tool": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "tool",
+                "state"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "description": "A file operation, as metadata only (LW-04/LW-11): operation, path\n(and rename destination), size deltas. There is deliberately no\n``contents`` field — file contents are never observable work, and\n``contents`` is a :data:`FORBIDDEN_WORK_KEYS` member enforced at the\nenvelope level as defense in depth.\n\n``operation`` names what happened (read/edit/create/delete/rename);\n``destination_path`` carries the rename's destination and is valid only\nfor ``operation='rename'``. ``path``/``destination_path`` are\nrepository-relative and may contain spaces and Unicode — validated by\n:func:`_validate_repository_relative_path`, not the ``_REF`` grammar.",
+              "properties": {
+                "bytes_added": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "bytes_removed": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "destination_path": {
+                  "anyOf": [
+                    {
+                      "maxLength": 240,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "language": {
+                  "anyOf": [
+                    {
+                      "maxLength": 32,
+                      "minLength": 1,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "operation": {
+                  "description": "The operation a file observation records (LW-04: read/edit/create/\ndelete/rename are all supported observations — a byte-delta alone\ncannot distinguish them).",
+                  "enum": [
+                    "read",
+                    "edit",
+                    "create",
+                    "delete",
+                    "rename"
+                  ],
+                  "type": "string"
+                },
+                "path": {
+                  "maxLength": 240,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "operation",
+                "path",
+                "bytes_added",
+                "bytes_removed"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "description": "A test execution at any lifecycle state: selector plus explicit\ncounts (carried only once the run concludes, ``state='result'``).\nNever raw output.",
+              "properties": {
+                "failed": {
+                  "anyOf": [
+                    {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "outcome": {
+                  "anyOf": [
+                    {
+                      "description": "Explicit outcome for every concluded action — failure and skip are\nfirst-class observations, never laundered into success or silence\n(LW-03/LW-10). Only carried once the action has actually concluded\n(``state='result'``): an observation emitted while a tool/test is still\nrunning must not be forced to invent one.",
+                      "enum": [
+                        "success",
+                        "failure",
+                        "skipped"
+                      ],
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "passed": {
+                  "anyOf": [
+                    {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "selector": {
+                  "maxLength": 240,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}(?![\\s\\S])",
+                  "type": "string"
+                },
+                "skipped": {
+                  "anyOf": [
+                    {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "state": {
+                  "description": "Lifecycle state of an observed tool/test activity (LW-04/LW-09: the\nlive dashboard shows work *while it happens*, then correlates the\nconclusion to that same activity).\n\n``STARTED``/``RUNNING`` are the pre-result states — no outcome, no test\ncounts (nothing has concluded yet; forcing one would launder a live\nactivity into a completed-work feed). ``RESULT`` is the terminal state\nthat carries the :class:`ActionOutcome` (and test counts). ``CANCELLED``\nrecords the abandonment of a previously started activity — an honest\nterminal observation in its own right, never a missing result.\n\nStart→result/cancel correlation is the observation *pair* sharing one\n``activity`` (:class:`ActivityRef`): the start observation and the\nterminal observation name the same ``activity_id`` (the terminal one\nmay also ``reply_to`` the start observation's event ID).",
+                  "enum": [
+                    "started",
+                    "running",
+                    "result",
+                    "cancelled"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "selector",
+                "state"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "activity": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "description": "Activity grouping: an observation may belong to a logical activity\nand an activity may name its parent — the durable analogue of the\nvolatile focus/activity signal in :mod:`spec_kitty_events.harness_observation`.",
+              "properties": {
+                "activity_id": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                  "type": "string"
+                },
+                "parent_activity_id": {
+                  "anyOf": [
+                    {
+                      "maxLength": 128,
+                      "minLength": 1,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "activity_id"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actor": {
+          "additionalProperties": false,
+          "description": "The acting principal, with optional agent/factory framing.\n\n``principal_id`` is the stable principal (a person account, an agent\nidentity, a service, a factory role) — the *server* resolves it to the\nauthenticated principal at ingestion; this field is producer-side\nattribution only. ``display_name`` is mutable presentation, never\nidentity: renames change it, identity does not (LW-01).",
+          "properties": {
+            "agent_profile": {
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "description": "The agent profile a principal acted through — distinct from the\nprincipal itself (LW-01: principal, agent profile, session, and factory\nattempt are four different identities, never collapsed into one). Valid\nfor every ``principal_kind``: they are independent identity dimensions,\nnot exclusive modes — a factory worker retains both its profile/harness\nidentity and its job/attempt attribution, and a human may act through\nan agent profile. Only ``principal_kind='agent'`` *requires* one (a\nbare agent principal is ambiguous).",
+                  "properties": {
+                    "harness": {
+                      "maxLength": 32,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                      "type": "string"
+                    },
+                    "model": {
+                      "anyOf": [
+                        {
+                          "maxLength": 64,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "profile_id": {
+                      "anyOf": [
+                        {
+                          "maxLength": 128,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "harness"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "display_name": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "factory_attempt": {
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "description": "The factory job/attempt an observation was produced under (planning\n#2270 binds these into continuous missions). Distinct from the session\nand the principal: one attempt may span sessions and one session may\noutlive several attempts.",
+                  "properties": {
+                    "attempt_id": {
+                      "maxLength": 128,
+                      "minLength": 1,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                      "type": "string"
+                    },
+                    "job_ref": {
+                      "anyOf": [
+                        {
+                          "maxLength": 240,
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}(?![\\s\\S])",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "attempt_id"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "principal_id": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+              "type": "string"
+            },
+            "principal_kind": {
+              "enum": [
+                "human",
+                "agent",
+                "service",
+                "factory"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "principal_kind",
+            "principal_id"
+          ],
+          "type": "object"
+        },
+        "artifact": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "description": "A reference to authenticated artifact content — long content is\nnever inlined (LW-11): it is referenced by content hash, byte length,\nmedia type, and completeness. ``complete=False`` marks a partial\ncapture (e.g. truncated log tail) so consumers never mistake a\nfragment for the whole.",
+              "properties": {
+                "artifact_id": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                  "type": "string"
+                },
+                "byte_length": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "complete": {
+                  "type": "boolean"
+                },
+                "content_hash": {
+                  "description": "SHA-256 of the referenced content",
+                  "pattern": "^[0-9a-f]{64}(?![\\s\\S])",
+                  "type": "string"
+                },
+                "media_type": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "artifact_id",
+                "content_hash",
+                "byte_length",
+                "media_type"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "description": "Optional work context slots — all optional, all presentation/scoping,\nnone of them identity (identity is mission/session/repository above).",
+              "properties": {
+                "branch": {
+                  "anyOf": [
+                    {
+                      "maxLength": 240,
+                      "minLength": 1,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}(?![\\s\\S])",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "operation": {
+                  "anyOf": [
+                    {
+                      "maxLength": 64,
+                      "minLength": 1,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "run_id": {
+                  "anyOf": [
+                    {
+                      "maxLength": 128,
+                      "minLength": 1,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "worktree": {
+                  "anyOf": [
+                    {
+                      "maxLength": 240,
+                      "minLength": 1,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}(?![\\s\\S])",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "wp_id": {
+                  "anyOf": [
+                    {
+                      "maxLength": 32,
+                      "minLength": 1,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coverage": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "description": "An explicitly recorded capture gap (LW-08/LW-10): an area of work\nthis producer could not observe, with the honest reason — gaps are\nrecorded as data, never silently dropped.",
+              "properties": {
+                "area": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                  "type": "string"
+                },
+                "reason": {
+                  "anyOf": [
+                    {
+                      "maxLength": 240,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "area"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extensions": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Safe optional extensions: keys MUST be x- prefixed; unknown un-namespaced keys are rejected by extra='forbid'."
+        },
+        "kind": {
+          "description": "Closed set of durable work-observation kinds — 25 members, 6 families.\n\n``lifecycle`` (6) closes the LW-03 gap: mission review and retrospective\noutcomes are captured/failed/skipped, not just completed — failure and\nskip are first-class, never laundered into silence.\n``session`` (5) covers session lifecycle, delegation, and mission/repo\nbinding changes (LW-01/LW-02). ``action`` (3) covers tool/file/test\nobservation with explicit outcomes (LW-04). ``narrative`` (9) covers the\nauthored intent/progress/question/answer/decision/handoff/blocker/\nresolution/next vocabulary (LW-05/LW-09). ``message`` (1) is the durable\npeer message. ``coverage`` (1) makes capture gaps explicit (LW-08/LW-10).",
+          "enum": [
+            "lifecycle.mission_review_captured",
+            "lifecycle.mission_review_failed",
+            "lifecycle.mission_review_skipped",
+            "lifecycle.retrospective_captured",
+            "lifecycle.retrospective_failed",
+            "lifecycle.retrospective_skipped",
+            "session.started",
+            "session.ended",
+            "session.delegation_started",
+            "session.delegation_ended",
+            "session.binding_changed",
+            "action.tool_invoked",
+            "action.file_edited",
+            "action.test_executed",
+            "narrative.intent_declared",
+            "narrative.progress_reported",
+            "narrative.question_asked",
+            "narrative.question_answered",
+            "narrative.decision_recorded",
+            "narrative.handoff_performed",
+            "narrative.blocker_raised",
+            "narrative.blocker_resolved",
+            "narrative.next_proposed",
+            "message.peer_sent",
+            "coverage.gap_recorded"
+          ],
+          "type": "string"
+        },
+        "mission": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "description": "Canonical mission identity — stable before, through, and after rename.\n\n``mission_id`` is the canonical opaque identity: it exists from the\nfirst specify activity, before any Git push, and survives label changes,\nworktree moves, PRs, and merges (LW-02). ``display_label`` is mutable\npresentation only — two concurrent missions may share a label and remain\ndistinct missions, and a rename changes the label, never the id.",
+              "properties": {
+                "display_label": {
+                  "anyOf": [
+                    {
+                      "maxLength": 240,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "mission_id": {
+                  "maxLength": 120,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}(?![\\s\\S])",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "mission_id"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Canonical mission identity when this observation is mission-bound. Required only for the lifecycle kinds (mission review/retrospective); repository-bound sessions and work exist before (and outside) any mission and leave it unset rather than inventing one (LW-02)."
+        },
+        "producer": {
+          "additionalProperties": false,
+          "description": "Who produced this observation, at which instance, at which sequence.\n\n``producer_id`` is the stable logical producer (a CLI install identity,\nan agent identity) — NOT the authenticated principal (server-owned) and\nNOT the person. ``instance_id`` is one process/run of that producer.\n``sequence`` is the producer's monotonic per-instance sequence number:\nconsumers use it (with the envelope's ``node_id``/``lamport_clock``) for\nduplicate, late, and gap detection — never the client ``timestamp``\n(LW-10: no client timestamp establishes authoritative total order).",
+          "properties": {
+            "instance_id": {
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+              "type": "string"
+            },
+            "producer_id": {
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+              "type": "string"
+            },
+            "sequence": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "producer_id",
+            "instance_id",
+            "sequence"
+          ],
+          "type": "object"
+        },
+        "programme": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "description": "Cross-repo programme linkage (LW-02): distinct missions in distinct\nrepositories that belong to one programme. Each linked mission keeps its\nown repository identity — the link relates missions, it never merges\ntheir identities.",
+              "properties": {
+                "programme_id": {
+                  "maxLength": 120,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}(?![\\s\\S])",
+                  "type": "string"
+                },
+                "role": {
+                  "anyOf": [
+                    {
+                      "maxLength": 64,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "programme_id"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provenance": {
+          "additionalProperties": false,
+          "description": "How this observation was captured (LW-04's capability matrix): the\ncapture source, the named capability that produced it, and — when\ncapture is partial — the honest limitation. ``limitation`` is the\nmachine-readable home of the \"record real capture/source limitations\"\nrequirement: a producer that cannot see something says so here.",
+          "properties": {
+            "capability": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+              "type": "string"
+            },
+            "limitation": {
+              "anyOf": [
+                {
+                  "maxLength": 240,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "source": {
+              "enum": [
+                "harness_hook",
+                "cli_wrapper",
+                "emitter",
+                "manual",
+                "factory"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "source",
+            "capability"
+          ],
+          "type": "object"
+        },
+        "recipient": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "description": "A lightweight reference to a principal (message recipient, handoff\ntarget) — the full identity is carried by the sender's ActorIdentity.",
+              "properties": {
+                "principal_id": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                  "type": "string"
+                },
+                "principal_kind": {
+                  "enum": [
+                    "human",
+                    "agent",
+                    "service",
+                    "factory"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "principal_kind",
+                "principal_id"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ref": {
+          "anyOf": [
+            {
+              "maxLength": 240,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Opaque reference to the entity this observation resolves or records (blocker ref, decision record link)."
+        },
+        "reply_to": {
+          "anyOf": [
+            {
+              "maxLength": 36,
+              "minLength": 26,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Event ID of the observation this one answers or retries."
+        },
+        "repository": {
+          "additionalProperties": false,
+          "description": "Admitted repository identity — stable across provider renames.\n\n``provider`` namespaces the forge (closed set; github today).\n``repository_id`` is the provider-canonical stable repository id (e.g.\nthe numeric GitHub repository id) — the admitted-repo *generation* that\nvets this id against the team's installation is server-owned (saas#1814).\n``display_slug`` is the mutable ``owner/name`` presentation: a rename\nchanges it, never the id (LW-02).",
+          "properties": {
+            "display_slug": {
+              "anyOf": [
+                {
+                  "maxLength": 240,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}(?![\\s\\S])",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "provider": {
+              "const": "github",
+              "type": "string"
+            },
+            "repository_id": {
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}(?![\\s\\S])",
+              "type": "string"
+            }
+          },
+          "required": [
+            "provider",
+            "repository_id"
+          ],
+          "type": "object"
+        },
+        "session": {
+          "additionalProperties": false,
+          "description": "The stable logical session that produced this observation.\n\nIdentity survives reconnect (``reconnect_epoch`` bumps) and credential\nrotation (``credential_epoch`` bumps) — the session is the *logical*\nconversation, not the transport connection and not the credential\n(LW-01: two same-account agents stay distinct through reconnect and\nrotation because they hold distinct ``session_id``s).\n\n``delegated_from`` names the delegating session's ``session_id`` when\nthis session was spawned by a delegation (LW-05 delegated sessions).",
+          "properties": {
+            "credential_epoch": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "delegated_from": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reconnect_epoch": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "session_id": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+              "type": "string"
+            }
+          },
+          "required": [
+            "session_id"
+          ],
+          "type": "object"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Inline authored text (narrative/message kinds). Long content is an artifact reference, never inline."
+        }
+      },
+      "required": [
+        "kind",
+        "producer",
+        "session",
+        "actor",
+        "repository",
+        "provenance"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "specversion",
+    "id",
+    "source",
+    "type",
+    "time",
+    "datacontenttype",
+    "dataschema",
+    "schemaversion",
+    "data"
+  ],
+  "propertyNames": {
+    "pattern": "^[a-z0-9]{1,20}(?![\\s\\S])"
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "pattern": "^/spec-kitty/missions/"
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "then": {
+        "required": [
+          "missionid"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "missionid"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "pattern": "^/spec-kitty/missions/"
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "subject"
+          ]
+        }
+      },
+      "else": {
+        "required": [
+          "subject"
+        ]
+      }
+    }
+  ]
+}

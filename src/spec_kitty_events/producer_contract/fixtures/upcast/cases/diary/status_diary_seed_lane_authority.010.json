@@ -1,0 +1,17 @@
+{
+  "case": "status_diary_seed_lane_authority.010",
+  "group": "diary",
+  "origin": "conformance/fixtures/status_diary/replay/status_diary_seed_lane_authority.jsonl:10",
+  "notes": "A status.events.jsonl line, read with the Mission id from context.",
+  "context": {
+    "missionid": "01J0000000000000000000RP05"
+  },
+  "line": "{\"actor\": \"merge\", \"at\": \"2026-10-13T12:05:00+00:00\", \"event_id\": \"01JAAAA0000000000000000010\", \"evidence\": {\"repos\": [{\"branch\": \"kitty/m-01\", \"commit\": \"abc1234567890\", \"repo\": \"demo\"}], \"review\": {\"reference\": \"feedback://061/WP02/approval\", \"reviewer\": \"reviewer-1\", \"verdict\": \"approved\"}, \"verification\": [{\"command\": \"make test-fast\", \"result\": \"pass\", \"summary\": \"green\"}]}, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"approved\", \"mission_slug\": \"061-seed-lane-authority\", \"reason\": null, \"review_ref\": null, \"to_lane\": \"done\", \"wp_id\": \"WP02\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"merge\",\"data\":{\"evidence\":{\"repos\":[{\"branch\":\"kitty/m-01\",\"commit\":\"abc1234567890\",\"repo\":\"demo\"}],\"review\":{\"reference\":\"feedback://061/WP02/approval\",\"reviewer\":\"reviewer-1\",\"verdict\":\"approved\"},\"verification\":[{\"command\":\"make test-fast\",\"result\":\"pass\",\"summary\":\"green\"}]},\"force\":false,\"from_lane\":\"approved\",\"reason\":null,\"review_ref\":null,\"to_lane\":\"done\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:lane.transitioned.v1\",\"executionmode\":\"worktree\",\"id\":\"01JAAAA0000000000000000010\",\"missionid\":\"01J0000000000000000000RP05\",\"missionslug\":\"061-seed-lane-authority\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000RP05\",\"specversion\":\"1.0\",\"subject\":\"WP02\",\"time\":\"2026-10-13T12:05:00+00:00\",\"type\":\"ai.spec-kitty.lane.transitioned.v1\"}",
+    "valid": true
+  }
+}

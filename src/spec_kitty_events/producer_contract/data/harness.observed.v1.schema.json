@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai.spec-kitty:schema:harness.observed.v1",
+  "title": "ai.spec-kitty.harness.observed.v1 data",
+  "additionalProperties": false,
+  "description": "A coding-harness session reported an observation.",
+  "properties": {
+    "activity": {
+      "anyOf": [
+        {
+          "enum": [
+            "file_edit",
+            "command"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "agent_id": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "ended_reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "user",
+            "timeout"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "harness": {
+      "description": "Harness identity, e.g. 'claude', 'codex'.",
+      "maxLength": 32,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+      "type": "string"
+    },
+    "kind": {
+      "description": "Closed set of harness-observation kinds. Exactly six members.\n\nStructure over names: if PR #51's exact bytes name these differently,\nonly the string values move — the six-kind structure and the per-kind\nfield matrix below stay (F1 draft §6.1).",
+      "enum": [
+        "presence",
+        "lane_signal",
+        "focus_started",
+        "focus_heartbeat",
+        "focus_paused",
+        "focus_ended"
+      ],
+      "type": "string"
+    },
+    "lane": {
+      "anyOf": [
+        {
+          "description": "Work-package lifecycle lanes.\n\n``GENESIS`` is the non-display, pre-finalize origin lane: a work-package\nwith no recorded lane events derives as ``genesis`` until ``finalize-tasks``\nseeds it to ``planned``. It is a producer-side state only — it is never a\ndisplay/summary lane and the only legal edges out of it are\n``genesis -> planned`` (the seed) and ``genesis -> canceled``.",
+          "enum": [
+            "genesis",
+            "planned",
+            "claimed",
+            "in_progress",
+            "for_review",
+            "in_review",
+            "approved",
+            "done",
+            "blocked",
+            "canceled"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mission_slug": {
+      "anyOf": [
+        {
+          "maxLength": 120,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}(?![\\s\\S])",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "path": {
+      "anyOf": [
+        {
+          "maxLength": 240,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}(?![\\s\\S])",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "pause_reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "user",
+            "dnd"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "repo": {
+      "anyOf": [
+        {
+          "maxLength": 120,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+/-]{0,239}(?![\\s\\S])",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Typed repo-identity slot; derivation is owned by Z6."
+    },
+    "session_id": {
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+      "type": "string"
+    },
+    "wp_id": {
+      "anyOf": [
+        {
+          "maxLength": 32,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]{0,63}(?![\\s\\S])",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "kind",
+    "harness",
+    "session_id"
+  ],
+  "type": "object"
+}

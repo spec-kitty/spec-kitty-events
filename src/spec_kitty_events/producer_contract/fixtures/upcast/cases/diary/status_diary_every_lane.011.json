@@ -1,0 +1,17 @@
+{
+  "case": "status_diary_every_lane.011",
+  "group": "diary",
+  "origin": "conformance/fixtures/status_diary/replay/status_diary_every_lane.jsonl:11",
+  "notes": "A status.events.jsonl line, read with the Mission id from context.",
+  "context": {
+    "missionid": "01J0000000000000000000RP02"
+  },
+  "line": "{\"actor\": \"claude\", \"at\": \"2026-08-26T11:02:00+00:00\", \"event_id\": \"01JAAAA0000000000000000014\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_slug\": \"041-reducer-unification\", \"reason\": \"waiting on API\", \"review_ref\": null, \"to_lane\": \"blocked\", \"wp_id\": \"WP02\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"claude\",\"data\":{\"evidence\":null,\"force\":false,\"from_lane\":\"in_progress\",\"reason\":\"waiting on API\",\"review_ref\":null,\"to_lane\":\"blocked\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:lane.transitioned.v1\",\"executionmode\":\"worktree\",\"id\":\"01JAAAA0000000000000000014\",\"missionid\":\"01J0000000000000000000RP02\",\"missionslug\":\"041-reducer-unification\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000RP02\",\"specversion\":\"1.0\",\"subject\":\"WP02\",\"time\":\"2026-08-26T11:02:00+00:00\",\"type\":\"ai.spec-kitty.lane.transitioned.v1\"}",
+    "valid": true
+  }
+}

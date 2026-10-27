@@ -1,0 +1,18 @@
+{
+  "case": "id-uuid-hyphenated-upper",
+  "group": "edge",
+  "origin": "scripts/generate_upcast_corpus.py",
+  "notes": "A legacy UUID id is lower-cased.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-demo"
+  },
+  "line": "{\"event_id\": \"0F8FAD5B-D9CB-469F-A165-70867728950E\", \"mission_slug\": \"041-demo\", \"wp_id\": \"WP01\", \"from_lane\": \"planned\", \"to_lane\": \"claimed\", \"at\": \"2026-01-01T00:00:00+00:00\", \"actor\": \"claude\", \"force\": false, \"execution_mode\": \"worktree\", \"reason\": null, \"review_ref\": null, \"evidence\": null}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"claude\",\"data\":{\"evidence\":null,\"force\":false,\"from_lane\":\"planned\",\"reason\":null,\"review_ref\":null,\"to_lane\":\"claimed\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:lane.transitioned.v1\",\"executionmode\":\"worktree\",\"id\":\"0f8fad5b-d9cb-469f-a165-70867728950e\",\"missionid\":\"01J0000000000000000000MSN1\",\"missionslug\":\"041-demo\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"subject\":\"WP01\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.lane.transitioned.v1\"}",
+    "valid": true
+  }
+}

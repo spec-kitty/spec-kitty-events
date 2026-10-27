@@ -8,12 +8,15 @@ nothing has to be re-derived from Python code.
 | Path | What it is |
 |---|---|
 | `registry.json` | One entry per emitted type, plus `legacy_shapes`, plus `deferred`. |
-| `envelope.schema.json` | Attribute rules for a CloudEvents row the producer writes. |
+| `envelope.schema.json` | The write profile: attribute rules for a CloudEvents row a producer writes. |
+| `envelope.read.schema.json` | The read profile: rows a reader meets, including upcast legacy rows (clock optional, legacy UUID ids, the 3.0.0 extensions). |
 | `data/<name>.schema.json` | The `data` schema of one type. Closed, self-contained. |
 | `composed/rows/<name>.row.schema.json` | The whole CloudEvents line of one type: envelope, pinned `type` and `dataschema`, `data`, and the scope, `subject` and `missionid` rules. Use these; there is nothing to compose. |
+| `composed/read/<name>.row.schema.json` | The same, in the read profile. Validate upcast rows against these. |
 | `composed/legacy/<name>.legacy.schema.json` | The persisted legacy line of one type (data schema plus lifted members, or the legacy envelope around it). |
 | `fixtures/rows/{valid,invalid,legacy_invalid}/` | Conformance lines. Each invalid fixture names the JSON path and the schema keyword it must fail on. Every type has a valid fixture, an unknown-member fixture and (where it has required members) a missing-member fixture, in both forms. |
 | `fixtures/total_order/` | The thirteen total-order cases. |
+| `fixtures/upcast/cases/<group>/<case>.json` | The upcaster corpus: one legacy log line, its context, and the expected outcome, issue codes and golden CloudEvent. Every binding runs it. |
 | `total-order.md` | The ordering contract (a copy of `contracts/total-order.md`). |
 
 The composed schemas are generated from the other files by

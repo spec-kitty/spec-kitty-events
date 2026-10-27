@@ -1,0 +1,17 @@
+{
+  "case": "wp_review_rejection_cycle.WPStatusChanged.104",
+  "group": "conformance",
+  "origin": "conformance/fixtures/edge_cases/replay/wp_review_rejection_cycle.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"WP01\", \"build_id\": \"backward-transition-contract-demo-20260517\", \"correlation_id\": \"01KCYCLE00000000000CORR001\", \"event_id\": \"01KCYCLE0000000000000011L\", \"event_type\": \"WPStatusChanged\", \"lamport_clock\": 11, \"node_id\": \"synthetic-node-001\", \"origin\": null, \"payload\": {\"actor\": \"reviewer-renata\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_review\", \"mission_slug\": \"mission-backward-transition-demo\", \"reason\": null, \"review_ref\": null, \"to_lane\": \"approved\", \"wp_id\": \"WP01\"}, \"project_uuid\": \"00000000-0000-0000-0000-00000000c001\", \"schema_version\": \"3.0.0\", \"team_slug\": \"synthetic-team\", \"timestamp\": \"2026-05-17T14:00:10.000000+00:00\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNEXPECTED_MEMBER"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "class": "producer_row_valid",
+  "expected": "valid",
+  "type": "ai.spec-kitty.harness.observed.v1",
+  "input": {
+    "specversion": "1.0",
+    "id": "01J0000000000000000000T006",
+    "source": "/spec-kitty/projects/5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11",
+    "type": "ai.spec-kitty.harness.observed.v1",
+    "time": "2026-01-01T00:00:00+00:00",
+    "datacontenttype": "application/json",
+    "dataschema": "urn:ai.spec-kitty:schema:harness.observed.v1",
+    "schemaversion": "4.0.0",
+    "lamportclock": 39,
+    "nodeid": "0123456789ab",
+    "subject": "session/sess-r1",
+    "data": {
+      "kind": "presence",
+      "harness": "claude",
+      "session_id": "sess-r1",
+      "activity": "file_edit"
+    }
+  },
+  "transport_row": {
+    "event_id": "01J0000000000000000000T006",
+    "event_type": "HarnessObservation",
+    "aggregate_id": "session/sess-r1",
+    "payload": {
+      "kind": "presence",
+      "harness": "claude",
+      "session_id": "sess-r1",
+      "activity": "file_edit"
+    },
+    "timestamp": "2026-01-01T00:00:00+00:00",
+    "build_id": "build-1",
+    "node_id": "0123456789ab",
+    "lamport_clock": 39,
+    "causation_id": null,
+    "project_uuid": "5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11",
+    "project_slug": "demo",
+    "correlation_id": "01J0000000000000000000C001",
+    "schema_version": "3.0.0",
+    "data_tier": 0
+  },
+  "notes": "HarnessObservation read from the 3.0.0 transport envelope (no CLI legacy form)."
+}

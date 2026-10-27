@@ -1,0 +1,17 @@
+{
+  "case": "reopen_resolved_first.DecisionPointResolved.052",
+  "group": "conformance",
+  "origin": "conformance/fixtures/decisionpoint/replay/reopen_resolved_first.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"dp/dp-ro-001\", \"build_id\": \"test-build\", \"causation_id\": null, \"correlation_id\": \"01J2B000000000000000000025\", \"data_tier\": 0, \"event_id\": \"01J2B000000000000000000026\", \"event_type\": \"DecisionPointResolved\", \"node_id\": \"node-1\", \"payload\": {\"actual_participants\": [], \"closed_locally_while_widened\": false, \"closure_message\": null, \"decision_point_id\": \"dp-ro-001\", \"final_answer\": \"oauth2\", \"mission_id\": \"m-1\", \"mission_slug\": \"reopen-fold\", \"mission_type\": \"software-dev\", \"origin_surface\": \"planning_interview\", \"other_answer\": false, \"rationale\": null, \"recorded_at\": \"2026-04-23T10:00:02+00:00\", \"resolved_by\": \"human-owner\", \"run_id\": \"run-1\", \"state_entered_at\": \"2026-04-23T10:00:02+00:00\", \"summary\": null, \"terminal_outcome\": \"resolved\"}, \"project_slug\": null, \"project_uuid\": \"bbbbbbbb-cccc-dddd-eeee-ffffffffffff\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-04-23T10:00:01+00:00\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

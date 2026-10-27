@@ -1,0 +1,17 @@
+{
+  "case": "old_producer_recent_receipt.WPStatusChanged.157",
+  "group": "conformance",
+  "origin": "conformance/fixtures/timestamp_semantics/valid/old_producer_recent_receipt.json",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"event_id\": \"01J6XW9KQT7M0YB3N4R5CQZ2EX\", \"event_type\": \"WPStatusChanged\", \"aggregate_id\": \"wp-historical-001\", \"payload\": {}, \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"build_id\": \"build-historical-import-fixture\", \"node_id\": \"node-fixture-producer-1\", \"lamport_clock\": 1, \"correlation_id\": \"01J6XW9KQT7M0YB3N4R5CQZ2EX\", \"project_uuid\": \"00000000-0000-0000-0000-000000000001\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNSUPPORTED_SCHEMA_VERSION"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

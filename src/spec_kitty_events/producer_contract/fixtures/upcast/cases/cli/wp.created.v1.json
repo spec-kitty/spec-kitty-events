@@ -1,0 +1,18 @@
+{
+  "case": "wp.created.v1",
+  "group": "cli",
+  "origin": "producer_contract/fixtures/rows/valid/wp.created.v1.json",
+  "notes": "The persisted legacy line of a producer fixture.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-reducer-unification"
+  },
+  "line": "{\"event_id\": \"01J0000000000000000000F015\", \"event_type\": \"WPCreated\", \"aggregate_id\": \"WP01\", \"aggregate_type\": \"WorkPackage\", \"schema_version\": \"5.0.0\", \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"payload\": {\"mission_slug\": \"041-reducer-unification\", \"mission_number\": null, \"wp_id\": \"WP01\", \"wp_title\": \"Build it\", \"wp_path\": \"tasks/WP01.md\", \"depends_on\": [], \"actor\": \"claude\", \"created_at\": \"2026-01-01T00:00:00Z\"}, \"project_uuid\": \"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\", \"project_slug\": \"demo\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "lifecycle_envelope",
+    "codes": [],
+    "golden": "{\"data\":{\"actor\":\"claude\",\"created_at\":\"2026-01-01T00:00:00Z\",\"depends_on\":[],\"mission_number\":null,\"mission_slug\":\"041-reducer-unification\",\"wp_id\":\"WP01\",\"wp_path\":\"tasks/WP01.md\",\"wp_title\":\"Build it\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:wp.created.v1\",\"id\":\"01J0000000000000000000F015\",\"missionid\":\"01J0000000000000000000MSN1\",\"missionslug\":\"041-reducer-unification\",\"projectslug\":\"demo\",\"projectuuid\":\"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"subject\":\"WP01\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.wp.created.v1\"}",
+    "valid": true
+  }
+}

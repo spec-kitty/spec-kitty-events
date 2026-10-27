@@ -1,0 +1,15 @@
+{
+  "case": "lifecycle_with_observations.HarnessObservation.116",
+  "group": "conformance",
+  "origin": "conformance/fixtures/harness_observation/replay/lifecycle_with_observations.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"session/sess-r1\", \"build_id\": \"test-build\", \"causation_id\": null, \"correlation_id\": \"01M0HTDZEEHBG3RZCS5YV8EKJQ\", \"data_tier\": 0, \"event_id\": \"01M0HTDZEEHBG3RZCS5YV8EKJP\", \"event_type\": \"HarnessObservation\", \"lamport_clock\": 6, \"node_id\": \"local-node-001\", \"payload\": {\"harness\": \"claude\", \"kind\": \"focus_heartbeat\", \"mission_slug\": \"r1-mission\", \"session_id\": \"sess-r1\"}, \"project_slug\": null, \"project_uuid\": \"12345678-1234-5678-1234-567812345678\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-01-01T00:00:06Z\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "transport_envelope",
+    "codes": [],
+    "golden": "{\"buildid\":\"test-build\",\"correlationid\":\"01M0HTDZEEHBG3RZCS5YV8EKJQ\",\"data\":{\"harness\":\"claude\",\"kind\":\"focus_heartbeat\",\"mission_slug\":\"r1-mission\",\"session_id\":\"sess-r1\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:harness.observed.v1\",\"datatier\":0,\"id\":\"01M0HTDZEEHBG3RZCS5YV8EKJP\",\"lamportclock\":6,\"nodeid\":\"local-node-001\",\"projectuuid\":\"12345678-1234-5678-1234-567812345678\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/projects/12345678-1234-5678-1234-567812345678\",\"specversion\":\"1.0\",\"subject\":\"session/sess-r1\",\"time\":\"2026-01-01T00:00:06Z\",\"type\":\"ai.spec-kitty.harness.observed.v1\"}",
+    "valid": true
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "case": "full_lifecycle.NextStepIssued.151",
+  "group": "conformance",
+  "origin": "conformance/fixtures/mission_next/replay/full_lifecycle.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"mission/replay-mission\", \"build_id\": \"test-build\", \"causation_id\": \"01JMRP0000000000000000EVT3\", \"correlation_id\": \"01JMRP0000000000000000CRR1\", \"data_tier\": 0, \"event_id\": \"01JMRP0000000000000000EVT4\", \"event_type\": \"NextStepIssued\", \"lamport_clock\": 4, \"node_id\": \"replay-node\", \"payload\": {\"actor\": {\"actor_id\": \"agent-claude\", \"actor_type\": \"llm\", \"display_name\": \"Claude\", \"model\": \"claude-opus-4-6\", \"provider\": \"anthropic\", \"tool\": null}, \"agent_id\": \"agent-claude\", \"run_id\": \"replay-run-001\", \"step_id\": \"step-configure-db\"}, \"project_slug\": \"replay-project\", \"project_uuid\": \"550e8400-e29b-41d4-a716-446655440000\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-02-17T10:03:00Z\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "transport_envelope",
+    "codes": [],
+    "golden": "{\"buildid\":\"test-build\",\"causationid\":\"01JMRP0000000000000000EVT3\",\"correlationid\":\"01JMRP0000000000000000CRR1\",\"data\":{\"actor\":{\"actor_id\":\"agent-claude\",\"actor_type\":\"llm\",\"display_name\":\"Claude\",\"model\":\"claude-opus-4-6\",\"provider\":\"anthropic\",\"tool\":null},\"agent_id\":\"agent-claude\",\"run_id\":\"replay-run-001\",\"step_id\":\"step-configure-db\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:run.step.issued.v1\",\"datatier\":0,\"id\":\"01JMRP0000000000000000EVT4\",\"lamportclock\":4,\"nodeid\":\"replay-node\",\"projectslug\":\"replay-project\",\"projectuuid\":\"550e8400-e29b-41d4-a716-446655440000\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/projects/550e8400-e29b-41d4-a716-446655440000\",\"specversion\":\"1.0\",\"subject\":\"mission/replay-mission\",\"time\":\"2026-02-17T10:03:00Z\",\"type\":\"ai.spec-kitty.run.step.issued.v1\"}",
+    "valid": true
+  }
+}

@@ -1,0 +1,453 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai.spec-kitty:schema:decision.resolved.v1.row.read",
+  "title": "ai.spec-kitty.decision.resolved.v1 row (read profile)",
+  "description": "Attribute rules for a CloudEvents row as a reader may meet it, including the upcast form of a legacy row (ADR 0001, read profile): the id may be a normalized legacy UUID, lamportclock and nodeid are optional because legacy diary and CLI rows carry none, and the 3.0.0 transport envelope's remaining fields are optional extensions. Non-normative until the cutover release.",
+  "type": "object",
+  "properties": {
+    "specversion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^([0-9A-HJKMNP-TV-Z]{26}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?![\\s\\S])",
+      "description": "Upper-case ULID, or a legacy UUID normalized to lower-case hyphenated form."
+    },
+    "source": {
+      "type": "string",
+      "pattern": "^/spec-kitty/(missions|projects)/[^/\\s]+(?![\\s\\S])"
+    },
+    "type": {
+      "type": "string",
+      "const": "ai.spec-kitty.decision.resolved.v1"
+    },
+    "subject": {
+      "type": "string",
+      "minLength": 1
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?([Zz]|[+-][0-9]{2}:[0-9]{2})(?![\\s\\S])"
+    },
+    "datacontenttype": {
+      "type": "string",
+      "const": "application/json"
+    },
+    "dataschema": {
+      "type": "string",
+      "const": "urn:ai.spec-kitty:schema:decision.resolved.v1"
+    },
+    "schemaversion": {
+      "type": "string",
+      "const": "4.0.0"
+    },
+    "missionid": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}(?![\\s\\S])"
+    },
+    "missionslug": {
+      "type": "string",
+      "minLength": 1
+    },
+    "actor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "executionmode": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lamportclock": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "nodeid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "buildid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "causationid": {
+      "type": "string",
+      "pattern": "^([0-9A-HJKMNP-TV-Z]{26}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?![\\s\\S])",
+      "description": "Upper-case ULID, or a legacy UUID normalized to lower-case hyphenated form."
+    },
+    "correlationid": {
+      "type": "string",
+      "pattern": "^([0-9A-HJKMNP-TV-Z]{26}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?![\\s\\S])",
+      "description": "Upper-case ULID, or a legacy UUID normalized to lower-case hyphenated form."
+    },
+    "projectuuid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectslug": {
+      "type": "string",
+      "minLength": 1
+    },
+    "datatier": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "data": {
+      "additionalProperties": false,
+      "description": "A planning-interview decision point reached a terminal outcome (resolved, deferred or canceled).",
+      "properties": {
+        "origin_surface": {
+          "const": "planning_interview",
+          "type": "string"
+        },
+        "decision_point_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "mission_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "run_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "mission_slug": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "mission_type": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "terminal_outcome": {
+          "description": "Terminal resolution outcome for a decision point.",
+          "enum": [
+            "resolved",
+            "deferred",
+            "canceled"
+          ],
+          "type": "string"
+        },
+        "final_answer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "other_answer": {
+          "type": "boolean"
+        },
+        "rationale": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "description": "Structured summary of a resolved decision with provenance.",
+              "properties": {
+                "text": {
+                  "description": "Summary text (non-empty)",
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "source": {
+                  "description": "Provenance of this summary",
+                  "enum": [
+                    "slack_extraction",
+                    "manual",
+                    "mission_owner_override"
+                  ],
+                  "type": "string"
+                },
+                "extracted_at": {
+                  "anyOf": [
+                    {
+                      "format": "date-time",
+                      "type": "string",
+                      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?([Zz]|[+-][0-9]{2}:[0-9]{2})(?![\\s\\S])"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "When the summary was extracted (if from Slack)"
+                },
+                "candidate_answer": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Candidate answer extracted from the summary"
+                }
+              },
+              "required": [
+                "text",
+                "source"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actual_participants": {
+          "items": {
+            "description": "SaaS-minted, mission-scoped participant identity.",
+            "properties": {
+              "participant_id": {
+                "description": "SaaS-minted, mission-scoped unique identifier",
+                "minLength": 1,
+                "type": "string"
+              },
+              "participant_type": {
+                "description": "Participant category",
+                "enum": [
+                  "human",
+                  "llm_context"
+                ],
+                "type": "string"
+              },
+              "display_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Human-readable name for display"
+              },
+              "session_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "SaaS-issued session identifier"
+              },
+              "external_refs": {
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "description": "Optional cross-channel identity references for a ParticipantIdentity.",
+                    "properties": {
+                      "slack_user_id": {
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "slack_team_id": {
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "teamspace_member_id": {
+                        "anyOf": [
+                          {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Optional cross-channel identity references (V1)"
+              }
+            },
+            "required": [
+              "participant_id",
+              "participant_type"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "resolved_by": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "closed_locally_while_widened": {
+          "type": "boolean"
+        },
+        "closure_message": {
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "description": "Reference to a Slack closure message posted when a decision is resolved.",
+              "properties": {
+                "channel_id": {
+                  "description": "Slack channel identifier",
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "thread_ts": {
+                  "description": "Thread timestamp (Slack ts format)",
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "message_ts": {
+                  "description": "Message timestamp (Slack ts format)",
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "url": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Permalink URL to the message"
+                }
+              },
+              "required": [
+                "channel_id",
+                "thread_ts",
+                "message_ts"
+              ],
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "state_entered_at": {
+          "format": "date-time",
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?([Zz]|[+-][0-9]{2}:[0-9]{2})(?![\\s\\S])"
+        },
+        "recorded_at": {
+          "format": "date-time",
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?([Zz]|[+-][0-9]{2}:[0-9]{2})(?![\\s\\S])"
+        }
+      },
+      "required": [
+        "origin_surface",
+        "decision_point_id",
+        "mission_id",
+        "run_id",
+        "mission_slug",
+        "mission_type",
+        "terminal_outcome",
+        "resolved_by",
+        "state_entered_at",
+        "recorded_at"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "specversion",
+    "id",
+    "source",
+    "type",
+    "time",
+    "datacontenttype",
+    "dataschema",
+    "schemaversion",
+    "data"
+  ],
+  "propertyNames": {
+    "pattern": "^[a-z0-9]{1,20}(?![\\s\\S])"
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "pattern": "^/spec-kitty/missions/"
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "then": {
+        "required": [
+          "missionid"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "missionid"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "pattern": "^/spec-kitty/missions/"
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "subject"
+          ]
+        }
+      },
+      "else": {
+        "required": [
+          "subject"
+        ]
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.example.invalid/spec-kitty/wp.reviewer.selfapproved.v1",
+  "$id": "urn:ai.spec-kitty:schema:wp.reviewer.selfapproved.v1",
   "title": "ai.spec-kitty.wp.reviewer.selfapproved.v1 data",
   "type": "object",
   "properties": {

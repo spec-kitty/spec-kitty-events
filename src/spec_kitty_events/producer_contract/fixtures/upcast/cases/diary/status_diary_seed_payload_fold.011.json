@@ -1,0 +1,17 @@
+{
+  "case": "status_diary_seed_payload_fold.011",
+  "group": "diary",
+  "origin": "conformance/fixtures/status_diary/replay/status_diary_seed_payload_fold.jsonl:11",
+  "notes": "A status.events.jsonl line, read with the Mission id from context.",
+  "context": {
+    "missionid": "01J0000000000000000000RP06"
+  },
+  "line": "{\"actor\": \"lead\", \"at\": \"2026-08-26T10:03:00+00:00\", \"event_id\": \"01JAAAA0000000000000000051\", \"evidence\": {\"repos\": [{\"branch\": \"kitty/mission-058-lane-a\", \"commit\": \"abc1234567890abcdef1234567890abcdef1234\", \"files_touched\": [\"src/app.py\"], \"repo\": \"demo\"}], \"review\": {\"reference\": \"feedback://058-seed-payload-fold/WP03/approval\", \"reviewer\": \"reviewer-1\", \"verdict\": \"approved\"}, \"verification\": [{\"command\": \"make test-fast\", \"result\": \"pass\", \"summary\": \"green\"}]}, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"in_progress\", \"mission_slug\": \"058-seed-payload-fold\", \"reason\": \"legacy approval recorded without a review\", \"review_ref\": null, \"to_lane\": \"approved\", \"wp_id\": \"WP03\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"lead\",\"data\":{\"evidence\":{\"repos\":[{\"branch\":\"kitty/mission-058-lane-a\",\"commit\":\"abc1234567890abcdef1234567890abcdef1234\",\"files_touched\":[\"src/app.py\"],\"repo\":\"demo\"}],\"review\":{\"reference\":\"feedback://058-seed-payload-fold/WP03/approval\",\"reviewer\":\"reviewer-1\",\"verdict\":\"approved\"},\"verification\":[{\"command\":\"make test-fast\",\"result\":\"pass\",\"summary\":\"green\"}]},\"force\":true,\"from_lane\":\"in_progress\",\"reason\":\"legacy approval recorded without a review\",\"review_ref\":null,\"to_lane\":\"approved\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:lane.transitioned.v1\",\"executionmode\":\"worktree\",\"id\":\"01JAAAA0000000000000000051\",\"missionid\":\"01J0000000000000000000RP06\",\"missionslug\":\"058-seed-payload-fold\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000RP06\",\"specversion\":\"1.0\",\"subject\":\"WP03\",\"time\":\"2026-08-26T10:03:00+00:00\",\"type\":\"ai.spec-kitty.lane.transitioned.v1\"}",
+    "valid": true
+  }
+}

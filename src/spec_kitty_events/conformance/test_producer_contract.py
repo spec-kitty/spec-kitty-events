@@ -65,7 +65,13 @@ def test_every_registered_type_has_a_valid_fixture() -> None:
 def test_valid_row_and_its_legacy_form(path: Path) -> None:
     fixture = _load(path)
     assert _errors(pc.row_schema(fixture["type"]), fixture["input"]) == []
-    assert _errors(pc.legacy_row_form_schema(fixture["type"]), fixture["legacy_row"]) == []
+    # a row a producer writes is also a row a reader accepts
+    assert _errors(pc.row_schema(fixture["type"], profile="read"), fixture["input"]) == []
+    if pc.get_entry(fixture["type"])["legacy"] is None:
+        # read from the 3.0.0 transport envelope only (spec-kitty-events#92)
+        assert "legacy_row" not in fixture and "transport_row" in fixture
+    else:
+        assert _errors(pc.legacy_row_form_schema(fixture["type"]), fixture["legacy_row"]) == []
 
 
 @pytest.mark.parametrize("path", _paths("invalid"), ids=lambda p: p.stem)

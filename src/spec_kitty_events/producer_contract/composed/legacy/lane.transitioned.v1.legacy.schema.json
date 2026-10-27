@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.example.invalid/spec-kitty/lane.transitioned.v1.legacy",
+  "$id": "urn:ai.spec-kitty:schema:lane.transitioned.v1.legacy",
   "title": "ai.spec-kitty.lane.transitioned.v1 legacy row form",
   "type": "object",
   "properties": {
@@ -62,6 +62,13 @@
         "string",
         "null"
       ]
+    },
+    "summary": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Free-text summary carried by the 3.0.0 WPStatusChanged payload only (diary rows have none)."
     },
     "evidence": {
       "anyOf": [

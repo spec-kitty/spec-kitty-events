@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai.spec-kitty:schema:wp.review.rolledback.v1",
+  "title": "ai.spec-kitty.wp.review.rolledback.v1 data",
+  "additionalProperties": false,
+  "description": "A review rolled a Mission back to an earlier phase.",
+  "properties": {
+    "actor": {
+      "description": "Actor triggering rollback",
+      "minLength": 1,
+      "type": "string"
+    },
+    "affected_wp_ids": {
+      "description": "WP IDs affected by rollback",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "mission_id": {
+      "description": "Mission identifier",
+      "minLength": 1,
+      "type": "string"
+    },
+    "review_ref": {
+      "description": "Reference to the review that triggered rollback",
+      "minLength": 1,
+      "type": "string"
+    },
+    "target_phase": {
+      "description": "Phase to roll back to",
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "mission_id",
+    "review_ref",
+    "target_phase",
+    "actor"
+  ],
+  "type": "object"
+}

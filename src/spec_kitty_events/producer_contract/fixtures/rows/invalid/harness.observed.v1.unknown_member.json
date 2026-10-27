@@ -1,0 +1,30 @@
+{
+  "class": "producer_row_invalid",
+  "expected": "invalid",
+  "type": "ai.spec-kitty.harness.observed.v1",
+  "base": "harness.observed.v1",
+  "violation": "data_unknown_member",
+  "expected_error_path": "/data",
+  "expected_keyword": "additionalProperties",
+  "input": {
+    "specversion": "1.0",
+    "id": "01J0000000000000000000T006",
+    "source": "/spec-kitty/projects/5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11",
+    "type": "ai.spec-kitty.harness.observed.v1",
+    "time": "2026-01-01T00:00:00+00:00",
+    "datacontenttype": "application/json",
+    "dataschema": "urn:ai.spec-kitty:schema:harness.observed.v1",
+    "schemaversion": "4.0.0",
+    "lamportclock": 39,
+    "nodeid": "0123456789ab",
+    "subject": "session/sess-r1",
+    "data": {
+      "kind": "presence",
+      "harness": "claude",
+      "session_id": "sess-r1",
+      "activity": "file_edit",
+      "zz_unknown": 1
+    }
+  },
+  "notes": "data carries a member its schema does not name."
+}

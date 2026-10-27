@@ -1,0 +1,18 @@
+{
+  "case": "wp.innerstate.changed.v1",
+  "group": "cli",
+  "origin": "producer_contract/fixtures/rows/valid/wp.innerstate.changed.v1.json",
+  "notes": "The persisted legacy line of a producer fixture.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-reducer-unification"
+  },
+  "line": "{\"event_id\": \"01J0000000000000000000F004\", \"kind\": \"annotation\", \"wp_id\": \"WP01\", \"at\": \"2026-01-01T00:00:00+00:00\", \"actor\": {\"role\": \"reviewer\", \"profile\": \"reviewer-renata\", \"tool\": \"claude\", \"model\": \"claude-opus\"}, \"delta\": {\"agent\": \"claude\", \"shell_pid\": 4242, \"shell_pid_created_at\": \"2026-01-01T00:00:00+00:00\", \"subtasks\": {\"T001\": \"done\", \"T002\": \"skipped\"}}}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"claude\",\"data\":{\"actorbinding\":{\"model\":\"claude-opus\",\"profile\":\"reviewer-renata\",\"role\":\"reviewer\",\"tool\":\"claude\"},\"delta\":{\"agent\":\"claude\",\"shell_pid\":4242,\"shell_pid_created_at\":\"2026-01-01T00:00:00+00:00\",\"subtasks\":{\"T001\":\"done\",\"T002\":\"skipped\"}}},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:wp.innerstate.changed.v1\",\"id\":\"01J0000000000000000000F004\",\"missionid\":\"01J0000000000000000000MSN1\",\"missionslug\":\"041-reducer-unification\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"subject\":\"WP01\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.wp.innerstate.changed.v1\"}",
+    "valid": true
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "case": "unrecognised-event-name",
+  "group": "edge",
+  "origin": "scripts/generate_upcast_corpus.py",
+  "notes": "A diary row of an unknown kind (shape D): kept as written.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-demo"
+  },
+  "line": "{\"event_id\": \"x\", \"at\": \"2026-01-01T00:00:00Z\", \"event_name\": \"Retro\", \"payload\": {}}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "none",
+    "codes": [
+      "UNRECOGNISED_ROW"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

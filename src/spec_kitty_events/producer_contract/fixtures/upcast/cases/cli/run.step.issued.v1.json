@@ -1,0 +1,18 @@
+{
+  "case": "run.step.issued.v1",
+  "group": "cli",
+  "origin": "producer_contract/fixtures/rows/valid/run.step.issued.v1.json",
+  "notes": "The persisted legacy line of a producer fixture.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-reducer-unification"
+  },
+  "line": "{\"event_id\": \"01J0000000000000000000F022\", \"row_version\": 1, \"event_type\": \"NextStepIssued\", \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"payload\": {\"run_id\": \"01J0000000000000000000RUN1\", \"step_id\": \"specify\", \"agent_id\": \"agent-1\", \"actor\": {\"actor_id\": \"agent-1\", \"actor_type\": \"llm\", \"display_name\": \"Agent 1\", \"provider\": null, \"model\": null, \"tool\": null}, \"mission_id\": null, \"mission_slug\": null}}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "journal_envelope",
+    "codes": [],
+    "golden": "{\"data\":{\"actor\":{\"actor_id\":\"agent-1\",\"actor_type\":\"llm\",\"display_name\":\"Agent 1\",\"model\":null,\"provider\":null,\"tool\":null},\"agent_id\":\"agent-1\",\"mission_id\":null,\"mission_slug\":null,\"run_id\":\"01J0000000000000000000RUN1\",\"step_id\":\"specify\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:run.step.issued.v1\",\"id\":\"01J0000000000000000000F022\",\"missionid\":\"01J0000000000000000000MSN1\",\"missionslug\":\"041-reducer-unification\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.run.step.issued.v1\"}",
+    "valid": true
+  }
+}

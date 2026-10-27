@@ -1,0 +1,18 @@
+{
+  "case": "mission.specify.started.v1",
+  "group": "cli",
+  "origin": "producer_contract/fixtures/rows/valid/mission.specify.started.v1.json",
+  "notes": "The persisted legacy line of a producer fixture.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-reducer-unification"
+  },
+  "line": "{\"event_id\": \"01J0000000000000000000F009\", \"event_type\": \"SpecifyStarted\", \"aggregate_id\": \"041-reducer-unification\", \"aggregate_type\": \"Mission\", \"schema_version\": \"5.0.0\", \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"payload\": {\"mission_slug\": \"041-reducer-unification\", \"mission_number\": null, \"actor\": \"claude\", \"at\": \"2026-01-01T00:00:00Z\", \"artifact_path\": \"kitty-specs/041-reducer-unification/spec.md\"}, \"project_uuid\": \"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\", \"project_slug\": \"demo\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "lifecycle_envelope",
+    "codes": [],
+    "golden": "{\"data\":{\"actor\":\"claude\",\"artifact_path\":\"kitty-specs/041-reducer-unification/spec.md\",\"at\":\"2026-01-01T00:00:00Z\",\"mission_number\":null,\"mission_slug\":\"041-reducer-unification\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:mission.specify.started.v1\",\"id\":\"01J0000000000000000000F009\",\"missionid\":\"01J0000000000000000000MSN1\",\"missionslug\":\"041-reducer-unification\",\"projectslug\":\"demo\",\"projectuuid\":\"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.mission.specify.started.v1\"}",
+    "valid": true
+  }
+}

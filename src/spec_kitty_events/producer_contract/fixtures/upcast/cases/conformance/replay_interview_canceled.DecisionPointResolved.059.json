@@ -1,0 +1,17 @@
+{
+  "case": "replay_interview_canceled.DecisionPointResolved.059",
+  "group": "conformance",
+  "origin": "conformance/fixtures/decisionpoint/replay/replay_interview_canceled.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"dp/dp-iv-005\", \"build_id\": \"test-build\", \"causation_id\": null, \"correlation_id\": \"01J2A0000000000000000000E4\", \"data_tier\": 0, \"event_id\": \"01J2A0000000000000000000E3\", \"event_type\": \"DecisionPointResolved\", \"lamport_clock\": 2, \"node_id\": \"node-1\", \"payload\": {\"actual_participants\": [], \"closed_locally_while_widened\": false, \"closure_message\": null, \"decision_point_id\": \"dp-iv-005\", \"final_answer\": null, \"mission_id\": \"m-interview-005\", \"mission_slug\": \"frontend-redesign\", \"mission_type\": \"software-dev\", \"origin_surface\": \"planning_interview\", \"other_answer\": false, \"rationale\": \"out of scope\", \"recorded_at\": \"2026-04-23T10:00:01+00:00\", \"resolved_by\": \"human-owner-5\", \"run_id\": \"run-iv-005\", \"state_entered_at\": \"2026-04-23T10:00:01+00:00\", \"summary\": null, \"terminal_outcome\": \"canceled\"}, \"project_slug\": null, \"project_uuid\": \"bbbbbbbb-cccc-dddd-eeee-ffffffffffff\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-04-23T10:00:01+00:00\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

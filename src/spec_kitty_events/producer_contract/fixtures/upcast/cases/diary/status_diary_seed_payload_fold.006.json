@@ -1,0 +1,17 @@
+{
+  "case": "status_diary_seed_payload_fold.006",
+  "group": "diary",
+  "origin": "conformance/fixtures/status_diary/replay/status_diary_seed_payload_fold.jsonl:6",
+  "notes": "A status.events.jsonl line, read with the Mission id from context.",
+  "context": {
+    "missionid": "01J0000000000000000000RP06"
+  },
+  "line": "{\"actor\": \"claude\", \"at\": \"2026-08-26T10:01:00+00:00\", \"event_id\": \"01JAAAA0000000000000000046\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_slug\": \"058-seed-payload-fold\", \"policy_metadata\": {\"agent\": \"claude\"}, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"claude\",\"data\":{\"evidence\":null,\"force\":false,\"from_lane\":\"planned\",\"policy_metadata\":{\"agent\":\"claude\"},\"reason\":null,\"review_ref\":null,\"to_lane\":\"claimed\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:lane.transitioned.v1\",\"executionmode\":\"worktree\",\"id\":\"01JAAAA0000000000000000046\",\"missionid\":\"01J0000000000000000000RP06\",\"missionslug\":\"058-seed-payload-fold\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000RP06\",\"specversion\":\"1.0\",\"subject\":\"WP02\",\"time\":\"2026-08-26T10:01:00+00:00\",\"type\":\"ai.spec-kitty.lane.transitioned.v1\"}",
+    "valid": true
+  }
+}

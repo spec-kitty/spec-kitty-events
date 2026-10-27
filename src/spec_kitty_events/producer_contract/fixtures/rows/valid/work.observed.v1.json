@@ -1,0 +1,126 @@
+{
+  "class": "producer_row_valid",
+  "expected": "valid",
+  "type": "ai.spec-kitty.work.observed.v1",
+  "input": {
+    "specversion": "1.0",
+    "id": "01J0000000000000000000T007",
+    "source": "/spec-kitty/missions/01J0000000000000000000MSN1",
+    "type": "ai.spec-kitty.work.observed.v1",
+    "time": "2026-01-01T00:00:00+00:00",
+    "datacontenttype": "application/json",
+    "dataschema": "urn:ai.spec-kitty:schema:work.observed.v1",
+    "schemaversion": "4.0.0",
+    "lamportclock": 40,
+    "nodeid": "0123456789ab",
+    "missionid": "01J0000000000000000000MSN1",
+    "data": {
+      "kind": "narrative.progress_reported",
+      "producer": {
+        "producer_id": "cli-install-r1",
+        "instance_id": "proc-002",
+        "sequence": 2
+      },
+      "session": {
+        "session_id": "sess-human-1",
+        "reconnect_epoch": 0,
+        "credential_epoch": 0,
+        "delegated_from": null
+      },
+      "actor": {
+        "principal_kind": "human",
+        "principal_id": "acct-robert",
+        "display_name": "Robert",
+        "agent_profile": null,
+        "factory_attempt": null
+      },
+      "repository": {
+        "provider": "github",
+        "repository_id": "99001",
+        "display_slug": "spec-kitty/spec-kitty-saas"
+      },
+      "provenance": {
+        "source": "cli_wrapper",
+        "capability": "work-observation",
+        "limitation": null
+      },
+      "mission": {
+        "mission_id": "01J0000000000000000000MSN1",
+        "display_label": "Fix auth flow"
+      },
+      "context": null,
+      "activity": null,
+      "programme": null,
+      "artifact": null,
+      "text": "Working on the auth fix.",
+      "action": null,
+      "recipient": null,
+      "reply_to": null,
+      "ref": null,
+      "coverage": null,
+      "extensions": null
+    }
+  },
+  "transport_row": {
+    "event_id": "01J0000000000000000000T007",
+    "event_type": "WorkObservation",
+    "aggregate_id": "mission/01J0000000000000000000MSN1",
+    "payload": {
+      "action": null,
+      "activity": null,
+      "actor": {
+        "agent_profile": null,
+        "display_name": "Robert",
+        "factory_attempt": null,
+        "principal_id": "acct-robert",
+        "principal_kind": "human"
+      },
+      "artifact": null,
+      "context": null,
+      "coverage": null,
+      "extensions": null,
+      "kind": "narrative.progress_reported",
+      "mission": {
+        "display_label": "Fix auth flow",
+        "mission_id": "01J0000000000000000000MSN1"
+      },
+      "producer": {
+        "instance_id": "proc-002",
+        "producer_id": "cli-install-r1",
+        "sequence": 2
+      },
+      "programme": null,
+      "provenance": {
+        "capability": "work-observation",
+        "limitation": null,
+        "source": "cli_wrapper"
+      },
+      "recipient": null,
+      "ref": null,
+      "reply_to": null,
+      "repository": {
+        "display_slug": "spec-kitty/spec-kitty-saas",
+        "provider": "github",
+        "repository_id": "99001"
+      },
+      "session": {
+        "credential_epoch": 0,
+        "delegated_from": null,
+        "reconnect_epoch": 0,
+        "session_id": "sess-human-1"
+      },
+      "text": "Working on the auth fix."
+    },
+    "timestamp": "2026-01-01T00:00:00+00:00",
+    "build_id": "build-1",
+    "node_id": "0123456789ab",
+    "lamport_clock": 40,
+    "causation_id": null,
+    "project_uuid": "5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11",
+    "project_slug": "demo",
+    "correlation_id": "01J0000000000000000000C001",
+    "schema_version": "3.0.0",
+    "data_tier": 0
+  },
+  "notes": "WorkObservation read from the 3.0.0 transport envelope (no CLI legacy form)."
+}

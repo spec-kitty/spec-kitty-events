@@ -1,0 +1,20 @@
+{
+  "case": "not-an-object-string",
+  "group": "edge",
+  "origin": "scripts/generate_upcast_corpus.py",
+  "notes": "A JSON string.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-demo"
+  },
+  "line": "\"text\"",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "none",
+    "codes": [
+      "NOT_AN_OBJECT"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

@@ -9,7 +9,7 @@
     "type": "ai.spec-kitty.retrospective.captured.v1",
     "time": "2026-01-01T00:00:00+00:00",
     "datacontenttype": "application/json",
-    "dataschema": "https://schemas.example.invalid/spec-kitty/retrospective.captured.v1",
+    "dataschema": "urn:ai.spec-kitty:schema:retrospective.captured.v1",
     "schemaversion": "4.0.0",
     "lamportclock": 29,
     "nodeid": "0123456789ab",

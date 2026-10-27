@@ -1,0 +1,18 @@
+{
+  "case": "retrospective.skipped.v1",
+  "group": "cli",
+  "origin": "producer_contract/fixtures/rows/valid/retrospective.skipped.v1.json",
+  "notes": "The persisted legacy line of a producer fixture.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-reducer-unification"
+  },
+  "line": "{\"type\": \"RetrospectiveSkipped\", \"schema_version\": 1, \"event_id\": \"01J0000000000000000000F031\", \"lamport\": 3, \"at\": \"2026-01-01T00:00:00+00:00\", \"actor\": {\"kind\": \"runtime\", \"id\": \"retro-runner\", \"display\": null}, \"mission_id\": \"01J0000000000000000000MSN1\", \"mission_slug\": \"041-reducer-unification\", \"wp_id\": null, \"force\": false, \"execution_mode\": \"main\", \"skip_reason\": \"operator request\", \"skip_reason_source\": \"cli_flag\", \"policy_source\": {\"timing\": \"strict\"}, \"bypassed_provenance_kind\": \"runtime_strict_gate\", \"would_have_attempted\": true}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"retro-runner\",\"data\":{\"actorbinding\":{\"display\":null,\"id\":\"retro-runner\",\"kind\":\"runtime\"},\"bypassed_provenance_kind\":\"runtime_strict_gate\",\"execution_mode\":\"main\",\"force\":false,\"lamport\":3,\"policy_source\":{\"timing\":\"strict\"},\"schema_version\":1,\"skip_reason\":\"operator request\",\"skip_reason_source\":\"cli_flag\",\"would_have_attempted\":true,\"wp_id\":null},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:retrospective.skipped.v1\",\"id\":\"01J0000000000000000000F031\",\"missionid\":\"01J0000000000000000000MSN1\",\"missionslug\":\"041-reducer-unification\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.retrospective.skipped.v1\"}",
+    "valid": true
+  }
+}

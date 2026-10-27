@@ -1,0 +1,19 @@
+{
+  "case": "status_diary_unknown_kinds.001",
+  "group": "diary",
+  "origin": "conformance/fixtures/status_diary/replay/status_diary_unknown_kinds.jsonl:1",
+  "notes": "A status.events.jsonl line, read with the Mission id from context.",
+  "context": {
+    "missionid": "01J0000000000000000000RP08"
+  },
+  "line": "{\"event_id\": \"dp-opened-1\", \"event_type\": \"DecisionPointOpened\", \"mission_slug\": \"041-reducer-unification\", \"payload\": {\"question\": \"ship?\"}}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "none",
+    "codes": [
+      "UNRECOGNISED_ROW"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

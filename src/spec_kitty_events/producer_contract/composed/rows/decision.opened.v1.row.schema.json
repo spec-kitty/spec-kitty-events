@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.example.invalid/spec-kitty/decision.opened.v1.row",
+  "$id": "urn:ai.spec-kitty:schema:decision.opened.v1.row",
   "title": "ai.spec-kitty.decision.opened.v1 row",
-  "description": "Attribute rules for a CloudEvents 1.0 structured-JSON row written by the Spec Kitty producer. A strict subset of the ADR 0001 envelope design; non-normative until the cutover release; spec-kitty-events#92 absorbs it. Cross-attribute rules that JSON Schema cannot state (missionid equals the id in source; subject is the aggregate only when source is project-scoped) are producer rules recorded in the registry.",
+  "description": "Attribute rules for a CloudEvents 1.0 structured-JSON row a Spec Kitty producer writes (ADR 0001, write profile): upper-case ULID id, lamportclock and nodeid required. Non-normative until the cutover release. Cross-attribute rules that JSON Schema cannot state (missionid equals the id in source; subject is the aggregate only when source is project-scoped) are producer rules recorded in the registry.",
   "type": "object",
   "properties": {
     "specversion": {
@@ -37,7 +37,7 @@
     },
     "dataschema": {
       "type": "string",
-      "const": "https://schemas.example.invalid/spec-kitty/decision.opened.v1"
+      "const": "urn:ai.spec-kitty:schema:decision.opened.v1"
     },
     "schemaversion": {
       "type": "string",

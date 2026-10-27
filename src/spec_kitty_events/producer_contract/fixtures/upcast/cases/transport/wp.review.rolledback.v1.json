@@ -1,0 +1,15 @@
+{
+  "case": "wp.review.rolledback.v1",
+  "group": "transport",
+  "origin": "producer_contract/fixtures/rows/valid",
+  "notes": "ReviewRollback as a 3.0.0 transport envelope.",
+  "context": {},
+  "line": "{\"event_id\": \"01J0000000000000000000T005\", \"event_type\": \"ReviewRollback\", \"aggregate_id\": \"mission/01J0000000000000000000MSN1\", \"payload\": {\"mission_id\": \"01J0000000000000000000MSN1\", \"review_ref\": \"feedback://WP02/1\", \"target_phase\": \"implement\", \"affected_wp_ids\": [\"WP02\"], \"actor\": \"reviewer-1\"}, \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"build_id\": \"build-1\", \"node_id\": \"0123456789ab\", \"lamport_clock\": 38, \"causation_id\": null, \"project_uuid\": \"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\", \"project_slug\": \"demo\", \"correlation_id\": \"01J0000000000000000000C001\", \"schema_version\": \"3.0.0\", \"data_tier\": 0}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "transport_envelope",
+    "codes": [],
+    "golden": "{\"buildid\":\"build-1\",\"correlationid\":\"01J0000000000000000000C001\",\"data\":{\"actor\":\"reviewer-1\",\"affected_wp_ids\":[\"WP02\"],\"mission_id\":\"01J0000000000000000000MSN1\",\"review_ref\":\"feedback://WP02/1\",\"target_phase\":\"implement\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:wp.review.rolledback.v1\",\"datatier\":0,\"id\":\"01J0000000000000000000T005\",\"lamportclock\":38,\"missionid\":\"01J0000000000000000000MSN1\",\"nodeid\":\"0123456789ab\",\"projectslug\":\"demo\",\"projectuuid\":\"5c0f6f0e-3b1a-4d8e-9a55-0d7e3f2b9c11\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.wp.review.rolledback.v1\"}",
+    "valid": true
+  }
+}

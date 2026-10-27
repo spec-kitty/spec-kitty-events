@@ -9,8 +9,13 @@ from __future__ import annotations
 
 import fnmatch
 import subprocess
-import tomllib
+import sys
 from pathlib import Path
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:  # the 3.10 floor: pytest itself depends on tomli there
+    import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parent.parent
 PKG = "src/spec_kitty_events/"

@@ -1,0 +1,17 @@
+{
+  "case": "legacy_event_name.FeatureCreated.027",
+  "group": "conformance",
+  "origin": "conformance/fixtures/cutover_boundary/rejected_by_strict_profile/legacy_event_name.json",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"event_id\": \"01J00000000000000000000001\", \"event_type\": \"FeatureCreated\", \"aggregate_id\": \"mission/01J0000000000000000000MS1\", \"payload\": {\"mission_slug\": \"fixture-mission\", \"friendly_name\": \"Fixture Mission\"}, \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"build_id\": \"build-2026-01-01-fixture\", \"node_id\": \"fixture-node\", \"lamport_clock\": 1, \"causation_id\": null, \"project_uuid\": \"00000000-0000-0000-0000-000000000001\", \"project_slug\": null, \"correlation_id\": \"01J0000000000000000000CR01\", \"schema_version\": \"3.0.0\", \"data_tier\": 0}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

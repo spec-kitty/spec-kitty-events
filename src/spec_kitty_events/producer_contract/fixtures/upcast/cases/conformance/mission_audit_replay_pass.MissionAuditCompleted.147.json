@@ -1,0 +1,17 @@
+{
+  "case": "mission_audit_replay_pass.MissionAuditCompleted.147",
+  "group": "conformance",
+  "origin": "conformance/fixtures/mission_audit/replay/mission_audit_replay_pass.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"audit/mission-010/run-001\", \"build_id\": \"test-build\", \"causation_id\": \"01KJD1WFEVRJZGCKQH5N344ZC7\", \"correlation_id\": \"01KJD1WFEVRJZGCKQH5N344ZC5\", \"data_tier\": 0, \"event_id\": \"01KJD1WFEVRJZGCKQH5N344ZC8\", \"event_type\": \"MissionAuditCompleted\", \"lamport_clock\": 3, \"node_id\": \"local-node-001\", \"payload\": {\"actor\": \"agent-claude\", \"artifact_ref\": {\"content_hash\": {\"algorithm\": \"sha256\", \"encoding\": \"utf-8\", \"hash\": \"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\", \"size_bytes\": 4096}, \"provenance\": {\"actor_id\": \"agent-claude\", \"actor_kind\": \"llm\", \"git_ref\": \"refs/heads/010-mission-audit-lifecycle-contracts\", \"git_sha\": \"abc123def456789\", \"revised_at\": \"2026-02-25T10:05:00Z\", \"source_event_ids\": [\"01KJD1WFEVRJZGCKQH5N344ZC6\", \"01KJD1WFEVRJZGCKQH5N344ZC7\"]}, \"report_path\": \"audits/mission-010/run-001/report.json\"}, \"findings_count\": 0, \"mission_id\": \"mission-010\", \"mission_number\": 10, \"mission_slug\": \"mission-010\", \"mission_type\": \"software-dev\", \"run_id\": \"run-001\", \"severity\": \"info\", \"summary\": \"All acceptance criteria verified. No findings.\", \"verdict\": \"pass\"}, \"project_slug\": null, \"project_uuid\": \"12345678-1234-5678-1234-567812345678\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-02-25T10:05:00.000000Z\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNREGISTERED_TYPE"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

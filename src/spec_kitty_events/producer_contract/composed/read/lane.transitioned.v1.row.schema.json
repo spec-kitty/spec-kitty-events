@@ -1,0 +1,397 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai.spec-kitty:schema:lane.transitioned.v1.row.read",
+  "title": "ai.spec-kitty.lane.transitioned.v1 row (read profile)",
+  "description": "Attribute rules for a CloudEvents row as a reader may meet it, including the upcast form of a legacy row (ADR 0001, read profile): the id may be a normalized legacy UUID, lamportclock and nodeid are optional because legacy diary and CLI rows carry none, and the 3.0.0 transport envelope's remaining fields are optional extensions. Non-normative until the cutover release.",
+  "type": "object",
+  "properties": {
+    "specversion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^([0-9A-HJKMNP-TV-Z]{26}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?![\\s\\S])",
+      "description": "Upper-case ULID, or a legacy UUID normalized to lower-case hyphenated form."
+    },
+    "source": {
+      "type": "string",
+      "pattern": "^/spec-kitty/(missions|projects)/[^/\\s]+(?![\\s\\S])"
+    },
+    "type": {
+      "type": "string",
+      "const": "ai.spec-kitty.lane.transitioned.v1"
+    },
+    "subject": {
+      "type": "string",
+      "minLength": 1
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?([Zz]|[+-][0-9]{2}:[0-9]{2})(?![\\s\\S])"
+    },
+    "datacontenttype": {
+      "type": "string",
+      "const": "application/json"
+    },
+    "dataschema": {
+      "type": "string",
+      "const": "urn:ai.spec-kitty:schema:lane.transitioned.v1"
+    },
+    "schemaversion": {
+      "type": "string",
+      "const": "4.0.0"
+    },
+    "missionid": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}(?![\\s\\S])"
+    },
+    "missionslug": {
+      "type": "string",
+      "minLength": 1
+    },
+    "actor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "executionmode": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lamportclock": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "nodeid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "buildid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "causationid": {
+      "type": "string",
+      "pattern": "^([0-9A-HJKMNP-TV-Z]{26}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?![\\s\\S])",
+      "description": "Upper-case ULID, or a legacy UUID normalized to lower-case hyphenated form."
+    },
+    "correlationid": {
+      "type": "string",
+      "pattern": "^([0-9A-HJKMNP-TV-Z]{26}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?![\\s\\S])",
+      "description": "Upper-case ULID, or a legacy UUID normalized to lower-case hyphenated form."
+    },
+    "projectuuid": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projectslug": {
+      "type": "string",
+      "minLength": 1
+    },
+    "datatier": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "from_lane": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "genesis",
+                "planned",
+                "claimed",
+                "in_progress",
+                "for_review",
+                "in_review",
+                "approved",
+                "done",
+                "blocked",
+                "canceled"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "to_lane": {
+          "type": "string",
+          "enum": [
+            "genesis",
+            "planned",
+            "claimed",
+            "in_progress",
+            "for_review",
+            "in_review",
+            "approved",
+            "done",
+            "blocked",
+            "canceled"
+          ]
+        },
+        "force": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason_source": {
+          "type": "string",
+          "enum": [
+            "operator",
+            "synthetic"
+          ]
+        },
+        "review_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "summary": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text summary carried by the 3.0.0 WPStatusChanged payload only (diary rows have none)."
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "review": {
+                  "type": "object",
+                  "properties": {
+                    "reviewer": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "verdict": {
+                      "type": "string",
+                      "enum": [
+                        "approved",
+                        "changes_requested"
+                      ]
+                    },
+                    "reference": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "reviewer",
+                    "verdict",
+                    "reference"
+                  ],
+                  "additionalProperties": false
+                },
+                "repos": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "repo": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "branch": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "commit": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{7,40}(?![\\s\\S])"
+                      },
+                      "files_touched": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "repo",
+                      "branch",
+                      "commit"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "verification": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "command": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "result": {
+                        "type": "string",
+                        "enum": [
+                          "pass",
+                          "fail",
+                          "skip"
+                        ]
+                      },
+                      "summary": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "command",
+                      "result",
+                      "summary"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "review"
+              ],
+              "additionalProperties": false,
+              "description": "Evidence required for done transitions."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "review_result": {
+          "type": "object",
+          "properties": {
+            "reviewer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "approved",
+                "changes_requested"
+              ]
+            },
+            "reference": {
+              "type": "string",
+              "minLength": 1
+            },
+            "feedback_path": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "reviewer",
+            "verdict",
+            "reference"
+          ],
+          "additionalProperties": false,
+          "description": "Structured review outcome of an outbound in_review transition."
+        },
+        "policy_metadata": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "actorbinding": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "profile": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "tool": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "model": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "role",
+            "profile",
+            "tool",
+            "model"
+          ],
+          "additionalProperties": false,
+          "description": "Structured resolved-binding actor, kept whole when the row's actor is an object."
+        }
+      },
+      "required": [
+        "from_lane",
+        "to_lane"
+      ],
+      "additionalProperties": false,
+      "description": "Lane transition of a work package. The lifted members (event_id, at, mission_slug, mission_id, wp_id, actor, execution_mode) are context attributes, not data. 'doing' is resolved to 'in_progress' before it is written."
+    }
+  },
+  "required": [
+    "specversion",
+    "id",
+    "source",
+    "type",
+    "time",
+    "datacontenttype",
+    "dataschema",
+    "schemaversion",
+    "data",
+    "executionmode",
+    "subject"
+  ],
+  "propertyNames": {
+    "pattern": "^[a-z0-9]{1,20}(?![\\s\\S])"
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "pattern": "^/spec-kitty/missions/"
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "then": {
+        "required": [
+          "missionid"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "missionid"
+          ]
+        }
+      }
+    }
+  ]
+}

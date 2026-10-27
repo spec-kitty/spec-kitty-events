@@ -1,0 +1,17 @@
+{
+  "case": "mission_lifecycle.PhaseEntered.133",
+  "group": "conformance",
+  "origin": "conformance/fixtures/lifecycle/replay/mission_lifecycle.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"mission-001\", \"build_id\": \"lifecycle-replay-demo\", \"correlation_id\": \"01KDEMXC00000000000000R001\", \"event_id\": \"01KDEMX0000000000000000009\", \"event_type\": \"PhaseEntered\", \"lamport_clock\": 9, \"node_id\": \"synthetic-node-001\", \"origin\": null, \"payload\": {\"actor\": \"test-agent\", \"mission_id\": \"mission-001\", \"phase_name\": \"review\", \"previous_phase\": \"implementation\"}, \"project_uuid\": \"00000000-0000-0000-0000-00000000d001\", \"schema_version\": \"3.0.0\", \"team_slug\": \"synthetic-team\", \"timestamp\": \"2026-10-19T09:08:00.000000+00:00\"}",
+  "expected": {
+    "outcome": "passthrough",
+    "form": "transport_envelope",
+    "codes": [
+      "UNEXPECTED_MEMBER"
+    ],
+    "golden": null,
+    "valid": null
+  }
+}

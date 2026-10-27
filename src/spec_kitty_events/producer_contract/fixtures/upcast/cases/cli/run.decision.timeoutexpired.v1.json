@@ -1,0 +1,18 @@
+{
+  "case": "run.decision.timeoutexpired.v1",
+  "group": "cli",
+  "origin": "producer_contract/fixtures/rows/valid/run.decision.timeoutexpired.v1.json",
+  "notes": "The persisted legacy line of a producer fixture.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-reducer-unification"
+  },
+  "line": "{\"event_id\": \"01J0000000000000000000F032\", \"row_version\": 1, \"event_type\": \"DecisionTimeoutExpired\", \"timestamp\": \"2026-01-01T00:00:00+00:00\", \"payload\": {\"run_id\": \"run-001\", \"decision_id\": \"dec-001\", \"step_id\": \"step-review\", \"significance_score\": {\"total\": 11, \"band\": \"high\"}, \"effective_band\": \"high\", \"timeout_configured_seconds\": 900, \"escalation_targets\": [{\"actor_type\": \"human\", \"actor_id\": \"operator-1\"}], \"raci_snapshot\": {\"step_id\": \"step-review\", \"responsible\": {\"actor_type\": \"llm\", \"actor_id\": \"claude\"}, \"accountable\": {\"actor_type\": \"human\", \"actor_id\": \"operator-1\"}, \"consulted\": [], \"informed\": [], \"source\": \"inferred\", \"inferred_rule\": \"default\", \"override_reason\": null}, \"actor\": {\"actor_type\": \"service\", \"actor_id\": \"runtime\"}}}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "journal_envelope",
+    "codes": [],
+    "golden": "{\"data\":{\"actor\":{\"actor_id\":\"runtime\",\"actor_type\":\"service\"},\"decision_id\":\"dec-001\",\"effective_band\":\"high\",\"escalation_targets\":[{\"actor_id\":\"operator-1\",\"actor_type\":\"human\"}],\"raci_snapshot\":{\"accountable\":{\"actor_id\":\"operator-1\",\"actor_type\":\"human\"},\"consulted\":[],\"inferred_rule\":\"default\",\"informed\":[],\"override_reason\":null,\"responsible\":{\"actor_id\":\"claude\",\"actor_type\":\"llm\"},\"source\":\"inferred\",\"step_id\":\"step-review\"},\"run_id\":\"run-001\",\"significance_score\":{\"band\":\"high\",\"total\":11},\"step_id\":\"step-review\",\"timeout_configured_seconds\":900},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:run.decision.timeoutexpired.v1\",\"id\":\"01J0000000000000000000F032\",\"missionid\":\"01J0000000000000000000MSN1\",\"missionslug\":\"041-reducer-unification\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.run.decision.timeoutexpired.v1\"}",
+    "valid": true
+  }
+}

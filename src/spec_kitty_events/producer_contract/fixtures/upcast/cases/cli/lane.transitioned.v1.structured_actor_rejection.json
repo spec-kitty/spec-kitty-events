@@ -1,0 +1,18 @@
+{
+  "case": "lane.transitioned.v1.structured_actor_rejection",
+  "group": "cli",
+  "origin": "producer_contract/fixtures/rows/valid/lane.transitioned.v1.structured_actor_rejection.json",
+  "notes": "The persisted legacy line of a producer fixture.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-reducer-unification"
+  },
+  "line": "{\"event_id\": \"01J0000000000000000000F002\", \"mission_slug\": \"041-reducer-unification\", \"mission_id\": \"01J0000000000000000000MSN1\", \"wp_id\": \"WP01\", \"from_lane\": \"in_review\", \"to_lane\": \"planned\", \"at\": \"2026-01-01T00:00:00+00:00\", \"actor\": {\"role\": \"reviewer\", \"profile\": \"reviewer-renata\", \"tool\": \"claude\", \"model\": \"claude-opus\"}, \"force\": false, \"execution_mode\": \"worktree\", \"reason\": \"needs rework\", \"review_ref\": \"feedback://01J0000000000000000000FB01\", \"evidence\": null, \"policy_metadata\": null, \"review_result\": {\"reviewer\": \"renata\", \"verdict\": \"changes_requested\", \"reference\": \"feedback://01J0000000000000000000FB01\", \"feedback_path\": \"kitty-specs/demo/tasks/WP01/review-cycle-1.md\"}, \"reason_source\": \"operator\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"claude\",\"data\":{\"actorbinding\":{\"model\":\"claude-opus\",\"profile\":\"reviewer-renata\",\"role\":\"reviewer\",\"tool\":\"claude\"},\"evidence\":null,\"force\":false,\"from_lane\":\"in_review\",\"policy_metadata\":null,\"reason\":\"needs rework\",\"reason_source\":\"operator\",\"review_ref\":\"feedback://01J0000000000000000000FB01\",\"review_result\":{\"feedback_path\":\"kitty-specs/demo/tasks/WP01/review-cycle-1.md\",\"reference\":\"feedback://01J0000000000000000000FB01\",\"reviewer\":\"renata\",\"verdict\":\"changes_requested\"},\"to_lane\":\"planned\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:lane.transitioned.v1\",\"executionmode\":\"worktree\",\"id\":\"01J0000000000000000000F002\",\"missionid\":\"01J0000000000000000000MSN1\",\"missionslug\":\"041-reducer-unification\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"subject\":\"WP01\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.lane.transitioned.v1\"}",
+    "valid": true
+  }
+}

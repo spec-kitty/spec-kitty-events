@@ -1,0 +1,15 @@
+{
+  "case": "lifecycle_with_observations.PhaseEntered.113",
+  "group": "conformance",
+  "origin": "conformance/fixtures/harness_observation/replay/lifecycle_with_observations.jsonl",
+  "notes": "A 3.0.0 envelope from the conformance fixtures.",
+  "context": {},
+  "line": "{\"aggregate_id\": \"mission/M-R1\", \"build_id\": \"test-build\", \"causation_id\": null, \"correlation_id\": \"01M0HTDZEEHBG3RZCS5YV8EKJB\", \"data_tier\": 0, \"event_id\": \"01M0HTDZEEHBG3RZCS5YV8EKJA\", \"event_type\": \"PhaseEntered\", \"lamport_clock\": 3, \"node_id\": \"local-node-001\", \"payload\": {\"actor\": \"user-1\", \"mission_id\": \"M-R1\", \"phase_name\": \"plan\", \"previous_phase\": \"specify\"}, \"project_slug\": null, \"project_uuid\": \"12345678-1234-5678-1234-567812345678\", \"schema_version\": \"3.0.0\", \"timestamp\": \"2026-01-01T00:00:03Z\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "transport_envelope",
+    "codes": [],
+    "golden": "{\"buildid\":\"test-build\",\"correlationid\":\"01M0HTDZEEHBG3RZCS5YV8EKJB\",\"data\":{\"actor\":\"user-1\",\"mission_id\":\"M-R1\",\"phase_name\":\"plan\",\"previous_phase\":\"specify\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:mission.phase.entered.v1\",\"datatier\":0,\"id\":\"01M0HTDZEEHBG3RZCS5YV8EKJA\",\"lamportclock\":3,\"nodeid\":\"local-node-001\",\"projectuuid\":\"12345678-1234-5678-1234-567812345678\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/projects/12345678-1234-5678-1234-567812345678\",\"specversion\":\"1.0\",\"subject\":\"mission/M-R1\",\"time\":\"2026-01-01T00:00:03Z\",\"type\":\"ai.spec-kitty.mission.phase.entered.v1\"}",
+    "valid": true
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "case": "retrospective.capturefailed.v1",
+  "group": "cli",
+  "origin": "producer_contract/fixtures/rows/valid/retrospective.capturefailed.v1.json",
+  "notes": "The persisted legacy line of a producer fixture.",
+  "context": {
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-reducer-unification"
+  },
+  "line": "{\"type\": \"RetrospectiveCaptureFailed\", \"schema_version\": 1, \"event_id\": \"01J0000000000000000000F030\", \"lamport\": 3, \"at\": \"2026-01-01T00:00:00+00:00\", \"actor\": {\"kind\": \"runtime\", \"id\": \"retro-runner\", \"display\": null}, \"mission_id\": \"01J0000000000000000000MSN1\", \"mission_slug\": \"041-reducer-unification\", \"wp_id\": null, \"force\": false, \"execution_mode\": \"main\", \"failure_category\": \"missing_artifacts\", \"failure_message\": \"spec.md missing\", \"remediation_hint\": null, \"policy_source\": {\"timing\": \"default\"}, \"attempted_provenance_kind\": \"runtime_post_completion\", \"missing_artifacts\": [\"spec.md\"]}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"retro-runner\",\"data\":{\"actorbinding\":{\"display\":null,\"id\":\"retro-runner\",\"kind\":\"runtime\"},\"attempted_provenance_kind\":\"runtime_post_completion\",\"execution_mode\":\"main\",\"failure_category\":\"missing_artifacts\",\"failure_message\":\"spec.md missing\",\"force\":false,\"lamport\":3,\"missing_artifacts\":[\"spec.md\"],\"policy_source\":{\"timing\":\"default\"},\"remediation_hint\":null,\"schema_version\":1,\"wp_id\":null},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:retrospective.capturefailed.v1\",\"id\":\"01J0000000000000000000F030\",\"missionid\":\"01J0000000000000000000MSN1\",\"missionslug\":\"041-reducer-unification\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000MSN1\",\"specversion\":\"1.0\",\"time\":\"2026-01-01T00:00:00+00:00\",\"type\":\"ai.spec-kitty.retrospective.capturefailed.v1\"}",
+    "valid": true
+  }
+}
