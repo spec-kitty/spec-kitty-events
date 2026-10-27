@@ -1,8 +1,8 @@
 ---
 title: 'ADR: adopt CloudEvents 1.0 as the event envelope'
-description: 'Accepted: CloudEvents 1.0 structured JSON becomes the Spec Kitty event-log envelope; the 3.0.0 envelope and status-diary row become legacy inputs to a read-time upcaster.'
+description: 'Accepted: CloudEvents 1.0 structured JSON is the Spec Kitty event-log envelope; the 3.0.0 envelope and status-diary row are legacy inputs to a read-time upcaster.'
 doc_status: active
-updated: 2026-10-15T00:00:00Z
+updated: 2026-10-27T00:00:00Z
 type: ADR
 kind: ADR
 authors:
@@ -14,11 +14,13 @@ authors:
 
 **Status:** Accepted
 
-**Date:** 2026-10-15 (proposed 2026-10-13)
+**Date:** 2026-10-27 (proposed 2026-10-13; accepted in part 2026-10-15)
 
 **Deciders:** Maintainer. Direction: maintainer approval, 2026-10-13. Accepted, with the
 open questions 1, 2 and 4 decided, on maintainer approval, 2026-10-15. Open questions 3a and 3b
-(timing) stay open, and the further proposed choices listed after them still await confirmation.
+(timing) and every further choice decided on maintainer approval, 2026-10-27, before the first
+implementation mission ([#92](https://github.com/spec-kitty/spec-kitty-events/issues/92)) started.
+No question in this ADR is open.
 
 **Reader:** a maintainer or consumer author deciding whether the Spec Kitty event log,
 the merge driver and the Mission Status Read API move to a CloudEvents envelope, and when.
@@ -159,13 +161,13 @@ The two axes move independently and both move here.
   (minor) and the cutover release is the major. In the cutover release the package accepts `4.0.0` beside `3.0.0`
   (a named legacy path), so no live producer is rejected; the accept/reject boundary
   widens. Whether and when `3.0.0` is later rejected (a separate retirement step, after
-  every producer emits CloudEvents) is open question 3b (design section 14,
+  every producer emits CloudEvents) is question 3b, decided A (design section 14,
   "Cutover").
 - **Package version:** a **major** bump in the cutover release (it accepts a previously
   rejected envelope). The versioning contract makes any change that
   rejects a previously accepted envelope, or accepts a previously rejected one, a major
-  change. The package is at a `10.x` line and consumers pin `<11`, so the next major
-  also gates adoption. The cutover release is not gated on open question 3a or 3b;
+  change. The package is at an `11.x` line and consumers pin `<12`, so the next major (`12.0.0`)
+  also gates adoption. The cutover release is not gated on question 3a or 3b;
   whether a later retirement step rejects `3.0.0` is 3b.
 - The required artifacts of a major bump all apply: `CHANGELOG.md` `### Breaking`,
   `COMPATIBILITY.md` section and the single `Current package version` declaration,
@@ -245,12 +247,13 @@ The charter's central CLI-SaaS contract rule also applies (see Consumers).
   a partially adopted driver, accepting `id` with fork detection still on top-level fields,
   lets a concurrent cancel and advance merge cleanly. The sort key reads the upcast form too. **Rollout dependency, owned by core:** this
   driver change, covering both, ships before any phase lets writers emit CloudEvents into a log. The key
-  depends on open questions 2 and 4; nothing here is decided for core.
+  depends on questions 2 and 4 (both decided: ULID ids, the `ai.spec-kitty` prefix); nothing
+  here is decided for core.
 - **Silent aliases.** The charter forbids "silent compatibility aliases ... without an
   explicit cutover decision". The upcaster is not one: it is named, its mapping is
   published row by row, in strict use it fails closed with a named error, and it is pinned by
-  fixtures. This ADR, once confirmed, records the direction; the explicit cutover decision
-  for the live-path change is recorded when open question 3a (writer timing) is ruled, and no
+  fixtures. This ADR records the direction; the explicit cutover decision
+  for the live-path change is the writer switch that question 3a (decided 2026-10-27) schedules, and no
   live path changes before then. A reader that accepted legacy keys without declaring them
   would be the thing the directive bans.
 
@@ -260,7 +263,7 @@ A permanent upcaster; a second language binding to keep in step (if the Java bin
 goes ahead); an ordering rule that CloudEvents does not give us; renamed attributes
 that every consumer must learn.
 
-## Open questions (1, 2 and 4 decided 2026-10-15; 3a and 3b open)
+## Decided questions (1, 2 and 4 on 2026-10-15; 3a, 3b and the further choices on 2026-10-27)
 
 ### 1. Ordering (decided: C)
 
@@ -279,7 +282,13 @@ into the diary. Today's diary writers stamp no clock.
 **Decided (maintainer, 2026-10-15): C.** A Lamport clock, with `(time, id)` as the tiebreak
 and as the fallback for rows without a clock. It is conditional on the total order for logs
 mixing clocked and clockless rows being defined first (see `contracts/total-order.md`). Phase 2 owns the reducer
-sort-key change (design section 14). CloudEvents' own `sequence` extension is not a fit and its
+sort-key change (design section 14).
+
+**Scheduling note (maintainer, 2026-10-27).** C is the target order and the shipped total order
+(`contracts/total-order.md`) already implements it. The status-diary reducer keeps its wall-clock
+`(at, event_id)` order for the Spec Kitty 4.0.0 line; the Phase 2 reducer sort-key switch to
+Lamport-first is post-GA work (core spec-kitty#6609, per the operator's reading of the core ADR
+`2026-02-09-3` amendment, which this repository does not mirror). #92 does not change the reducer. CloudEvents' own `sequence` extension is not a fit and its
 documentation says such extensions "have no official standing", so ordering is a Spec
 Kitty extension in any case. Options B and C also bound `lamportclock` to the CloudEvents
 Integer range (signed 32-bit), or make it a string (design section 5).
@@ -300,7 +309,7 @@ driver, if core adopts the proposal, compares UUID spelling variants as one id.
 
 Five version numbers exist and must not be conflated, the same five as design section 8:
 the CloudEvents spec version (`1.0`), the on-wire envelope schema version (`3.0.0`), the
-payload schema version (the `type` suffix), the package version (now `10.x`), and the
+payload schema version (the `type` suffix), the package version (now `11.x`), and the
 Spec Kitty release line (`4.x` in the core). "Envelope major" means the on-wire schema going `3.0.0` to `4.0.0`; the package
 major that carries it is a different number.
 
@@ -318,8 +327,12 @@ starts emitting CloudEvents.
 | B. Later in 4.x, with the first write-core command switch | Spec Kitty 4.0 GA is not gated on it; two-step release possible. |
 | C. With Spec Kitty 5.0 | Slowest; Read API consumes the old envelope meanwhile. |
 
-**Possible direction, not a decision:** B, the option spec-kitty#6117 leans towards. If B is chosen, release the library first (models,
-schemas, upcaster, fixtures) before any CLI writes CloudEvents.
+**Decided (maintainer, 2026-10-27): writers switch when the Mission Read API and Write API are
+ready, and that is on the Spec Kitty 4.0 GA critical path.** This is option A gated on readiness
+rather than on a date: the GA waits for the write path, not the other way round. The library goes
+first (models, schemas, registry, upcaster, fixtures, the Java binding; #92, a minor release), then
+the 4b package major, then the core merge-driver change, then the writers. No live path changes
+before the writer switch, which is the explicit cutover decision the charter directive asks for.
 
 #### 3b. Whether and when `3.0.0` is retired
 
@@ -327,7 +340,9 @@ The design's Cutover options (section 14): A, retire `3.0.0` in a later package 
 once every producer has shipped Phase 5 (a second major); B, keep accepting both
 indefinitely or for a stated window. Whether SaaS ingress keeps accepting the old shape
 for a window or indefinitely, or a later retirement step rejects it, is this question.
-No recommendation is made; the maintainer decides.
+**Decided (maintainer, 2026-10-27): A.** `3.0.0` is retired in a later package major, once every
+producer emits CloudEvents. That retirement is its own release and its own cutover decision; until
+then the package accepts both.
 
 ### 4. Reverse-DNS type prefix (decided: `ai.spec-kitty`)
 
@@ -345,11 +360,10 @@ prefix to the implementers; it is neither A nor B above. It is the prefix of the
 in the released 10.5.x package and of the spec-kitty producer, so a type reads
 `ai.spec-kitty.<name>.v<N>`. Changing it later is a breaking change.
 
-## Further choices (still to confirm)
+## Further choices (confirmed 2026-10-27)
 
-The design (section 4) embeds two choices that are proposed, not decided here. They
-differ from the illustrative example in spec-kitty#6117. Further proposals, also to
-confirm on the PR and listed in the Phase 0 exit (design section 14):
+The maintainer confirmed every choice below on 2026-10-27; the `INTERIM` markers of the 10.5.0
+registry are lifted by #92. Two of them differ from the illustrative example in spec-kitty#6117.
 
 - **New-type versioning replaces a clause of the versioning contract.** The design
   (section 7) proposes `.vN` new types in place of the contract rule that renaming a typed
@@ -363,3 +377,16 @@ confirm on the PR and listed in the Phase 0 exit (design section 14):
 - **Which fields become extensions:** `actor` and `executionmode` are context attributes
   (they survive Kafka header mapping and filter without parsing `data`) rather than `data`
   members.
+
+Recorded with them on 2026-10-27, for the first implementation mission (#92):
+
+- **Release:** #92 is a minor release (`11.3.0`): the full registry, the upcaster, the legacy
+  corpus, the CloudEvents validator (non-normative) and the Java binding. The Phase 4b cutover
+  (`12.0.0`, strict accepts `4.0.0`) follows as its own change.
+- **Two envelope profiles:** the read profile (what the upcaster returns) has `lamportclock` and
+  `nodeid` optional, because legacy rows carry none and the upcaster invents nothing; the write
+  profile (new rows) keeps requiring them.
+- **`dataschema` base:** `urn:ai.spec-kitty:schema:`, an identifier with no hosting assumption.
+  Bindings resolve it to the packaged schema files. Changing it later is breaking.
+- **Java binding:** a Maven module compiled for Java 25 (Temurin 25, as core's acceptance JVM),
+  passing the same fixtures as the Python binding. Not published to a registry by #92.

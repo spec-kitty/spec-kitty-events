@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `11.2.1`
+**Current package version**: `11.3.0`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,93 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `11.3.0` — CloudEvents envelope profiles, the full type registry, the legacy-row upcaster and a Java binding (minor)
+
+`11.3.0` (spec-kitty-events#92, step 2 of the Mission Write API, spec-kitty/spec-kitty#6117)
+is a **minor** release. It completes the non-normative CloudEvents contract that `10.5.0`
+started. Every existing 3.0.0 envelope, payload and fixture that was accepted before is
+still accepted, and every one that was rejected is still rejected. The on-wire envelope
+schema stays `3.0.0`, `validate_strict_envelope` still requires it, producers keep
+emitting it, and the status-diary reducer's order and folding are unchanged. ADR 0001 is
+now Accepted with every question decided (2026-10-27).
+
+What is new:
+
+- **The full type registry.** Every type in `STRICT_EVENT_TYPES` (26) now has exactly one
+  entry with a `transport` mapping from the 3.0.0 envelope. Eight types have no CLI legacy
+  form and are new: `mission.started.v1`, `mission.completed.v1`, `mission.cancelled.v1`,
+  `mission.closed.v1`, `mission.phase.entered.v1`, `wp.review.rolledback.v1`,
+  `harness.observed.v1` and `work.observed.v1`. Their `data` schemas are pinned to the
+  payload models. The lane type lifts its repeated members and publishes the `doing` to
+  `in_progress` mapping. The registry now has 36 entries, and its `INTERIM` markers are
+  lifted.
+- **Two envelope profiles.** `envelope.schema.json` is the write profile: a ULID `id`, with
+  `lamportclock` and `nodeid` required. The new `envelope.read.schema.json` is the read
+  profile. It accepts clockless rows and legacy UUID ids, and it declares the 3.0.0
+  envelope's remaining fields as extensions (`buildid`, `causationid`, `correlationid`,
+  `projectuuid`, `projectslug`, `datatier`). `row_schema(type, profile=...)` and the
+  committed `composed/read/` schemas compose the read profile.
+- **`spec_kitty_events.cloudevents`.** It provides:
+  - `upcast()` and `upcast_line()`, which read a legacy row as a CloudEvent. The supported
+    forms are the 3.0.0 envelope, the diary lane and annotation rows, and the CLI
+    lifecycle, decision, journal and retrospective rows.
+  - `canonical_bytes()`.
+  - `validate_cloudevent()`, a non-normative validator beside `validate_strict_envelope`.
+  - `diary_row()`, the lane and annotation decode.
+
+  The upcaster is deterministic, invents nothing and never rewrites a row. In permissive
+  use, an unmappable row passes through with a named issue; in strict use, it raises
+  `UpcastError`. The row-level contract is in `docs/architecture/cloudevents-envelope.md`,
+  section 9.
+- **The upcast corpus** (`producer_contract/fixtures/upcast/`). It holds 363 legacy lines,
+  each with its context, expected outcome, issue codes and golden canonical CloudEvent. The
+  packaged gate runs it, including equal reduced state for every status-diary replay
+  fixture.
+- **A Java binding** (`java/`, Java 25, not published). It reads the same registry, schemas
+  and corpus in place and reproduces every golden byte for byte. `make test-java` runs it
+  as part of `make test-full`.
+
+**What moves inside the non-normative contract.** `10.5.0` allowed this contract to change
+in a minor release. Three things change:
+
+- The `dataschema` base is now `urn:ai.spec-kitty:schema:`, replacing the placeholder
+  `https://schemas.example.invalid/spec-kitty/`. This changes every `dataschema`, every data
+  schema `$id`, and the write profile's `dataschema` pattern.
+- The lane data schema gains an optional `summary` member, which the 3.0.0 `WPStatusChanged`
+  payload carries.
+- `legacy_row_form_schema()` raises `RegistryError` for a type with no CLI legacy form.
+
+This package knows of no released producer that writes the placeholder base. `10.5.0` required
+producers to keep emission gated until each consumer validates, and no `4.0.0` row is
+accepted on a live path. That is why the change is minor. A producer that does write the
+placeholder base must switch to the URN.
+
+`registry.json` moves from `registry_version` `1.0.0` to `1.1.0`. It gains `envelope_schemas`,
+a `transport` block on every entry and the `transport_envelope` shape, and an entry's `legacy`
+may now be `null`. A registry reader that assumed `legacy` is always an object must handle
+`null`.
+
+**Java binding note.** It uses Jackson 3 (`tools.jackson`), because json-schema-validator
+3.x is built on it; the plan named Jackson 2.
+
+**Release classification.** This is a minor release because the new types, schemas,
+functions and corpus are additive, and only non-normative artifacts change. The major
+release is the ADR 0001 Phase 4b cutover (`12.0.0`, in which strict accepts `4.0.0` beside
+`3.0.0`). It is a separate change, and the later retirement of `3.0.0` is another major
+(ADR question 3b).
+
+### Adopting 11.3.0
+
+- **spec-kitty (core):** bump the lock to `11.3.0` within the existing `<12` range (cf.
+  spec-kitty/spec-kitty#6602). No code change is needed until core adopts the shared
+  reader. The core merge-driver change (ADR 0001, "Compatibility") still has to ship before
+  any writer emits CloudEvents.
+- **spec-kitty-saas:** nothing changes, because ingress still validates `3.0.0`.
+- **Java consumers (Mission Status Read API, the write core):** build `java/` from source,
+  and run its corpus test against the package version you pin.
+- **Producers writing CloudEvents rows:** validate against `composed/rows/` (the write
+  profile) and use the URN `dataschema`.
 
 ## `11.2.1` — one schema-version source, gate and build invalid fixtures (patch)
 
