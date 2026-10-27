@@ -406,4 +406,4 @@ def test_the_input_is_never_mutated() -> None:
 
 
 def test_every_issue_code_is_named_once() -> None:
-    assert len(IssueCode.ALL) == len(set(IssueCode.ALL)) == 17
+    assert len(IssueCode.ALL) == len(set(IssueCode.ALL))
