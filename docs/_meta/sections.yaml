@@ -26,7 +26,7 @@ sections:
     label: Architecture
     order: 40
     type: Architecture
-    purpose: How the contract is shaped — the CloudEvents envelope, total order and reduction, and the journal-versus-volatile durability split.
+    purpose: How the contract is shaped — the CloudEvents envelope, total order and reduction, the journal-versus-volatile durability split, and the read and write services.
 
   - id: glossary
     label: Glossary

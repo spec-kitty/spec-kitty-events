@@ -18,7 +18,7 @@
     "@astrojs/markdown-remark": "^7.3.3",
     "@astrojs/sitemap": "^3.7.4",
     "@astrojs/starlight": "^0.42.6",
-    "@spec-kitty/doc-toolkit": "0.4.0",
+    "@spec-kitty/doc-toolkit": "0.5.0",
     "astro": "^7.4.0",
     "sharp": "^0.34.5"
   },

@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No package change: no model, schema, fixture or envelope changes its accept or reject
+boundary, and the version stays `11.3.0`. This repository becomes the home of the
+events-domain services (#147); the services themselves are imported at cutover.
+
+### Added
+
+- ADR 0002 (this repository is canonical for the events domain and its services: the
+  Mission Status Read API, the Mission Write API write core and their OpenAPI contracts),
+  ADR 0003 (one Gradle build, GraalVM native images and the `service-v*` release line with
+  fixed asset names) and ADR 0004 (the PyPI `v*` line and the `service-v*` line are
+  versioned independently; the Java binding stays on the package line), all Accepted.
+- A charter amendment: the Services and Documentation sections, and a test-only,
+  SHA-pinned core checkout for service CI as a scoped Package Boundary exception.
+- `service.yml` (the Gradle build; its native, lock-interop and nightly-corpus jobs stay
+  inert until `service/` exists), `service-release.yml` (`service-v*` tags; it refuses every
+  tag until the cutover import) and `scripts/release/service-release-assets.sh`, with
+  `tests/test_service_workflows.py`, static checks of both workflows and of the asset
+  script against the ADR 0003 asset table.
+- Service architecture docs under `docs/architecture/services/`, the guides
+  `docs/guides/running-the-service.md` and `docs/guides/service-protocol-and-releases.md`,
+  and the maintainer cutover runbook `docs/guides/service-cutover-runbook.md`.
+
+### Changed
+
+- `java/` now builds with Gradle: a root Kotlin DSL build (Gradle 9.8.1, `build-logic/`
+  conventions, a version catalog, strict dependency verification). Run it with
+  `./gradlew verifyAll` or `make test-java`. Maven is removed. The binding's dependencies and
+  test count are unchanged.
+- `.gitignore` ignores the Gradle build output (`.gradle/`, `build/`, `build-logic/build/`,
+  `java/build/`) in place of Maven's `java/target/`.
+- The docsite uses `@spec-kitty/doc-toolkit` 0.5.0 (was 0.4.0).
+- `AGENTS.md` describes the services this repository hosts, the `service-v*` line, every
+  workflow (not only `ci.yml`) and the `./gradlew verifyAll` and `make test-java` commands.
+- `.gitattributes` checks out `*.bat` (`gradlew.bat`) with CRLF line endings.
+- `.dockerignore` ignores the Gradle build output (`**/.gradle`, `**/build-logic/build`,
+  `**/java/build`) in place of Maven's `**/java/target`.
+
 ## [11.3.0] - 2026-10-27
 
 Minor release. It adds the CloudEvents envelope profiles, the full type registry, a
