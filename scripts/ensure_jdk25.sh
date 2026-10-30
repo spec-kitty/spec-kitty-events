@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Print a JAVA_HOME with a JDK 25 or newer, for the Java binding (`make test-java`).
+# Print a JAVA_HOME with a JDK 25 or newer, for the Java binding (`make test-java`), which hands it to the
+# Gradle build as its only toolchain (org.gradle.java.installations.paths; Gradle never downloads a JDK).
 #
 # Uses $JAVA_HOME, then `java` on PATH, when either is version 25+. Otherwise downloads the
 # pinned Eclipse Temurin 25 release (the JDK core's acceptance JVM uses) into .cache/jdk-25,
