@@ -388,5 +388,5 @@ Recorded with them on 2026-10-27, for the first implementation mission (#92):
   profile (new rows) keeps requiring them.
 - **`dataschema` base:** `urn:ai.spec-kitty:schema:`, an identifier with no hosting assumption.
   Bindings resolve it to the packaged schema files. Changing it later is breaking.
-- **Java binding:** a Maven module compiled for Java 25 (Temurin 25, as core's acceptance JVM),
+- **Java binding:** a Gradle module built for Java 25 (Temurin 25, as core's acceptance JVM),
   passing the same fixtures as the Python binding. Not published to a registry by #92.
