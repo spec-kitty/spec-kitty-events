@@ -1,0 +1,241 @@
+{
+  "event_count": 63,
+  "last_event_id": "01M64WJ6JYCYGDXJMV4JV1ZJ07",
+  "materialized_at": "2026-10-29T22:30:20.510454+00:00",
+  "mission_number": "",
+  "mission_slug": "events-domain-services-home-01M64MSB",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 6,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 2
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M64NZ1YXRRN6A5FVSAVZQY9K",
+      "last_transition_at": "2026-10-29T20:35:01.725737+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review",
+        "Review passed (reviewer-renata): ADRs 0002-0004 + index trace to D1-D8 and verified core sources; core ADR and charter ADR-0015 links resolve; 0003 asset table identical to contract; no shipped claims; owned_files only; doc checks 0 errors. Minors (fold pre-PR): D-10 quote attribution; index title capitalisation; 0003 description 179/180."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/kitty-specs/events-domain-services-home-01M64MSB/tasks/WP01-adrs-service-ownership/review-cycle-1.md",
+        "reference": "review-cycle://events-domain-services-home-01M64MSB/WP01-adrs-service-ownership/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 3420,
+      "shell_pid_created_at": "1793305902.14",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done"
+      }
+    },
+    "WP02": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M64SQYFT35SN6Q3SNMX1ATXM",
+      "last_transition_at": "2026-10-29T21:41:03.098774+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review",
+        "Cycle 2: review feedback addressed",
+        "Cycle 3: service.yml clause corrected",
+        "Review passed cycle 3 (reviewer-renata): cycle-2 MAJOR resolved - AGENTS.md now says service.yml runs ./gradlew verifyAll (the Java binding) on Java-build path changes and its service jobs plus service-release.yml stay inert until cutover, matching WP04 T015/T018. e178cf9 touches only AGENTS.md; orientation block md5 unchanged (7274cb29); CLAUDE.md still symlink; charter files unchanged since cycle 2; ruff clean; charter context loads. Shared-file note: AGENTS.md is owned by WP02 only; WP04 owns the workflow files the sentence describes. Non-blocking minors: trigger summary omits nightly schedule/dispatch/workflow_call and service/contracts paths; pre-cutover service-v* tag makes service-release gate fail loudly rather than be strictly inert."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/kitty-specs/events-domain-services-home-01M64MSB/tasks/WP02-charter-amendment/review-cycle-3.md",
+        "reference": "review-cycle://events-domain-services-home-01M64MSB/WP02-charter-amendment/review-cycle-3.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 19034,
+      "shell_pid_created_at": "1793309976.85",
+      "subtasks": {
+        "T005": "done",
+        "T006": "done",
+        "T007": "done",
+        "T008": "done"
+      }
+    },
+    "WP03": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M64SVND70ZQ4DHM0R8K6RGNQ",
+      "last_transition_at": "2026-10-29T21:43:04.871437+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review",
+        "Review passed (reviewer-renata): Gradle verifyAll 366 tests/0 failures = Maven baseline 366 (re-run at 0111554); resources byte-identical to Maven target/classes (126 files); -Xlint:all -Werror -parameters --release 25 on main+test; CC reused; strict sha256 verification proven (tampered hash fails; cold GRADLE_USER_HOME clean checkout green); wrapper jar sha256 = gradle.org 9.8.1; src/ untouched; conformance 1200 passed; ruff clean; test-fast 4100 passed/1 failed (test_version_not_amended, shallow clone, also fails at base). Scope note: .dockerignore edited outside owned_files - necessary to mirror new .gitignore entries for tests/test_dockerignore.py, minimal. Minors: (1) Test cache key includes absolute upcast.cases path (comment claims otherwise; test not relocatable) - use CommandLineArgumentProvider; (2) .gitattributes '* text=auto eol=lf' does apply to gradlew.bat, so checkouts get LF - add '*.bat text eol=crlf'; (3) checkVersionMatchesPyproject has no outputs, never up-to-date; (4) java/build and build-logic/build ignore lines redundant with existing build/ and **/build; (5) 'only toolchain' comment overstated - auto-detect remains on."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/kitty-specs/events-domain-services-home-01M64MSB/tasks/WP03-gradle-root-binding/review-cycle-1.md",
+        "reference": "review-cycle://events-domain-services-home-01M64MSB/WP03-gradle-root-binding/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 4773,
+      "shell_pid_created_at": "1793308520.69",
+      "subtasks": {
+        "T009": "done",
+        "T010": "done",
+        "T011": "done",
+        "T012": "done",
+        "T013": "done",
+        "T014": "done"
+      }
+    },
+    "WP04": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M64TKN4679A3WYYZ0M8J2X4W",
+      "last_transition_at": "2026-10-29T21:56:11.014734+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review",
+        "Review passed (reviewer-renata): suspected skip-propagation defect is absent (gradle if: uses !cancelled() && needs.contract-bundle.result != 'failure'; native/lock-interop/nightly/release jobs evaluate as intended). All 10 uses: SHA-pinned and verified against upstream tags; only publish writes; no pull_request_target; tag/version via env + regex; ancestor gate, sha256sum --check --strict, subject-checksums (supported at v4.2.2), tag re-check, --verify-tag, --latest=false. actionlint 1.7.12 clean; 22/22 workflow tests; ruff clean; conformance 1200 passed; only the 4 owned files. Minors / WP07 follow-ups: (1) PythonPeer must read SPEC_KITTY_LOCK_INTEROP_PEER (exact name) - WP07 T-PythonPeer; (2) core's cross-leg digest compare (mission_status_gate_checks.py digests) and nativePerf are not wired: digest-* artifacts are uploaded but unread - add at cutover via the core-pin checkout or record as a deliberate omission; (3) lock-interop is a blocking need of service-gate and the release, whereas core treats it as evidence only - confirm at cutover; (4) conformance-fixtures tar entry layout (conformance/, artifact-conformance/, nativesmoke/, leak-patterns.json, event-log/torn-tail/) flattens resource dirs; ADR 0003 says 'relative to service/' - clarify the entry layout in ADR/contract before core codes against it; (5) no test pins the gradle job's !cancelled() guard against regression."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/kitty-specs/events-domain-services-home-01M64MSB/tasks/WP04-service-ci-release/review-cycle-1.md",
+        "reference": "review-cycle://events-domain-services-home-01M64MSB/WP04-service-ci-release/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 24138,
+      "shell_pid_created_at": "1793310769.01",
+      "subtasks": {
+        "T015": "done",
+        "T016": "done",
+        "T017": "done",
+        "T018": "done",
+        "T019": "done"
+      }
+    },
+    "WP05": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M64ST57J44MGK9300WBKRVZ5",
+      "last_transition_at": "2026-10-29T21:42:15.538087+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review",
+        "Cycle 2: review feedback addressed",
+        "Review passed cycle 2 (reviewer-renata): all 5 cycle-1 findings resolved in d8eae2e (charter-service note removed; service.log named without stdout/stderr claim; 64-unit cap cites OQ7 provisional + REQUEST_MALFORMED in WriteRefusalCode.yaml, both verified in core @4eecb124; ADR 2026-10-29-1 status verified Accepted on core pr/6782 head, not yet on main, wording says it lands with #6782; hub link uses /architecture/services/). Fix touches only 3 owned docs files. validate-frontmatter 52 valid/0 errors, check-links 113 refs/0 errors, ruff clean. Anti-pattern checklist: 1-4,6,8 N/A (docs only), 5 PASS, 7 PASS (owned files only)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/kitty-specs/events-domain-services-home-01M64MSB/tasks/WP05-docsite-architecture/review-cycle-2.md",
+        "reference": "review-cycle://events-domain-services-home-01M64MSB/WP05-docsite-architecture/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 20389,
+      "shell_pid_created_at": "1793310067.25",
+      "subtasks": {
+        "T020": "done",
+        "T021": "done",
+        "T022": "done",
+        "T023": "done",
+        "T024": "done",
+        "T025": "done"
+      }
+    },
+    "WP06": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "reviewer-renata",
+      "agent_profile_version": "1.0",
+      "force_count": 2,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M64WJ6JYCYGDXJMV4JV1ZJ07",
+      "last_transition_at": "2026-10-29T22:30:20.510454+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Ready for review",
+        "Cycle 2: review feedback addressed",
+        "Cycle 3: operator markers on all GitHub mutations",
+        "Review passed cycle 3 (reviewer-renata): every GitHub mutation in the runbook carries [operator] (independent grep audit of push/gh/tag/PR/merge/close/delete); import branch cut with --no-track and pushed explicitly with -u in step 5 [operator]; precondition 1.3 names core tests/architectural/test_events_import_frozen.py, verified on core PR #6782 head 2197e3a020 to pin all 11 paths with ids identical to the 1.6 table, and makes 1.6/1.7 the binding line; no cycle-2 regressions; CHANGELOG has the .gitignore line; frontmatter 56 valid, links 148 resolve, ruff clean; only owned files changed."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/kitty-specs/events-domain-services-home-01M64MSB/tasks/WP06-guides-runbook-changelog/review-cycle-3.md",
+        "reference": "review-cycle://events-domain-services-home-01M64MSB/WP06-guides-runbook-changelog/review-cycle-3.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 1667,
+      "shell_pid_created_at": "1793312925.45",
+      "subtasks": {
+        "T026": "done",
+        "T027": "done",
+        "T028": "done",
+        "T029": "done"
+      }
+    },
+    "WP07": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M64NE4MC9NBVFSTT9GHZM656",
+      "last_transition_at": "2026-10-29T20:25:47.404353+00:00"
+    },
+    "WP08": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M64NE607YQ709NRGK6WC3HKX",
+      "last_transition_at": "2026-10-29T20:25:48.807623+00:00"
+    }
+  }
+}
