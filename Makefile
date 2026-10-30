@@ -33,7 +33,9 @@ lint: ## Run the pinned ruff check gate, the formatter check, and the version-am
 	uv run python scripts/check_version_not_amended.py
 
 # The Java binding (java/, spec-kitty-events#92) runs the same upcast corpus as the Python
-# gate. scripts/ensure_jdk25.sh finds a JDK 25+ or provisions Temurin 25 into .cache/; the
-# Maven Wrapper pins Maven and its checksum. Part of test-full, so the CI suite runs it.
+# gate. scripts/ensure_jdk25.sh finds a JDK 25+ or provisions Temurin 25 into .cache/ and hands
+# it to Gradle as the only toolchain (Gradle never downloads one). The Gradle Wrapper pins Gradle
+# and its distribution checksum; gradle/verification-metadata.xml pins the sha256 of every
+# dependency. Part of test-full, so the CI suite runs it.
 test-java: ## Build and test the Java binding against the shared corpus (JDK 25, fetched if absent)
-	jh="$$(scripts/ensure_jdk25.sh)" && JAVA_HOME="$$jh" java/mvnw -B -f java/pom.xml --strict-checksums verify
+	jh="$$(scripts/ensure_jdk25.sh)" && JAVA_HOME="$$jh" ./gradlew --no-daemon -Dorg.gradle.java.installations.paths="$$jh" :java-binding:check

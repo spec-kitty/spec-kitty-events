@@ -90,6 +90,9 @@ kitty-ops/ops-index.jsonl
 # Local scratch (engineering notes, throwaway scripts) — never committed
 work/
 
-# Java binding (spec-kitty-events#92)
-java/target/
+# Gradle build (root build, build-logic, the Java binding; spec-kitty-events#92, #147)
+.gradle/
+build/
+build-logic/build/
+java/build/
 .cache/jdk-25/

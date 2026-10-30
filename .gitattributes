@@ -1,5 +1,7 @@
 # Normalise text files to LF in the repository and in checkouts.
 * text=auto eol=lf
+# Windows batch scripts (gradlew.bat) need CRLF in checkouts.
+*.bat text eol=crlf
 
 kitty-specs/**/status.events.jsonl merge=spec-kitty-event-log
 kitty-specs/**/status.json linguist-generated=true
