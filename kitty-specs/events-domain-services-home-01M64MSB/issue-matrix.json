@@ -1,0 +1,41 @@
+{
+  "rows": {
+    "#147": {
+      "evidence_ref": "Tracking issue; closed by this mission's PR",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "in-mission",
+      "wp": null
+    },
+    "#6692": {
+      "evidence_ref": "Follow-up: core spec-kitty/spec-kitty#6692 is closed at cutover (spec D8, WP08 T037) by the core session, linking ADR 0002",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "deferred-with-followup",
+      "wp": "WP08"
+    },
+    "#92": {
+      "evidence_ref": "Cited as provenance of the Java binding; WP03 migrates its build, no #92 work owed",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    }
+  },
+  "schema_version": 1
+}
