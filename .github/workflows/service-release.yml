@@ -1,0 +1,199 @@
+# Publishes a service release (ADR 0003): a tag service-vX.Y.Z[-pre] on a commit of main builds the
+# four natives, the JVM jar, the contract bundles, the contract tools and the conformance fixtures,
+# with one .sha256 per asset and SHA256SUMS (scripts/release/service-release-assets.sh; the asset
+# table in ADR 0003 is the contract), attests their build provenance and creates the GitHub release.
+#
+# Before the cutover import there is no service/: `gate` fails loudly, so nothing is built or
+# published. The tag pattern is disjoint from the package line's v* (publish-pypi.yml): GitHub's glob
+# v* does not match service-v1.0.0 (tests/test_service_workflows.py checks both).
+#
+# A manual run (workflow_dispatch) is a rehearsal: it builds and assembles the assets under the tag it
+# is given and uploads them as the artifact `service-release`. The publish job does not run.
+#
+# Jobs: gate -> build (service.yml, workflow_call) -> assemble (read-only) -> publish (tag push only,
+# the only job with a write token).
+name: service-release
+
+on:
+  push:
+    tags: ["service-v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The release tag to rehearse (service-vX.Y.Z[-pre]). Nothing is published."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# A release is never cancelled halfway: a second run for the same tag waits.
+concurrency:
+  group: service-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      ver: ${{ steps.tag.outputs.ver }}
+      prerelease: ${{ steps.tag.outputs.prerelease }}
+      commit: ${{ steps.tag.outputs.commit }}
+      package-version: ${{ steps.tag.outputs.package-version }}
+    steps:
+      # Full history: the ancestor check reads origin/main.
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require the imported services
+        run: |
+          if [ ! -d service ]; then
+            echo "::error::service-v* releases need the cutover import: service/ does not exist at $GITHUB_SHA"
+            exit 1
+          fi
+      - name: Check the tag and derive the version
+        id: tag
+        env:
+          EVENT: ${{ github.event_name }}
+          PUSHED: ${{ github.ref_name }}
+          REHEARSED: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = push ]; then tag="$PUSHED"; else tag="$REHEARSED"; fi
+          if ! printf '%s' "$tag" | grep -Eq '^service-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+            echo "::error::'$tag' is not a service release tag (service-vX.Y.Z[-pre])"
+            exit 1
+          fi
+          ver="${tag#service-v}"
+          case "$ver" in *-*) prerelease=true ;; *) prerelease=false ;; esac
+          package_version="$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          {
+            echo "tag=$tag"
+            echo "ver=$ver"
+            echo "prerelease=$prerelease"
+            echo "commit=$(git rev-parse HEAD)"
+            echo "package-version=$package_version"
+          } >> "$GITHUB_OUTPUT"
+      # A tag can be pushed on any commit; only a commit on main (so, reviewed) is released. Fails closed.
+      - name: Require the tagged commit to be on main
+        if: github.event_name == 'push'
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_SHA is not an ancestor of origin/main: tag a commit that is on main"
+            exit 1
+          fi
+
+  build:
+    needs: gate
+    uses: ./.github/workflows/service.yml
+    with:
+      release-version: ${{ needs.gate.outputs.ver }}
+
+  # Read-only: assembles and checks the asset set; holds no write token.
+  assemble:
+    needs: [gate, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: native-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/natives
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: service-jar
+          path: ${{ runner.temp }}/natives
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: contract-bundles
+          path: ${{ runner.temp }}/bundle-out
+      - name: Assemble the release assets
+        env:
+          TAG: ${{ needs.gate.outputs.tag }}
+          BUNDLE_OUT: ${{ runner.temp }}/bundle-out
+        run: scripts/release/service-release-assets.sh "$TAG" dist "$RUNNER_TEMP/natives"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: service-release
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  # The only job that can write: it builds nothing, only checks and publishes what assemble built.
+  publish:
+    needs: [gate, assemble]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: service-release
+          path: dist
+      - name: Check every asset against SHA256SUMS
+        working-directory: dist
+        run: sha256sum --check --strict SHA256SUMS
+      # Build provenance for every asset SHA256SUMS lists, i.e. every asset except the checksum files.
+      # Verify a download with: gh attestation verify <asset> --repo spec-kitty/spec-kitty-events \
+      #   --signer-workflow spec-kitty/spec-kitty-events/.github/workflows/service-release.yml --source-ref refs/tags/<tag>
+      - name: Attest the build provenance of the assets
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-checksums: dist/SHA256SUMS
+      # The assets are those of the commit gate checked. A tag moved or re-pushed since names another
+      # commit, and nothing is published.
+      - name: Check the tag still names the built commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ needs.gate.outputs.tag }}
+          BUILT: ${{ needs.gate.outputs.commit }}
+        run: |
+          set -euo pipefail
+          read -r type sha < <(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.type + " " + .object.sha')
+          if [ "$type" = tag ]; then sha="$(gh api "repos/$REPO/git/tags/$sha" --jq .object.sha)"; fi
+          if [ "$sha" != "$BUILT" ] || [ "$sha" != "$GITHUB_SHA" ]; then
+            echo "::error::$TAG now names $sha, but the assets were built from $BUILT"
+            exit 1
+          fi
+      # --verify-tag refuses a tag missing on the remote; an existing release of the tag fails the step,
+      # so a release is never replaced. Never marked latest, so it cannot displace a package release.
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ needs.gate.outputs.tag }}
+          VER: ${{ needs.gate.outputs.ver }}
+          PRERELEASE: ${{ needs.gate.outputs.prerelease }}
+          PACKAGE_VERSION: ${{ needs.gate.outputs.package-version }}
+        run: |
+          set -euo pipefail
+          flags=(--latest=false)
+          if [ "$PRERELEASE" = true ]; then flags+=(--prerelease); fi
+          {
+            echo "Events domain services ${VER}: the Mission Status API natives (linux-x64, linux-arm64, macos-arm64, windows-x64), its JVM jar, the contract bundles, the contract tools and the conformance fixtures (ADR 0003)."
+            echo
+            echo "Built and tested against the spec-kitty-events package version ${PACKAGE_VERSION} (pyproject.toml at this tag; ADR 0004)."
+            echo
+            echo "Check a download with: sha256sum --check --ignore-missing SHA256SUMS"
+            echo "Check its provenance with: gh attestation verify <asset> --repo ${REPO} --signer-workflow ${REPO}/.github/workflows/service-release.yml --source-ref refs/tags/${TAG}"
+            echo
+            echo "The binaries are unsigned, so macOS Gatekeeper and Windows SmartScreen will warn."
+          } > "$RUNNER_TEMP/notes.md"
+          # Upload exactly the assets SHA256SUMS lists, their .sha256 files and SHA256SUMS; no glob over dist.
+          mapfile -t listed < <(awk '{print $2}' dist/SHA256SUMS)
+          files=(dist/SHA256SUMS)
+          for name in "${listed[@]}"; do files+=("dist/$name" "dist/$name.sha256"); done
+          gh release create "$TAG" --repo "$REPO" --verify-tag --title "$TAG" "${flags[@]}" \
+            --notes-file "$RUNNER_TEMP/notes.md" "${files[@]}"

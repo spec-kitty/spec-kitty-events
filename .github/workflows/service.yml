@@ -1,0 +1,529 @@
+# The JVM side of the events domain (ADR 0003): one Gradle build at the repository root.
+#
+# What runs today: `detect`, `gradle` (./gradlew verifyAll, currently the Java binding) and the
+# terminal `service-gate`. Every other job needs service/, which arrives with the cutover import
+# (ADR 0002, mission WP07): `detect` reports whether service/build.gradle.kts exists, and the service
+# jobs carry `if: needs.detect.outputs.service == 'true'`, so they turn on with no edit to this file.
+#
+# Jobs:
+#   detect          service/ present? and the core SHA from service/core-pin.json (test-only peers)
+#   contract-bundle the contract bundle/ tree, built once by contracts/tools/bundle.py   [guarded]
+#   gradle          ./gradlew verifyAll; at cutover also the bootJar (JVM fallback asset)
+#   native          GraalVM native image on four targets, golden replay, size             [guarded]
+#   lock-interop    Java vs Python event-log lock, Python peer from the pinned core       [guarded]
+#   nightly-corpus  schedule / workflow_dispatch: Python oracle vs service on the corpus  [guarded]
+#   service-gate    terminal: fails when any needed job failed; skipped counts as success
+#
+# service-release.yml calls this workflow (workflow_call) with `release-version`, so the natives and
+# the jar carry the real version; otherwise they are 0.0.0-dev+<sha7>.
+name: service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "service/**"
+      - "contracts/**"
+      - "java/**"
+      - "build-logic/**"
+      - "gradle/**"
+      - "settings.gradle.kts"
+      - "build.gradle.kts"
+      - "gradle.properties"
+      - "gradlew"
+      - "gradlew.bat"
+      # The Java binding reads the producer contract in place.
+      - "src/spec_kitty_events/producer_contract/**"
+      - ".github/workflows/service.yml"
+  pull_request:
+    paths:
+      - "service/**"
+      - "contracts/**"
+      - "java/**"
+      - "build-logic/**"
+      - "gradle/**"
+      - "settings.gradle.kts"
+      - "build.gradle.kts"
+      - "gradle.properties"
+      - "gradlew"
+      - "gradlew.bat"
+      # The Java binding reads the producer contract in place.
+      - "src/spec_kitty_events/producer_contract/**"
+      - ".github/workflows/service.yml"
+  # The one cron: `nightly-corpus` only. 03:41 UTC, off the hour.
+  schedule:
+    - cron: "41 3 * * *"
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      release-version:
+        description: "The <ver> of a service-v<ver> tag; names the natives and the jar. Empty: 0.0.0-dev+<sha7>."
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+# When called, github.workflow is the caller's name, so a release run gets its own group and is never
+# cancelled by, nor cancels, a run of this workflow on the same ref. Only this workflow's own pull
+# request runs cancel a superseded run.
+concurrency:
+  group: service-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.workflow == 'service' && github.event_name == 'pull_request' }}
+
+env:
+  RELEASE_VERSION: ${{ inputs.release-version }}
+
+jobs:
+  detect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      service: ${{ steps.detect.outputs.service }}
+      core-sha: ${{ steps.detect.outputs.core-sha }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      # A step, not a job-level hashFiles(): hashFiles is not available in a job-level `if`.
+      - name: Detect the imported services and the core pin
+        id: detect
+        run: |
+          set -euo pipefail
+          if test -f service/build.gradle.kts; then
+            echo "service=true" >> "$GITHUB_OUTPUT"
+            echo "service/ is present: the service jobs run" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "service=false" >> "$GITHUB_OUTPUT"
+            echo "service/ is absent (before the cutover import): the service jobs are skipped" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          # service/core-pin.json (WP07): the core SHA for the CI-only peers (charter Package Boundary
+          # exception). Read here once, on Linux, so no job needs jq on Windows.
+          if test -f service/core-pin.json; then
+            sha="$(jq -r '.sha' service/core-pin.json)"
+            if ! printf '%s' "$sha" | grep -Eq '^[0-9a-f]{40}$'; then
+              echo "::error::service/core-pin.json .sha must be 40 lowercase hex characters, but is '$sha'"
+              exit 1
+            fi
+            echo "core-sha=$sha" >> "$GITHUB_OUTPUT"
+          fi
+
+  # The contract document is built once, outside the checkout, so every leg serves the same bytes.
+  # bundle.py without --module writes every module (bundle/mission-status, bundle/mission-write).
+  contract-bundle:
+    needs: detect
+    if: needs.detect.outputs.service == 'true' && github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          python-version: "3.12"
+      # pyproject.toml lists pyyaml>=6.0,<7 and uv.lock locks PyYAML 6.0.3, which bundle.py imports.
+      - name: Install the locked Python environment
+        run: uv sync --frozen --no-install-project
+      - name: Write the contract bundle tree
+        run: |
+          set -euo pipefail
+          uv run --frozen --no-sync python contracts/tools/bundle.py --root contracts --out "$RUNNER_TEMP/bundle-out" --bundle-only
+          find "$RUNNER_TEMP/bundle-out/bundle" -type f -exec sha256sum {} +
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: contract-bundles
+          path: ${{ runner.temp }}/bundle-out
+          if-no-files-found: error
+          overwrite: true
+
+  # Runs today: the root build's aggregate check. It waits for contract-bundle only so that, after the
+  # cutover, the service modules' check reads the same bundle as the native legs; before it,
+  # contract-bundle is skipped and this job runs anyway.
+  gradle:
+    needs: [detect, contract-bundle]
+    if: ${{ !cancelled() && github.event_name != 'schedule' && needs.detect.result == 'success' && needs.contract-bundle.result != 'failure' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      # gradle.properties sets org.gradle.java.installations.auto-download=false: the JDK comes from here.
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          # A release run (release-version set) neither restores nor saves the Gradle cache.
+          cache-disabled: ${{ inputs.release-version != '' }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: needs.detect.outputs.service == 'true'
+        with:
+          name: contract-bundles
+          path: ${{ runner.temp }}/bundle-out
+      - name: Point the build at the downloaded contract bundle
+        if: needs.detect.outputs.service == 'true'
+        run: |
+          set -euo pipefail
+          bundle="$RUNNER_TEMP/bundle-out/bundle/mission-status/openapi.yaml"
+          echo "CONTRACT_BUNDLE=$bundle" >> "$GITHUB_ENV"
+          echo "CONTRACT_BUNDLE_SHA256=$(sha256sum "$bundle" | cut -d' ' -f1)" >> "$GITHUB_ENV"
+      - name: Verify every module
+        run: ./gradlew --no-daemon verifyAll
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: gradle-test-reports
+          path: |
+            **/build/reports/tests
+            **/build/test-results
+          if-no-files-found: warn
+          overwrite: true
+      # The JVM fallback asset (ADR 0003): mission-status-api-<ver>.jar.
+      - name: Build and name the service jar
+        if: needs.detect.outputs.service == 'true'
+        run: |
+          set -euo pipefail
+          if [ -n "$RELEASE_VERSION" ]; then ver="$RELEASE_VERSION"; else ver="0.0.0-dev+${GITHUB_SHA::7}"; fi
+          ./gradlew --no-daemon :mission-status-api:bootJar
+          mkdir -p "$RUNNER_TEMP/service-jar"
+          cp service/build/libs/mission-status-api.jar "$RUNNER_TEMP/service-jar/mission-status-api-${ver}.jar"
+          ls -l "$RUNNER_TEMP/service-jar"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: needs.detect.outputs.service == 'true'
+        with:
+          name: service-jar
+          path: ${{ runner.temp }}/service-jar
+          if-no-files-found: error
+          overwrite: true
+
+  native:
+    needs: [detect, contract-bundle]
+    if: needs.detect.outputs.service == 'true' && github.event_name != 'schedule'
+    name: native (${{ matrix.target }})
+    runs-on: ${{ matrix.runner }}
+    # Provisional, from core's mission-status-api.yml; the first CI run sets it.
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x64
+            exe: ""
+          - runner: ubuntu-24.04-arm
+            target: linux-arm64
+            exe: ""
+          - runner: macos-15
+            target: macos-arm64
+            exe: ""
+          - runner: windows-2025
+            target: windows-x64
+            exe: ".exe"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - uses: graalvm/setup-graalvm@27b360dbb857524eaf0b4c4cef364d38e5b4f173 # v1.6.7
+        with:
+          java-version: "25.0.2"
+          distribution: "graalvm-community"
+          github-token: ${{ github.token }}
+      # The contract-document test shells out to `python3 contracts/tools/bundle.py`, which imports
+      # PyYAML; the macOS and Windows images lack it (and Windows lacks a `python3` name). As in core:
+      # PyYAML 6.0.3, hash-verified. The hashes are uv.lock's own (cp312 manylinux x86_64, manylinux
+      # aarch64, macOS arm64, win_amd64, and the sdist).
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: "3.12"
+      - name: Install PyYAML for the contract-document test
+        run: |
+          set -eu
+          requirements="$RUNNER_TEMP/pyyaml-requirements.txt"
+          cat > "$requirements" <<'REQUIREMENTS'
+          PyYAML==6.0.3 \
+              --hash=sha256:ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc \
+              --hash=sha256:9149cad251584d5fb4981be1ecde53a1ca46c891a79788c0df828d2f166bda28 \
+              --hash=sha256:fc09d0aa354569bc501d4e787133afc08552722d3ab34836a80547331bb5d4a0 \
+              --hash=sha256:5fcd34e47f6e0b794d17de1b4ff496c00986e1c83f7ab2fb8fcfe9616ff7477b \
+              --hash=sha256:d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f
+          REQUIREMENTS
+          python -m pip install --no-deps --require-hashes -r "$requirements"
+      - name: Give Windows a python3 name
+        if: runner.os == 'Windows'
+        run: |
+          if ! command -v python3 >/dev/null 2>&1; then
+            python_exe="$(command -v python)"
+            cp "$python_exe" "$(dirname "$python_exe")/python3.exe"
+          fi
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: contract-bundles
+          path: ${{ runner.temp }}/bundle-out
+      - name: Point the build at the downloaded contract bundle
+        run: |
+          set -euo pipefail
+          bundle="$RUNNER_TEMP/bundle-out/bundle/mission-status/openapi.yaml"
+          echo "CONTRACT_BUNDLE=$bundle" >> "$GITHUB_ENV"
+          echo "CONTRACT_BUNDLE_SHA256=$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$bundle")" >> "$GITHUB_ENV"
+      - name: Compile the native image and run the tagged native tests
+        run: ./gradlew --no-daemon :mission-status-api:nativeCompile :mission-status-api:nativeTest
+      # The golden replay (nativesmoke/requests.json) against the binary the compile step produced.
+      - name: Replay the golden requests against the built binary
+        env:
+          WORKSPACE: ${{ github.workspace }}
+        run: ./gradlew --no-daemon :mission-status-api:nativeSmoke "-PnativeBinary=$WORKSPACE/service/build/native/nativeCompile/mission-status-api${{ matrix.exe }}"
+      - name: Show the replay summary
+        if: always()
+        run: |
+          summary="service/build/nativesmoke/summary-${{ matrix.target }}.txt"
+          if [ -f "$summary" ]; then cat "$summary" >> "$GITHUB_STEP_SUMMARY"; else echo "no replay summary was written" >> "$GITHUB_STEP_SUMMARY"; fi
+      - name: Name the binary and record its size
+        run: |
+          set -euo pipefail
+          if [ -n "$RELEASE_VERSION" ]; then ver="$RELEASE_VERSION"; else ver="0.0.0-dev+${GITHUB_SHA::7}"; fi
+          name="mission-status-api-${ver}-${{ matrix.target }}${{ matrix.exe }}"
+          mkdir -p "$RUNNER_TEMP/native"
+          cp "service/build/native/nativeCompile/mission-status-api${{ matrix.exe }}" "$RUNNER_TEMP/native/$name"
+          size="$(wc -c < "$RUNNER_TEMP/native/$name" | tr -d ' ')"
+          echo "native binary size: \`$name\` $size bytes" >> "$GITHUB_STEP_SUMMARY"
+          echo "$name: $size bytes"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-${{ matrix.target }}
+          path: ${{ runner.temp }}/native
+          if-no-files-found: error
+          overwrite: true
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: digest-${{ matrix.target }}
+          path: service/build/nativesmoke/digest-${{ matrix.target }}.json
+          if-no-files-found: warn
+          overwrite: true
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: junit-native-${{ matrix.target }}
+          path: service/build/test-results
+          if-no-files-found: warn
+          overwrite: true
+
+  # Java vs Python on the event-log lock (core's lock-interop spike). The Python peer is core's
+  # scripts/ci/lock_interop_peer.py at the SHA in service/core-pin.json, run with a uv venv built
+  # from core's own lock. LockInteropSpikeTest runs only when SPEC_KITTY_LOCK_INTEROP_PYTHON is set.
+  #
+  # Peer path (for WP07): core's PythonPeer.fromEnvironment() hard-codes the relative path
+  # "scripts/ci/lock_interop_peer.py" and walks up from the working directory to find it. Here that
+  # walk (service/event-log -> service -> workspace) never reaches core/scripts/ci/, so as imported
+  # the test throws IllegalStateException. WP07 makes PythonPeer read the env
+  # SPEC_KITTY_LOCK_INTEROP_PEER (falling back to the walk); this job already sets it, so no edit
+  # here is needed. Gradle's test JVM inherits the environment of the build, as in core.
+  lock-interop:
+    # Runs core's Python at the pinned SHA, so it stays out of release runs (release-version set):
+    # a release run then executes only this repository's code beside its artifacts.
+    needs: detect
+    if: needs.detect.outputs.service == 'true' && github.event_name != 'schedule' && inputs.release-version == ''
+    name: lock-interop (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            os: linux
+            results: 2
+            python: core/.venv/bin/python
+          - runner: macos-15
+            os: macos
+            results: 2
+            python: core/.venv/bin/python
+          - runner: windows-2025
+            os: windows
+            results: 1
+            python: core/.venv/Scripts/python.exe
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Require the core pin
+        env:
+          CORE_SHA: ${{ needs.detect.outputs.core-sha }}
+        run: |
+          if [ -z "$CORE_SHA" ]; then
+            echo "::error::service/ is present but service/core-pin.json is missing: lock-interop needs the pinned core SHA"
+            exit 1
+          fi
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      # CI-only, SHA-pinned, test-only peer (charter Package Boundary exception; ADR 0002).
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          repository: spec-kitty/spec-kitty
+          ref: ${{ needs.detect.outputs.core-sha }}
+          path: core
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          python-version: "3.12"
+      - name: Install core's locked Python environment
+        working-directory: core
+        run: uv sync --frozen
+      # The Python reader imports core's charter, which needs the built-in pack tree.
+      - name: Sync core's packs from its pinned open-packs commits
+        working-directory: core
+        run: PYTHONPATH="$GITHUB_WORKSPACE/core/src" uv run --frozen --no-sync python scripts/sync_packs.py --pack all
+      - uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          # A release run (release-version set) neither restores nor saves the Gradle cache.
+          cache-disabled: ${{ inputs.release-version != '' }}
+      - name: Run the lock-interop spike
+        env:
+          SPEC_KITTY_LOCK_INTEROP_PYTHON: ${{ github.workspace }}/${{ matrix.python }}
+          # Read by PythonPeer once WP07 adds the lookup (see the job comment).
+          SPEC_KITTY_LOCK_INTEROP_PEER: ${{ github.workspace }}/core/scripts/ci/lock_interop_peer.py
+        run: ./gradlew --no-daemon :event-log:test --tests '*LockInteropSpikeTest'
+      - name: Show the verdict table
+        if: always()
+        run: |
+          {
+            echo "### Lock interop (${{ matrix.os }})"
+            echo
+            cat service/event-log/build/lock-interop/*.md 2>/dev/null || echo "(no result recorded on ${{ matrix.os }})"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+      # A skipped test or a filter that matches nothing leaves Gradle green: no result is a failure.
+      - name: Require one recorded result per Java lock
+        run: |
+          recorded=$(find service/event-log/build/lock-interop -name '*.json' 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$recorded" != "${{ matrix.results }}" ]; then
+            echo "::error::expected ${{ matrix.results }} lock-interop results, found $recorded"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: lock-interop-${{ matrix.os }}
+          path: |
+            service/event-log/build/lock-interop
+            service/event-log/build/test-results
+          if-no-files-found: warn
+          overwrite: true
+
+  # The full-corpus compare: core's Python oracle (at the pinned SHA) against this service's jar, over
+  # core's kitty-specs/ corpus, byte for byte. Schedule or a manual run only; never inside a release.
+  nightly-corpus:
+    needs: detect
+    if: needs.detect.outputs.service == 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && inputs.release-version == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Require the core pin
+        env:
+          CORE_SHA: ${{ needs.detect.outputs.core-sha }}
+        run: |
+          if [ -z "$CORE_SHA" ]; then
+            echo "::error::service/ is present but service/core-pin.json is missing: nightly-corpus needs the pinned core SHA"
+            exit 1
+          fi
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      # A real .git is required: the oracle reads the worktree registry and the corpus is `git ls-files`.
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          repository: spec-kitty/spec-kitty
+          ref: ${{ needs.detect.outputs.core-sha }}
+          path: core
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          python-version: "3.12"
+      - name: Install core's fully synced environment (the oracle imports the test extras)
+        working-directory: core
+        run: uv sync --frozen --all-extras
+      - name: Sync core's packs from its pinned open-packs commits
+        working-directory: core
+        run: PYTHONPATH="$GITHUB_WORKSPACE/core/src" uv run --frozen --no-sync python scripts/sync_packs.py --pack all
+      - uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          # A release run (release-version set) neither restores nor saves the Gradle cache.
+          cache-disabled: ${{ inputs.release-version != '' }}
+      - name: Build the contract bundle and point the build at it
+        run: |
+          set -euo pipefail
+          uv sync --frozen --no-install-project
+          uv run --frozen --no-sync python contracts/tools/bundle.py --root contracts --out "$RUNNER_TEMP/bundle-out" --module mission-status --bundle-only
+          bundle="$RUNNER_TEMP/bundle-out/bundle/mission-status/openapi.yaml"
+          echo "CONTRACT_BUNDLE=$bundle" >> "$GITHUB_ENV"
+          echo "CONTRACT_BUNDLE_SHA256=$(sha256sum "$bundle" | cut -d' ' -f1)" >> "$GITHUB_ENV"
+      - name: Build the service jar
+        run: ./gradlew --no-daemon :mission-status-api:bootJar
+      - name: Start the service against the core checkout
+        run: |
+          set -euo pipefail
+          java -jar service/build/libs/mission-status-api.jar --mission-status.project-root="$GITHUB_WORKSPACE/core" --mission-status.port=8787 > "$RUNNER_TEMP/service.log" 2>&1 &
+          echo "SERVICE_PID=$!" >> "$GITHUB_ENV"
+      - name: Compare every Mission, Python against the service
+        working-directory: core
+        run: uv run --frozen --no-sync python scripts/ci/mission_status_corpus_compare.py --base-url http://127.0.0.1:8787 --repo-root "$GITHUB_WORKSPACE/core" --report "$RUNNER_TEMP/nightly-report.json"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: nightly-corpus-report
+          path: |
+            ${{ runner.temp }}/nightly-report.json
+            ${{ runner.temp }}/service.log
+          if-no-files-found: warn
+          overwrite: true
+      - name: Stop the service
+        if: always()
+        run: |
+          if [ -n "${SERVICE_PID:-}" ]; then kill "$SERVICE_PID" || true; fi
+
+  service-gate:
+    needs: [detect, contract-bundle, gradle, native, lock-interop, nightly-corpus]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Fail when any needed job failed or was cancelled (skipped counts as success)
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "needed job results: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in
+              success|skipped) ;;
+              *)
+                echo "::error::a needed job did not succeed: $RESULTS"
+                exit 1
+                ;;
+            esac
+          done
