@@ -7,13 +7,23 @@ answers:
     rules consumed by Spec Kitty systems.
   languages_frameworks: >-
     Python 3.10+ with Pydantic event models, committed JSON Schemas, and
-    conformance fixtures as part of the public contract.
+    conformance fixtures as part of the public contract. Java 25 for the Java
+    binding (see Language Bindings) and the events-domain services (see
+    Services), built with Gradle (Kotlin DSL) as the single Java toolchain;
+    the services also build as GraalVM native images.
   testing_requirements: >-
     Use pytest, hypothesis, schema drift checks, and conformance fixture
-    validation for any event contract change.
+    validation for any event contract change. Java code is tested with JUnit
+    and ArchUnit (onion and boundary rules are mandatory for service modules),
+    contract conformance tests against contracts/, and native smoke tests for
+    release builds. Every binding passes the shared conformance fixtures.
   quality_gates: >-
     pytest, committed schema generation checks, and mypy --strict must pass
-    before merge.
+    before merge. Every PR also passes uv run pytest --pyargs
+    spec_kitty_events.conformance and a green Gradle check (./gradlew verifyAll,
+    or make test-java for the Java binding), with strict Gradle dependency
+    verification and SHA-pinned actions in the service workflows and in any
+    workflow added or changed from this amendment on.
   review_policy: >-
     Any change to event envelopes, payload fields, schema versioning, or
     conformance fixtures requires deliberate compatibility review.
@@ -21,8 +31,14 @@ answers:
     Validation and replay helpers should stay deterministic and efficient for
     normal CLI and SaaS event volumes.
   deployment_constraints: >-
-    Package must ship as a Python library with committed schemas and fixtures;
-    live consumers rely on fail-closed compatibility behavior.
+    Package must ship as a Python library with committed schemas and fixtures
+    (PyPI, tag v*; pinned by SHA under the programme exception, see Package
+    Boundary), and the Java binding is versioned with it (see Language
+    Bindings). The services ship on a separate service-v* line of GitHub
+    releases carrying per-OS native binaries, a JVM jar, contract bundles,
+    contract tools and conformance fixtures, each with a sha256 and build
+    provenance (ADR 0003); the two lines are versioned independently (ADR
+    0004). Live consumers rely on fail-closed compatibility behavior.
   documentation_policy: >-
     Update README, compatibility notes, and shipped fixtures whenever an event
     contract or conformance rule changes.
