@@ -40,6 +40,8 @@ catalog:
   mission: software-dev
   template_set: software-dev-default
   languages:
+  - java
+  - kotlin
   - python
   references:
   - id: USER:PROJECT_PROFILE

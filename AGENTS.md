@@ -3,12 +3,24 @@
 This repo is `spec-kitty/spec-kitty-events`, the only development line for the package.
 The former `EXPERIMENTAL-spec-kitty-events` fork is fully merged here and archived
 read-only; its issue and PR numbers cited in the changelog, docs, and docstrings still
-refer to that archive. The repo follows the `EXPERIMENTAL-spec-kitty-*` programme
+refer to that archive. The repo also hosts the events-domain Java services
+(`service/` and `contracts/`, from cutover), released on a `service-v*` line separate
+from the PyPI `v*` line ([ADR-0002](./docs/adr/0002-events-domain-owns-its-services.md)).
+The repo follows the `EXPERIMENTAL-spec-kitty-*` programme
 process. There is no pre-programme
 branch ladder here: **`main` IS the integration branch** — every PR targets `main`,
-nothing deploys on merge, and nothing on GitHub enforces anything (no branch protection,
-no required reviews; GitHub Actions are limited to `.github/workflows/ci.yml`, the
-deterministic Blacksmith CI suite per `planning#274`).
+nothing deploys on merge except the docs site (`docs-site.yml` publishes GitHub Pages on
+a push to `main` that touches `docs/**` or `site/**`), and nothing on GitHub enforces
+anything (no branch protection, no required reviews). The deterministic CI suite is
+`.github/workflows/ci.yml` (Blacksmith, per `planning#274`); the other workflows run the
+acceptance and cross-repo harness checks (`acceptance.yml`, `cross-repo-harness-tests.yml`)
+and the daily CI canary (`ci-pr-lane-canary.yml`), build and deploy the docs site, and
+publish to PyPI on `v*` tags (`publish-pypi.yml`) or to TestPyPI on manual dispatch
+(`publish-testpypi.yml`). `service.yml` runs the Gradle build (`./gradlew verifyAll`,
+currently the Java binding) on pull requests and `main` pushes that touch the Java, Gradle,
+service, contract or producer-contract paths; its service jobs stay inert until the services
+are imported at cutover, and `service-release.yml` (`service-v*` tags) refuses to release
+before then ([ADR-0003](./docs/adr/0003-gradle-build-and-service-release-line.md)).
 The binding process is the programme constitution —
 [`EXPERIMENTAL-spec-kitty-planning/PROGRAM.md`](https://github.com/spec-kitty/EXPERIMENTAL-spec-kitty-planning/blob/main/PROGRAM.md) §5–§9:
 
@@ -29,6 +41,8 @@ The binding process is the programme constitution —
 | Whole suite with coverage — CI agent only | `make test-full` |
 | Packaged conformance gate — every PR | `uv run pytest --pyargs spec_kitty_events.conformance` |
 | Lint (whole repo, part of "Tests run") | `ruff check . && ruff format --check .` |
+| Java build and tests (every Gradle module: the binding; at cutover also the services) | `./gradlew verifyAll` |
+| Java binding check through the JDK 25 helper (also part of `make test-full`) | `make test-java` |
 
 The conformance gate is the packaged contract other repos consume; the in-repo suite does
 not collect it, so run it explicitly on every PR.

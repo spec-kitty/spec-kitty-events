@@ -7,10 +7,14 @@ Generated: 2026-04-20T07:35:23Z
 ## Testing Standards
 
 - Use pytest, hypothesis, schema drift checks, and conformance fixture validation for any event contract change.
+- Java code is tested with JUnit and ArchUnit; ArchUnit onion and boundary rules are mandatory for service modules. The services also run contract conformance tests against `contracts/`, and release builds run native smoke tests.
+- Every binding passes the shared conformance fixtures (see Language Bindings).
 
 ## Quality Gates
 
 - pytest, committed schema generation checks, and mypy --strict must pass before merge.
+- Every PR also passes `uv run pytest --pyargs spec_kitty_events.conformance` (the packaged conformance gate) and a green Gradle check: `./gradlew verifyAll` runs every module's `check`; `make test-java` runs the Java binding's `check` through the JDK 25 helper.
+- The Java build runs under strict Gradle dependency verification (`gradle/verification-metadata.xml`) with a sha256-pinned Gradle wrapper. Every action in the service workflows and in any workflow added or changed from this amendment on is pinned by a 40-hex commit SHA (ADR 0003, NFR-003). Unchanged workflows that predate this amendment still reference actions by tag; they move to SHA pins when they are next changed.
 
 ## Performance Benchmarks
 
@@ -19,7 +23,7 @@ Generated: 2026-04-20T07:35:23Z
 ## Branch Strategy
 
 - Any change to event envelopes, payload fields, schema versioning, or conformance fixtures requires deliberate compatibility review.
-- Deployment constraints: Package must ship as a Python library with committed schemas and fixtures, and may also ship a Java binding (see Language Bindings); live consumers rely on fail-closed compatibility behavior.
+- Deployment constraints: Package must ship as a Python library with committed schemas and fixtures (PyPI, tag `v*`; pinned by SHA under the programme exception, see Package Boundary), and the Java binding is versioned with it (see Language Bindings). The services ship on a separate `service-v*` line of GitHub releases carrying per-OS native binaries, a JVM jar, contract bundles, contract tools and conformance fixtures, each with a sha256 and build provenance (ADR 0003); the two lines are versioned independently (ADR 0004). Live consumers rely on fail-closed compatibility behavior.
 
 ## Governance Activation
 
@@ -34,12 +38,12 @@ template_set: software-dev-default
 ## Policy Summary
 
 - Intent: Publish canonical event envelopes, conformance fixtures, and compatibility rules consumed by Spec Kitty systems.
-- Languages/Frameworks: Python 3.10+ with Pydantic event models, committed JSON Schemas, and conformance fixtures as part of the public contract. A Java binding may sit beside the Python binding (see Language Bindings).
-- Testing: Use pytest, hypothesis, schema drift checks, and conformance fixture validation for any event contract change.
-- Quality Gates: pytest, committed schema generation checks, and mypy --strict must pass before merge.
+- Languages/Frameworks: Python 3.10+ with Pydantic event models, committed JSON Schemas, and conformance fixtures as part of the public contract. Java 25 for the Java binding (see Language Bindings) and the events-domain services (see Services), built with Gradle (Kotlin DSL) as the single Java toolchain; the services also build as GraalVM native images.
+- Testing: Use pytest, hypothesis, schema drift checks, and conformance fixture validation for any event contract change. Java code is tested with JUnit and ArchUnit (onion and boundary rules are mandatory for service modules), contract conformance tests against `contracts/`, and native smoke tests for release builds. Every binding passes the shared conformance fixtures.
+- Quality Gates: pytest, committed schema generation checks, and mypy --strict must pass before merge. Every PR also passes `uv run pytest --pyargs spec_kitty_events.conformance` and a green Gradle check (`./gradlew verifyAll`, or `make test-java` for the Java binding), with strict Gradle dependency verification and SHA-pinned actions in the service workflows and in any workflow added or changed from this amendment on.
 - Review Policy: Any change to event envelopes, payload fields, schema versioning, or conformance fixtures requires deliberate compatibility review.
 - Performance Targets: Validation and replay helpers should stay deterministic and efficient for normal CLI and SaaS event volumes.
-- Deployment Constraints: Package must ship as a Python library with committed schemas and fixtures, and may also ship a Java binding (see Language Bindings); live consumers rely on fail-closed compatibility behavior.
+- Deployment Constraints: Package must ship as a Python library with committed schemas and fixtures (PyPI, tag `v*`; pinned by SHA under the programme exception, see Package Boundary), and the Java binding is versioned with it (see Language Bindings). The services ship on a separate `service-v*` line of GitHub releases carrying per-OS native binaries, a JVM jar, contract bundles, contract tools and conformance fixtures, each with a sha256 and build provenance (ADR 0003); the two lines are versioned independently (ADR 0004). Live consumers rely on fail-closed compatibility behavior.
 
 ## Project Directives
 
@@ -63,6 +67,7 @@ template_set: software-dev-default
 
 - `spec-kitty-events` is the canonical external package for Spec Kitty event envelopes, payload schemas, conformance fixtures, replay helpers, and compatibility policy.
 - The package must remain independent of CLI, SaaS, tracker, and runtime implementation code. It should not import or depend on `spec-kitty`, `spec-kitty-saas`, `spec-kitty-tracker`, or `spec-kitty-runtime`.
+- **Test-only exception (ADR 0002, decision 4 / operator decision D5):** service CI may check out `spec-kitty/spec-kitty` at a SHA pinned in `service/core-pin.json`, changed only by a reviewed PR, to run cross-implementation peers (lock interop, corpus oracle, golden regeneration). No build, runtime, packaging or Python-package dependency on core is allowed, and the pinned SHA never reaches a shipped artifact. The package rule above is unchanged.
 - CLI and SaaS consume this package through released PyPI artifacts. Do not rely on consumer vendoring, committed editable installs, path dependencies, or moving git refs as the production integration model.
 - **Programme exception (temporary, `EXPERIMENTAL-spec-kitty-*` only):** for the duration of that programme, `PROGRAM.md` §2 governs instead of the PyPI rule above — every consumer pins an exact, immutable git SHA to this package rather than resolving it from PyPI, via `[tool.uv.sources]` (source consumers) or a PEP 508 direct git reference (wheel-installed consumers, e.g. the CLI). An exact SHA pin that only moves through a reviewed PR is not a "moving git ref"; the ban above still applies in full to actually-moving refs (branches, tags that get re-pointed), vendoring, committed editable installs, and path/workspace dependencies. See `decisions/ADR-INTERNAL-PYTHON-PACKAGE-DISTRIBUTION-2026-08-27.md` in `EXPERIMENTAL-spec-kitty-planning`.
 - Use SemVer to communicate compatibility. Breaking event contract changes require a major release or an explicitly documented cutover policy.
@@ -74,9 +79,25 @@ Amendment of 2026-10-15 (spec-kitty/spec-kitty#6117 decision 11; unblocks spec-k
 
 - The committed JSON Schemas and conformance fixtures are the single source of truth for the event contract. A language binding is generated from, or tested against, them; no binding is itself the specification.
 - The Python binding (Python 3.10+ with Pydantic event models) remains required and keeps shipping as a Python library with committed schemas and fixtures.
-- A Java binding may be added beside the Python binding.
+- The Java binding (`java/`) ships beside the Python binding, is built with Gradle (ADR 0003), and is versioned with the package (ADR 0004).
 - Every binding must pass the same conformance fixtures. A change to the schemas or fixtures applies to all bindings in the same change.
 - Pydantic models stay the Python binding's models. How the schemas are authored and generated, the envelope, and which shape CloudEvents replaces are not decided here; ADR 0001 and the pull requests that implement it decide them. Every other rule in this charter, including the review policy for envelope changes, the fail-closed behavior and the package boundary, applies to every binding unchanged.
+
+## Services
+
+Amendment of 2026-10-29 (spec-kitty/spec-kitty-events#147; [ADR 0002](../../docs/adr/0002-events-domain-owns-its-services.md), [ADR 0003](../../docs/adr/0003-gradle-build-and-service-release-line.md), [ADR 0004](../../docs/adr/0004-dual-artifact-line.md)). The ADRs hold the decisions and their reasons; this section states only the rules.
+
+- This repository owns the events-domain services: the Mission Status Read API and the Mission Write API / event-log write core, their OpenAPI contracts under `contracts/`, and their `service-v*` release line (ADR 0002). The service code lives under `service/` from cutover.
+- Core and every other consumer pin released `service-v*` assets by tag and sha256 only (ADR 0002, ADR 0004). No consumer builds the services from source or fetches an asset by a moving reference.
+- The services must not depend on core (`spec-kitty/spec-kitty`) at build time or at run time. The only allowed coupling is the test-only core pin in Package Boundary.
+- The services are Java 25, built in the same Gradle build as the Java binding, and ship as GraalVM native images plus a JVM jar (ADR 0003). The rules in Testing Standards and Quality Gates apply to them.
+
+## Documentation
+
+- `docs/` follows the DocKitty convention; each section's `README.md` is its index and carries the doc-kitty frontmatter.
+- Service architecture lives under `docs/architecture/services/`, guides under `docs/guides/`.
+- ADRs are numbered `docs/adr/NNNN-<slug>.md`.
+- The doc-kitty frontmatter and link checks pass on every docs change.
 
 ## Amendment Process
 
@@ -87,6 +108,7 @@ Update the charter through pull request review by maintainers when governance or
 | Date | Change | Reference |
 |---|---|---|
 | 2026-10-15 | Added Language Bindings: a Java binding may sit beside the Python binding; schemas and fixtures are the single source of truth; all bindings pass the same fixtures. Deployment Constraints and Languages/Frameworks updated to match. | spec-kitty/spec-kitty#6117 decision 11; spec-kitty/spec-kitty-events#92 |
+| 2026-10-29 | Added Services (this repository owns the events-domain Java services, their contracts and the `service-v*` release line) and Documentation (DocKitty layout, ADR numbering, doc-kitty checks). Languages/Frameworks: Java 25 with Gradle (Kotlin DSL). Testing Standards and Quality Gates: Java test policy, Gradle check, dependency verification, SHA-pinned actions, packaged conformance gate. Deployment Constraints: two independent release lines. Language Bindings: the Java binding ships, built with Gradle, on the package line. Package Boundary: test-only, SHA-pinned core checkout for service CI. Interview answers and `catalog.languages` updated to match; `catalog.languages` gains `java` and `kotlin`, because the generator derives both from the Languages/Frameworks answer (the Gradle build scripts are Kotlin DSL, and build logic is code). | spec-kitty/spec-kitty-events#147; ADR 0002, ADR 0003, ADR 0004; core ADR [2026-10-29-1](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-29-1-the-events-domain-and-its-java-services-live-in-spec-kitty-events.md) (lands on core main with spec-kitty/spec-kitty#6782) |
 
 ## Exception Policy
 
