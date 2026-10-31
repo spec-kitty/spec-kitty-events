@@ -15,6 +15,9 @@ requirement_refs:
 planning_base_branch: issue-156-command-cli
 merge_target_branch: issue-156-command-cli
 branch_strategy: Planning artifacts for this mission were generated on issue-156-command-cli. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-156-command-cli unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-command-cli-write-service-01M694HJ
+base_commit: 5fe79409fbde4387864c3b742a2495cce802cc96
+created_at: '2026-10-31T15:14:45.461932+00:00'
 subtasks:
 - T019
 - T020
