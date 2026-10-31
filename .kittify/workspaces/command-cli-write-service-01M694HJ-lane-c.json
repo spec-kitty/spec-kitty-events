@@ -1,0 +1,22 @@
+{
+  "wp_id": "WP03",
+  "mission_slug": "command-cli-write-service-01M694HJ",
+  "worktree_path": ".worktrees/command-cli-write-service-01M694HJ-lane-c",
+  "branch_name": "kitty/mission-command-cli-write-service-01M694HJ-lane-c",
+  "base_branch": "kitty/mission-command-cli-write-service-01M694HJ",
+  "base_commit": "8949267b89d04e2259e3434a8c560d3e3c1ecf35",
+  "dependencies": [
+    "WP01"
+  ],
+  "created_at": "2026-10-31T15:04:31.146535+00:00",
+  "created_by": "implement-command-lane",
+  "vcs_backend": "git",
+  "lane_id": "lane-c",
+  "lane_wp_ids": [
+    "WP03"
+  ],
+  "current_wp": "WP03",
+  "lane_test_env": {
+    "SPEC_KITTY_TEST_DB_NAME": "test_command_cli_write_service_01M694HJ_lane_c"
+  }
+}
