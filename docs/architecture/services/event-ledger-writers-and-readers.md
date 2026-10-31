@@ -1,20 +1,22 @@
 ---
-title: Event Ledger Writers and Readers
-description: 'Current-state map of every event log and ledger core writes and reads, the target the event ADRs set, and a cited gap table with remedies and tracker items.'
+title: Event ledger writers and readers
+description: 'Core-side map of every event log and ledger core writes and reads, the target the event ADRs set, and the cited gaps with remedies. Imported from core with its history.'
 doc_status: active
-updated: '2026-10-28'
-type: explanation
-audience: docs/context/audience/internal/system-architect.md
-related:
-- docs/architecture/status-model.md
-- docs/development/reference/events-in-core.md
-- docs/adr/4.x/2026-10-14-1-event-native-core-one-canonical-event-writer.md
-- docs/adr/4.x/2026-10-13-2-the-event-ledger-is-the-publication-seam-default-on-with-local-retention.md
-- docs/adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md
-- docs/adr/2.x/2026-02-09-3-event-log-merge-semantics.md
-- docs/adr/4.x/2026-10-17-1-explicit-migration-ledger.md
+updated: 2026-10-30T00:00:00Z
+type: Architecture
+kind: Explanation
 ---
 # Event Ledger Writers and Readers
+
+> **Where this page comes from.** This page was written in core (`spec-kitty/spec-kitty`) and
+> came into this repository with its history at cutover, imported from core at
+> `512567eee71e31bb39f580c4f7acf8b865e9d1b2`
+> ([ADR-0002](../../adr/0002-events-domain-owns-its-services.md)). It maps core's logs, so its
+> file paths are core paths, and its links to core pages point at core at that commit. Two
+> paths now live here: core's `services/mission-status-api/` is [`service/`](https://github.com/spec-kitty/spec-kitty-events/tree/main/service),
+> and `contracts/mission-status/` and `contracts/mission-write/` keep their paths under
+> [`contracts/`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts). See
+> [the read-write split](./read-write-split.md) for the services' side.
 
 This page maps **who writes and who reads every append-only event log and ledger in
 core today**, states the target the event ADRs set, and lists the gaps between the two
@@ -24,8 +26,8 @@ locked at 11.0.0 in `uv.lock`, upstream at 11.2.1; the lock moved to 11.3.0 on 2
 see G-14). Line numbers drift; the symbol names are the stable part.
 
 For the lane state machine itself (lanes, guards, CLI commands) read the
-[status model](status-model.md). For contributor rules ("how do I write or read an
-event today") read [Events in core](../development/reference/events-in-core.md).
+[status model](https://github.com/spec-kitty/spec-kitty/blob/512567eee71e31bb39f580c4f7acf8b865e9d1b2/docs/architecture/status-model.md). For contributor rules ("how do I write or read an
+event today") read [Events in core](https://github.com/spec-kitty/spec-kitty/blob/512567eee71e31bb39f580c4f7acf8b865e9d1b2/docs/development/reference/events-in-core.md).
 
 ## Scope and vocabulary
 
@@ -227,7 +229,7 @@ flowchart LR
 | G-11 | ~~Produce-seam names still say "saas"~~ **Closed 2026-10-22 (#6607)** | The seam in `status/adapters.py` now reads `register_status_fanout_handler`, `register_lifecycle_fanout_handler`, `fire_status_fanout` and `fire_lifecycle_fanout`; `emit._status_fan_out`, `outbound.queue_fanout_emission` and `lifecycle_events.fanout_lifecycle_event` follow; the timeout variable is `SPEC_KITTY_STATUS_FANOUT_TIMEOUT`. There is no alias for any old name or for the old variable (operator ruling 2026-10-22, which supersedes this row's earlier "with an env alias" proposal). Contract test: `tests/status/test_adapters_contract.py` (stub handlers; open-core registers none), with the sink plugin `tests/conftest_fanout_sink.py` | 2026-10-13-2 follow-up debt (rename the `saas_fanout` slots); discharged by its Amendment 2026-10-22 | None open | #6607 |
 | G-12 | CLI status reads do not go through one read port | `orchestrator_api/commands.py` and `tasks_status_cmd.py` call `reduce(...)` themselves; no read-port module | 2026-10-01-2 D-5 (amended: every CLI status read calls only that port) | Introduce the port, gate direct `reduce` callers | #5528 |
 | G-13 | Raw readers that bypass the reducer | `release/changelog.py:129-155` (last `to_lane` in file order, skips corrupt lines, reads `mission_dir` not the resolved status surface); `consolidation/preflight.py` append order | 2026-10-01-2 D-5 | Changelog through `get_wp_lane` and the placement seam; record the preflight order in the ordering ADR or align it | file new (changelog) |
-| G-14 | ~~Core locks `spec-kitty-events` 11.0.0; upstream is 11.2.1~~ **Closed 2026-10-28 (#6602):** core locks 11.3.0 and declares `>=11.3.0,<12` (11.1.0, 11.2.0 and 11.2.1 never reached PyPI, spec-kitty-events#143) | `uv.lock`; `pyproject.toml:80`; `.kittify/release/shared-package-compatibility.json`; envelope snapshot `tests/contract/snapshots/spec-kitty-events-11.3.0.json` | 2026-10-13-2 D-1 (release order) | None open: done through the safe-adoption steps in the [contributor note](../development/reference/events-in-core.md#adopting-a-new-spec-kitty-events-release); #6445 adopted the models; #6446 stays blocked on an EventBridge door for run-log decision events | #6602 |
+| G-14 | ~~Core locks `spec-kitty-events` 11.0.0; upstream is 11.2.1~~ **Closed 2026-10-28 (#6602):** core locks 11.3.0 and declares `>=11.3.0,<12` (11.1.0, 11.2.0 and 11.2.1 never reached PyPI, spec-kitty-events#143) | `uv.lock`; `pyproject.toml:80`; `.kittify/release/shared-package-compatibility.json`; envelope snapshot `tests/contract/snapshots/spec-kitty-events-11.3.0.json` | 2026-10-13-2 D-1 (release order) | None open: done through the safe-adoption steps in the [contributor note](https://github.com/spec-kitty/spec-kitty/blob/512567eee71e31bb39f580c4f7acf8b865e9d1b2/docs/development/reference/events-in-core.md#adopting-a-new-spec-kitty-events-release); #6445 adopted the models; #6446 stays blocked on an EventBridge door for run-log decision events | #6602 |
 | G-15 | Migration ledger behaviour the ADR does not record | `upgrade/migrations/base.py` keeps reselection for a `runs_first` migration whose `structural_detect` fires; `upgrade/ledger.py` read-modify-write takes no lock | 2026-10-17-1 ("collapses to 'is this id in the applicable ledger'") | Factual amendment recording the structural reselection, or an operator decision to remove it | file new (low) |
 | G-16 | ~~Dead or duplicate write code~~ **Closed 2026-10-22 (#6614)** | Deleted: `store.append_event`, `store.append_event_verified`, `store.append_primary_checkout_event_verified`, `coordination.status_service.append_event_log`, `kernel.atomic.notify_file_written` and `invocations_cmd.append_to_index`. Tests seed `status.events.jsonl` through `tests/_support/status_seed.py`, which calls `store.append_events_atomic`. Enforced by `tests/architectural/test_status_unsafe_allowlist.py` (re-pinned `STORE_APPEND_PRIMITIVES` and `COORD_WRAPPER_DOORS`), `tests/architectural/test_status_events_writes_gate.py` (the store write set is `os.replace` only, plus a single-writer census for `kitty-ops/ops-index.jsonl`), `tests/architectural/test_no_dead_symbols.py` (allowlist entries removed) and a `hasattr` ban in `test_1622_dead_symbol_retirement.py` | 2026-10-14-1 D-1 ("the low-level append primitives become private to it") | None open | #6614 |
 | G-17 | A lock bump runs too few consumer tests per PR | `scripts/ci/gate_selection.py:107-109`: `reducer_lock` fans out to `{upgrade, status}` only; consolidation, decisions, glossary, `runtime/next`, retrospective, migration and dossier import `spec_kitty_events` directly; the reducer-verdict pins (`tests/migration`), `tests/contract/spec_kitty_events_consumer/` and the corpus parity tests run nightly only | 2026-10-14-1 "What must stay true" (consolidation gates keep their verdicts) | Derive the fan-out from a census of `spec_kitty_events` importers, gate it against drift, and run the nightly-only event directories when `uv.lock` changes the events version | file new |
@@ -284,10 +286,10 @@ The contributor note lists the steps for adopting a new release safely.
 
 ## Citations
 
-- ADR [2026-10-14-1](../adr/4.x/2026-10-14-1-event-native-core-one-canonical-event-writer.md): one canonical event writer.
-- ADR [2026-10-13-2](../adr/4.x/2026-10-13-2-the-event-ledger-is-the-publication-seam-default-on-with-local-retention.md): the ledger is the publication seam.
-- ADR [2026-10-01-2](../adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md): Mission Status Read API.
-- ADR [2026-02-09-3](../adr/2.x/2026-02-09-3-event-log-merge-semantics.md): event-log merge semantics.
-- ADR [2026-10-17-1](../adr/4.x/2026-10-17-1-explicit-migration-ledger.md): migration ledger.
-- ADR [2026-10-06-1](../adr/4.x/2026-10-06-1-team-kitty-surfaces-are-hidden-unless-drain-is-on.md): Team Kitty surfaces (Amendment 2026-10-12).
-- `spec-kitty-events` `docs/api/ledger-write-contract.md`, `docs/architecture/ordering-and-reduction.md`, `docs/api/versioning-and-compatibility.md`.
+- ADR [2026-10-14-1](https://github.com/spec-kitty/spec-kitty/blob/512567eee71e31bb39f580c4f7acf8b865e9d1b2/docs/adr/4.x/2026-10-14-1-event-native-core-one-canonical-event-writer.md): one canonical event writer.
+- ADR [2026-10-13-2](https://github.com/spec-kitty/spec-kitty/blob/512567eee71e31bb39f580c4f7acf8b865e9d1b2/docs/adr/4.x/2026-10-13-2-the-event-ledger-is-the-publication-seam-default-on-with-local-retention.md): the ledger is the publication seam.
+- ADR [2026-10-01-2](https://github.com/spec-kitty/spec-kitty/blob/512567eee71e31bb39f580c4f7acf8b865e9d1b2/docs/adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md): Mission Status Read API.
+- ADR [2026-02-09-3](https://github.com/spec-kitty/spec-kitty/blob/512567eee71e31bb39f580c4f7acf8b865e9d1b2/docs/adr/2.x/2026-02-09-3-event-log-merge-semantics.md): event-log merge semantics.
+- ADR [2026-10-17-1](https://github.com/spec-kitty/spec-kitty/blob/512567eee71e31bb39f580c4f7acf8b865e9d1b2/docs/adr/4.x/2026-10-17-1-explicit-migration-ledger.md): migration ledger.
+- ADR [2026-10-06-1](https://github.com/spec-kitty/spec-kitty/blob/512567eee71e31bb39f580c4f7acf8b865e9d1b2/docs/adr/4.x/2026-10-06-1-team-kitty-surfaces-are-hidden-unless-drain-is-on.md): Team Kitty surfaces (Amendment 2026-10-12).
+- `spec-kitty-events`: [ledger write contract](../../api/ledger-write-contract.md), [ordering and reduction](../ordering-and-reduction.md), [versioning and compatibility](../../api/versioning-and-compatibility.md).

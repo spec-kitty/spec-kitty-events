@@ -1,8 +1,8 @@
 ---
 title: Service protocol and releases
 description: 'The CLI-to-write-service protocol in practice, the two release lines, the service-v* assets and tarball layouts, how core pins a release, and how to cut one.'
-doc_status: draft
-updated: 2026-10-29T00:00:00Z
+doc_status: active
+updated: 2026-10-30T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -12,10 +12,11 @@ related:
 
 # Service protocol and releases
 
-> **Draft until cutover.** The services move here at cutover
+> **Where the services live.** The services and their contracts live in this repository,
+> under `service/` and `contracts/`, imported from core at `512567eee71e31bb39f580c4f7acf8b865e9d1b2` with their history
 > ([ADR-0002](../adr/0002-events-domain-owns-its-services.md)). The write service
-> (`command-cli`) is not built yet, and no `service-v*` release exists yet.
-> `service-release.yml` refuses every tag until `service/` is imported.
+> (`command-cli`) is not built yet, and no `service-v*` release exists yet; the first is
+> `service-v0.1.0-rc.1` ([cutover runbook](./service-cutover-runbook.md#6-first-release-and-core-handshake-wp08)).
 
 This page is the how-to. The reasons are in the architecture pages and the ADRs it links.
 
@@ -23,7 +24,10 @@ This page is the how-to. The reasons are in the architecture pages and the ADRs 
 
 The protocol is decided by core
 [ADR 2026-10-27-1](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-27-1-the-write-service-protocol-is-loopback-http-with-a-bearer-token.md)
-and written down in `contracts/mission-write`. The
+and written down in
+[`contracts/mission-write`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts/mission-write),
+whose [launcher contract](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/LAUNCHER.md)
+records the process lifecycle. The
 [write-service protocol](../architecture/services/write-service-protocol.md) page explains
 it, including the launcher process contract the operator accepted on 2026-10-29 (start,
 single instance, ready, stop). That contract is not restated here.
@@ -193,7 +197,8 @@ A core change that needs a new package and a new service release bumps both pins
 4. **Watch the gates.** `service-release.yml` refuses a tag that does not match
    `^service-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$`, a commit that is not an ancestor of
    `origin/main`, or a checkout without `service/`. It builds through `service.yml` (natives
-   on four targets, golden replay, the jar, lock-interop) in read-only jobs. Only `publish`
+   on four targets, golden replay, the jar) in read-only jobs; lock-interop is skipped in a
+   release run (see [What CI does not gate](#what-ci-does-not-gate)). Only `publish`
    holds a write token: it checks every asset against `SHA256SUMS`, attests provenance,
    re-checks that the tag still names the built commit, and runs
    `gh release create --verify-tag`, with `--prerelease` for a `-` suffix and never as
@@ -207,3 +212,20 @@ A core change that needs a new package and a new service release bumps both pins
 
 A failed run publishes nothing. Fix on `main` by a reviewed PR, then tag a new version; do
 not move or re-push a tag.
+
+### What CI does not gate
+
+Recorded at the import (#147); the [cutover runbook](./service-cutover-runbook.md#4-post-import-edits-wp07),
+section 4 item 7, holds the same record.
+
+- **Cross-leg native digest comparison and `nativePerf`: deliberately omitted for
+  `service-v0.1.0-rc.1`; follow-up.** Core compared the four `native` legs' replay digests
+  (`scripts/ci/mission_status_gate_checks.py digests`) and ran `nativePerf`; neither is wired
+  here yet. Each leg still uploads its `digest-<target>` artifact, so compare them by hand
+  before you tag.
+- **Lock interop is evidence, not a gate** (pending operator confirmation). It runs on pull
+  requests and `main` pushes, never inside a release run, because it executes core's Python
+  at the SHA in `service/core-pin.json`. A red run on `main` is investigated but does not
+  block a tag, as in core.
+- **Reachability metadata** is uploaded by each `native` leg as
+  `reachability-metadata-<target>` for review; nothing checks it.

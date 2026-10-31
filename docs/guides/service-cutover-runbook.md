@@ -1,8 +1,8 @@
 ---
 title: Service cutover runbook
 description: 'Maintainer procedure to import the events-domain services from core with history, integrate the build, hand the first release to core and move the issues.'
-doc_status: draft
-updated: 2026-10-29T00:00:00Z
+doc_status: active
+updated: 2026-10-30T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -343,9 +343,30 @@ Each edit is its own commit after the merge commit.
    - `make test-full` (what the CI agent runs) reaches the Java build only through
      `test-java` (`:java-binding:check`). Point it at `./gradlew verifyAll`, with the
      contract-bundle exports from section 5, so the CI agent's suite covers the services.
+
+   **Decisions recorded for the import PR (WP07, 2026-10-30):**
+
+   - **Reachability metadata: done.** The `native` job uploads
+     `reachability-metadata-<target>` (Spring AOT's `META-INF/native-image` hints for the
+     image and the test image, and any the Native Build Tools copied from the GraalVM
+     metadata repository) with `if-no-files-found: warn`, for review only.
+   - **Cross-leg digest comparison and `nativePerf`: deliberately omitted for
+     `service-v0.1.0-rc.1`; follow-up.** Neither is wired through the core-pin checkout. The
+     `digest-<target>` artifacts are still uploaded, so the comparison can be run by hand and
+     wired in a later PR without a workflow-shape change. Core's third native guard, the
+     `native-tag-floor` check (at least 3 executed native tests per leg), **is** ported:
+     `scripts/ci/mission_status_gate_checks.py` (verbatim from core) runs in each `native` leg.
+   - **Lock interop: unchanged, pending operator confirmation.** It never runs inside a
+     release run (it executes core's Python). On `main` it is evidence only, as in core: a red
+     lock-interop run is investigated, but it does not block cutting a `service-v*` tag.
+   - **`make test-full`: done.** It runs `scripts/verify_all.sh` through `make test-gradle`
+     (the bundle exports, then `./gradlew verifyAll`), so the CI agent's suite covers the
+     services and `contracts/`.
 8. **The guides.** Flip `doc_status` of this page, [running the service](./running-the-service.md)
    and [service protocol and releases](./service-protocol-and-releases.md) from `draft` to
-   `active`, and their citations from core `4eecb124` to the paths here.
+   `active`, and their citations from core `4eecb124` to the paths here. Do the same for the
+   [services architecture pages](../architecture/services/README.md), whose banners now say the
+   code lives here, and point `service/README.md` at the `service-v*` line (ADR 0003).
 
 ## 5. Verification
 

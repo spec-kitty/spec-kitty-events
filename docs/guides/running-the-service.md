@@ -1,8 +1,8 @@
 ---
 title: Running the Mission Status Read API
 description: 'How to run the Mission Status Read API from a service-v* release or from source: verify the download, start it, configure it, and which routes it serves.'
-doc_status: draft
-updated: 2026-10-29T00:00:00Z
+doc_status: active
+updated: 2026-10-30T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -12,12 +12,12 @@ related:
 
 # Running the Mission Status Read API
 
-> **Draft until cutover.** The service still lives in core (`spec-kitty/spec-kitty`,
-> `services/mission-status-api/`) and moves to `service/` in this repository at cutover
-> ([ADR-0002](../adr/0002-events-domain-owns-its-services.md)). No `service-v*` release
-> exists yet. Every property and route below is quoted from core at `4eecb124`
-> ([README](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/services/mission-status-api/README.md),
-> [`application.properties`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/services/mission-status-api/src/main/resources/application.properties)).
+> **Where the service lives.** The service lives in this repository under `service/`,
+> imported with its history from core's `services/mission-status-api/` at `512567eee71e31bb39f580c4f7acf8b865e9d1b2`
+> ([ADR-0002](../adr/0002-events-domain-owns-its-services.md)). Until the first `service-v*`
+> release is cut, run it from source. Every property and route below is quoted from the
+> service here ([README](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/README.md),
+> [`application.properties`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/src/main/resources/application.properties)).
 
 The Mission Status Read API reads the Missions of one project directory and serves their
 status over HTTP. It is read-only and loopback-only. What it is and why it is shaped this way
@@ -31,7 +31,7 @@ Pick one:
 - **A released native binary** for your platform (linux-x64, linux-arm64, macos-arm64 or
   windows-x64). Nothing else is needed.
 - **The released JVM jar**, with a Java 25 runtime.
-- **The source** (after cutover), with JDK 25 and Python with this repository's locked
+- **The source**, with JDK 25 and Python with this repository's locked
   environment (`uv sync --frozen`) to build the contract bundle. GraalVM CE 25 is needed
   only for a local native build. `scripts/ensure_jdk25.sh` finds a JDK 25 or provisions
   Temurin 25 into `.cache/`.
@@ -78,7 +78,7 @@ Pick one:
 
 4. **Check** it answers: `curl -s http://127.0.0.1:8787/api/v1/project`.
 
-## Run from source (after cutover)
+## Run from source
 
 The service build serves the contract document it was given, checked against a digest, so
 build the bundle once, outside the repository, and point Gradle at it. These are the steps
@@ -134,7 +134,7 @@ allow, since the cap is per read.
 ## Routes
 
 The service answers these routes, and every other path is `404`
-(the contract is [`contracts/mission-status`](https://github.com/spec-kitty/spec-kitty/tree/4eecb12414dac53432f4af21ba958d199d5ce808/contracts/mission-status);
+(the contract is [`contracts/mission-status`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts/mission-status);
 a running service serves it at `/api/v1/openapi.yaml`):
 
 | Route | What it returns |

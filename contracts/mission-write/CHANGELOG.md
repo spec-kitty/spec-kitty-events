@@ -33,6 +33,10 @@ breaking-change job has no baseline and reports `NO_BASELINE_INITIAL_VERSION`.
 - `WriteRefusal`, `WriteRefusalCode` (29 codes; 20 are the CLI's codes verbatim and 9 are
   protocol-only) and `WriteRefusalReason` (15 guard reasons as URNs, each bound to its code), with
   one response per status family. A refused batch names the failing unit in `instance`.
+- [`LAUNCHER.md`](./LAUNCHER.md): the launcher contract, the process lifecycle around this API
+  (start with `serve --git-common-dir`, the single-instance lock, the three-part readiness check,
+  stop through `/shutdown` with a `SIGTERM` fallback). The operator accepted it on 2026-10-29; it is
+  recorded here at the cutover (spec-kitty/spec-kitty-events#147). Prose only: the bundle is unchanged.
 
 ### Changed
 
@@ -47,7 +51,8 @@ breaking-change job has no baseline and reports `NO_BASELINE_INITIAL_VERSION`.
 - `statusCommit` and `replayed` of `DurabilityAck`: when the status commit joins the unit, and
   idempotent retry.
 - `WriteRefusalReason`: the guard reason vocabulary and its carriage in `type`.
-- `HealthStatus` (`draining`) and the operation `/shutdown`: how the service is stopped.
+- `HealthStatus` (`draining`) and the operation `/shutdown`: how the service is stopped. The "Stop"
+  step of [`LAUNCHER.md`](./LAUNCHER.md) stays provisional with it until `command-cli` is built.
 - The protocol-only codes `EVENT_ID_CONFLICT`, `SERVICE_BUSY`, `SERVICE_DRAINING`,
   `REQUEST_TOO_LARGE` and `WRITE_LOCATION_UNVERIFIED` are provisional. An enum value cannot carry
   `x-provisional`, so they are marked in their descriptions only, and `provisional_check.py` does not

@@ -1,18 +1,22 @@
 ---
 title: Services overview
-description: The Mission Status Read API and the future write service at C4 levels 1 and 2, the onion layering the ArchUnit tests enforce, and where the code lives before and after cutover.
+description: The Mission Status Read API and the future write service at C4 levels 1 and 2, the onion layering the ArchUnit tests enforce, and where the code lived in core and lives here.
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
 
 # Services overview
 
-> **Where this code lives.** The services described here move into this repository at
-> cutover ([ADR-0002](../../adr/0002-events-domain-owns-its-services.md)). Until then the
-> source of truth is core, `spec-kitty/spec-kitty` at `4eecb124`, and every citation on this
-> page points there. Core's counterpart record is ADR 2026-10-29-1,
+> **Where this code lives.** The code described here lives in this repository, under
+> [`service/`](https://github.com/spec-kitty/spec-kitty-events/tree/main/service) and
+> [`contracts/`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts),
+> imported from core at `512567eee71e31bb39f580c4f7acf8b865e9d1b2` with its history
+> ([ADR-0002](../../adr/0002-events-domain-owns-its-services.md)). Citations of those files
+> point here; citations of what stays in core (its ADRs, the CLI, the Python appenders) point
+> at core at `4eecb124`, where they were checked.
+> Core's counterpart record is ADR 2026-10-29-1,
 > [the events domain and its Java services live in spec-kitty-events](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-29-1-the-events-domain-and-its-java-services-live-in-spec-kitty-events.md)
 > (accepted in core PR spec-kitty/spec-kitty#6782; the link resolves once that PR merges into
 > core `main`).
@@ -22,9 +26,9 @@ The events domain has two services, one per side of a CQRS split
 
 - **The Mission Status Read API** (`mission-status-api`) exists. It is a read-only,
   loopback-only HTTP service
-  ([`spec-kitty/spec-kitty@4eecb124:services/mission-status-api/README.md`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/services/mission-status-api/README.md)).
+  ([`service/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/README.md)).
 - **The write service** (`command-cli`) is **not built yet**. Its protocol contract exists
-  ([`contracts/mission-write`](https://github.com/spec-kitty/spec-kitty/tree/4eecb12414dac53432f4af21ba958d199d5ce808/contracts/mission-write),
+  ([`contracts/mission-write`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts/mission-write),
   #6675), and so do the lock and torn-tail parts of the `event-log` library (#6193). See
   [event-log lock and append](./event-log-lock-and-append.md) and the
   [write-service protocol](./write-service-protocol.md).
@@ -57,7 +61,7 @@ flowchart LR
   [ADR 2026-10-22-1](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/docs/adr/4.x/2026-10-22-1-the-java-write-service-is-the-canonical-event-writer.md)
   D-2, D-3).
 - **Today the CLI still appends** to every event log itself
-  ([`docs/architecture/event-ledger-writers-and-readers.md`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/docs/architecture/event-ledger-writers-and-readers.md),
+  ([event ledger writers and readers](./event-ledger-writers-and-readers.md),
   "Current state: writers").
 
 Core's own C4 pages
@@ -70,7 +74,7 @@ ships. The diagrams on this page follow the code.
 
 ```mermaid
 flowchart TB
-  subgraph build["One Gradle build (after cutover)"]
+  subgraph build["One Gradle build (this repository)"]
     contracts["contracts/<br/>mission-status, mission-write<br/>(OpenAPI 3.1)"]
     msa["mission-status-api<br/>Spring Boot 4, Java 25, GraalVM native<br/>(query-service deployable)"]
     cmd["command-cli<br/>(write deployable, future)"]
@@ -87,10 +91,10 @@ flowchart TB
 
 | Container | What it is | Evidence |
 |---|---|---|
-| `mission-status-api` | The root Gradle project in core (`:mission-status-api` in `service/` after cutover): the `query-service` deployable. Spring Boot 4 (Spring MVC on virtual threads), Java 25, a GraalVM native binary for four targets plus a JVM jar. | README, "Package layout" and "Release and binaries"; core ADR 2026-10-01-2 Amendment 2026-10-03 (D-4) |
+| `mission-status-api` | The root Gradle project in core (`:mission-status-api` in `service/` here): the `query-service` deployable. Spring Boot 4 (Spring MVC on virtual threads), Java 25, a GraalVM native binary for four targets plus a JVM jar. | README, "Package layout" and "Release and binaries"; core ADR 2026-10-01-2 Amendment 2026-10-03 (D-4) |
 | `domain-model` | The Mission status types (Mission, work package, lane, status event, snapshot). No declared dependency, no `java.io` or `java.nio.file`. | README, "Package layout"; `DomainModelBoundaryTest` |
 | `event-log` | The line codec, the event ordering and `StatusReducer`, and the ledger file mechanics (`LedgerLocks`, `TornTailRepair`). Depends on `domain-model` and the Jackson streaming parser only. | README, "Package layout"; `EventLogBoundaryTest` |
-| contracts | `contracts/mission-status/openapi.yaml` (read) and `contracts/mission-write/openapi.yaml` (write), both `1.0.0-SNAPSHOT`. | [`contracts/mission-write/CHANGELOG.md`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/contracts/mission-write/CHANGELOG.md); writers-and-readers page, "The read API contract" |
+| contracts | `contracts/mission-status/openapi.yaml` (read) and `contracts/mission-write/openapi.yaml` (write), both `1.0.0-SNAPSHOT`. | [`contracts/mission-write/CHANGELOG.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/CHANGELOG.md); writers-and-readers page, "The read API contract" |
 | `command-cli` | The write-service deployable named by #6117 decision 12. **Not built.** | core ADR 2026-10-22-1 D-1 |
 
 The four module names are #6117 decision 12's: `domain-model`, `event-log`, `query-service`
@@ -116,9 +120,9 @@ read service's package layout:
 
 ### The rules, and the tests that enforce them
 
-[`ArchitectureRulesTest`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/services/mission-status-api/src/test/java/org/speckitty/missionstatus/architecture/ArchitectureRulesTest.java)
+[`ArchitectureRulesTest`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/src/test/java/org/speckitty/missionstatus/architecture/ArchitectureRulesTest.java)
 runs the fourteen rules defined in
-[`ArchitectureRules`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/services/mission-status-api/src/test/java/org/speckitty/missionstatus/architecture/ArchitectureRules.java).
+[`ArchitectureRules`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/src/test/java/org/speckitty/missionstatus/architecture/ArchitectureRules.java).
 It also fails when the number of rules run differs from the number defined, and every rule
 has a positive control in `ArchitectureControlsTest`. The rule texts, shortened:
 
@@ -143,23 +147,23 @@ has a positive control in `ArchitectureControlsTest`. The rule texts, shortened:
 
 The two libraries carry their own boundary tests, because they build on their own:
 
-- [`DomainModelBoundaryTest`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/services/mission-status-api/domain-model/src/test/java/org/speckitty/missionstatus/architecture/DomainModelBoundaryTest.java):
+- [`DomainModelBoundaryTest`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/domain-model/src/test/java/org/speckitty/missionstatus/architecture/DomainModelBoundaryTest.java):
   `domain-model` depends only on itself and the rule 1b JDK packages, and all 18 types it
   held at extraction (#6192) are still checked.
-- [`EventLogBoundaryTest`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/services/mission-status-api/event-log/src/test/java/org/speckitty/missionstatus/architecture/EventLogBoundaryTest.java):
+- [`EventLogBoundaryTest`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/event-log/src/test/java/org/speckitty/missionstatus/architecture/EventLogBoundaryTest.java):
   the codec depends only on itself, `domain-model`, the Jackson streaming parser and the
   JDK; the reducer has no parser, codec or I/O; the ledger package uses the JDK alone; and
   the module holds those three packages and no other.
 
 ## Where it lives
 
-| Today, in core at `4eecb124` | After cutover, in this repository |
+| In core until the import (`4eecb124`) | Since the import, in this repository |
 |---|---|
 | `services/mission-status-api/` (with `domain-model/` and `event-log/`) | `service/` |
 | `contracts/mission-status/`, `contracts/mission-write/`, `_shared`, `tools`, `lint` | `contracts/` |
 | CLI client shapes `src/specify_cli/status/write_service_protocol.py`, the EventBridge, the launcher | stay in core |
 
-The import keeps git history (`git filter-repo` from a frozen core SHA) and runs only on
+The import kept git history (`git filter-repo` from the frozen core SHA `512567eee71e31bb39f580c4f7acf8b865e9d1b2`) and ran on
 the operator's go-signal ([ADR-0002](../../adr/0002-events-domain-owns-its-services.md),
 decision 2). The build and release line are in
 [ADR-0003](../../adr/0003-gradle-build-and-service-release-line.md).

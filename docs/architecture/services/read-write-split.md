@@ -2,17 +2,20 @@
 title: The read-write split
 description: 'The CQRS split of the events domain: the read-only Mission Status Read API, the Java write service as the one canonical writer, and the writers and readers today versus the target.'
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
 
 # The read-write split
 
-> **Where this code lives.** The code described here moves into this repository at cutover
-> ([ADR-0002](../../adr/0002-events-domain-owns-its-services.md)). Until then the source of
-> truth is core, `spec-kitty/spec-kitty` at `4eecb124`, and every citation on this page
-> points there.
+> **Where this code lives.** The code described here lives in this repository, under
+> [`service/`](https://github.com/spec-kitty/spec-kitty-events/tree/main/service) and
+> [`contracts/`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts),
+> imported from core at `512567eee71e31bb39f580c4f7acf8b865e9d1b2` with its history
+> ([ADR-0002](../../adr/0002-events-domain-owns-its-services.md)). Citations of those files
+> point here; citations of what stays in core (its ADRs, the CLI, the Python appenders) point
+> at core at `4eecb124`, where they were checked.
 
 The events domain splits commands from queries. One service reads the event logs and never
 writes them; one service will write them and is the only writer. Both share the
@@ -26,7 +29,7 @@ calls the write service "the command side of a CQRS split; the read API is the q
 Core
 [ADR 2026-10-01-2](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/docs/adr/4.x/2026-10-01-2-mission-status-read-api-and-dashboard-extraction.md)
 replaced the CLI-bundled dashboard with this API. What it decides, and what ships
-([`services/mission-status-api/README.md`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/services/mission-status-api/README.md)):
+([`service/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/README.md)):
 
 - **Two granularities** (D-2): an overview of many Missions and the detail of one. The
   service serves `GET /api/v1/project`, `GET /api/v1/missions` (the overview page),
@@ -72,7 +75,7 @@ domain calls (D-1, D-2). Core ADR 2026-10-22-1 makes that module a Java service:
   image nor a JDK, every write refuses with a named code and nothing is written.
 
 **Status: the write core is not built.** What exists is its protocol contract
-([`contracts/mission-write`](https://github.com/spec-kitty/spec-kitty/tree/4eecb12414dac53432f4af21ba958d199d5ce808/contracts/mission-write),
+([`contracts/mission-write`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts/mission-write),
 #6675, PR #6729; see [write-service protocol](./write-service-protocol.md)) and the
 write-side parts of the `event-log` library from #6193: the ledger lock and the torn-tail
 repair ([event-log lock and append](./event-log-lock-and-append.md)). The Java append
@@ -81,11 +84,11 @@ adapter "goes into this module under a rule of its own".
 
 ## Writers and readers: today and target
 
-A summary of core's
-[event ledger writers and readers](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/docs/architecture/event-ledger-writers-and-readers.md),
+A summary of
+[event ledger writers and readers](./event-ledger-writers-and-readers.md),
 which holds the full writer table, reader table and gap table (G-1 to G-19) with file and
-line citations. That page is imported with history at cutover and then retired into this
-one.
+line citations. That page was written in core and came into this repository with its
+history at cutover.
 
 | Concern | Today (core `main`) | Target (the ADRs) |
 |---|---|---|
