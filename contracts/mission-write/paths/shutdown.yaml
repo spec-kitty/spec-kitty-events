@@ -2,16 +2,15 @@ post:
   operationId: shutdown
   summary: Ask the service to drain and exit.
   description: >-
-    The service stops accepting writes (health reads draining), finishes the writes it holds,
-    removes its endpoint file and exits. It answers 202 before it exits.
+    The service stops accepting writes (health reads draining and a write is refused with
+    SERVICE_DRAINING), finishes the writes it holds, removes its endpoint file while it still names
+    this instance and exits 0. It answers 202 before it exits; a shutdown while it already drains is
+    answered 202 and starts nothing new. Settled when command-cli was built
+    (spec-kitty/spec-kitty-events#156).
   tags:
     - Service
   parameters:
     - $ref: ../parameters/WriteProtocolVersion.yaml
-  x-provisional:
-    open_decision: >-
-      Whether the launcher stops the service through this operation, a signal or only the idle
-      exit is an open decision of ADR 2026-10-27-1.
   responses:
     '202':
       description: The service drains and exits.
