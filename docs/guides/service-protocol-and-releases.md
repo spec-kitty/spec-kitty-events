@@ -2,7 +2,7 @@
 title: Service protocol and releases
 description: 'The CLI-to-write-service protocol in practice, the two release lines, the service-v* assets and tarball layouts, how core pins a release, and how to cut one.'
 doc_status: active
-updated: 2026-10-30T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -223,9 +223,11 @@ section 4 item 7, holds the same record.
   (`scripts/ci/mission_status_gate_checks.py digests`) and ran `nativePerf`; neither is wired
   here yet. Each leg still uploads its `digest-<target>` artifact, so compare them by hand
   before you tag.
-- **Lock interop is evidence, not a gate** (pending operator confirmation). It runs on pull
-  requests and `main` pushes, never inside a release run, because it executes core's Python
-  at the SHA in `service/core-pin.json`. A red run on `main` is investigated but does not
-  block a tag, as in core.
+- **Lock interop is a gate on pull requests and `main`, not on releases** (operator decision,
+  2026-10-31). It runs on pull requests and `main` pushes, where `service-gate` needs it, so a
+  red lock-interop fails the gate. It never runs inside a release run, because it executes
+  core's Python at the SHA in `service/core-pin.json`; cut a tag only from a `main` commit
+  whose `service-gate` is green. (Core treated it as evidence only; this repository keeps it
+  blocking.)
 - **Reachability metadata** is uploaded by each `native` leg as
   `reachability-metadata-<target>` for review; nothing checks it.

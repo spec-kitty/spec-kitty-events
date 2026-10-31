@@ -349,8 +349,9 @@ jobs:
   # Peer path: PythonPeer reads SPEC_KITTY_LOCK_INTEROP_PEER first (WP07, #147) and falls back to
   # core's relative walk for "scripts/ci/lock_interop_peer.py", which never reaches core/scripts/ci/
   # from here. This job sets the variable; Gradle's test JVM inherits the build's environment.
-  # Gating: never inside a release run (it executes core's Python); on main it is evidence only, as
-  # in core, and a red run does not block cutting a tag (decision pending operator confirmation).
+  # Gating: never inside a release run (it executes core's Python). On pull requests and main it is a
+  # hard need of service-gate, so a red run fails the gate (operator decision 2026-10-31; core treated
+  # it as evidence only).
   lock-interop:
     # Runs core's Python at the pinned SHA, so it stays out of release runs (release-version set):
     # a release run then executes only this repository's code beside its artifacts.
