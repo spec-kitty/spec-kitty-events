@@ -75,6 +75,16 @@ events-domain services (#147), and the services are now imported.
 - `.dockerignore` ignores the Gradle build output (`**/.gradle`, `**/build-logic/build`,
   `**/java/build`) in place of Maven's `**/java/target`.
 
+### Fixed
+
+- The Mission Status API no longer leaves an event stream open across shutdown when the stream
+  opens while the context closes. `EventsController` flushed the response before it registered
+  the subscription, so a shutdown in that window missed the stream and the container's graceful
+  shutdown waited out its whole grace period (30 s). This failed the linux-x64 native job of a
+  `service-release` rehearsal (`StreamLifecycleTest`, 32 s). The subscription is now registered
+  first, and a `closing` flag ends any stream that registers after the sweep
+  (`EventsControllerShutdownTest`).
+
 ## [11.3.0] - 2026-10-27
 
 Minor release. It adds the CloudEvents envelope profiles, the full type registry, a
