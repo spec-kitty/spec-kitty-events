@@ -46,19 +46,23 @@ class RegistrationAndErrorPathTest {
     Map<String, FilterRegistrationBean> registrations = server.context().getBeansOfType(FilterRegistrationBean.class);
     FilterRegistrationBean guard = registrations.get("hostOriginFilter");
     FilterRegistrationBean token = registrations.get("bearerTokenFilter");
+    FilterRegistrationBean canonical = registrations.get("canonicalPathFilter");
     FilterRegistrationBean protocol = registrations.get("protocolHeaderFilter");
     FilterRegistrationBean size = registrations.get("bodySizeFilter");
 
     assertThat(guard.getOrder()).isEqualTo(Ordered.HIGHEST_PRECEDENCE);
     assertThat(token.getOrder()).isEqualTo(Ordered.HIGHEST_PRECEDENCE + 1);
-    assertThat(protocol.getOrder()).isEqualTo(Ordered.HIGHEST_PRECEDENCE + 2);
-    assertThat(size.getOrder()).isEqualTo(Ordered.HIGHEST_PRECEDENCE + 3);
-    for (FilterRegistrationBean registration : new FilterRegistrationBean[] {guard, token, protocol, size}) {
+    assertThat(canonical.getOrder()).isEqualTo(Ordered.HIGHEST_PRECEDENCE + 2);
+    assertThat(protocol.getOrder()).isEqualTo(Ordered.HIGHEST_PRECEDENCE + 3);
+    assertThat(size.getOrder()).as("after the activity count (+4)").isEqualTo(Ordered.HIGHEST_PRECEDENCE + 5);
+    assertThat(registrations.get("activityFilter").getOrder()).isEqualTo(Ordered.HIGHEST_PRECEDENCE + 4);
+    for (FilterRegistrationBean registration : new FilterRegistrationBean[] {guard, token, canonical, protocol, size}) {
       assertThat(registration.getUrlPatterns()).containsExactly("/*");
       assertThat(registration.isEnabled()).isTrue();
     }
     assertThat(guard.determineDispatcherTypes()).isEqualTo(EnumSet.of(DispatcherType.REQUEST, DispatcherType.ERROR));
     assertThat(token.determineDispatcherTypes()).isEqualTo(EnumSet.of(DispatcherType.REQUEST, DispatcherType.ERROR));
+    assertThat(canonical.determineDispatcherTypes()).isEqualTo(EnumSet.of(DispatcherType.REQUEST));
     assertThat(protocol.determineDispatcherTypes()).isEqualTo(EnumSet.of(DispatcherType.REQUEST));
     assertThat(size.determineDispatcherTypes()).isEqualTo(EnumSet.of(DispatcherType.REQUEST));
     assertThat(registrations.values()).as("no other registration precedes the guard").allSatisfy(other -> assertThat(other.getOrder()).isGreaterThanOrEqualTo(guard.getOrder()));

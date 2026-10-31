@@ -72,6 +72,30 @@ public class LauncherContractProcessTest {
   }
 
   @Test
+  void aStalledRequestBodyDoesNotHoldTheProcessPastTheStopBudget() throws Exception {
+    try (ServiceProcess service = ServiceProcess.launch(gitCommonDir)) {
+      JsonNode endpoint = assertReady(service);
+      int port = endpoint.get("port").asInt();
+      // a write that declares 100 bytes and sends 5, then stalls with the connection open
+      try (java.net.Socket stalled = new java.net.Socket("127.0.0.1", port)) {
+        String head =
+            "POST /api/v1/missions/01J6XW9KQT7M0YB3N4R5CQZ2EX/inner-state-annotations HTTP/1.1\r\nHost: 127.0.0.1:" + port
+                + "\r\nAuthorization: Bearer " + endpoint.get("token").asString()
+                + "\r\nSpec-Kitty-Write-Protocol: 1\r\nContent-Type: application/json\r\nContent-Length: 100\r\n\r\n{\"wp";
+        stalled.getOutputStream().write(head.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        stalled.getOutputStream().flush();
+        Thread.sleep(300);
+
+        long stopping = System.nanoTime();
+        assertThat(ServiceProcess.shutdown(endpoint).status()).isEqualTo(202);
+        assertThat(service.awaitExit(Duration.ofSeconds(10))).as("NFR-003 with a stalled body; log:\n" + service.log()).isTrue();
+        assertThat(Duration.ofNanos(System.nanoTime() - stopping)).isLessThan(Duration.ofSeconds(10));
+        assertThat(service.endpointFile()).doesNotExist();
+      }
+    }
+  }
+
+  @Test
   void aSecondInstanceForTheSameGitCommonDirExitsZeroWithoutPublishing() throws Exception {
     try (ServiceProcess first = ServiceProcess.launch(gitCommonDir)) {
       JsonNode endpoint = assertReady(first);
