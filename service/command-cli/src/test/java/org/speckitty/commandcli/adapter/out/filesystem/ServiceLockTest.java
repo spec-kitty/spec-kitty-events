@@ -24,6 +24,8 @@ class ServiceLockTest {
     try (ServiceLock first = ServiceLock.tryAcquire(directory).orElseThrow()) {
       assertThat(first.held()).isTrue();
       assertThat(ServiceLock.tryAcquire(directory)).isEmpty();
+      // the refused attempt must not have dropped the OS lock (closing a second descriptor would): another process is still refused
+      assertThat(runHolder(directory.path())).isEqualTo("REFUSED");
     }
     Optional<ServiceLock> again = ServiceLock.tryAcquire(directory);
     assertThat(again).isPresent();

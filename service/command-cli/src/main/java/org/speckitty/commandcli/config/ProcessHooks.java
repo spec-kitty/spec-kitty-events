@@ -26,8 +26,8 @@ public final class ProcessHooks implements AutoCloseable {
     if (!started.compareAndSet(false, true)) {
       return;
     }
+    Runtime.getRuntime().addShutdownHook(signalHook); // first, so a SIGTERM right after the publish still removes the file
     publisher.publish(port);
-    Runtime.getRuntime().addShutdownHook(signalHook);
     ticker.start();
   }
 

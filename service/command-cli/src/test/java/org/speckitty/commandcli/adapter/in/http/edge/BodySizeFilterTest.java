@@ -101,16 +101,10 @@ class BodySizeFilterTest {
   }
 
   @Test
-  void otherPathsAreNotBuffered() throws Exception {
-    MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/shutdown");
-    request.setContent(bytes(BodySizeFilter.MAX_BYTES + 10));
-    AtomicReference<ServletRequest> handed = new AtomicReference<>();
-    filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain() {
-      @Override
-      public void doFilter(ServletRequest req, ServletResponse res) {
-        handed.set(req);
-      }
-    });
-    assertThat(handed.get()).isSameAs(request);
+  void everyPathIsCapped() throws Exception {
+    for (String path : new String[] {"/api/v1/shutdown", "/api/v1/nowhere"}) {
+      assertThat(run(path, bytes(BodySizeFilter.MAX_BYTES + 1), null).status()).as(path).isEqualTo(413);
+      assertThat(run(path, bytes(10), 10L).handed()).hasSize(10);
+    }
   }
 }
