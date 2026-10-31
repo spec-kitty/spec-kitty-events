@@ -29,6 +29,8 @@ stays in core.
 - [Event ledger writers and readers](./event-ledger-writers-and-readers.md): core's map of
   every event log and ledger it writes and reads, the target the event ADRs set, and the
   gap table (G-1 to G-19) the read-write split summarises.
+- [command-cli research note](./command-cli-research.md): the research for the write service
+  (#156): what core binds, what the contract fixes, the gaps and the proposed slicing.
 
 Build and release: [ADR-0003](../../adr/0003-gradle-build-and-service-release-line.md) and
 [ADR-0004](../../adr/0004-dual-artifact-line.md).
