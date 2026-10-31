@@ -20,6 +20,12 @@ final class PythonPeer {
   /** The interpreter; the spike runs only when it is set. */
   static final String PYTHON_ENV = "SPEC_KITTY_LOCK_INTEROP_PYTHON";
 
+  /**
+   * The peer script, when it lives outside this checkout: service.yml's lock-interop job points it at the pinned core checkout
+   * ({@code core/scripts/ci/lock_interop_peer.py}, service/core-pin.json). Unset, the script is found by the relative walk below.
+   */
+  static final String PEER_ENV = "SPEC_KITTY_LOCK_INTEROP_PEER";
+
   private static final String SCRIPT = "scripts/ci/lock_interop_peer.py";
   private static final long TIMEOUT_S = 300;
   private static final JsonMapper JSON = JsonMapper.builder().build();
@@ -32,9 +38,20 @@ final class PythonPeer {
     this.script = script;
   }
 
-  /** The peer of this checkout: the script is found by walking up from the working directory. */
+  /**
+   * The peer: the script named by {@link #PEER_ENV} when it is set, otherwise the one found by walking up from the working directory
+   * (core's layout, where the script is in the same checkout).
+   */
   static PythonPeer fromEnvironment() {
     String python = System.getenv(PYTHON_ENV);
+    String peer = System.getenv(PEER_ENV);
+    if (peer != null && !peer.isBlank()) {
+      Path script = Path.of(peer).toAbsolutePath();
+      if (python == null || !Files.isRegularFile(script)) {
+        throw new IllegalStateException(PYTHON_ENV + " is unset or " + PEER_ENV + " (" + script + ") is not a file");
+      }
+      return new PythonPeer(python, script);
+    }
     Path dir = Path.of("").toAbsolutePath();
     while (dir != null && !Files.isRegularFile(dir.resolve(SCRIPT))) {
       dir = dir.getParent();

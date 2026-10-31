@@ -1,0 +1,1 @@
+{"repository": "spec-kitty/spec-kitty", "sha": "512567eee71e31bb39f580c4f7acf8b865e9d1b2", "purpose": "CI-only peers: lock interop, corpus oracle, golden regeneration (ADR 0002 D4)"}
