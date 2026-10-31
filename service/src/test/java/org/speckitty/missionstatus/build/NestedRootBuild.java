@@ -25,7 +25,8 @@ public final class NestedRootBuild {
   private static final List<String> ROOT_FILES = List.of("settings.gradle.kts", "build.gradle.kts", "gradle.properties", "gradlew", "gradlew.bat");
 
   /** The build scripts of the projects the root settings include besides the service ones: present, so the copy configures. */
-  private static final List<String> OTHER_PROJECT_SCRIPTS = List.of("java/build.gradle.kts", "contracts/build.gradle");
+  private static final List<String> OTHER_PROJECT_SCRIPTS =
+      List.of("java/build.gradle.kts", "contracts/build.gradle", "service/command-cli/build.gradle.kts");
 
   private static final Set<String> BUILD_LOGIC_SKIPPED = Set.of("build", ".gradle", ".kotlin");
 
