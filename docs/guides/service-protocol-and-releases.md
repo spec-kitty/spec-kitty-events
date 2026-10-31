@@ -14,9 +14,13 @@ related:
 
 > **Where the services live.** The services and their contracts live in this repository,
 > under `service/` and `contracts/`, imported from core at `512567eee71e31bb39f580c4f7acf8b865e9d1b2` with their history
-> ([ADR-0002](../adr/0002-events-domain-owns-its-services.md)). The write service
-> (`command-cli`) is not built yet, and no `service-v*` release exists yet; the first is
-> `service-v0.1.0-rc.1` ([cutover runbook](./service-cutover-runbook.md#6-first-release-and-core-handshake-wp08)).
+> ([ADR-0002](../adr/0002-events-domain-owns-its-services.md)).
+> - The write service, `command-cli`, is built (#156). Its writes refuse fail-closed until #160
+>   and #161 land. See
+>   [`service/command-cli/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/command-cli/README.md).
+> - The first `service-v*` release, `service-v0.1.0-rc.1`, carries no `command-cli` assets
+>   ([cutover runbook](./service-cutover-runbook.md#6-first-release-and-core-handshake-wp08)).
+>   The first release cut after #156 lands carries them.
 
 This page is the how-to. The reasons are in the architecture pages and the ADRs it links.
 
@@ -85,12 +89,17 @@ run in a fixed order, so the status tells you which one failed:
 | 401 | bearer token | `WRITE_TOKEN_INVALID` |
 | 400 | protocol header | `PROTOCOL_VERSION_UNSUPPORTED` |
 | 413 | size cap | `REQUEST_TOO_LARGE` |
+| 503 | the service drains before it exits (after `/shutdown` or its idle timeout) | `SERVICE_DRAINING` |
 | 400 | body shape (a batch over 64 units included) | `REQUEST_MALFORMED` |
 | 404, 409, 422 | the domain | the CLI's own codes, such as `TRANSITION_REJECTED` or `WP_ALREADY_CLAIMED` |
 
-Two `503` codes are provisional: `SERVICE_BUSY` means retry the same service after
-`Retry-After` seconds; `SERVICE_DRAINING` means re-read the endpoint file and retry against
-the service it names. A write answered `201` has been synced to disk; a refused write wrote
+There are two `503` codes:
+- `SERVICE_DRAINING`, settled with `command-cli` (#156): re-read the endpoint file and retry
+  against the service it names. It carries no `Retry-After`.
+- `SERVICE_BUSY`, still provisional: retry the same service after `Retry-After` seconds.
+
+Until #160 and #161 land, a write that passes every check is refused
+`500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`, and nothing is written. A write answered `201` has been synced to disk; a refused write wrote
 nothing.
 
 ## Releases
@@ -122,6 +131,11 @@ names; only `<ver>` (the tag without `service-v`) changes between releases.
 | `mission-status-api-<ver>-macos-arm64` | GraalVM native executable |
 | `mission-status-api-<ver>-windows-x64.exe` | GraalVM native executable |
 | `mission-status-api-<ver>.jar` | Spring Boot executable jar, the JVM fallback |
+| `command-cli-<ver>-linux-x64` | the write service: GraalVM native executable |
+| `command-cli-<ver>-linux-arm64` | the write service: GraalVM native executable |
+| `command-cli-<ver>-macos-arm64` | the write service: GraalVM native executable |
+| `command-cli-<ver>-windows-x64.exe` | the write service: GraalVM native executable |
+| `command-cli-<ver>.jar` | the write service: Spring Boot executable jar, the JVM fallback on Java 25 |
 | `contract-bundles-<ver>.tar.gz` | `bundle/mission-status/openapi.yaml`, `bundle/mission-write/openapi.yaml` |
 | `contract-tools-<ver>.tar.gz` | `contracts/tools/*.py`, `contracts/tools/pins.json`, `contracts/tools/enum_pins.json` |
 | `conformance-fixtures-<ver>.tar.gz` | see the layout below |

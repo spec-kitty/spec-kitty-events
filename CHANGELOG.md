@@ -13,6 +13,25 @@ events-domain services (#147), and the services are now imported.
 
 ### Added
 
+- `command-cli`, the events write service (#156), on the `service-v*` line beside the read
+  service: `service/command-cli`, a Spring Boot 4 service built as a jar and a GraalVM native
+  image for linux-x64, linux-arm64, macos-arm64 and windows-x64.
+  - It implements the launcher contract (`contracts/mission-write/LAUNCHER.md`): `serve
+    --git-common-dir <abs> [--idle-timeout <s>]`, the single-instance `service.lock`,
+    `endpoint.json` published by rename, readiness, `/shutdown`, idle exit and signal exit.
+  - It serves the protocol surface of `contracts/mission-write` under `/api/v1`: the read
+    service's Host/Origin guard, the bearer token, the protocol header, the 1 MiB cap,
+    handshake and health.
+  - Every write refuses fail-closed (`500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`, nothing
+    written) until the canonical writer (#160) and the lane authority (#161) land.
+  - `service.yml` gains a `native-command-cli` job to build and smoke the native binary on the
+    four targets, and builds `command-cli-<ver>.jar`. The native legs run in CI only (no local
+    native-image); the binary is verified once they pass on the pull request. The release asset script and ADR 0003's asset table add
+    `command-cli-<ver>-<target>[.exe]` and `command-cli-<ver>.jar`. The first release after this
+    change carries them; `service-v0.1.0-rc.1` does not.
+- `contracts/mission-write` (still `1.0.0-SNAPSHOT`): `/shutdown` and `HealthStatus` `draining`
+  are settled, no longer provisional. `HealthStatus` names `SERVICE_DRAINING`. `LAUNCHER.md`
+  records the `/api/v1` prefix and the 1800 s idle default.
 - ADR 0002 (this repository is canonical for the events domain and its services: the
   Mission Status Read API, the Mission Write API write core and their OpenAPI contracts),
   ADR 0003 (one Gradle build, GraalVM native images and the `service-v*` release line with
