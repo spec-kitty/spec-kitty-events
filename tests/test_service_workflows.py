@@ -27,7 +27,8 @@ ADR = ROOT / "docs" / "adr" / "0003-gradle-build-and-service-release-line.md"
 
 SHA_PIN = re.compile(r"^[^@\s]+@[0-9a-f]{40}$")
 TARGETS = ["linux-x64", "linux-arm64", "macos-arm64", "windows-x64"]
-SERVICE_JOBS = ["contract-bundle", "native", "lock-interop", "nightly-corpus"]
+SERVICE_JOBS = ["contract-bundle", "native", "native-command-cli", "lock-interop", "nightly-corpus"]
+DEPLOYABLES = ["mission-status-api", "command-cli"]
 
 
 def _has_gnu_tar() -> bool:
@@ -286,10 +287,13 @@ def _fake_tree(base: Path, ver: str) -> tuple[Path, Path, Path]:
         (bundle_out / "bundle" / module / "openapi.yaml").write_text(f"openapi: 3.1.0 # {module}\n")
     natives = base / "natives"
     natives.mkdir()
-    for target in TARGETS:
-        exe = ".exe" if target == "windows-x64" else ""
-        (natives / f"mission-status-api-{ver}-{target}{exe}").write_bytes(target.encode())
-    (natives / f"mission-status-api-{ver}.jar").write_bytes(b"jar")
+    for deployable in DEPLOYABLES:
+        for target in TARGETS:
+            exe = ".exe" if target == "windows-x64" else ""
+            (natives / f"{deployable}-{ver}-{target}{exe}").write_bytes(
+                f"{deployable} {target}".encode()
+            )
+        (natives / f"{deployable}-{ver}.jar").write_bytes(f"{deployable} jar".encode())
     return repo, bundle_out, natives
 
 
@@ -343,6 +347,78 @@ def test_script_refuses_a_missing_native(tmp_path: Path) -> None:
     (natives / "mission-status-api-1.0.0-macos-arm64").unlink()
     with pytest.raises(subprocess.CalledProcessError):
         _run(repo, bundle_out, natives, "service-v1.0.0", tmp_path / "out")
+
+
+@needs_tools
+@pytest.mark.parametrize(
+    "missing",
+    ["command-cli-1.0.0-windows-x64.exe", "command-cli-1.0.0-linux-arm64", "command-cli-1.0.0.jar"],
+)
+def test_script_refuses_a_missing_write_service_asset(tmp_path: Path, missing: str) -> None:
+    repo, bundle_out, natives = _fake_tree(tmp_path, "1.0.0")
+    (natives / missing).unlink()
+    with pytest.raises(subprocess.CalledProcessError):
+        _run(repo, bundle_out, natives, "service-v1.0.0", tmp_path / "out")
+
+
+@needs_tools
+def test_the_write_service_ships_four_natives_and_a_jar() -> None:
+    # core pins the write service by the asset prefix command-cli (core src/kernel/service_pin.py)
+    listed = subprocess.run(
+        [str(SCRIPT), "--list-assets", "0.2.0"], capture_output=True, text=True, check=True
+    ).stdout.split()
+    assert sorted(n for n in listed if n.startswith("command-cli-")) == sorted(
+        [
+            "command-cli-0.2.0-linux-x64",
+            "command-cli-0.2.0-linux-arm64",
+            "command-cli-0.2.0-macos-arm64",
+            "command-cli-0.2.0-windows-x64.exe",
+            "command-cli-0.2.0.jar",
+        ]
+    )
+
+
+def test_command_cli_native_matrix_covers_the_four_targets() -> None:
+    job = _load(SERVICE)["jobs"]["native-command-cli"]
+    include = job["strategy"]["matrix"]["include"]
+    assert {(i["target"], i["runner"], i["exe"]) for i in include} == {
+        ("linux-x64", "ubuntu-24.04", ""),
+        ("linux-arm64", "ubuntu-24.04-arm", ""),
+        ("macos-arm64", "macos-15", ""),
+        ("windows-x64", "windows-2025", ".exe"),
+    }
+    assert job["strategy"]["fail-fast"] is False
+
+
+def test_command_cli_native_legs_test_smoke_and_upload_for_the_release() -> None:
+    steps = _load(SERVICE)["jobs"]["native-command-cli"]["steps"]
+    runs = "\n".join(s.get("run", "") for s in steps)
+    assert ":command-cli:nativeCompile :command-cli:nativeTest" in runs
+    assert ":command-cli:nativeSmoke" in runs
+    assert "-PnativeBinary=" in runs
+    assert "-PreleaseVersion=$SERVICE_VERSION" in runs
+    floors = [s for s in steps if "native-tag-floor" in s.get("run", "")]
+    assert len(floors) == 1
+    assert "--junit-dir service/command-cli/build/test-results/test-native" in floors[0]["run"]
+    assert "continue-on-error" not in floors[0]
+    assert 'name="command-cli-${SERVICE_VERSION}-${{ matrix.target }}${{ matrix.exe }}"' in runs
+    uploads = [
+        s["with"]["name"] for s in steps if s.get("uses", "").startswith("actions/upload-artifact@")
+    ]
+    binary = "native-command-cli-${{ matrix.target }}"
+    assert binary in uploads
+    # service-release.yml collects the natives with the native-* pattern
+    assemble = _load(RELEASE)["jobs"]["assemble"]["steps"]
+    patterns = [s["with"]["pattern"] for s in assemble if "pattern" in s.get("with", {})]
+    assert any(fnmatch.fnmatch(binary, pattern) for pattern in patterns)
+
+
+def test_gradle_job_builds_both_jvm_fallback_jars() -> None:
+    steps = _load(SERVICE)["jobs"]["gradle"]["steps"]
+    runs = "\n".join(s.get("run", "") for s in steps)
+    assert ':command-cli:bootJar "-PreleaseVersion=$ver"' in runs
+    assert '"$RUNNER_TEMP/service-jar/command-cli-${ver}.jar"' in runs
+    assert '"$RUNNER_TEMP/service-jar/mission-status-api-${ver}.jar"' in runs
 
 
 @pytest.mark.skipif(shutil.which("actionlint") is None, reason="actionlint is not installed")
