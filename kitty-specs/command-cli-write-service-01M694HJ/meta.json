@@ -1,0 +1,17 @@
+{
+  "coordination_branch": "kitty/mission-command-cli-write-service-01M694HJ",
+  "created_at": "2026-10-31T14:06:46.987989+00:00",
+  "flattened": false,
+  "friendly_name": "command-cli: the runnable events write service and its native release",
+  "mid8": "01M694HJ",
+  "mission_id": "01M694HJJQ80H9X4K7H49DK50X",
+  "mission_number": null,
+  "mission_slug": "command-cli-write-service-01M694HJ",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Core's CLI must reach one write service per repository through a fail-closed launcher. This mission builds that service's process lifecycle, its loopback protocol surface and its per-OS release, so core can pin and launch it; the canonical writer and the lane authority follow in #160 and #161.",
+  "purpose_tldr": "Ship the events write service as a runnable, pinnable native binary and jar that core can launch, with writes refusing until the write core lands.",
+  "slug": "command-cli-write-service-01M694HJ",
+  "target_branch": "issue-156-command-cli",
+  "topology": "coord"
+}
