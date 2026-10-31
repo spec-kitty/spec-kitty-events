@@ -47,8 +47,11 @@ final class PythonPeer {
     String peer = System.getenv(PEER_ENV);
     if (peer != null && !peer.isBlank()) {
       Path script = Path.of(peer).toAbsolutePath();
-      if (python == null || !Files.isRegularFile(script)) {
-        throw new IllegalStateException(PYTHON_ENV + " is unset or " + PEER_ENV + " (" + script + ") is not a file");
+      if (python == null) {
+        throw new IllegalStateException(PYTHON_ENV + " is unset but " + PEER_ENV + " (" + script + ") is set");
+      }
+      if (!Files.isRegularFile(script)) {
+        throw new IllegalStateException(PEER_ENV + " (" + script + ") is not a regular file");
       }
       return new PythonPeer(python, script);
     }
