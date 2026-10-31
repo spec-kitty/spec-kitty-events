@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help test-fast test-full test-floor test-java lint
+.PHONY: help test-fast test-full test-floor test-java test-gradle lint
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -24,7 +24,7 @@ test-fast: ## Run the whole suite without coverage (~50s) — the implementer bl
 test-floor: ## Run the whole suite on the declared support floor (Python 3.10)
 	UV_PROJECT_ENVIRONMENT=.venv-floor uv run --python 3.10.21 pytest --no-cov -q $(ARGS)
 
-test-full: test-floor lint test-java ## Run the whole suite with the configured coverage report — what the CI agent runs
+test-full: test-floor lint test-gradle ## Run the whole suite with the configured coverage report — what the CI agent runs
 	uv run pytest $(ARGS)
 
 lint: ## Run the pinned ruff check gate, the formatter check, and the version-amendment guard
@@ -36,6 +36,14 @@ lint: ## Run the pinned ruff check gate, the formatter check, and the version-am
 # gate. scripts/ensure_jdk25.sh finds a JDK 25+ or provisions Temurin 25 into .cache/ and hands
 # it to Gradle as the only toolchain (Gradle never downloads one). The Gradle Wrapper pins Gradle
 # and its distribution checksum; gradle/verification-metadata.xml pins the sha256 of every
-# dependency. Part of test-full, so the CI suite runs it.
+# dependency. test-full runs it through test-gradle (verifyAll includes :java-binding:check).
 test-java: ## Build and test the Java binding against the shared corpus (JDK 25, fetched if absent)
 	jh="$$(scripts/ensure_jdk25.sh)" && JAVA_HOME="$$jh" ./gradlew --no-daemon -Dorg.gradle.java.installations.paths="$$jh" :java-binding:check
+
+# The whole Gradle build: `./gradlew verifyAll` over the Java binding, the services (service/) and the contracts
+# (contracts/), as service.yml's gradle job runs it (#147, runbook section 5). scripts/verify_all.sh first writes the
+# contract bundle outside the repository with contracts/tools/bundle.py --bundle-only and exports CONTRACT_BUNDLE and
+# CONTRACT_BUNDLE_SHA256 (LC_ALL=C.UTF-8), which :mission-status-api's bundleContract requires, then runs verifyAll
+# with the JDK from scripts/ensure_jdk25.sh. Part of test-full, so the CI suite covers the services.
+test-gradle: ## Build and test every Gradle module (verifyAll) with the contract bundle (JDK 25, fetched if absent)
+	scripts/verify_all.sh
