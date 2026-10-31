@@ -325,7 +325,8 @@ Each edit is its own commit after the merge commit.
    `contracts/mission-write` as a launcher section. Its text is the one the operator
    accepted on 2026-10-29, in
    [write-service protocol, "Process lifecycle"](../architecture/services/write-service-protocol.md#process-lifecycle-launcher-contract);
-   copy it from there, and keep `/shutdown` marked provisional.
+   copy it from there, and keep `/shutdown` marked provisional. (Done at cutover; `/shutdown`
+   was settled later, when `command-cli` was built, #156.)
 6. **The writers-and-readers page.** Keep its history:
    `git mv docs/architecture/event-ledger-writers-and-readers.md docs/architecture/services/event-ledger-writers-and-readers.md`,
    then add DocKitty frontmatter and link it from `docs/architecture/services/README.md`.

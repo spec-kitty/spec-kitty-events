@@ -2,7 +2,7 @@
 title: Write-service protocol
 description: 'How the CLI reaches its write service: loopback HTTP, a bearer token, the handshake, durability-acked writes, refusal codes and the launcher contract.'
 doc_status: active
-updated: 2026-10-30T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -16,7 +16,13 @@ kind: Explanation
 > point here; citations of what stays in core (its ADRs, the CLI client) point at core at
 > `4eecb124`.
 >
-> **The write service is not built yet.** This page describes its contract,
+> **The write service is built and runnable, and its writes refuse fail-closed.**
+> [`service/command-cli`](https://github.com/spec-kitty/spec-kitty-events/tree/main/service/command-cli)
+> (#156) implements the process contract and the protocol surface. That covers the launcher
+> contract, the handshake, the health check, the guard, the token, the protocol header, the size
+> cap and the shutdown. Every write is refused with `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`
+> and nothing is written, until the canonical writer (#160) and the lane authority (#161) land.
+> This page describes its contract,
 > [`contracts/mission-write`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts/mission-write)
 > (`1.0.0-SNAPSHOT`, #6675), and the record that decides it, core
 > [ADR 2026-10-27-1](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/docs/adr/4.x/2026-10-27-1-the-write-service-protocol-is-loopback-http-with-a-bearer-token.md).
@@ -134,8 +140,8 @@ sequenceDiagram
 
 ## Process lifecycle (launcher contract)
 
-**Agreed 2026-10-29; recorded in the contract at cutover; `/shutdown` provisional until
-`command-cli` is built.** The operator accepted this contract between core's launcher (#6676)
+**Agreed 2026-10-29; recorded in the contract at cutover; `/shutdown` and `draining` settled
+when `command-cli` was built (#156).** The operator accepted this contract between core's launcher (#6676)
 and the write service on 2026-10-29. It is now recorded in the contract as
 [`contracts/mission-write/LAUNCHER.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/LAUNCHER.md), which
 is the normative text; the summary below follows it. Parts of it already stood in core
@@ -143,11 +149,13 @@ ADR 2026-10-27-1 (D-2, open question 6) and the OpenAPI document.
 
 - **Start.** The launcher runs
   `<binary> serve --git-common-dir <absolute path> [--idle-timeout <seconds>]`. There is one
-  write service per git common dir. Without `--idle-timeout`, the service's default applies.
+  write service per git common dir. Without `--idle-timeout`, the service's default of 1800 s
+  applies.
 - **Single instance.** The service takes `<gcd>/spec-kitty-write-service/service.lock` and
   publishes `endpoint.json` by writing a temporary file and renaming it into place (D-2). If
   the lock is held, it exits 0 without publishing. Its log file is
-  `<gcd>/spec-kitty-write-service/service.log`.
+  `<gcd>/spec-kitty-write-service/service.log`. The service writes to stdout and stderr, and
+  the launcher appends both to that file.
 - **Ready** means all three:
   1. `endpoint.json` is present;
   2. `GET /handshake` (bearer) returns a `repositoryId` equal to the SHA-256 of the real path
@@ -155,10 +163,15 @@ ADR 2026-10-27-1 (D-2, open question 6) and the OpenAPI document.
   3. `GET /health` returns `status: ready`
      ([`schemas/HealthStatus.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/schemas/HealthStatus.yaml):
      `ready` or `draining`).
-- **Stop.** `POST /shutdown` (bearer) drains and exits: health reads `draining`, the service
-  finishes the writes it holds, removes its endpoint file and answers `202` before it exits
-  ([`paths/shutdown.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/paths/shutdown.yaml)).
-  As written, the contract also requires the `Spec-Kitty-Write-Protocol` header on this
-  operation and marks it `x-provisional`. If the process is still running after 10 s and its
-  pid still matches the endpoint's instance, the launcher falls back to `SIGTERM`
-  (`TerminateProcess` on Windows).
+- **Stop.** `POST /api/v1/shutdown` (bearer and `Spec-Kitty-Write-Protocol`) drains and exits.
+  - It answers `202` at once.
+  - Health then reads `draining`, and a write is refused `503 SERVICE_DRAINING`.
+  - The service finishes the writes it holds (at most 5 s), removes its endpoint file while it
+    still names its own instance, and exits 0
+    ([`paths/shutdown.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/paths/shutdown.yaml)).
+  - After its idle timeout without a request, the service drains and exits the same way.
+  - If the process is still running after 10 s and its pid still matches the endpoint's
+    instance, the launcher falls back to `SIGTERM` (`TerminateProcess` on Windows). On
+    `SIGTERM` the service still removes its own endpoint file.
+- **Paths.** Every operation is under the contract's `/api/v1` prefix. Core's launcher client
+  still calls the bare paths, and spec-kitty/spec-kitty#6910 moves it to the prefix.

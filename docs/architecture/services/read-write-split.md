@@ -2,7 +2,7 @@
 title: The read-write split
 description: 'The CQRS split of the events domain: the read-only Mission Status Read API, the Java write service as the one canonical writer, and the writers and readers today versus the target.'
 doc_status: active
-updated: 2026-10-30T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -74,11 +74,16 @@ domain calls (D-1, D-2). Core ADR 2026-10-22-1 makes that module a Java service:
 - **Native first, JVM jar as fallback, no Python writer** (D-5). With neither a native
   image nor a JDK, every write refuses with a named code and nothing is written.
 
-**Status: the write core is not built.** What exists is its protocol contract
-([`contracts/mission-write`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts/mission-write),
-#6675, PR #6729; see [write-service protocol](./write-service-protocol.md)) and the
-write-side parts of the `event-log` library from #6193: the ledger lock and the torn-tail
-repair ([event-log lock and append](./event-log-lock-and-append.md)). The Java append
+**Status: the write service runs, and the write core is not built yet.**
+- **The service.** `service/command-cli` (#156) is the write-service deployable. It
+  implements the launcher contract and the protocol surface of its contract,
+  [`contracts/mission-write`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts/mission-write)
+  (#6675, PR #6729; see [write-service protocol](./write-service-protocol.md)).
+  - It answers every write with a fail-closed refusal and writes nothing.
+  - The canonical writer (#160) and the lane authority (#161) are the write core.
+- **The library parts.** The write-side parts of the `event-log` library from #6193 exist:
+  the ledger lock and the torn-tail repair
+  ([event-log lock and append](./event-log-lock-and-append.md)). The Java append
 itself exists only in the lock-interop spike's test harness; the README says the append
 adapter "goes into this module under a rule of its own".
 

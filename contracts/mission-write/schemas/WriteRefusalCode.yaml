@@ -63,7 +63,7 @@ oneOf:
   - const: SERVICE_BUSY
     description: '503. Protocol-only. The service is serializing other writes beyond its queue bound; retry the same service after the Retry-After seconds. Provisional (backpressure).'
   - const: SERVICE_DRAINING
-    description: '503. Protocol-only. The service is draining before it exits; re-read the endpoint file and retry against the service it names (the launcher starts one when none runs). Provisional (shutdown).'
+    description: '503. Protocol-only. The service is draining before it exits; re-read the endpoint file and retry against the service it names (the launcher starts one when none runs).'
 x-source:
   path: src/specify_cli/status/write_service_protocol.py
   symbol: WriteRefusalCode

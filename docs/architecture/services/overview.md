@@ -1,8 +1,8 @@
 ---
 title: Services overview
-description: The Mission Status Read API and the future write service at C4 levels 1 and 2, the onion layering the ArchUnit tests enforce, and where the code lived in core and lives here.
+description: The Mission Status Read API and the write service at C4 levels 1 and 2, the onion layering the ArchUnit tests enforce, and where the code lived in core and lives here.
 doc_status: active
-updated: 2026-10-30T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -27,9 +27,15 @@ The events domain has two services, one per side of a CQRS split
 - **The Mission Status Read API** (`mission-status-api`) exists. It is a read-only,
   loopback-only HTTP service
   ([`service/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/README.md)).
-- **The write service** (`command-cli`) is **not built yet**. Its protocol contract exists
-  ([`contracts/mission-write`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts/mission-write),
-  #6675), and so do the lock and torn-tail parts of the `event-log` library (#6193). See
+- **The write service** (`command-cli`) is **built and runnable, and its writes refuse
+  fail-closed**
+  ([`service/command-cli/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/command-cli/README.md),
+  #156).
+  - It implements the launcher contract and the protocol surface of
+    [`contracts/mission-write`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts/mission-write)
+    (#6675).
+  - The canonical writer (#160) and the lane authority (#161) come next. The lock and
+    torn-tail parts of the `event-log` library (#6193) are what the writer will use. See
   [event-log lock and append](./event-log-lock-and-append.md) and the
   [write-service protocol](./write-service-protocol.md).
 
@@ -40,11 +46,11 @@ flowchart LR
   cli["Spec Kitty CLI (core)"]
   ui["Dashboard and desktop consumers"]
   read["Mission Status Read API<br/>(core pins it for CI only)"]
-  write["Write service<br/>(one per repository, future)"]
+  write["Write service, command-cli<br/>(one per repository; writes fail-closed until #160/#161)"]
   logs[("Event log files<br/>in the repository")]
   ui -->|HTTP, loopback| read
   cli -.->|"core CI pins a release"| read
-  cli -.->|"loopback HTTP + bearer token (future)"| write
+  cli -.->|"loopback HTTP + bearer token (core binds it after a release, #6195)"| write
   read -->|reads| logs
   write -.->|appends| logs
   cli -->|appends today| logs
@@ -77,7 +83,7 @@ flowchart TB
   subgraph build["One Gradle build (this repository)"]
     contracts["contracts/<br/>mission-status, mission-write<br/>(OpenAPI 3.1)"]
     msa["mission-status-api<br/>Spring Boot 4, Java 25, GraalVM native<br/>(query-service deployable)"]
-    cmd["command-cli<br/>(write deployable, future)"]
+    cmd["command-cli<br/>Spring Boot 4, Java 25, GraalVM native<br/>(write deployable; writes fail-closed until #160/#161)"]
     dm["domain-model<br/>(library)"]
     el["event-log<br/>(library)"]
   end
@@ -95,7 +101,7 @@ flowchart TB
 | `domain-model` | The Mission status types (Mission, work package, lane, status event, snapshot). No declared dependency, no `java.io` or `java.nio.file`. | README, "Package layout"; `DomainModelBoundaryTest` |
 | `event-log` | The line codec, the event ordering and `StatusReducer`, and the ledger file mechanics (`LedgerLocks`, `TornTailRepair`). Depends on `domain-model` and the Jackson streaming parser only. | README, "Package layout"; `EventLogBoundaryTest` |
 | contracts | `contracts/mission-status/openapi.yaml` (read) and `contracts/mission-write/openapi.yaml` (write), both `1.0.0-SNAPSHOT`. | [`contracts/mission-write/CHANGELOG.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/CHANGELOG.md); writers-and-readers page, "The read API contract" |
-| `command-cli` | The write-service deployable named by #6117 decision 12. **Not built.** | core ADR 2026-10-22-1 D-1 |
+| `command-cli` | The write-service deployable named by #6117 decision 12 (`service/command-cli`, #156): Spring Boot 4, Java 25, a GraalVM native binary for four targets plus a JVM jar. It implements the launcher contract and the protocol surface; every write refuses fail-closed until #160 and #161 land. | [`service/command-cli/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/command-cli/README.md); core ADR 2026-10-22-1 D-1 |
 
 The four module names are #6117 decision 12's: `domain-model`, `event-log`, `query-service`
 and `command-cli` (core ADR 2026-10-22-1 D-1). The read service and the write service share

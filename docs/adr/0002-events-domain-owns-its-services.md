@@ -2,7 +2,7 @@
 title: 'ADR-0002: spec-kitty-events is canonical for the events domain and its services'
 description: 'Accepted: this repo owns the events domain, the Mission Status Read API, the Mission Write API write core and their OpenAPI contracts; core consumes released artifacts.'
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 authors:
@@ -97,7 +97,8 @@ and the existing code moves here with its history.
    - the Python package;
    - the Java binding;
    - the Mission Status Read API service;
-   - the Mission Write API / event-log write core (the future `command-cli` deployable);
+   - the Mission Write API / event-log write core (the `command-cli` deployable, built since
+     2026-10-31: spec-kitty-events#156; its writes refuse fail-closed until #160 and #161);
    - their OpenAPI contracts, `contracts/mission-status` and `contracts/mission-write`.
 
    A change to any of these is made here and is canonical. Consumers, core included, adapt to
