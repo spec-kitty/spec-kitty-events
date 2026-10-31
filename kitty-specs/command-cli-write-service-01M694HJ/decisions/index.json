@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-31T14:06:59.752082Z",
+      "decision_id": "01M694HZN82Z087TYWGJ11H1KJ",
+      "final_answer": "runnable service + release only (write core in new issues #160, #161); operator ruling 2026-10-31",
+      "input_key": "scope_slicing",
+      "mission_id": "01M694HJJQ80H9X4K7H49DK50X",
+      "mission_slug": "command-cli-write-service-01M694HJ",
+      "opened_by": "cli",
+      "options": [
+        "runnable service + release only (write core in new issues)",
+        "three stacked PRs",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Does this mission deliver the whole write core, or only the runnable service and its release with writes refusing fail-closed?",
+      "rationale": null,
+      "resolved_at": "2026-10-31T14:07:01.981678Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.slicing",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M694HJJQ80H9X4K7H49DK50X",
+  "version": 1
+}
