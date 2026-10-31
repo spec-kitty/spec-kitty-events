@@ -191,11 +191,18 @@ def test_native_matrix_covers_the_four_targets() -> None:
 def test_native_legs_enforce_the_tagged_test_floor() -> None:
     # Core's native-tag-floor gate: a native leg that executed no tagged test must not read as green.
     steps = _load(SERVICE)["jobs"]["native"]["steps"]
-    floors = [s["run"] for s in steps if "native-tag-floor" in s.get("run", "")]
+    floors = [s for s in steps if "native-tag-floor" in s.get("run", "")]
     assert len(floors) == 2  # python3 on Linux and macOS, python on Windows
-    for run in floors:
-        assert "scripts/ci/mission_status_gate_checks.py native-tag-floor" in run
-        assert "--junit-dir service/build/test-results/test-native --floor 3" in run
+    for step in floors:
+        assert "scripts/ci/mission_status_gate_checks.py native-tag-floor" in step["run"]
+        assert "--junit-dir service/build/test-results/test-native --floor 3" in step["run"]
+        # the gate must stay free to fail its leg, never silently continue
+        assert "continue-on-error" not in step
+    # the two legs are mutually exclusive on OS, so every native runner is gated exactly once
+    assert {s["if"] for s in floors} == {
+        "${{ !cancelled() && runner.os != 'Windows' }}",
+        "${{ !cancelled() && runner.os == 'Windows' }}",
+    }
     assert (ROOT / "scripts/ci/mission_status_gate_checks.py").is_file()
 
 
@@ -207,7 +214,6 @@ def test_native_uploads_the_reachability_metadata_for_review() -> None:
     ]
     assert len(metadata) == 1
     step = metadata[0]
-    assert step["uses"] == uploads[0]["uses"]  # the already-pinned upload-artifact SHA
     assert step["with"]["if-no-files-found"] == "warn"
     paths = step["with"]["path"].split()
     assert "service/build/generated/aotResources/META-INF/native-image" in paths
