@@ -2,7 +2,7 @@
 title: Architectural Decision Records
 description: Index of architectural decision records for the spec-kitty-events contract package, with the naming convention and status vocabulary.
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: Hub
 okf_version: "0.2"

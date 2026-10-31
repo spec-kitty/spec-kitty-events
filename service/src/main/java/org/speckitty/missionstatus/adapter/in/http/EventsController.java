@@ -61,6 +61,8 @@ class EventsController {
   private final Consumer<Diagnostic> diagnostics;
   private final Duration heartbeat;
   private final Set<Subscription> live = ConcurrentHashMap.newKeySet();
+  /** Set once the context starts closing, before {@link #endStreams} sweeps {@link #live}; a stream that registers after the sweep sees it. */
+  private volatile boolean closing;
   private final int maxConnections;
   /** Streams admitted and not yet finished: from the admission to the end of {@link #pump}. */
   private final AtomicInteger admitted = new AtomicInteger();
@@ -124,6 +126,12 @@ class EventsController {
 
   private SseEmitter open(StreamScope scope, Optional<StreamCursor> cursor, HttpServletResponse response) {
     Subscription subscription = query.subscribe(scope, cursor);
+    // Registered before the response starts, and the closing flag read after: a shutdown that races this connection either sweeps the
+    // subscription from live or is seen here, so no stream is left for the container's grace period. The pump then ends the stream.
+    live.add(subscription);
+    if (closing) {
+      subscription.close();
+    }
     // The response starts now, not at the first event: a client learns that the stream is open (and the subscription exists) before
     // anything has happened, and a quiet Mission does not hold the headers back until the first heartbeat.
     response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE + ";charset=UTF-8");
@@ -132,6 +140,7 @@ class EventsController {
       response.flushBuffer();
     } catch (IOException gone) {
       subscription.close();
+      live.remove(subscription);
       throw new java.io.UncheckedIOException(gone);
     }
     SseEmitter emitter = new SseEmitter(0L);
@@ -144,7 +153,6 @@ class EventsController {
         });
     emitter.onError(failure -> subscription.close());
     boolean scoped = scope instanceof StreamScope.OneMission;
-    live.add(subscription);
     Thread.ofVirtual().name("events-" + CONNECTIONS.incrementAndGet()).start(() -> pump(subscription, emitter, scoped));
     return emitter;
   }
@@ -152,6 +160,7 @@ class EventsController {
   /** Shutting down ends every open stream first, so the container's graceful shutdown does not wait on connections that never finish. */
   @EventListener(ContextClosedEvent.class)
   void endStreams() {
+    closing = true;
     live.forEach(Subscription::close);
   }
 
