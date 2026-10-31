@@ -2,7 +2,7 @@
 title: 'ADR-0003: one Gradle build and the service-v* release line'
 description: 'Accepted: Gradle Kotlin DSL on JDK 25 builds every Java artifact; GraalVM native images for 4 targets ship on service-v* tags with stable asset names, sha256 files and provenance.'
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 authors:
@@ -29,9 +29,24 @@ Related records: [ADR-0002](./0002-events-domain-owns-its-services.md) (why the 
 live here) and [ADR-0004](./0004-dual-artifact-line.md) (how this release line relates to the
 Python package line).
 
-Nothing in this record has shipped. The binding's build moves now; the services join the
-build at cutover, and the first `service-v0.x` pre-release is cut only with operator
-approval.
+**Status note (2026-10-31).** When this record was accepted (2026-10-29), nothing in it had
+shipped: the binding's build was moving, the services were to join the build at cutover, and
+the first `service-v0.x` pre-release was to be cut only with operator approval. Since then:
+
+- The root Gradle build covers the binding, the services and the contracts:
+  `./gradlew verifyAll` checks `:java-binding`, `:mission-status-api`, `:domain-model`,
+  `:event-log` and `:contracts`
+  ([#150](https://github.com/spec-kitty/spec-kitty-events/pull/150), merged 2026-10-31).
+- `service.yml` runs its service jobs on `main`: the four native images (linux-x64,
+  linux-arm64, macos-arm64, windows-x64) with their native tests and golden replay, and the
+  JVM jar.
+- The first pre-release, `service-v0.1.0-rc.1`, has the operator's approval of 2026-10-31
+  (rulings on
+  [spec-kitty/spec-kitty#6117](https://github.com/spec-kitty/spec-kitty/issues/6117#issuecomment-6544221340)).
+  The operator pushes the tag, and `service-release.yml` publishes the asset set of
+  [Release assets](#release-assets).
+
+The decisions below are unchanged.
 
 ---
 

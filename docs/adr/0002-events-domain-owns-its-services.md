@@ -2,7 +2,7 @@
 title: 'ADR-0002: spec-kitty-events is canonical for the events domain and its services'
 description: 'Accepted: this repo owns the events domain, the Mission Status Read API, the Mission Write API write core and their OpenAPI contracts; core consumes released artifacts.'
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 authors:
@@ -28,8 +28,25 @@ Related records: [ADR-0003](./0003-gradle-build-and-service-release-line.md) (ho
 are built and released) and [ADR-0004](./0004-dual-artifact-line.md) (how the service line
 relates to the Python package line).
 
-Nothing in this record has shipped. The import of the service code runs at cutover, after
-the core freeze, and only on the operator's go-signal (spec constraint C-001).
+**Status note (2026-10-31).** When this record was accepted (2026-10-29), nothing in it had
+shipped: the import was to run at cutover, after the core freeze, and only on the operator's
+go-signal (spec constraint C-001). That has since happened:
+
+- [#150](https://github.com/spec-kitty/spec-kitty-events/pull/150) (merged 2026-10-31,
+  merge commit `f75022f`) imported the Mission Status Read API with its `domain-model` and
+  `event-log` modules into `service/`, and `mission-status`, `mission-write`, `_shared`,
+  `tools` and `lint` into `contracts/`, with their history, from core at the frozen SHA
+  `512567eee71e31bb39f580c4f7acf8b865e9d1b2` (Decision Outcome 2). `service/core-pin.json`
+  pins that SHA for the CI-only peers (Decision Outcome 4).
+- The first service release, `service-v0.1.0-rc.1`, has the operator's approval of
+  2026-10-31 (rulings on
+  [spec-kitty/spec-kitty#6117](https://github.com/spec-kitty/spec-kitty/issues/6117#issuecomment-6544221340)).
+  The operator pushes the tag.
+- Not yet shipped: the write core's deployable, `command-cli`
+  ([#156](https://github.com/spec-kitty/spec-kitty-events/issues/156)), and core's switch
+  from its own copy of the services to the released assets (core's cut-over PR).
+
+The decisions below are unchanged.
 
 ---
 
