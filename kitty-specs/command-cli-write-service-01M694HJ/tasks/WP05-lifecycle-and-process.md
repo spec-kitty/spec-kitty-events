@@ -1,7 +1,8 @@
 ---
 work_package_id: WP05
 title: 'Lifecycle: start, shutdown, idle and signal exit, process tests'
-dependencies: [WP04]
+dependencies:
+- WP04
 requirement_refs:
 - FR-012
 - FR-014
@@ -11,7 +12,7 @@ requirement_refs:
 - SC-004
 planning_base_branch: issue-156-command-cli
 merge_target_branch: issue-156-command-cli
-branch_strategy: Planning artifacts were generated on issue-156-command-cli. Completed changes merge back into issue-156-command-cli; the PR then targets main.
+branch_strategy: Planning artifacts for this mission were generated on issue-156-command-cli. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-156-command-cli unless the human explicitly redirects the landing branch.
 subtasks:
 - T024
 - T025

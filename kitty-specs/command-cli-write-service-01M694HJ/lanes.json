@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "mission_slug": "command-cli-write-service-01M694HJ",
+  "mission_id": "01M694HJJQ80H9X4K7H49DK50X",
+  "mission_branch": "kitty/mission-command-cli-write-service-01M694HJ",
+  "target_branch": "issue-156-command-cli",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "service/command-cli/build.gradle.kts",
+        "service/command-cli/src/main/java/org/speckitty/commandcli/config/**",
+        "service/command-cli/src/main/resources/**",
+        "service/command-cli/src/test/java/org/speckitty/commandcli/architecture/**",
+        "service/command-cli/src/test/java/org/speckitty/commandcli/config/**",
+        "settings.gradle.kts"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup",
+        "workspace"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "service/command-cli/src/main/java/org/speckitty/commandcli/adapter/out/**",
+        "service/command-cli/src/main/java/org/speckitty/commandcli/domain/**",
+        "service/command-cli/src/test/java/org/speckitty/commandcli/adapter/out/**",
+        "service/command-cli/src/test/java/org/speckitty/commandcli/domain/**",
+        "tests/test_command_cli_endpoint_parity.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup",
+        "tests",
+        "tracker-integration",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "service/command-cli/src/main/java/org/speckitty/commandcli/adapter/in/http/edge/**",
+        "service/command-cli/src/test/java/org/speckitty/commandcli/adapter/in/http/edge/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "service/command-cli/src/main/java/org/speckitty/commandcli/adapter/in/http/operations/**",
+        "service/command-cli/src/main/java/org/speckitty/commandcli/application/**",
+        "service/command-cli/src/test/java/org/speckitty/commandcli/adapter/in/http/operations/**",
+        "service/command-cli/src/test/java/org/speckitty/commandcli/application/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-b",
+        "lane-c"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "service/command-cli/src/main/java/org/speckitty/commandcli/adapter/in/process/**",
+        "service/command-cli/src/test/java/org/speckitty/commandcli/process/**"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        ".github/workflows/service.yml",
+        "Makefile",
+        "scripts/release/service-release-assets.sh",
+        "scripts/verify_all.sh",
+        "service/command-cli/src/test/java/org/speckitty/commandcli/nativesmoke/**",
+        "tests/test_service_workflows.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-e"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "CHANGELOG.md",
+        "contracts/mission-write/**",
+        "docs/**",
+        "service/README.md",
+        "service/command-cli/README.md"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "legacy-cleanup",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-e"
+      ],
+      "parallel_group": 4
+    }
+  ],
+  "computed_at": "2026-10-31T14:14:19.059873+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "b001c73d0173a0895fd68168def73b1580a97a53"
+}
