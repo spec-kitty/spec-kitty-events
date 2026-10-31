@@ -17,7 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The size cap, fourth in the contract's order: a write body over {@link #MAX_BYTES} (1 MiB, provisional in the contract) is 413
+ * The size cap, fourth in the contract's order: a request body over {@link #MAX_BYTES} (1 MiB, provisional in the contract), on any path, is 413
  * {@code REQUEST_TOO_LARGE}. The filter reads at most one byte past the cap before any controller runs, so a declared length and a chunked
  * body are judged alike and an oversized body is never parsed; a body within the cap is handed on as the bytes read.
  */
@@ -29,11 +29,6 @@ public class BodySizeFilter extends OncePerRequestFilter {
 
   public BodySizeFilter(JsonMapper mapper) {
     this.mapper = mapper;
-  }
-
-  @Override
-  protected boolean shouldNotFilter(HttpServletRequest request) {
-    return !Operations.isWrite(request.getRequestURI());
   }
 
   @Override

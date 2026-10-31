@@ -15,12 +15,15 @@ import java.util.Optional;
  * {@code fcntl} record lock on POSIX, {@code LockFileEx} on Windows) excludes across processes without a native downcall.
  *
  * <p>A POSIX record lock is released when ANY descriptor of the file closes in the same process, so the lock file is opened here and
- * nowhere else, exactly once.
+ * nowhere else, exactly once: a second attempt in the same process is refused before it opens the file.
  */
 public final class ServiceLock implements AutoCloseable {
 
   /** The lock file's name in the state directory. */
   public static final String NAME = "service.lock";
+
+  /** One holder per process: a second in-process attempt must not even open the file, since closing it would drop the OS lock. */
+  private static final java.util.concurrent.atomic.AtomicBoolean HELD_HERE = new java.util.concurrent.atomic.AtomicBoolean();
 
   private final FileChannel channel;
   private final FileLock lock;
@@ -32,6 +35,22 @@ public final class ServiceLock implements AutoCloseable {
 
   /** Takes the lock, or answers empty when another process (or this one) holds it. */
   public static Optional<ServiceLock> tryAcquire(StateDirectory directory) throws IOException {
+    if (!HELD_HERE.compareAndSet(false, true)) {
+      return Optional.empty();
+    }
+    try {
+      Optional<ServiceLock> lock = open(directory);
+      if (lock.isEmpty()) {
+        HELD_HERE.set(false);
+      }
+      return lock;
+    } catch (IOException | RuntimeException e) {
+      HELD_HERE.set(false);
+      throw e;
+    }
+  }
+
+  private static Optional<ServiceLock> open(StateDirectory directory) throws IOException {
     Path file = directory.resolve(NAME);
     FileChannel channel =
         FileChannel.open(
@@ -65,7 +84,13 @@ public final class ServiceLock implements AutoCloseable {
         lock.release();
       }
     } finally {
-      channel.close();
+      try {
+        channel.close();
+      } finally {
+        if (channel == lock.channel()) {
+          HELD_HERE.set(false);
+        }
+      }
     }
   }
 }

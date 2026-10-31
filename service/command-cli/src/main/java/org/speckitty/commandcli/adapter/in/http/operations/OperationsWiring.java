@@ -13,7 +13,10 @@ import tools.jackson.databind.json.JsonMapper;
 @Configuration(proxyBeanMethods = false)
 class OperationsWiring {
 
-  /** After every edge check (guard, token, protocol, size: HIGHEST_PRECEDENCE to +3), so a refused request is not counted. */
+  /**
+   * After the guard, the token, the canonical target and the protocol (HIGHEST_PRECEDENCE to +3), so a refused stranger is not counted, and
+   * before the size cap (+5) reads the body, so a request whose body is still arriving holds the drain (pre-PR squad, debugger finding 1).
+   */
   static final int ACTIVITY = Ordered.HIGHEST_PRECEDENCE + 4;
 
   @Bean
