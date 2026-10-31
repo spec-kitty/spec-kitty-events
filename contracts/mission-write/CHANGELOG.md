@@ -40,7 +40,16 @@ breaking-change job has no baseline and reports `NO_BASELINE_INITIAL_VERSION`.
 
 ### Changed
 
-- Nothing yet.
+- `POST /shutdown` and the `draining` value of `HealthStatus` are settled, no longer provisional:
+  `command-cli` implements them (spec-kitty/spec-kitty-events#156; operator rulings of
+  2026-10-31). The operation's `x-provisional` and the schema's are removed; the shapes are
+  unchanged.
+- `HealthStatus` names `SERVICE_DRAINING` (503, no Retry-After) as the refusal of a write while
+  draining; it said `SERVICE_BUSY`, which contradicted `WriteRefusalCode` and `ServiceBusy`.
+- [`LAUNCHER.md`](./LAUNCHER.md): "Stop" is no longer provisional; the paths are under
+  `/api/v1` (core's client follows in spec-kitty/spec-kitty#6910); the idle timeout defaults to
+  1800 s; the service logs to stdout and stderr, which the launcher redirects into
+  `service.log`. Prose only: the bundle changes only by the removed markers and texts.
 
 ### Removed
 
@@ -51,10 +60,8 @@ breaking-change job has no baseline and reports `NO_BASELINE_INITIAL_VERSION`.
 - `statusCommit` and `replayed` of `DurabilityAck`: when the status commit joins the unit, and
   idempotent retry.
 - `WriteRefusalReason`: the guard reason vocabulary and its carriage in `type`.
-- `HealthStatus` (`draining`) and the operation `/shutdown`: how the service is stopped. The "Stop"
-  step of [`LAUNCHER.md`](./LAUNCHER.md) stays provisional with it until `command-cli` is built.
-- The protocol-only codes `EVENT_ID_CONFLICT`, `SERVICE_BUSY`, `SERVICE_DRAINING`,
-  `REQUEST_TOO_LARGE` and `WRITE_LOCATION_UNVERIFIED` are provisional. An enum value cannot carry
+- The protocol-only codes `EVENT_ID_CONFLICT`, `SERVICE_BUSY`, `REQUEST_TOO_LARGE` and
+  `WRITE_LOCATION_UNVERIFIED` are provisional (`SERVICE_DRAINING` was settled with `/shutdown`). An enum value cannot carry
   `x-provisional`, so they are marked in their descriptions only, and `provisional_check.py` does not
   see them: removing one of them later is a breaking change.
 - Every provisional element is settled before the first release (`1.0.0`): after it, a change to
