@@ -2,7 +2,7 @@
 title: Service cutover runbook
 description: 'Maintainer procedure to import the events-domain services from core with history, integrate the build, hand the first release to core and move the issues.'
 doc_status: active
-updated: 2026-10-30T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -336,8 +336,7 @@ Each edit is its own commit after the merge commit.
      `native` job.
    - Lock interop: it runs on PRs and `main` pushes but not inside a release run, because it
      executes core's Python (`service.yml` guards it with `inputs.release-version == ''`).
-     Confirm with the operator whether a red lock-interop on `main` must block cutting a
-     tag, or is evidence only, as in core.
+     Decided 2026-10-31: it stays a hard need of `service-gate` (blocking on PRs and `main`).
    - Reachability metadata: upload the metadata the native tests generate as a `native`
      job artifact for review (ADR 0003, Risks).
    - `make test-full` (what the CI agent runs) reaches the Java build only through
@@ -356,9 +355,10 @@ Each edit is its own commit after the merge commit.
      wired in a later PR without a workflow-shape change. Core's third native guard, the
      `native-tag-floor` check (at least 3 executed native tests per leg), **is** ported:
      `scripts/ci/mission_status_gate_checks.py` (verbatim from core) runs in each `native` leg.
-   - **Lock interop: unchanged, pending operator confirmation.** It never runs inside a
-     release run (it executes core's Python). On `main` it is evidence only, as in core: a red
-     lock-interop run is investigated, but it does not block cutting a `service-v*` tag.
+   - **Lock interop: blocking on PRs and `main` (operator decision, 2026-10-31).** It is a
+     hard need of `service-gate`, so a red run fails the gate; it never runs inside a release
+     run (it executes core's Python). Core treated it as evidence only; this repository keeps it
+     blocking, and a tag is cut only from a `main` commit whose `service-gate` is green.
    - **`make test-full`: done.** It runs `scripts/verify_all.sh` through `make test-gradle`
      (the bundle exports, then `./gradlew verifyAll`), so the CI agent's suite covers the
      services and `contracts/`.
