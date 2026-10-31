@@ -13,5 +13,7 @@
   "purpose_tldr": "Ship the events write service as a runnable, pinnable native binary and jar that core can launch, with writes refusing until the write core lands.",
   "slug": "command-cli-write-service-01M694HJ",
   "target_branch": "issue-156-command-cli",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-31T14:14:58.915071+00:00"
 }
