@@ -2,7 +2,7 @@
 title: Changelog
 description: Dated record of notable changes to the spec-kitty-events contract package.
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Changelog
 kind: Hub
 agent:
@@ -23,6 +23,7 @@ Each page sets `sidebar.order` to minus `YYYYMMDD` plus a same-day sequence
 digit (`-202610132` is the second page of 2026-10-13), so the sidebar lists the
 newest first without renumbering older pages.
 
+- [2026-10-31 — service-v0.1.0-rc.1: the first events service release (package unchanged)](./2026-10-31-service-v0-1-0-rc-1.md)
 - [2026-10-29 — Unreleased: the events domain takes ownership of its services (no package change)](./2026-10-29-events-services-home.md)
 - [2026-10-27 — 11.3.0: CloudEvents profiles, the full registry, the legacy-row upcaster and a Java binding](./2026-10-27-11-3-0-cloudevents-registry-upcaster.md)
 - [2026-10-19 — 11.2.1: one schema-version source, gate and build invalid fixtures](./2026-10-19-11-2-1-schema-version-source-fixture-breadth.md)

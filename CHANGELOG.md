@@ -45,6 +45,14 @@ events-domain services (#147), and the services are now imported.
   `./gradlew verifyAll` (`scripts/verify_all.sh`); `make test-full` runs it, so the CI
   agent's suite covers the services and the contracts.
 - `service.yml`'s `native` job uploads the reachability metadata of each target for review.
+- The first service release, `service-v0.1.0-rc.1`, approved by the operator on
+  2026-10-31: the Mission Status API natives (linux-x64, linux-arm64, macos-arm64,
+  windows-x64), its JVM jar, the contract bundles, the contract tools and the conformance
+  fixtures, with one `.sha256` per asset, `SHA256SUMS` and build provenance. It is on the
+  `service-v*` line (ADR 0004) and changes nothing on the package line. Notes:
+  `docs/changelog/2026-10-31-service-v0-1-0-rc-1.md`.
+- ADR 0002, ADR 0003 and ADR 0004 carry a dated status note (2026-10-31): the services are
+  imported (#150) and the first service release is approved. The decisions are unchanged.
 
 ### Changed
 
