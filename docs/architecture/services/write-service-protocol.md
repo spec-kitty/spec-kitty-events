@@ -2,20 +2,22 @@
 title: Write-service protocol
 description: 'How the CLI reaches its write service: loopback HTTP, a bearer token, the handshake, durability-acked writes, refusal codes and the launcher contract.'
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
 
 # Write-service protocol
 
-> **Where this code lives.** The contract described here moves into this repository at
-> cutover ([ADR-0002](../../adr/0002-events-domain-owns-its-services.md)). Until then the
-> source of truth is core, `spec-kitty/spec-kitty` at `4eecb124`, and every citation on this
-> page points there.
+> **Where this code lives.** The contract described here lives in this repository, under
+> [`contracts/mission-write`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts/mission-write),
+> imported from core at `512567eee71e31bb39f580c4f7acf8b865e9d1b2` with its history
+> ([ADR-0002](../../adr/0002-events-domain-owns-its-services.md)). Citations of contract files
+> point here; citations of what stays in core (its ADRs, the CLI client) point at core at
+> `4eecb124`.
 >
 > **The write service is not built yet.** This page describes its contract,
-> [`contracts/mission-write`](https://github.com/spec-kitty/spec-kitty/tree/4eecb12414dac53432f4af21ba958d199d5ce808/contracts/mission-write)
+> [`contracts/mission-write`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts/mission-write)
 > (`1.0.0-SNAPSHOT`, #6675), and the record that decides it, core
 > [ADR 2026-10-27-1](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/docs/adr/4.x/2026-10-27-1-the-write-service-protocol-is-loopback-http-with-a-bearer-token.md).
 > The client shapes are in core's `src/specify_cli/status/write_service_protocol.py`, which
@@ -47,11 +49,11 @@ worktree of a clone resolves the same git common dir, so all reach one service.
 ## Handshake and version negotiation
 
 `GET /handshake` and `GET /health` need the bearer token but no protocol header (D-4;
-[`paths/handshake.yaml`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/contracts/mission-write/paths/handshake.yaml),
-[`paths/health.yaml`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/contracts/mission-write/paths/health.yaml)).
+[`paths/handshake.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/paths/handshake.yaml),
+[`paths/health.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/paths/health.yaml)).
 
 The handshake
-([`schemas/Handshake.yaml`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/contracts/mission-write/schemas/Handshake.yaml))
+([`schemas/Handshake.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/schemas/Handshake.yaml))
 returns `protocolVersions`, `serviceVersion`, `instanceId` and `repositoryId`. The client:
 
 1. requires `instanceId` to equal the endpoint file's `instance_id`;
@@ -70,9 +72,9 @@ A unit is appended in one `O_APPEND` write of full JSON lines and synced before 
 a batch is one write and one `fsync`, all or nothing (D-5). A batch holds at most 64 units;
 more is `400 REQUEST_MALFORMED` (open question 7, provisional, and the `REQUEST_MALFORMED`
 description in
-[`schemas/WriteRefusalCode.yaml`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/contracts/mission-write/schemas/WriteRefusalCode.yaml)).
+[`schemas/WriteRefusalCode.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/schemas/WriteRefusalCode.yaml)).
 The answer is a
-[`DurabilityAck`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/contracts/mission-write/schemas/DurabilityAck.yaml):
+[`DurabilityAck`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/schemas/DurabilityAck.yaml):
 `eventIds`, `appendedLines`, `fsynced` (always `true`), `statusCommit` (`null` until the status
 commit joins the unit at migration step 4) and `replayed`. A retry whose rows are all
 persisted with identical content answers `replayed: true` with `appendedLines: 0`
@@ -81,7 +83,7 @@ persisted with identical content answers `replayed: true` with `appendedLines: 0
 ## Refusals
 
 Every refusal is a `Problem` with a `code` from
-[`schemas/WriteRefusalCode.yaml`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/contracts/mission-write/schemas/WriteRefusalCode.yaml)
+[`schemas/WriteRefusalCode.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/schemas/WriteRefusalCode.yaml)
 (D-6). The service is authoritative: a CLI pre-check may shape a message but never replaces
 the service's check (D-3).
 
@@ -99,7 +101,7 @@ the service's check (D-3).
 ## Operations
 
 From
-[`openapi.yaml`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/contracts/mission-write/openapi.yaml),
+[`openapi.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/openapi.yaml),
 all under `/api/v1` and all requiring the bearer token:
 
 | operationId | Method and path | Protocol header |
@@ -132,11 +134,12 @@ sequenceDiagram
 
 ## Process lifecycle (launcher contract)
 
-**Agreed 2026-10-29; recorded in `contracts/mission-write` at cutover; `/shutdown`
-provisional until `command-cli` is built.** The operator accepted this contract between
-core's launcher (#6676) and the write service on 2026-10-29. Parts of it already stand in
-core ADR 2026-10-27-1 (D-2, open question 6) and the contract; the rest is not yet written
-into the contract.
+**Agreed 2026-10-29; recorded in the contract at cutover; `/shutdown` provisional until
+`command-cli` is built.** The operator accepted this contract between core's launcher (#6676)
+and the write service on 2026-10-29. It is now recorded in the contract as
+[`contracts/mission-write/LAUNCHER.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/LAUNCHER.md), which
+is the normative text; the summary below follows it. Parts of it already stood in core
+ADR 2026-10-27-1 (D-2, open question 6) and the OpenAPI document.
 
 - **Start.** The launcher runs
   `<binary> serve --git-common-dir <absolute path> [--idle-timeout <seconds>]`. There is one
@@ -150,11 +153,11 @@ into the contract.
   2. `GET /handshake` (bearer) returns a `repositoryId` equal to the SHA-256 of the real path
      of the git common dir, and `protocolVersions` that intersect the CLI's;
   3. `GET /health` returns `status: ready`
-     ([`schemas/HealthStatus.yaml`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/contracts/mission-write/schemas/HealthStatus.yaml):
+     ([`schemas/HealthStatus.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/schemas/HealthStatus.yaml):
      `ready` or `draining`).
 - **Stop.** `POST /shutdown` (bearer) drains and exits: health reads `draining`, the service
   finishes the writes it holds, removes its endpoint file and answers `202` before it exits
-  ([`paths/shutdown.yaml`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/contracts/mission-write/paths/shutdown.yaml)).
+  ([`paths/shutdown.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/paths/shutdown.yaml)).
   As written, the contract also requires the `Spec-Kitty-Write-Protocol` header on this
   operation and marks it `x-provisional`. If the process is still running after 10 s and its
   pid still matches the endpoint's instance, the launcher falls back to `SIGTERM`

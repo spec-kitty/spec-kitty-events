@@ -2,17 +2,20 @@
 title: Event-log lock and append
 description: 'How the Java event-log library shares the CLI''s event-log lock, appends atomically and durably, detects and repairs a torn tail, and why CI pins a core SHA for the interop test.'
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
 
 # Event-log lock and append
 
-> **Where this code lives.** The code described here moves into this repository at cutover
-> ([ADR-0002](../../adr/0002-events-domain-owns-its-services.md)). Until then the source of
-> truth is core, `spec-kitty/spec-kitty` at `4eecb124`, and every citation on this page
-> points there.
+> **Where this code lives.** The code described here lives in this repository, under
+> [`service/`](https://github.com/spec-kitty/spec-kitty-events/tree/main/service) and
+> [`contracts/`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts),
+> imported from core at `512567eee71e31bb39f580c4f7acf8b865e9d1b2` with its history
+> ([ADR-0002](../../adr/0002-events-domain-owns-its-services.md)). Citations of those files
+> point here; citations of what stays in core (its ADRs, the CLI, the Python appenders) point
+> at core at `4eecb124`, where they were checked.
 
 While the CLI still writes a log, a Java writer that touches the same log must exclude the
 CLI's writer and write the same bytes. Even after a log is handed over whole, an older CLI
@@ -46,7 +49,7 @@ Mission status lock (`<key>.status.lock`), built on the same primitive.
 ## The Java side
 
 The `event-log` library's `adapter.out.ledger` package holds the Java half
-([README, "Package layout"](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/services/mission-status-api/README.md)):
+([README, "Package layout"](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/README.md)):
 
 - **`LedgerLocks.forThisOs()`** picks `flock(2)` through the Foreign Function and Memory
   API on Linux and macOS, and `FileChannel.lock` on Windows, so it excludes the CLI's
@@ -101,13 +104,13 @@ A torn tail is what a write cut short by a crash leaves after the last newline.
   answers an unterminated last line with `500` and the diagnostic `ledger_torn_tail`, and
   never serves the partial line (README, "Fail-loud reads", L4).
 - **Repair.**
-  [`TornTailRepair`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/services/mission-status-api/event-log/src/main/java/org/speckitty/missionstatus/adapter/out/ledger/TornTailRepair.java)
+  [`TornTailRepair`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/event-log/src/main/java/org/speckitty/missionstatus/adapter/out/ledger/TornTailRepair.java)
   appends the fragment as one line to `<ledger>.torn` and makes that durable, then cuts the
   ledger back to its last newline and makes that durable too, so no byte is lost. It runs
   under the leaf lock `<ledger>.lock`, the one the Python repair takes, and re-reads the
   tail inside it. The caller decides when to repair.
 - **Shared goldens.**
-  [`event-log/src/test/resources/torn-tail/repair-cases.json`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/services/mission-status-api/event-log/src/test/resources/torn-tail/repair-cases.json)
+  [`event-log/src/test/resources/torn-tail/repair-cases.json`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/event-log/src/test/resources/torn-tail/repair-cases.json)
   holds the cases both the Java and the Python repair are tested against, byte for byte.
   It ships in the `conformance-fixtures` release asset
   ([ADR-0003](../../adr/0003-gradle-build-and-service-release-line.md)).
@@ -121,7 +124,7 @@ repaired.
 
 The interop test drives core's production Python code, never a copy: the peer
 `scripts/ci/lock_interop_peer.py` calls `kernel.event_log_append` and
-`kernel.locks.machine_file_lock` (spike page, "What was tested"). After cutover that code
+`kernel.locks.machine_file_lock` (spike page, "What was tested"). That code
 stays in core, so this repository's CI checks core out to run it.
 
 [ADR-0002](../../adr/0002-events-domain-owns-its-services.md) decision 4 sets the terms:

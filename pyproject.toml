@@ -147,6 +147,13 @@ target-version = "py310"
 # links. Not part of this repo's own source or docs.
 extend-exclude = [".agents/"]
 
+[tool.ruff.format]
+# contracts/tools/ is core's contract tooling, imported with its history at cutover (#147, ADR 0002) and
+# formatted to core's own line length. It is kept byte-compatible with core's history rather than
+# reformatted; the lint rules below still cover it.
+# scripts/ci/mission_status_gate_checks.py is core's gate script, ported verbatim for the same reason.
+exclude = ["contracts/tools/**", "scripts/ci/mission_status_gate_checks.py"]
+
 [tool.ruff.lint]
 # Small, deliberate start (issue #12): syntax errors, pyflakes, and the
 # import/statement pycodestyle families. Widen only with a PR that says why.

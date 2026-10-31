@@ -41,8 +41,9 @@ The binding process is the programme constitution —
 | Whole suite with coverage — CI agent only | `make test-full` |
 | Packaged conformance gate — every PR | `uv run pytest --pyargs spec_kitty_events.conformance` |
 | Lint (whole repo, part of "Tests run") | `ruff check . && ruff format --check .` |
-| Java build and tests (every Gradle module: the binding; at cutover also the services) | `./gradlew verifyAll` |
-| Java binding check through the JDK 25 helper (also part of `make test-full`) | `make test-java` |
+| Java build and tests, every Gradle module (binding, services, contracts), with the contract bundle — part of `make test-full` | `make test-gradle` |
+| The same by hand: export `CONTRACT_BUNDLE` and `CONTRACT_BUNDLE_SHA256` first ([runbook §5](./docs/guides/service-cutover-runbook.md#5-verification)) | `./gradlew verifyAll` |
+| Java binding check alone, through the JDK 25 helper | `make test-java` |
 
 The conformance gate is the packaged contract other repos consume; the in-repo suite does
 not collect it, so run it explicitly on every PR.

@@ -1,8 +1,8 @@
 ---
 title: Services
-description: The services of the events domain, the Mission Status Read API and the future write service, and how they read and write the event logs. The code moves here at cutover.
+description: The services of the events domain, the Mission Status Read API and the future write service, and how they read and write the event logs. The code lives here.
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-30T00:00:00Z
 type: Architecture
 kind: Hub
 okf_version: "0.2"
@@ -10,10 +10,12 @@ okf_version: "0.2"
 
 # Services
 
-The events domain has a read service and, in time, a write service. Both live in core
-(`spec-kitty/spec-kitty`) today and move into this repository at cutover
+The events domain has a read service and, in time, a write service. Their code and
+contracts live in this repository, under `service/` and `contracts/`, imported from core
+(`spec-kitty/spec-kitty`) at `512567eee71e31bb39f580c4f7acf8b865e9d1b2` with their history
 ([ADR-0002](../../adr/0002-events-domain-owns-its-services.md)). These pages describe them
-from core at `4eecb124`, with a citation for each claim.
+with a citation for each claim: local paths for what lives here, core at `4eecb124` for what
+stays in core.
 
 - [Services overview](./overview.md): the context and container views, the onion layering
   and the ArchUnit rules that enforce it, and where the code lives. **Read this first.**
@@ -24,6 +26,9 @@ from core at `4eecb124`, with a citation for each claim.
   atomic and durable appends, torn-tail repair, and why CI pins a core SHA.
 - [Write-service protocol](./write-service-protocol.md): loopback HTTP, the bearer token,
   the handshake, durability acks, refusal codes and the launcher contract.
+- [Event ledger writers and readers](./event-ledger-writers-and-readers.md): core's map of
+  every event log and ledger it writes and reads, the target the event ADRs set, and the
+  gap table (G-1 to G-19) the read-write split summarises.
 
 Build and release: [ADR-0003](../../adr/0003-gradle-build-and-service-release-line.md) and
 [ADR-0004](../../adr/0004-dual-artifact-line.md).

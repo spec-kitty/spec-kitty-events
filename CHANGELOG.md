@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No package change: no model, schema, fixture or envelope changes its accept or reject
 boundary, and the version stays `11.3.0`. This repository becomes the home of the
-events-domain services (#147); the services themselves are imported at cutover.
+events-domain services (#147), and the services are now imported.
 
 ### Added
 
@@ -28,9 +28,32 @@ events-domain services (#147); the services themselves are imported at cutover.
 - Service architecture docs under `docs/architecture/services/`, the guides
   `docs/guides/running-the-service.md` and `docs/guides/service-protocol-and-releases.md`,
   and the maintainer cutover runbook `docs/guides/service-cutover-runbook.md`.
+- The events-domain services, imported from core (`spec-kitty/spec-kitty`) with their git
+  history: 141 commits filtered from the frozen core SHA
+  `512567eee71e31bb39f580c4f7acf8b865e9d1b2` and merged unchanged. Core's
+  `services/mission-status-api/` (with `domain-model/` and `event-log/`) is `service/`;
+  `contracts/mission-status`, `contracts/mission-write`, `contracts/_shared`, `tools`, `lint`
+  and their Gradle build are under `contracts/`; the writers-and-readers page is
+  `docs/architecture/services/event-ledger-writers-and-readers.md`.
+- `service/core-pin.json` pins core at that SHA for the CI-only peers (lock interop, the
+  corpus oracle, golden regeneration; ADR 0002 D4), which turns on `service.yml`'s guarded
+  jobs. The lock-interop test reads its peer from `SPEC_KITTY_LOCK_INTEROP_PEER`.
+- The launcher contract (start, single instance, ready, stop; `/shutdown` provisional), as
+  the operator accepted it on 2026-10-29, is recorded in
+  `contracts/mission-write/LAUNCHER.md` and the module's CHANGELOG.
+- `make test-gradle` builds the contract bundle outside the repository and runs
+  `./gradlew verifyAll` (`scripts/verify_all.sh`); `make test-full` runs it, so the CI
+  agent's suite covers the services and the contracts.
+- `service.yml`'s `native` job uploads the reachability metadata of each target for review.
 
 ### Changed
 
+- The root Gradle build now covers the services and the contracts: `:mission-status-api`
+  (`service/`), `:domain-model`, `:event-log` and `:contracts` join `:java-binding`, with one
+  version catalog and one `gradle/verification-metadata.xml`, so `./gradlew verifyAll`
+  checks every module. The contract tools' Gradle pin moves to the root wrapper's 9.8.1.
+- The service architecture pages and the service guides are active, and cite the imported
+  files here instead of core; `service/README.md` names the `service-v*` release line.
 - `java/` now builds with Gradle: a root Kotlin DSL build (Gradle 9.8.1, `build-logic/`
   conventions, a version catalog, strict dependency verification). Run it with
   `./gradlew verifyAll` or `make test-java`. Maven is removed. The binding's dependencies and
