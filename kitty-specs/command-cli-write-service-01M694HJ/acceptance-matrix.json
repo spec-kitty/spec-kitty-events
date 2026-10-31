@@ -1,0 +1,209 @@
+{
+  "mission_slug": "command-cli-write-service-01M694HJ",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pending",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ServeOptionsTest (23) + LauncherContractProcessTest.aBadCommandLineExitsTwoAndPublishesNothing",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:50:37.210931+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ServiceLockTest (cross-process) + LauncherContractProcessTest.aSecondInstanceForTheSameGitCommonDirExitsZeroWithoutPublishing",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:50:27.163064+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "EndpointFileTest (core reader rules) + LauncherContractProcessTest.assertReady + LifecycleTest",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:50:32.248394+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "BindGuardTest + BindAndConfigProcessTest.anEnvironmentAskingForAllInterfacesExitsOneAndPublishesNothing",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:50:52.056666+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "HostOriginFilterTest (42) + HostOriginTableTest (154) + RegistrationAndErrorPathTest",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:50:57.132113+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "EdgeOrderTest + BearerAndProtocolFilterTest (token on the ERROR dispatch, mutation-checked)",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:50:42.169857+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "EdgeOrderTest.theShutdownAndTheWritesNeedASupportedProtocol + BearerAndProtocolFilterTest",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:50:47.235860+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "OperationsTest.theHandshakeNamesTheProtocolTheInstanceAndTheRepository (schema-validated) + process assertReady",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:51:02.107390+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "OperationsTest.theHealthIsReadyWithTheSameInstance + DrainTest (draining)",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:51:06.588042+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "BodySizeFilterTest + OperationsTest (all contract examples refused fail-closed, nothing written; 25 malformed cases)",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:51:36.810373+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "DrainTest (4) + LauncherContractProcessTest.theLauncherSequenceStartsAReadyServiceAndStopsItWithShutdown",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:51:31.585651+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ServiceLifecycleTest (IdleWatch) + LifecycleTest.anIdleServiceDrainsAndExitsByItself + process idle exit",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:51:46.337025+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "EndpointFileTest.removesTheFileOnlyWhileItNamesThisInstance + LauncherContractProcessTest.aTerminatedServiceRemovesItsEndpointFile",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:51:41.659658+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "LauncherContractProcessTest.theLogNeverCarriesTheTokenOrCallerControlledHeaders + RegistrationAndErrorPathTest (OutputCapture)",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:51:21.157740+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "Verify FR-015 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "OperationsTest.theRefusalCodesUsedAreContractCodesWithTheirStatus + WriteRefusal schema validation on every refusal",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:51:16.241971+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-016",
+      "description": "Verify FR-016 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/tools provisional_check (39->37), example_check 137/137, leak_scan, layout, structure, enum pins; :contracts:check",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:51:26.195154+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-017",
+      "description": "Verify FR-017 is satisfied",
+      "proof_type": "ci_native_matrix",
+      "evidence": "jar verified (process tests 9/9); the GraalVM native image and its legs on four targets run only in CI (no native-image locally); verified on the draft PR",
+      "pass_fail": "pending",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:51:55.823998+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-018",
+      "description": "Verify FR-018 is satisfied",
+      "proof_type": "ci_native_matrix",
+      "evidence": "jar verified (process tests 9/9); the GraalVM native image and its legs on four targets run only in CI (no native-image locally); verified on the draft PR",
+      "pass_fail": "pending",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:52:00.878377+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-019",
+      "description": "Verify FR-019 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "tests/test_service_workflows.py (34 passed): script asset set equals ADR 0003 table, deterministic, refuses a missing command-cli asset",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:51:51.039975+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-020",
+      "description": "Verify FR-020 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP07 review cycle 2 approval: docs and service/command-cli/README.md match the code; core citations checked",
+      "pass_fail": "pass",
+      "verified_by": "claude:opus:java-jenny",
+      "verified_at": "2026-10-31T15:51:11.514601+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}
