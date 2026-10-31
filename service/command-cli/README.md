@@ -71,10 +71,11 @@ A request meets the checks in the contract's order. The first one that fails ans
 |---|---|---|
 | 1 | Host/Origin guard, copied from the read service (`Host` is `127.0.0.1:<port>` or `localhost:<port>`; no forwarded headers; a foreign `Origin` or `Sec-Fetch-Site: cross-site` is refused) | `403 REQUEST_REFUSED` |
 | 2 | Bearer token, on every path | `401 WRITE_TOKEN_INVALID` with `WWW-Authenticate: Bearer` |
-| 3 | `Spec-Kitty-Write-Protocol: 1`, on the shutdown and the writes | `400 PROTOCOL_VERSION_UNSUPPORTED` |
-| 4 | Body cap of 1 MiB, on the writes | `413 REQUEST_TOO_LARGE` |
-| 5 | Draining | `503 SERVICE_DRAINING` (no `Retry-After`) |
-| 6 | Body shape | `400 REQUEST_MALFORMED` |
+| 3 | A canonical request target: no path parameter (`;`), no percent-encoding, no empty or dot segment, so the checks below decide on the path the dispatcher routes on | `400 REQUEST_MALFORMED` |
+| 4 | `Spec-Kitty-Write-Protocol: 1`, on the shutdown and the writes | `400 PROTOCOL_VERSION_UNSUPPORTED` |
+| 5 | Body cap of 1 MiB, on every request body | `413 REQUEST_TOO_LARGE` |
+| 6 | Draining | `503 SERVICE_DRAINING` (no `Retry-After`) |
+| 7 | Body shape | `400 REQUEST_MALFORMED` |
 
 Every refusal is the contract's `WriteRefusal`, as `application/problem+json`. It never echoes
 the token, a host path, a header or row content.
@@ -83,7 +84,8 @@ the token, a host path, a header or row content.
 
 - **Shutdown.** `POST /api/v1/shutdown` answers `202` at once. The health check then reads
   `draining` and new writes get `SERVICE_DRAINING`. The service waits up to 5 s for the requests
-  it holds. Then it removes `endpoint.json`, but only while the file still names this instance,
+  it holds, a request whose body is still arriving included, and the application's own shutdown
+  phase is capped at 2 s, so the process is gone well inside the launcher's 10 s. Then it removes `endpoint.json`, but only while the file still names this instance,
   and exits 0.
 - **Idle exit.** After `--idle-timeout` seconds without a request, the service drains and exits
   the same way.
