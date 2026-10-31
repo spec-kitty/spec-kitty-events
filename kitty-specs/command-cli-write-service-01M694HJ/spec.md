@@ -45,7 +45,7 @@ The CLI launcher runs `command-cli serve --git-common-dir <abs>` for a repositor
    - `GET /api/v1/handshake` with the bearer token returns `repositoryId` = SHA-256 of the real path of the git common dir, the same `instanceId`, and `protocolVersions` `[1]`;
    - `GET /api/v1/health` returns `ready`.
 2. **Given** a service already holds `service.lock` for that git common dir, **When** a second `serve` starts for it, **Then** the second process exits 0 without touching the endpoint file.
-3. **Given** a running service, **When** it logs, **Then** the log goes to `<gcd>/spec-kitty-write-service/service.log` and never contains the token.
+3. **Given** a running service started by the launcher, **When** it logs to stdout or stderr, **Then** the lines land in `<gcd>/spec-kitty-write-service/service.log` (the launcher's redirect) and never contain the token.
 
 ---
 
@@ -159,7 +159,7 @@ A `service-v*` release carries `command-cli-<ver>-<target>[.exe]` for the four t
 | FR-011 | `POST /api/v1/shutdown` answers 202 and drains: health reads `draining`, new writes get `503 SERVICE_DRAINING` (no `Retry-After`). The endpoint file is removed if it still names this instance, and the process exits 0. | Proposed | [build] | no |
 | FR-012 | With no request for the idle timeout (default 1800 s), the service drains and exits as in FR-011. | Proposed | [build] | no |
 | FR-013 | On SIGTERM or TerminateProcess, the service removes its own endpoint file where its exit hook runs. | Proposed | [build] | no |
-| FR-014 | The service writes its log to `<gcd>/spec-kitty-write-service/service.log`. No log line carries the token, a request body, or a caller-controlled header. | Proposed | [build] | no |
+| FR-014 | The service logs to stdout and stderr, which the launcher appends to `<gcd>/spec-kitty-write-service/service.log` (core `services/launcher.py:255-263`). No log line carries the token, a request body, or a caller-controlled header. | Proposed | [build] | no |
 | FR-015 | Every refusal is `application/problem+json` matching the contract's `WriteRefusal`: `code` plus the status that code fixes, and no host path. | Proposed | [build] | no |
 | FR-016 | The contract `contracts/mission-write` stays `1.0.0-SNAPSHOT`. `/shutdown` and `HealthStatus` (`draining`) lose `x-provisional`. The `HealthStatus` text names `SERVICE_DRAINING`. `LAUNCHER.md` "Stop" is no longer provisional. `CHANGELOG.md` records the change. | Proposed | [build] | no |
 | FR-017 | The build produces `command-cli-<ver>.jar` that runs on Java 25, and a GraalVM native image of the same code. | Proposed | [build] | no |
