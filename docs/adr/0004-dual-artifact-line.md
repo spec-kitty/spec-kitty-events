@@ -2,7 +2,7 @@
 title: 'ADR-0004: two independent release lines, the PyPI package and the services'
 description: 'Accepted: the PyPI package (v*) and the services (service-v*) are versioned independently; the Java binding follows the package; core pins each line separately.'
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: ADR
 kind: ADR
 authors:
@@ -28,8 +28,16 @@ binding), [ADR-0002](./0002-events-domain-owns-its-services.md) (service ownersh
 [ADR-0003](./0003-gradle-build-and-service-release-line.md) (the `service-v*` line and its
 assets).
 
-Nothing in this record has shipped. The package line exists today; the service line starts
-with the first `service-v0.x` pre-release at cutover.
+**Status note (2026-10-31).** When this record was accepted (2026-10-29), nothing in it had
+shipped: the package line existed, and the service line was to start with the first
+`service-v0.x` pre-release at cutover. The cutover import merged on 2026-10-31
+([#150](https://github.com/spec-kitty/spec-kitty-events/pull/150)), and the first service
+release, `service-v0.1.0-rc.1`, has the operator's approval of 2026-10-31 (rulings on
+[spec-kitty/spec-kitty#6117](https://github.com/spec-kitty/spec-kitty/issues/6117#issuecomment-6544221340)).
+The operator pushes the tag. It is built against package version `11.3.0`; the package
+line is unchanged and has no release of its own in this step.
+
+The decisions below are unchanged.
 
 ---
 
