@@ -1,7 +1,8 @@
 title: HealthStatus
 description: >-
   ready accepts writes; draining finishes the writes it holds and refuses new ones with
-  SERVICE_BUSY before it exits (shutdown or idle exit).
+  SERVICE_DRAINING (503, no Retry-After) before it exits. A service drains after a shutdown
+  request or after its idle timeout (1800 s unless the launcher passes --idle-timeout).
 type: string
 enum:
   - ready
@@ -9,7 +10,3 @@ enum:
 x-source:
   path: src/specify_cli/status/write_service_protocol.py
   symbol: HEALTH_STATUSES
-x-provisional:
-  open_decision: >-
-    Whether the service drains before an idle exit or a shutdown, and so whether draining exists,
-    is an open decision of ADR 2026-10-27-1.

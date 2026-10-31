@@ -2,7 +2,7 @@
 title: Architecture
 description: How the spec-kitty-events contract is shaped — the envelope, the total order and reduction pipeline, the journal-versus-volatile split, and the read and write services.
 doc_status: active
-updated: 2026-10-29T00:00:00Z
+updated: 2026-10-31T00:00:00Z
 type: Architecture
 kind: Hub
 okf_version: "0.2"
@@ -22,9 +22,9 @@ these documents support live in the [decision records](/adr/).
   total order over rows, and the deterministic reducer pipeline every family shares.
 - [Durability and the relay](/architecture/durability-and-relay/) — the journal-versus-volatile
   split, which families are durable, and the Zeitgeist `attrs` codec for volatile moments.
-- [Services](/architecture/services/) — the Mission Status Read API and the future write
-  service: the read-write split, the event-log lock and append, and the write-service
-  protocol. The code moves here from core at cutover.
+- [Services](/architecture/services/) — the Mission Status Read API and the write service
+  (`command-cli`): the read-write split, the event-log lock and append, and the write-service
+  protocol. The code lives here.
 
 ## Proposed and in-flight
 

@@ -1,0 +1,139 @@
+{
+  "event_count": 69,
+  "last_event_id": "01M69AN0D2YCFQZ1NY9PK63GCT",
+  "materialized_at": "2026-10-31T15:53:30.274083+00:00",
+  "mission_number": "",
+  "mission_slug": "command-cli-write-service-01M694HJ",
+  "mission_type": "",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 7,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "merge",
+      "agent": "claude:opus:java-jenny",
+      "force_count": 1,
+      "implementer_of_record": "claude:opus:java-jenny",
+      "lane": "done",
+      "last_event_id": "01M69AMFTFFMBESY1CEX51KHQK",
+      "last_transition_at": "2026-10-31T15:53:13.295114+00:00",
+      "review_result": {
+        "reference": "review-cycle://command-cli-write-service-01M694HJ/WP01-module-skeleton/review-cycle-2.md",
+        "reviewer": "claude:sonnet:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 11936,
+      "shell_pid_created_at": "1793458681.91"
+    },
+    "WP02": {
+      "actor": "merge",
+      "agent": "claude:opus:java-jenny",
+      "force_count": 0,
+      "implementer_of_record": "claude:opus:java-jenny",
+      "lane": "done",
+      "last_event_id": "01M69AMJKCQ3GNB28EHNFKES5B",
+      "last_transition_at": "2026-10-31T15:53:16.140656+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/.worktrees/command-cli-write-service-01M694HJ-coord/kitty-specs/command-cli-write-service-01M694HJ/tasks/WP02-process-surface-on-disk/review-cycle-1.md",
+        "reference": "review-cycle://command-cli-write-service-01M694HJ/WP02-process-surface-on-disk/review-cycle-1.md",
+        "reviewer": "claude:sonnet:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 15789,
+      "shell_pid_created_at": "1793458939.6"
+    },
+    "WP03": {
+      "actor": "merge",
+      "agent": "claude:opus:java-jenny",
+      "force_count": 1,
+      "implementer_of_record": "claude:opus:java-jenny",
+      "lane": "done",
+      "last_event_id": "01M69AMNCV0GRSATFZNSMR1G71",
+      "last_transition_at": "2026-10-31T15:53:19.003056+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/.worktrees/command-cli-write-service-01M694HJ-coord/kitty-specs/command-cli-write-service-01M694HJ/tasks/WP03-http-edge/review-cycle-2.md",
+        "reference": "review-cycle://command-cli-write-service-01M694HJ/WP03-http-edge/review-cycle-2.md",
+        "reviewer": "claude:sonnet:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 23496,
+      "shell_pid_created_at": "1793459462.32"
+    },
+    "WP04": {
+      "actor": "merge",
+      "agent": "claude:opus:java-jenny",
+      "force_count": 1,
+      "implementer_of_record": "claude:opus:java-jenny",
+      "lane": "done",
+      "last_event_id": "01M69AMR4SX7K9Y6YCHXB700W2",
+      "last_transition_at": "2026-10-31T15:53:21.817704+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/.worktrees/command-cli-write-service-01M694HJ-coord/kitty-specs/command-cli-write-service-01M694HJ/tasks/WP04-operations/review-cycle-2.md",
+        "reference": "review-cycle://command-cli-write-service-01M694HJ/WP04-operations/review-cycle-2.md",
+        "reviewer": "claude:sonnet:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 32260,
+      "shell_pid_created_at": "1793459995.34"
+    },
+    "WP05": {
+      "actor": "merge",
+      "agent": "claude:opus:java-jenny",
+      "force_count": 0,
+      "implementer_of_record": "claude:opus:java-jenny",
+      "lane": "done",
+      "last_event_id": "01M69AMV1VA6NM86V6TV831H6B",
+      "last_transition_at": "2026-10-31T15:53:24.795525+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/.worktrees/command-cli-write-service-01M694HJ-coord/kitty-specs/command-cli-write-service-01M694HJ/tasks/WP05-lifecycle-and-process/review-cycle-1.md",
+        "reference": "review-cycle://command-cli-write-service-01M694HJ/WP05-lifecycle-and-process/review-cycle-1.md",
+        "reviewer": "claude:sonnet:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 2556,
+      "shell_pid_created_at": "1793460689.02"
+    },
+    "WP06": {
+      "actor": "merge",
+      "agent": "claude:opus:java-jenny",
+      "force_count": 0,
+      "implementer_of_record": "claude:opus:java-jenny",
+      "lane": "done",
+      "last_event_id": "01M69AMXSMTKA88KW035MS7MG3",
+      "last_transition_at": "2026-10-31T15:53:27.604184+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/.worktrees/command-cli-write-service-01M694HJ-coord/kitty-specs/command-cli-write-service-01M694HJ/tasks/WP06-native-ci-release/review-cycle-1.md",
+        "reference": "review-cycle://command-cli-write-service-01M694HJ/WP06-native-ci-release/review-cycle-1.md",
+        "reviewer": "claude:sonnet:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 7846,
+      "shell_pid_created_at": "1793461075.67"
+    },
+    "WP07": {
+      "actor": "merge",
+      "agent": "claude:opus:curator-carla",
+      "force_count": 1,
+      "implementer_of_record": "claude:opus:curator-carla",
+      "lane": "done",
+      "last_event_id": "01M69AN0D2YCFQZ1NY9PK63GCT",
+      "last_transition_at": "2026-10-31T15:53:30.274083+00:00",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/.worktrees/command-cli-write-service-01M694HJ-coord/kitty-specs/command-cli-write-service-01M694HJ/tasks/WP07-contract-and-docs/review-cycle-2.md",
+        "reference": "review-cycle://command-cli-write-service-01M694HJ/WP07-contract-and-docs/review-cycle-2.md",
+        "reviewer": "claude:sonnet:reviewer-renata",
+        "verdict": "approved"
+      },
+      "shell_pid": 17485,
+      "shell_pid_created_at": "1793461624.13"
+    }
+  }
+}

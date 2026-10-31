@@ -8,8 +8,9 @@
 #
 # <tag>                   service-vX.Y.Z[-pre]; <ver> is the tag without the service-v prefix.
 # <outdir>                created if absent; it must be empty.
-# <native-artifacts-dir>  holds the four natives (mission-status-api-<ver>-<target>[.exe]) and the
-#                         JVM fallback mission-status-api-<ver>.jar, as service.yml uploads them.
+# <native-artifacts-dir>  holds the four natives and the JVM fallback jar of each deployable
+#                         (mission-status-api-<ver>-<target>[.exe], mission-status-api-<ver>.jar,
+#                         command-cli-<ver>-<target>[.exe], command-cli-<ver>.jar), as service.yml uploads them.
 #
 # Environment:
 #   BUNDLE_OUT         required: the --out directory of `contracts/tools/bundle.py --bundle-only`;
@@ -23,6 +24,8 @@ set -euo pipefail
 
 TAG_RE='^service-v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)$'
 TARGETS=(linux-x64 linux-arm64 macos-arm64 windows-x64)
+# The deployables (ADR 0002): the read service and the write service (command-cli, #156).
+DEPLOYABLES=(mission-status-api command-cli)
 
 die() {
   echo "service-release-assets: $*" >&2
@@ -31,15 +34,17 @@ die() {
 
 # The release assets for <ver>, without the checksum files. Keep in step with the ADR 0003 table.
 assets() {
-  local ver="$1" target
-  for target in "${TARGETS[@]}"; do
-    if [ "$target" = windows-x64 ]; then
-      echo "mission-status-api-${ver}-${target}.exe"
-    else
-      echo "mission-status-api-${ver}-${target}"
-    fi
+  local ver="$1" target deployable
+  for deployable in "${DEPLOYABLES[@]}"; do
+    for target in "${TARGETS[@]}"; do
+      if [ "$target" = windows-x64 ]; then
+        echo "${deployable}-${ver}-${target}.exe"
+      else
+        echo "${deployable}-${ver}-${target}"
+      fi
+    done
+    echo "${deployable}-${ver}.jar"
   done
-  echo "mission-status-api-${ver}.jar"
   echo "contract-bundles-${ver}.tar.gz"
   echo "contract-tools-${ver}.tar.gz"
   echo "conformance-fixtures-${ver}.tar.gz"
@@ -95,8 +100,8 @@ stage() {
   cp -R "$from/$src" "$to/$dest"
 }
 
-# 1. The natives and the JVM fallback jar.
-for name in $(assets "$ver" | grep '^mission-status-api-'); do
+# 1. The natives and the JVM fallback jar of each deployable.
+for name in $(assets "$ver" | grep -E '^(mission-status-api|command-cli)-'); do
   [ -f "$natives/$name" ] || die "missing $natives/$name"
   cp "$natives/$name" "$outdir/$name"
 done

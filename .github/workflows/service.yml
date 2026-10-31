@@ -10,6 +10,8 @@
 #   contract-bundle the contract bundle/ tree, built once by contracts/tools/bundle.py   [guarded]
 #   gradle          ./gradlew verifyAll; at cutover also the bootJar (JVM fallback asset)
 #   native          GraalVM native image on four targets, golden replay, size             [guarded]
+#   native-command-cli  the write service (command-cli, #156): native image, tagged native tests and the
+#                   launcher-contract smoke on the same four targets                     [guarded]
 #   lock-interop    Java vs Python event-log lock, Python peer from the pinned core       [guarded]
 #   nightly-corpus  schedule / workflow_dispatch: Python oracle vs service on the corpus  [guarded]
 #   service-gate    terminal: fails when any needed job failed; skipped counts as success
@@ -186,15 +188,18 @@ jobs:
             **/build/test-results
           if-no-files-found: warn
           overwrite: true
-      # The JVM fallback asset (ADR 0003): mission-status-api-<ver>.jar.
-      - name: Build and name the service jar
+      # The JVM fallback assets (ADR 0003): mission-status-api-<ver>.jar and command-cli-<ver>.jar. The write
+      # service reports <ver> in its handshake, so its jar is built with -PreleaseVersion.
+      - name: Build and name the service jars
         if: needs.detect.outputs.service == 'true'
         run: |
           set -euo pipefail
           if [ -n "$RELEASE_VERSION" ]; then ver="$RELEASE_VERSION"; else ver="0.0.0-dev+${GITHUB_SHA::7}"; fi
           ./gradlew --no-daemon :mission-status-api:bootJar
+          ./gradlew --no-daemon :command-cli:bootJar "-PreleaseVersion=$ver"
           mkdir -p "$RUNNER_TEMP/service-jar"
           cp service/build/libs/mission-status-api.jar "$RUNNER_TEMP/service-jar/mission-status-api-${ver}.jar"
+          cp service/command-cli/build/libs/command-cli.jar "$RUNNER_TEMP/service-jar/command-cli-${ver}.jar"
           ls -l "$RUNNER_TEMP/service-jar"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: needs.detect.outputs.service == 'true'
@@ -339,6 +344,98 @@ jobs:
             service/build/generated/aotResources/META-INF/native-image
             service/build/generated/aotTestResources/META-INF/native-image
             service/build/native-reachability-metadata
+          if-no-files-found: warn
+          overwrite: true
+
+  # The write service (command-cli, spec-kitty-events#156): the same four targets as `native`, in its own
+  # job so a read-service failure does not hide the write service's result (and the reverse). It needs no
+  # contract bundle: it serves no contract document. The tagged native tests and the launcher-contract
+  # smoke (start, readiness, shutdown) run against the binary this leg built; the binary uploads as
+  # native-command-cli-<target>, which service-release.yml collects with the native-* pattern.
+  native-command-cli:
+    needs: detect
+    if: needs.detect.outputs.service == 'true' && github.event_name != 'schedule'
+    name: native-command-cli (${{ matrix.target }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x64
+            exe: ""
+          - runner: ubuntu-24.04-arm
+            target: linux-arm64
+            exe: ""
+          - runner: macos-15
+            target: macos-arm64
+            exe: ""
+          - runner: windows-2025
+            target: windows-x64
+            exe: ".exe"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - uses: graalvm/setup-graalvm@27b360dbb857524eaf0b4c4cef364d38e5b4f173 # v1.6.7
+        with:
+          java-version: "25.0.2"
+          distribution: "graalvm-community"
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: "3.12"
+      - name: Pick the version the binary reports
+        run: |
+          set -euo pipefail
+          if [ -n "$RELEASE_VERSION" ]; then ver="$RELEASE_VERSION"; else ver="0.0.0-dev+${GITHUB_SHA::7}"; fi
+          echo "SERVICE_VERSION=$ver" >> "$GITHUB_ENV"
+      - name: Compile the native image and run the tagged native tests
+        run: ./gradlew --no-daemon :command-cli:nativeCompile :command-cli:nativeTest "-PreleaseVersion=$SERVICE_VERSION"
+      # Zero tagged tests executed natively must not read as green (the read service's native-tag-floor gate). The JVM twin
+      # (nativeTagJvmTest) executes 132; the floor sits just under it.
+      - name: Require the native test floor
+        if: ${{ !cancelled() }}
+        run: python scripts/ci/mission_status_gate_checks.py native-tag-floor --junit-dir service/command-cli/build/test-results/test-native --floor 120
+      # The launcher contract against the binary: start it as core's launcher does, wait for ready, shut it down.
+      - name: Drive the launcher contract against the built binary
+        env:
+          WORKSPACE: ${{ github.workspace }}
+        run: ./gradlew --no-daemon :command-cli:nativeSmoke "-PreleaseVersion=$SERVICE_VERSION" "-PnativeBinary=$WORKSPACE/service/command-cli/build/native/nativeCompile/command-cli${{ matrix.exe }}"
+      - name: Name the binary and record its size
+        run: |
+          set -euo pipefail
+          name="command-cli-${SERVICE_VERSION}-${{ matrix.target }}${{ matrix.exe }}"
+          mkdir -p "$RUNNER_TEMP/native"
+          cp "service/command-cli/build/native/nativeCompile/command-cli${{ matrix.exe }}" "$RUNNER_TEMP/native/$name"
+          size="$(wc -c < "$RUNNER_TEMP/native/$name" | tr -d ' ')"
+          echo "native binary size: \`$name\` $size bytes" >> "$GITHUB_STEP_SUMMARY"
+          echo "$name: $size bytes"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-command-cli-${{ matrix.target }}
+          path: ${{ runner.temp }}/native
+          if-no-files-found: error
+          overwrite: true
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: junit-native-command-cli-${{ matrix.target }}
+          path: service/command-cli/build/test-results
+          if-no-files-found: warn
+          overwrite: true
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: reachability-metadata-command-cli-${{ matrix.target }}
+          path: |
+            service/command-cli/build/generated/aotResources/META-INF/native-image
+            service/command-cli/build/generated/aotTestResources/META-INF/native-image
           if-no-files-found: warn
           overwrite: true
 
@@ -530,7 +627,7 @@ jobs:
           if [ -n "${SERVICE_PID:-}" ]; then kill "$SERVICE_PID" || true; fi
 
   service-gate:
-    needs: [detect, contract-bundle, gradle, native, lock-interop, nightly-corpus]
+    needs: [detect, contract-bundle, gradle, native, native-command-cli, lock-interop, nightly-corpus]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
