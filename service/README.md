@@ -1,5 +1,7 @@
 # Mission status API
 
+> The write service, `command-cli`, is a sibling module: [`command-cli/README.md`](./command-cli/README.md).
+
 A read-only, loopback-only service that reads the Missions of one project directory and serves their status over HTTP: a project header, a page of Mission overviews, a stream of changes and the planning artifacts of one Mission. It serves `GET /api/v1/project`, `GET /api/v1/missions`, `GET /api/v1/events` (a server-sent change stream), the two artifact reads of one Mission (`GET /api/v1/missions/{missionId}/artifacts` and `.../artifacts/content`) and `GET /api/v1/openapi.yaml`, behind a Host and Origin guard that answers only to `127.0.0.1` and `localhost` on its own port. Every other path of the contract answers 404 by design (`OutOfScopeRoutesTest`). For status it reads a Mission's event log and the few files needed to find it; for the artifact reads, the files of that Mission's own primary directory. It never writes to the project, takes no lock, starts no process and reads no git state beyond the one `HEAD` file. It is a detached service: no spec-kitty command starts it, and it is not part of the PyPI package. CI replays a golden request set against the native binary of four targets and compares the response digests, holds the performance budgets of NFR-001, NFR-002 and NFR-004, and can compare the service with the Python reference over the whole repository corpus in a nightly scheduled run (04:37 UTC) or a manually dispatched one (see Tests and Recorded divergences).
 
 ## How to run
