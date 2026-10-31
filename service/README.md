@@ -181,9 +181,9 @@ The service is checked against the Python reducer on a curated golden set and, i
 
 ## Release and binaries
 
-Native binaries for Linux x64, Linux arm64, macOS arm64 and Windows x64 are built by CI and attached to a GitHub release together with a `.sha256` file each. The maintainer cuts a release by pushing a tag of the form `mission-status-api-v<semver>`; nothing is published from a pull request, and this service is not on PyPI, not in the wheel and has no auto-update.
+The service is released on this repository's `service-v*` line, separate from the package's `v*` line on PyPI ([ADR 0003](../docs/adr/0003-gradle-build-and-service-release-line.md), [ADR 0004](../docs/adr/0004-dual-artifact-line.md)). Native binaries for Linux x64, Linux arm64, macOS arm64 and Windows x64 and the JVM jar are built by `service.yml` and attached by `service-release.yml` to a GitHub release, together with a `.sha256` file each and a `SHA256SUMS`. The operator cuts a release by pushing a tag of the form `service-v<semver>` (`service-v0.1.0-rc.1` first); nothing is published from a pull request, and this service is not on PyPI, not in the wheel and has no auto-update. The asset names and how to cut a release are in [service protocol and releases](../docs/guides/service-protocol-and-releases.md).
 
-- The release job attests build provenance for the four binaries (`actions/attest-build-provenance`). Verify a download with `gh attestation verify <binary> --repo spec-kitty/spec-kitty`.
+- The release job attests build provenance for every asset except the checksum files (`actions/attest-build-provenance`). Verify a download with `gh attestation verify <asset> --repo spec-kitty/spec-kitty-events --signer-workflow spec-kitty/spec-kitty-events/.github/workflows/service-release.yml --source-ref refs/tags/service-v<semver>`.
 - Each binary has a `.sha256` file: it shows that a download matches what the build job produced, not where it was built; the attestation does that.
 - The binaries are unsigned: macOS Gatekeeper and Windows SmartScreen warn on first run. Verify a download against its `.sha256` file.
 - A release asset carries no Unix file mode. On Linux and macOS run `chmod +x <binary>` before the first start.

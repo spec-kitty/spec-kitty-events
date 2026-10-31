@@ -3,9 +3,13 @@ import org.gradle.api.file.RegularFileProperty
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 import org.openapitools.generator.gradle.plugin.tasks.ValidateTask
 
+// The project :contracts of the repository's root build (settings.gradle.kts at the repository root, #147); in core it
+// was a standalone build with its own settings file and verification metadata.
 plugins {
-    // Pinned in tools/pins.json; resolved under the strict dependency
-    // verification in gradle/verification-metadata.xml (generated, never hand-edited).
+    // `check`, which the root build's verifyAll runs.
+    id 'base'
+    // Pinned in tools/pins.json; resolved under the strict dependency verification in the root
+    // gradle/verification-metadata.xml (generated, never hand-edited).
     id 'org.openapi.generator' version '7.25.0'
 }
 
@@ -61,4 +65,10 @@ modules.each { module ->
         setPath(inputSpec, bundle)
         setPath(outputDir, new File(outDir, "client/${module.name}"))
     }
+}
+
+// `check` validates every module's split root document. The bundle tasks need the bundle bundle.py writes first, so they
+// stay out of it: bundle.py and client_smoke.py run them.
+tasks.named('check') {
+    dependsOn(modules.collect { "validate_${it.name}" })
 }

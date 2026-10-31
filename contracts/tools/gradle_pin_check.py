@@ -6,12 +6,14 @@ its own plugin version, and the two can drift apart without any other check noti
 
 One canonical authority, two subprojects. The same scan runs, parameterised by a :class:`Subproject`, over:
 
-* ``contracts/`` — pins ``gradle`` and the ``openapi-generator-gradle-plugin``. It compares the
-  ``id 'org.openapi.generator' version '...'`` line of ``contracts/build.gradle``; every
-  ``openapi-generator-gradle-plugin`` and ``org.openapi.generator.gradle.plugin`` component of
-  ``contracts/gradle/verification-metadata.xml``; the version in ``distributionUrl`` of
-  ``contracts/gradle/wrapper/gradle-wrapper.properties`` (the repository commits no wrapper, so this is
-  compared only if the file exists); and every ``gradle-version:`` input of a ``contracts*.yml`` workflow step.
+* ``contracts/`` — pins ``gradle`` and the ``openapi-generator-gradle-plugin``. ``contracts/`` is the project
+  ``:contracts`` of the repository's root Gradle build (spec-kitty-events#147; in core it was a standalone build
+  with its own settings file and verification metadata), so its Gradle and its verification metadata are the root
+  build's. It compares the ``id 'org.openapi.generator' version '...'`` line of ``contracts/build.gradle``; every
+  ``openapi-generator-gradle-plugin`` and ``org.openapi.generator.gradle.plugin`` component of the root
+  ``gradle/verification-metadata.xml``; the version in ``distributionUrl`` of the root wrapper
+  ``gradle/wrapper/gradle-wrapper.properties`` (compared only if the file exists); and every ``gradle-version:``
+  input of a ``contracts*.yml`` workflow step.
 * ``acceptance-jvm/`` — pins only ``gradle`` (a Java test harness with no Gradle plugin of its own, and no
   committed wrapper). It declares no Gradle version in its build, so the only live comparison is internal
   consistency: the ``acceptance-jvm/tools/pins.json`` ``url`` must carry that entry's ``version``. Two further
@@ -58,8 +60,9 @@ GRADLE_TOOL = "gradle"
 PLUGIN_TOOL = "openapi-generator-gradle-plugin"
 DEFAULT_PINS = Path("contracts") / "tools" / "pins.json"
 DEFAULT_BUILD = Path("contracts") / "build.gradle"
-DEFAULT_METADATA = Path("contracts") / "gradle" / "verification-metadata.xml"
-DEFAULT_WRAPPER = Path("contracts") / "gradle" / "wrapper" / "gradle-wrapper.properties"
+# The root build's files: contracts/ builds as the project :contracts of the root build (spec-kitty-events#147).
+DEFAULT_METADATA = Path("gradle") / "verification-metadata.xml"
+DEFAULT_WRAPPER = Path("gradle") / "wrapper" / "gradle-wrapper.properties"
 WORKFLOW_DIRECTORY = Path(".github") / "workflows"
 DEFAULT_WORKFLOW_GLOB = "contracts*.yml"
 ACCEPTANCE_ROOT = Path("acceptance-jvm")
@@ -354,8 +357,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", default=".", help="repository root (default: .)")
     parser.add_argument("--pins", default=None, help="manifest file (default: <root>/contracts/tools/pins.json)")
     parser.add_argument("--build", default=None, help="build file (default: <root>/contracts/build.gradle)")
-    parser.add_argument("--metadata", default=None, help="Gradle verification metadata (default: <root>/contracts/gradle/verification-metadata.xml)")
-    parser.add_argument("--wrapper", default=None, help="wrapper properties, compared only if the file exists")
+    parser.add_argument("--metadata", default=None, help="Gradle verification metadata (default: <root>/gradle/verification-metadata.xml)")
+    parser.add_argument("--wrapper", default=None, help="wrapper properties, compared only if the file exists (default: <root>/gradle/wrapper/gradle-wrapper.properties)")
     parser.add_argument("--workflow", action="append", default=None, help="workflow file (repeatable; default: <root>/.github/workflows/contracts*.yml)")
     arguments = parser.parse_args(argv)
     workflows = [Path(w) for w in arguments.workflow] if arguments.workflow else None

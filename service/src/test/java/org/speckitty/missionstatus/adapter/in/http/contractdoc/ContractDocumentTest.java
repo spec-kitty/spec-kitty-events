@@ -35,7 +35,7 @@ class ContractDocumentTest {
 
   @Test
   void theServedBytesEqualTheBundleTheContractToolingWritesForThisCommit(@TempDir Path out) throws Exception {
-    Path contractRoot = Path.of(System.getProperty("user.dir")).resolve("../../contracts").normalize();
+    Path contractRoot = Path.of(System.getProperty("user.dir")).resolve("../contracts").normalize();
     boolean tooling = Files.isRegularFile(contractRoot.resolve("tools/bundle.py"));
     boolean python = false;
     if (tooling) {

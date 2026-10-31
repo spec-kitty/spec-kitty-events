@@ -14,16 +14,19 @@ import org.gradle.testkit.runner.GradleRunner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
+import org.speckitty.missionstatus.build.NestedRootBuild;
 
 /**
  * AC-11c, generated mode (WP10 T056 step 2; DD-63, DD-66, DD-67): a nested build of a COPY of the service sources and a COPY of the
  * contract compiles when the copy is unmutated, and FAILS with a missing-symbol error when one property of MissionOverview is renamed
  * or one required property of Project is removed in the contract copy. The hand-written {@code ContractDriftProbe} holds one compile
  * time reference per mutation target. Runs in the kit source set (name ends in NestedBuildTest) through {@code ./gradlew kitTest}.
+ * Since the cutover (#147) the service is a project of the repository's root build, so the copy is of the root build
+ * ({@link NestedRootBuild}) with the service sources in its service directory.
  */
 class ContractDriftNestedBuildTest {
 
-  /** The library modules settings.gradle.kts includes (#6117 decision 12, #6192); a nested build needs each one's directory. */
+  /** The library modules the root settings.gradle.kts includes (#6117 decision 12, #6192); a nested build needs each one's directory. */
   private static final List<String> LIBRARY_MODULES = List.of("domain-model", "event-log");
 
   private static final String CANNOT_FIND = "cannot find symbol";
@@ -44,8 +47,8 @@ class ContractDriftNestedBuildTest {
   @Timeout(1800)
   void renamingAMissionOverviewPropertyOrRemovingARequiredProjectPropertyBreaksTheNestedBuild(@TempDir Path workDir) throws IOException {
     Path original = Path.of(requiredProperty("kit.projectDir"));
-    Path copy = workDir.resolve("service");
-    copyService(original, copy);
+    Path copy = workDir.resolve("root");
+    copyService(Path.of(requiredProperty("kit.rootDir")), original, copy);
 
     // positive control: the unmutated copy of the contract compiles
     Path control = workDir.resolve("contract-control");
@@ -99,17 +102,14 @@ class ContractDriftNestedBuildTest {
     return GradleRunner.create()
         .withProjectDir(copy.toFile())
         .withTestKitDir(Path.of(requiredProperty("kit.gradleUserHome")).toFile())
-        .withArguments(List.of("--offline", "-PcontractRoot=" + contractRoot, "compileJava"));
+        .withArguments(List.of("--offline", "-PcontractRoot=" + contractRoot, NestedRootBuild.COMPILE_SERVICE));
   }
 
-  private static void copyService(Path original, Path copy) throws IOException {
-    Files.createDirectories(copy);
-    for (String name : List.of("build.gradle.kts", "settings.gradle.kts", "gradle.properties", "gradlew", "gradlew.bat")) {
-      Files.copy(original.resolve(name), copy.resolve(name));
-    }
-    copyTree(original.resolve("gradle"), copy.resolve("gradle"));
+  private static void copyService(Path root, Path original, Path copyRoot) throws IOException {
+    Path copy = NestedRootBuild.copyRootBuild(root, copyRoot);
+    Files.copy(original.resolve("build.gradle.kts"), copy.resolve("build.gradle.kts"));
     copyTree(original.resolve("src/main/java"), copy.resolve("src/main/java"));
-    // settings.gradle.kts includes the library modules (#6192), and the service sources compile against them.
+    // The root settings include the library modules (#6192), and the service sources compile against them.
     for (String library : LIBRARY_MODULES) {
       Files.createDirectories(copy.resolve(library));
       Files.copy(original.resolve(library).resolve("build.gradle.kts"), copy.resolve(library).resolve("build.gradle.kts"));

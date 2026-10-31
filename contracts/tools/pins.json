@@ -3,11 +3,11 @@
     {
       "name": "gradle",
       "kind": "archive",
-      "version": "8.14.5",
-      "url": "https://services.gradle.org/distributions/gradle-8.14.5-bin.zip",
-      "sha256": "6f74b601422d6d6fc4e1f9a1ab6522f642c2fdcbc15ae33ebd30ba3d7198e854",
-      "published": "2026-05-07",
-      "advisory_feed_checked": "GitHub security advisories of gradle/gradle (GHSA-mqwm-5m85-gmcv and GHSA-w78c-w6vf-rw82 are patched in 8.14.4 and later), checked 2026-10-02"
+      "version": "9.8.1",
+      "url": "https://services.gradle.org/distributions/gradle-9.8.1-bin.zip",
+      "sha256": "dce76f55f8e251a3a1f130eb120f30b3d271de2b76c9b0729d316b5a1b6dc01f",
+      "published": "2026-10-07",
+      "advisory_feed_checked": "The root build's wrapper version (gradle/wrapper/gradle-wrapper.properties, ADR 0003); the sha256 equals its distributionSha256Sum and the downloaded archive, 2026-10-30. The GitHub security advisories of gradle/gradle were NOT re-read for 9.8.1 at cutover (the feed was not reachable from the cutover session); the 8.14.5 record (GHSA-mqwm-5m85-gmcv and GHSA-w78c-w6vf-rw82, patched in 8.14.4 and later) was checked 2026-10-02. Re-check before the first service-v* release."
     },
     {
       "name": "openapi-generator-gradle-plugin",

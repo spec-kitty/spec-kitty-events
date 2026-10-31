@@ -1,16 +1,53 @@
 # One place for every external version. Convention plugins and modules read it by name;
 # strict verification of each artifact lives in gradle/verification-metadata.xml.
+# Exact versions only (no '+', no 'latest', no ranges).
+#
+# Two version authorities share this file. The Java binding (java/) pins its own versions here. The service modules
+# (service/, imported from core at cutover, #147) take most library versions from the Spring Boot BOM, whose version
+# is the Boot plugin version below: their entries carry no version of their own, and a version added to one would
+# override the BOM for that module. Where both sides use the same artifact at the same version, they share one entry.
 [versions]
+# The Java binding's Jackson 3. The services use the Boot-managed Jackson 3 (see jackson-core below).
 jackson = "3.2.4"
+# Shared: the binding's schema validator and the service tests' (core's networknt-json-schema entry, same version).
 json-schema-validator = "3.0.8"
+# The Java binding's JUnit BOM. The services use the Boot-managed JUnit.
 junit = "6.1.3"
 slf4j = "2.0.17"
+spring-boot = "4.1.1"
+spring-dependency-management = "1.1.7"
+# Equal to contracts/tools/pins.json and the plugin line of contracts/build.gradle (gradle_pin_check.py compares those two).
+openapi-generator = "7.25.0"
+# The Boot-managed Native Build Tools version (native-build-tools-plugin.version in spring-boot-dependencies 4.1.1).
+graalvm-native = "1.1.8"
+jacoco = "0.8.15"
+archunit = "1.4.2"
 
 [libraries]
 jackson-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson" }
 json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+# Versionless: the binding takes the version from junit-bom, the services from the Spring Boot BOM.
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 # Gradle needs the launcher on the test runtime classpath to run JUnit 6; without it no test is found.
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 slf4j-nop = { module = "org.slf4j:slf4j-nop", version.ref = "slf4j" }
+
+# The services: versions managed by the Spring Boot BOM.
+spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+jakarta-validation-api = { module = "jakarta.validation:jakarta.validation-api" }
+snakeyaml = { module = "org.yaml:snakeyaml" }
+# The streaming parser of the event-log library (#6192); version managed by the Boot BOM, as for the rest of Jackson 3.
+jackson-core = { module = "tools.jackson.core:jackson-core" }
+# Test-only in event-log: the planted data-binding violation of its boundary test. Boot-managed, so a separate entry
+# from the binding's versioned jackson-databind.
+jackson-databind-bootmanaged = { module = "tools.jackson.core:jackson-databind" }
+assertj-core = { module = "org.assertj:assertj-core" }
+archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
+openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }
+graalvm-native = { id = "org.graalvm.buildtools.native", version.ref = "graalvm-native" }

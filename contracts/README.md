@@ -222,13 +222,14 @@ contracts/
   <module>/
     openapi.yaml           info, servers, tags, the path-to-file map and any security schemes
     CHANGELOG.md
+    LAUNCHER.md            mission-write only: the launcher process contract (prose, not bundled)
     paths/  schemas/  parameters/  responses/  examples/
   tools/                   Python checks and libraries; not a module
 ```
 
 A module is a direct subdirectory holding a root `openapi.yaml`. `_shared`,
-`fixtures`, `gradle` and `tools` are never modules. `contracts/fixtures/` holds
-older hand-written hand-off fixtures and is not touched by this tree's tooling.
+`fixtures`, `gradle` and `tools` are never modules. (Core's `contracts/fixtures/`, older
+hand-written hand-off fixtures, stayed in core and is not part of this repository.)
 
 ### Path file naming
 
@@ -441,14 +442,17 @@ is a path CI does not exercise.
 ### Validate and bundle locally
 
 The pinned JVM toolchain (the openapi-generator Gradle plugin 7.25.0 under Gradle
-8.14.5, with strict dependency verification) validates both the split root and the
-bundle, and generates a TypeScript client from the bundle as a consumer check. It
-needs a JDK on `PATH` (the workflow uses Temurin 21) and network access to fetch the
-pinned tools. Neither Node nor pytest is involved.
+9.8.1, with strict dependency verification) validates both the split root and the
+bundle, and generates a TypeScript client from the bundle as a consumer check.
+`contracts/` is the project `:contracts` of the repository's root Gradle build, so
+the Gradle version is the root wrapper's and the verification metadata is the root
+`gradle/verification-metadata.xml`; `./gradlew :contracts:check` validates the split
+roots. It needs a JDK 25 on `PATH` and network access to fetch the pinned tools.
+Neither Node nor pytest is involved.
 
 ```bash
 .venv/bin/python contracts/tools/install_tools.py --pins contracts/tools/pins.json --dest "$HOME/.cache/contract-tools" --only gradle
-PATH="$HOME/.cache/contract-tools/gradle-8.14.5/bin:$PATH" \
+PATH="$HOME/.cache/contract-tools/gradle-9.8.1/bin:$PATH" \
   .venv/bin/python contracts/tools/bundle.py --root contracts --out "$HOME/.cache/contract-out"
 ```
 
@@ -466,9 +470,9 @@ call would hash nothing and fail. `--pins-only` checks the pins without hashing 
 not what CI runs.
 
 `gradle_pin_check.py` closes the other half of that pin: `verify_pins.py` never reads the
-build, so the generator plugin version in `contracts/build.gradle`, in
-`contracts/gradle/verification-metadata.xml` and in any wrapper or `gradle-version`
-input must equal the version `pins.json` pins (`GRADLE_PIN_MISMATCH`, exit 1; a file it
+build, so the generator plugin version in `contracts/build.gradle` and in the root
+`gradle/verification-metadata.xml`, and the Gradle version in the root wrapper and in any
+`gradle-version` input, must equal the versions `pins.json` pins (`GRADLE_PIN_MISMATCH`, exit 1; a file it
 cannot read or parse is exit 2). It runs in the same `verify-pins` job and needs no
 download.
 

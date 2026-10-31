@@ -41,8 +41,10 @@ they differ. The agreed digest is printed as ``bundle sha256 <module> <digest>``
 bundle step (no JVM, no Gradle), for the jobs that only need the written bundle.
 
 ``--write-verification-metadata`` makes Gradle record the sha256 of every dependency it resolves
-into ``contracts/gradle/verification-metadata.xml`` (the only way that file is produced; it is
-never edited by hand).
+into the root ``gradle/verification-metadata.xml`` (the only way that file is produced; it is
+never edited by hand). ``contracts/`` is the project ``:contracts`` of the repository's root Gradle
+build (spec-kitty-events#147): ``gradle -p contracts`` finds the root settings file above it, so the
+task names below resolve to ``:contracts:<task>``.
 
 Run as a bare script (``python contracts/tools/bundle.py --root DIR --out DIR``).
 Standard library, PyYAML and the sibling ``contract_resolver``.
@@ -265,7 +267,8 @@ def classify_gradle_failure(output: str, module: str) -> tuple[str, int]:
         return "BUILD_SCRIPT_FAILED", 2
     if "Plugin [id:" in output or "Could not resolve" in output or "Could not GET" in output:
         return "PLUGIN_RESOLUTION_FAILED", 2
-    if f"task ':validate_{module}'" in output or f"task ':validateBundle_{module}'" in output:
+    # Matches both ``task ':validate_<module>'`` (a standalone build) and ``task ':contracts:validate_<module>'`` (the root build).
+    if f":validate_{module}'" in output or f":validateBundle_{module}'" in output:
         return "VALIDATION_FAILED", 1
     return "BUNDLE_FAILED", 1
 

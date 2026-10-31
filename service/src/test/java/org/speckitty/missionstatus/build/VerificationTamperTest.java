@@ -3,14 +3,12 @@ package org.speckitty.missionstatus.build;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.jupiter.api.Test;
@@ -19,14 +17,15 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * AC-14a, the standing tamper test: a nested build of a COPY of the build inputs resolves strictly against
- * gradle/verification-metadata.xml. The unmutated copy builds; the copy with one altered checksum fails with a dependency
- * verification error. Modelled on contracts/tools/tamper_check.py, written for the service tree. It runs offline against the real
+ * gradle/verification-metadata.xml. Since the cutover (#147) the service is a project of the repository's root build, so the copy is
+ * of the root build ({@link NestedRootBuild}) and the metadata is the root one. The unmutated copy builds; the copy with one altered
+ * checksum fails with a dependency verification error. Modelled on contracts/tools/tamper_check.py, written for the service tree. It runs offline against the real
  * Gradle user home (TestKit's own home is empty), so the outer build must have resolved the compile classpath first (kitTest
  * depends on compileJava). It never touches the original tree and never uses the network.
  */
 class VerificationTamperTest {
 
-  /** The library modules settings.gradle.kts includes (#6117 decision 12, #6192); a nested build needs each one's directory. */
+  /** The library modules the root settings.gradle.kts includes (#6117 decision 12, #6192); a nested build needs each one's directory. */
   private static final List<String> LIBRARY_MODULES = List.of("domain-model", "event-log");
 
   private static final String VERIFICATION_FAILURE = "Dependency verification failed for configuration";
@@ -38,7 +37,7 @@ class VerificationTamperTest {
   void anAlteredChecksumFailsTheNestedBuildWhileTheUnmutatedCopyBuilds(@TempDir Path workDir) throws IOException {
     Path original = Path.of(requiredProperty("kit.projectDir"));
     Path copy = workDir.resolve("copy");
-    copyBuildInputs(original, copy);
+    copyBuildInputs(Path.of(requiredProperty("kit.rootDir")), original, copy);
     Path metadata = copy.resolve("gradle/verification-metadata.xml");
     String text = Files.readString(metadata, StandardCharsets.UTF_8);
 
@@ -66,17 +65,17 @@ class VerificationTamperTest {
     return GradleRunner.create()
         .withProjectDir(copy.toFile())
         .withTestKitDir(gradleUserHome.toFile())
-        .withArguments(List.of("--offline", "-PcontractRoot=" + requiredProperty("kit.contractRoot"), "compileJava"));
+        .withArguments(List.of("--offline", "-PcontractRoot=" + requiredProperty("kit.contractRoot"), NestedRootBuild.COMPILE_SERVICE));
   }
 
-  /** The files a nested build needs (never the sources, never build output) plus a minimal main source set. */
-  private static void copyBuildInputs(Path original, Path copy) throws IOException {
-    Files.createDirectories(copy);
-    for (String name : List.of("build.gradle.kts", "settings.gradle.kts", "gradle.properties", "gradlew", "gradlew.bat")) {
-      Files.copy(original.resolve(name), copy.resolve(name));
-    }
-    copyTree(original.resolve("gradle"), copy.resolve("gradle"));
-    // settings.gradle.kts includes the library modules (#6192): their build scripts, with no sources, keep the nested build whole.
+  /**
+   * The files a nested build needs (never the sources, never build output) plus a minimal main source set: the root build's inputs,
+   * and in its service directory the service build script.
+   */
+  private static void copyBuildInputs(Path root, Path original, Path copyRoot) throws IOException {
+    Path copy = NestedRootBuild.copyRootBuild(root, copyRoot);
+    Files.copy(original.resolve("build.gradle.kts"), copy.resolve("build.gradle.kts"));
+    // The root settings include the library modules (#6192): their build scripts, with no sources, keep the nested build whole.
     for (String library : LIBRARY_MODULES) {
       Files.createDirectories(copy.resolve(library));
       Files.copy(original.resolve(library).resolve("build.gradle.kts"), copy.resolve(library).resolve("build.gradle.kts"));
@@ -84,21 +83,6 @@ class VerificationTamperTest {
     Path source = copy.resolve("src/main/java/org/speckitty/missionstatus/Nested.java");
     Files.createDirectories(source.getParent());
     Files.writeString(source, "package org.speckitty.missionstatus;\n\nfinal class Nested {}\n", StandardCharsets.UTF_8);
-  }
-
-  private static void copyTree(Path from, Path to) throws IOException {
-    try (Stream<Path> paths = Files.walk(from)) {
-      for (Path path : (Iterable<Path>) paths::iterator) {
-        Path target = to.resolve(from.relativize(path).toString());
-        if (Files.isDirectory(path)) {
-          Files.createDirectories(target);
-        } else {
-          Files.copy(path, target);
-        }
-      }
-    } catch (UncheckedIOException e) {
-      throw e.getCause();
-    }
   }
 
   private static int count(String text, String needle) {

@@ -1,4 +1,3 @@
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.graalvm.buildtools.gradle.tasks.BuildNativeImageTask
 import org.graalvm.buildtools.gradle.tasks.NativeRunTask
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
@@ -6,9 +5,11 @@ import java.security.MessageDigest
 import java.util.Properties
 import javax.xml.parsers.DocumentBuilderFactory
 
-// The build script of the Mission Status API service (the root project). Every later work package adds source files only; a need
-// for a task, a source set or a dependency that is missing here is a reviewed amendment to THIS file, never a parallel edit. The two
-// library modules (#6192) have their own short scripts, pinned by tests/ci/test_mission_status_api_build.py.
+// The build script of the Mission Status API service (`:mission-status-api`, projectDir service/ of the repository's root build;
+// in core it was the root project of a standalone build). Every later work package adds source files only; a need for a task, a
+// source set or a dependency that is missing here is a reviewed amendment to THIS file, never a parallel edit. The two library
+// modules (#6192) have their own short scripts. The toolchain, the JaCoCo version and the test failure format come from the
+// events.service convention (build-logic/), the versions from the root catalog gradle/libs.versions.toml.
 //
 // Decisions recorded in research.md (WP02 spike record) that this script applies:
 //   - generated mode (openapi-generator 7.25.0, `spring` generator) limited to getProject and listMissions by a FILTER normalizer
@@ -21,27 +22,26 @@ import javax.xml.parsers.DocumentBuilderFactory
 //   - gradleTestKit() lives in its own `kit` source set (it breaks processTestAot on the test classpath);
 //   - jakarta.validation-api only, never spring-boot-starter-validation; no springdoc anywhere.
 //
-// This is the root project and the query-service deployable of #6117 decision 12. The two libraries it depends on, domain-model and
+// This is the query-service deployable of #6117 decision 12. The two libraries it depends on, domain-model and
 // event-log (extracted by #6192), have their own short build scripts; this script aggregates their coverage into its JaCoCo gate.
 
 plugins {
-    java
-    jacoco
+    id("events.service")
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
     alias(libs.plugins.openapi.generator)
     alias(libs.plugins.graalvm.native)
 }
 
+// Guard: the native image needs Spring AOT. If a build change hides the GraalVM plugin from Spring Boot (see the
+// root build.gradle.kts), processAot is never registered and this lookup fails configuration instead of shipping
+// a binary that cannot start.
+tasks.named("processAot")
+tasks.named("processTestAot")
+
 // processTestAot fails with "'groupId' must not be empty" without a group (spike record, T004 item 1).
 group = "org.speckitty.missionstatus"
 version = "0.0.0-dev"
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
-    }
-}
 
 // ---------------------------------------------------------------------------------------------------------------------------
 // Dependencies (every dependency any later work package needs is declared here)
@@ -60,7 +60,7 @@ dependencies {
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.archunit.junit5)
-    testImplementation(libs.networknt.json.schema)
+    testImplementation(libs.json.schema.validator)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
@@ -68,8 +68,9 @@ dependencies {
 // Contract consumption: generated interfaces and models for getProject and listMissions only
 // ---------------------------------------------------------------------------------------------------------------------------
 
-// The contract root. The default is the repository's contracts/ directory; the nested-build tests override it with -PcontractRoot.
-val contractRoot: String = providers.gradleProperty("contractRoot").orElse(file("../../contracts").path).get()
+// The contract root. The default is the repository's contracts/ directory (a sibling of service/); the nested-build tests override
+// it with -PcontractRoot.
+val contractRoot: String = providers.gradleProperty("contractRoot").orElse(file("../contracts").path).get()
 
 tasks.named<GenerateTask>("openApiGenerate") {
     // The plugin tracks only the root document. The contract is split across schemas/, paths/, parameters/ and responses/ via
@@ -140,16 +141,23 @@ val bundleContract = tasks.register("bundleContract") {
     inputs.property("contractBundleSha256", contractBundleSha256.orElse(""))
     inputs.files(providers.provider { contractBundleFile.orNull?.let { listOf(file(it)) } ?: emptyList() })
     outputs.dir(contractBundleOutput)
+    // The action reads these locals, never the script: the root build runs with the configuration cache, which cannot
+    // serialize a reference to the build script (core's standalone build had no configuration cache).
+    val bundleFile = contractBundleFile
+    val bundleSha256 = contractBundleSha256
+    val bundleOutput = contractBundleOutput
+    val projectDirectory = projectDir
     doLast {
-        val path = contractBundleFile.orNull
+        val path = bundleFile.orNull
             ?: throw GradleException(
                 "bundleContract: no contract document given. Build it once with contracts/tools/bundle.py into a directory " +
                     "outside the repository and pass -PcontractBundle=<file> -PcontractBundleSha256=<digest> " +
                     "(or set CONTRACT_BUNDLE and CONTRACT_BUNDLE_SHA256).",
             )
-        val expected = contractBundleSha256.orNull?.trim()?.lowercase()
+        val expected = bundleSha256.orNull?.trim()?.lowercase()
             ?: throw GradleException("bundleContract: no digest given (-PcontractBundleSha256 or CONTRACT_BUNDLE_SHA256).")
-        val source = file(path)
+        // Project.file semantics: a relative path resolves against the project directory, an absolute one stays as it is.
+        val source = projectDirectory.resolve(path).normalize()
         if (!source.isFile) {
             throw GradleException("bundleContract: the contract document is not a file: $path")
         }
@@ -158,7 +166,7 @@ val bundleContract = tasks.register("bundleContract") {
         if (actual != expected) {
             throw GradleException("bundleContract: SHA-256 mismatch, expected $expected but the file hashes to $actual")
         }
-        val target = contractBundleOutput.get().file("contract/openapi.yaml").asFile
+        val target = bundleOutput.get().file("contract/openapi.yaml").asFile
         target.parentFile.mkdirs()
         target.writeBytes(bytes)
     }
@@ -180,7 +188,7 @@ tasks.bootJar {
 //           perf          perf-ratio classes: only perfTest runs them
 //   Tasks:  test (unfiltered except for the two exclusions), nativeTagJvmTest, nativeSmoke, nativePerf, perfTest, kitTest.
 //   `check` depends on perfTest, nativeTagJvmTest, kitTest, the JaCoCo rule and jacocoScopeCheck; it never runs the binary tests.
-//   Empty tag-filtered tasks: Gradle 9.7.1 passes a Test task whose tag filter matches nothing (research.md T004 item 3), so no
+//   Empty tag-filtered tasks: Gradle 9.7.1 (core) and 9.8.1 (this root build) pass a Test task whose tag filter matches nothing (research.md T004 item 3), so no
 //   failOnNoDiscoveredTests switch is set. Zero-test cases are caught by the floor guards instead.
 // ---------------------------------------------------------------------------------------------------------------------------
 
@@ -192,12 +200,6 @@ tasks.named<Test>("test") {
     }
     // The nested-build (TestKit) classes live in the kit source set; see below.
     finalizedBy("jacocoTestReport")
-}
-
-tasks.withType<Test>().configureEach {
-    testLogging {
-        exceptionFormat = TestExceptionFormat.FULL
-    }
 }
 
 val nativeTestListDirectory = layout.buildDirectory.dir("test-results/nativeTagJvmTest/testlist")
@@ -299,6 +301,8 @@ val kitTest = tasks.register<Test>("kitTest") {
     // The nested builds resolve offline from the cache the outer build populated, so the outer compile classpath is resolved first.
     dependsOn(tasks.compileJava)
     systemProperty("kit.projectDir", projectDir.absolutePath)
+    // The service builds inside the repository's root build, so a nested build copies the root build's inputs too (#147).
+    systemProperty("kit.rootDir", rootProject.projectDir.absolutePath)
     systemProperty("kit.contractRoot", contractRoot)
     systemProperty("kit.gradleUserHome", gradle.gradleUserHomeDir.absolutePath)
 }
@@ -333,10 +337,6 @@ tasks.named<NativeRunTask>("nativeTest") {
 // ---------------------------------------------------------------------------------------------------------------------------
 // JaCoCo: three rules (NFR-006) and the scope guard that keeps them from passing vacuously
 // ---------------------------------------------------------------------------------------------------------------------------
-
-jacoco {
-    toolVersion = libs.versions.jacoco.get()
-}
 
 // Generated sources, config and the adapters are outside the coverage scope; domain.* and application.* are the scope.
 val coverageExcludes = arrayOf(
@@ -405,45 +405,51 @@ val jacocoScopePatterns = mapOf(
     "application" to "org.speckitty.missionstatus.application.*",
 )
 
-/** JaCoCo pattern semantics: `*` matches any run of characters (it crosses package separators), `?` one character. */
-fun jacocoPatternRegex(pattern: String): Regex =
-    Regex(pattern.split("*").joinToString(".*") { part -> part.split("?").joinToString(".") { Regex.escape(it) } })
-
 /**
- * The pure core of jacocoScopeCheck: the failures (empty list = pass) for the class names the report holds, the floors file (null
- * when absent) and the patterns. The tolerance is PER PATTERN: a pattern's floor line (and the whole file) may be absent only while
- * the report holds no class matching THAT pattern; as soon as one class matches, an absent file, an absent line, a zero floor or a
- * count below the floor fails.
+ * The scope check's logic, in an object rather than as script functions so the task action holds no reference to the build script
+ * (the root build runs with the configuration cache; core's standalone build had none).
  */
-fun jacocoScopeFailures(classNames: List<String>, floors: Properties?, patterns: Map<String, String>): List<String> {
-    val failures = mutableListOf<String>()
-    for ((key, pattern) in patterns) {
-        val matched = classNames.count { jacocoPatternRegex(pattern).matches(it) }
-        val floor = floors?.getProperty(key)?.trim()?.toIntOrNull()
-        if (matched == 0) {
-            if (floor != null && floor > 0) {
-                failures += "scope $key ($pattern) matched 0 classes but the floor is $floor"
-            }
-            continue
-        }
-        when {
-            floors == null -> failures += "scope $key ($pattern) matched $matched classes but jacoco-class-floor.properties is absent"
-            floor == null -> failures += "scope $key ($pattern) matched $matched classes but the floor file has no '$key' line"
-            floor <= 0 -> failures += "scope $key ($pattern) matched $matched classes but its floor is $floor (must be positive)"
-            matched < floor -> failures += "scope $key ($pattern) matched $matched classes, below the floor $floor"
-        }
-    }
-    return failures
-}
+object JacocoScope {
+    /** JaCoCo pattern semantics: `*` matches any run of characters (it crosses package separators), `?` one character. */
+    fun jacocoPatternRegex(pattern: String): Regex =
+        Regex(pattern.split("*").joinToString(".*") { part -> part.split("?").joinToString(".") { Regex.escape(it) } })
 
-fun jacocoReportClassNames(report: File): List<String> {
-    val factory = DocumentBuilderFactory.newInstance()
-    // The report carries a DOCTYPE that names report.dtd; never load it.
-    factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
-    factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
-    val document = factory.newDocumentBuilder().parse(report)
-    val nodes = document.getElementsByTagName("class")
-    return (0 until nodes.length).map { nodes.item(it).attributes.getNamedItem("name").nodeValue.replace('/', '.') }
+    /**
+     * The pure core of jacocoScopeCheck: the failures (empty list = pass) for the class names the report holds, the floors file (null
+     * when absent) and the patterns. The tolerance is PER PATTERN: a pattern's floor line (and the whole file) may be absent only while
+     * the report holds no class matching THAT pattern; as soon as one class matches, an absent file, an absent line, a zero floor or a
+     * count below the floor fails.
+     */
+    fun jacocoScopeFailures(classNames: List<String>, floors: Properties?, patterns: Map<String, String>): List<String> {
+        val failures = mutableListOf<String>()
+        for ((key, pattern) in patterns) {
+            val matched = classNames.count { jacocoPatternRegex(pattern).matches(it) }
+            val floor = floors?.getProperty(key)?.trim()?.toIntOrNull()
+            if (matched == 0) {
+                if (floor != null && floor > 0) {
+                    failures += "scope $key ($pattern) matched 0 classes but the floor is $floor"
+                }
+                continue
+            }
+            when {
+                floors == null -> failures += "scope $key ($pattern) matched $matched classes but jacoco-class-floor.properties is absent"
+                floor == null -> failures += "scope $key ($pattern) matched $matched classes but the floor file has no '$key' line"
+                floor <= 0 -> failures += "scope $key ($pattern) matched $matched classes but its floor is $floor (must be positive)"
+                matched < floor -> failures += "scope $key ($pattern) matched $matched classes, below the floor $floor"
+            }
+        }
+        return failures
+    }
+
+    fun jacocoReportClassNames(report: File): List<String> {
+        val factory = DocumentBuilderFactory.newInstance()
+        // The report carries a DOCTYPE that names report.dtd; never load it.
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
+        val document = factory.newDocumentBuilder().parse(report)
+        val nodes = document.getElementsByTagName("class")
+        return (0 until nodes.length).map { nodes.item(it).attributes.getNamedItem("name").nodeValue.replace('/', '.') }
+    }
 }
 
 val jacocoScopeCheck = tasks.register("jacocoScopeCheck") {
@@ -454,13 +460,14 @@ val jacocoScopeCheck = tasks.register("jacocoScopeCheck") {
     val floorFile = layout.projectDirectory.file("src/test/resources/jacoco-class-floor.properties")
     inputs.file(report)
     inputs.files(providers.provider { if (floorFile.asFile.isFile) listOf(floorFile.asFile) else emptyList() })
+    val patterns = jacocoScopePatterns
     doLast {
         val reportFile = report.get().asFile
         if (!reportFile.isFile) {
             throw GradleException("jacocoScopeCheck: the JaCoCo XML report is missing: $reportFile")
         }
         val floors = if (floorFile.asFile.isFile) Properties().apply { floorFile.asFile.inputStream().use { load(it) } } else null
-        val failures = jacocoScopeFailures(jacocoReportClassNames(reportFile), floors, jacocoScopePatterns)
+        val failures = JacocoScope.jacocoScopeFailures(JacocoScope.jacocoReportClassNames(reportFile), floors, patterns)
         if (failures.isNotEmpty()) {
             throw GradleException("jacocoScopeCheck failed:\n" + failures.joinToString("\n") { "  - $it" })
         }
