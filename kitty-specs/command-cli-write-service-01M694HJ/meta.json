@@ -1,0 +1,21 @@
+{
+  "baseline_merge_commit": "b4d2cf986406b6996bbb0a84462ba409e92bf3f6",
+  "created_at": "2026-10-31T14:06:46.987989+00:00",
+  "flattened": true,
+  "friendly_name": "command-cli: the runnable events write service and its native release",
+  "merged_at": "2026-10-31T15:53:38.646620+00:00",
+  "merged_commit": "07befa94634e71d16fb67b294516561122926e4d",
+  "mid8": "01M694HJ",
+  "mission_id": "01M694HJJQ80H9X4K7H49DK50X",
+  "mission_number": 23,
+  "mission_slug": "command-cli-write-service-01M694HJ",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "Core's CLI must reach one write service per repository through a fail-closed launcher. This mission builds that service's process lifecycle, its loopback protocol surface and its per-OS release, so core can pin and launch it; the canonical writer and the lane authority follow in #160 and #161.",
+  "purpose_tldr": "Ship the events write service as a runnable, pinnable native binary and jar that core can launch, with writes refusing until the write core lands.",
+  "slug": "command-cli-write-service-01M694HJ",
+  "status_phase": "1",
+  "target_branch": "issue-156-command-cli",
+  "vcs": "git",
+  "vcs_locked_at": "2026-10-31T14:14:58.915071+00:00"
+}
