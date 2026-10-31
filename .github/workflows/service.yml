@@ -279,6 +279,15 @@ jobs:
           echo "CONTRACT_BUNDLE_SHA256=$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$bundle")" >> "$GITHUB_ENV"
       - name: Compile the native image and run the tagged native tests
         run: ./gradlew --no-daemon :mission-status-api:nativeCompile :mission-status-api:nativeTest
+      # The native binary must have executed at least the committed number of tagged tests: zero selected must not read
+      # as green (core's native-tag-floor gate, ported with scripts/ci/mission_status_gate_checks.py). The Windows image
+      # has `python`, the Linux and macOS images `python3`.
+      - name: Require the native test floor
+        if: ${{ !cancelled() && runner.os != 'Windows' }}
+        run: python3 scripts/ci/mission_status_gate_checks.py native-tag-floor --junit-dir service/build/test-results/test-native --floor 3
+      - name: Require the native test floor (Windows)
+        if: ${{ !cancelled() && runner.os == 'Windows' }}
+        run: python scripts/ci/mission_status_gate_checks.py native-tag-floor --junit-dir service/build/test-results/test-native --floor 3
       # The golden replay (nativesmoke/requests.json) against the binary the compile step produced.
       - name: Replay the golden requests against the built binary
         env:
@@ -319,17 +328,29 @@ jobs:
           path: service/build/test-results
           if-no-files-found: warn
           overwrite: true
+      # Reachability metadata for review (ADR 0003, Risks: native image drift): the hints Spring AOT
+      # generated for the image and the test image, and any the Native Build Tools copied from the
+      # GraalVM metadata repository. Evidence only; nothing reads it back.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: reachability-metadata-${{ matrix.target }}
+          path: |
+            service/build/generated/aotResources/META-INF/native-image
+            service/build/generated/aotTestResources/META-INF/native-image
+            service/build/native-reachability-metadata
+          if-no-files-found: warn
+          overwrite: true
 
   # Java vs Python on the event-log lock (core's lock-interop spike). The Python peer is core's
   # scripts/ci/lock_interop_peer.py at the SHA in service/core-pin.json, run with a uv venv built
   # from core's own lock. LockInteropSpikeTest runs only when SPEC_KITTY_LOCK_INTEROP_PYTHON is set.
   #
-  # Peer path (for WP07): core's PythonPeer.fromEnvironment() hard-codes the relative path
-  # "scripts/ci/lock_interop_peer.py" and walks up from the working directory to find it. Here that
-  # walk (service/event-log -> service -> workspace) never reaches core/scripts/ci/, so as imported
-  # the test throws IllegalStateException. WP07 makes PythonPeer read the env
-  # SPEC_KITTY_LOCK_INTEROP_PEER (falling back to the walk); this job already sets it, so no edit
-  # here is needed. Gradle's test JVM inherits the environment of the build, as in core.
+  # Peer path: PythonPeer reads SPEC_KITTY_LOCK_INTEROP_PEER first (WP07, #147) and falls back to
+  # core's relative walk for "scripts/ci/lock_interop_peer.py", which never reaches core/scripts/ci/
+  # from here. This job sets the variable; Gradle's test JVM inherits the build's environment.
+  # Gating: never inside a release run (it executes core's Python); on main it is evidence only, as
+  # in core, and a red run does not block cutting a tag (decision pending operator confirmation).
   lock-interop:
     # Runs core's Python at the pinned SHA, so it stays out of release runs (release-version set):
     # a release run then executes only this repository's code beside its artifacts.
