@@ -23,6 +23,8 @@ class ConfigPinTest {
       assertThat(environment.getProperty("spring.web.resources.add-mappings")).isEqualTo("false");
       assertThat(environment.getProperty("server.address")).isEqualTo("127.0.0.1");
       assertThat(environment.getProperty("server.port")).isEqualTo("0");
+      assertThat(environment.getProperty("server.servlet.context-path")).isEmpty();
+      assertThat(environment.getProperty("logging.file.name")).isEmpty();
     }
   }
 }

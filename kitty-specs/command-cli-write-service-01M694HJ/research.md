@@ -76,7 +76,7 @@ The pre-mission research is in `docs/architecture/services/command-cli-research.
 
 ## D-10: Version and identity
 
-- `serviceVersion`: from the boot jar manifest `Implementation-Version`. The build sets it from `-PreleaseVersion`, or to `0.0.0-dev+<sha7>` as the read service does. It must match `^[0-9A-Za-z][0-9A-Za-z.+_-]{0,63}$`.
+- `serviceVersion`: from `META-INF/build-info.properties` (`build.version`), which the build writes from `-PreleaseVersion` (default `0.0.0-dev`; CI passes `0.0.0-dev+<sha7>`). A native image has no jar manifest, so the manifest is not read (as built; it said `Implementation-Version` before). It must match `^[0-9A-Za-z][0-9A-Za-z.+_-]{0,63}$`.
 - `repositoryId`: `sha256(toRealPath(gcd).toString().replace('\\', '/'))`, as lowercase hex. This matches Python's `Path.resolve().as_posix()`.
   - **Windows note**: Python gives a drive-letter path `C:/…`, and `toRealPath` gives `C:\…`, which is normalised.
   - The case of the drive letter can differ, since `resolve()` keeps the case on disk. This is accepted as-is and covered by a Windows-only test in CI (native-tag).

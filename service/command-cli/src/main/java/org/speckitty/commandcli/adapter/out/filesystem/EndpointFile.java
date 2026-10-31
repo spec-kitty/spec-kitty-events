@@ -76,12 +76,34 @@ public final class EndpointFile {
       throw e;
     }
     try {
-      Files.move(temporary, path(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+      moveIntoPlace(temporary);
     } catch (IOException e) {
       Files.deleteIfExists(temporary); // never leave a temporary file behind, whatever failed
       throw e;
     }
     syncDirectory();
+  }
+
+  /** Attempts of the rename: on Windows it fails while a reader (core's launcher polls every 50 ms) holds the old file open. */
+  static final int MOVE_ATTEMPTS = 20;
+
+  private void moveIntoPlace(Path temporary) throws IOException {
+    for (int attempt = 1; ; attempt++) {
+      try {
+        Files.move(temporary, path(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        return;
+      } catch (java.nio.file.FileSystemException busy) { // AccessDeniedException included
+        if (attempt >= MOVE_ATTEMPTS || busy instanceof java.nio.file.NoSuchFileException || busy instanceof java.nio.file.AtomicMoveNotSupportedException) {
+          throw busy;
+        }
+        try {
+          Thread.sleep(50);
+        } catch (InterruptedException interrupted) {
+          Thread.currentThread().interrupt();
+          throw busy;
+        }
+      }
+    }
   }
 
   /** Removes the endpoint file if, and only if, it names {@code instanceId}; answers whether it removed it. */

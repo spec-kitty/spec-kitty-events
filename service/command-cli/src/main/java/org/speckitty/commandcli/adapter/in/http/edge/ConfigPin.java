@@ -39,10 +39,19 @@ public final class ConfigPin implements ApplicationListener<ApplicationEnvironme
         .addFirst(
             new MapPropertySource(
                 SOURCE_NAME,
-                Map.of(
-                    "spring.config.location", LOCATION,
-                    "spring.config.additional-location", "",
-                    "spring.config.import", "",
-                    "spring.web.resources.add-mappings", "false")));
+                Map.ofEntries(
+                    // the edge decides on these paths and this port, and the log goes to stdout only: an inherited SERVER_* or
+                    // LOGGING_* variable or SPRING_APPLICATION_JSON may not move them (pre-PR squad, security finding 2)
+                    Map.entry("spring.config.location", LOCATION),
+                    Map.entry("spring.config.additional-location", ""),
+                    Map.entry("spring.config.import", ""),
+                    Map.entry("spring.web.resources.add-mappings", "false"),
+                    Map.entry("server.port", "0"),
+                    Map.entry("server.servlet.context-path", ""),
+                    Map.entry("spring.mvc.servlet.path", "/"),
+                    Map.entry("server.error.path", "/error"),
+                    Map.entry("logging.file.name", ""),
+                    Map.entry("logging.file.path", ""),
+                    Map.entry("logging.config", ""))));
   }
 }

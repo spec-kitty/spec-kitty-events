@@ -397,10 +397,11 @@ jobs:
           echo "SERVICE_VERSION=$ver" >> "$GITHUB_ENV"
       - name: Compile the native image and run the tagged native tests
         run: ./gradlew --no-daemon :command-cli:nativeCompile :command-cli:nativeTest "-PreleaseVersion=$SERVICE_VERSION"
-      # Zero tagged tests executed natively must not read as green (the read service's native-tag-floor gate).
+      # Zero tagged tests executed natively must not read as green (the read service's native-tag-floor gate). The JVM twin
+      # (nativeTagJvmTest) executes 132; the floor sits just under it.
       - name: Require the native test floor
         if: ${{ !cancelled() }}
-        run: python scripts/ci/mission_status_gate_checks.py native-tag-floor --junit-dir service/command-cli/build/test-results/test-native --floor 40
+        run: python scripts/ci/mission_status_gate_checks.py native-tag-floor --junit-dir service/command-cli/build/test-results/test-native --floor 120
       # The launcher contract against the binary: start it as core's launcher does, wait for ready, shut it down.
       - name: Drive the launcher contract against the built binary
         env:
