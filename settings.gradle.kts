@@ -32,6 +32,11 @@ include(":domain-model")
 project(":domain-model").projectDir = file("service/domain-model")
 include(":event-log")
 project(":event-log").projectDir = file("service/event-log")
+// The write-service deployable (core #6117 decision 12; ADR 0002; spec-kitty-events#156): command-cli, the resident
+// service per git common dir that core's launcher starts. It builds as a jar and a GraalVM native image like the
+// Mission Status API.
+include(":command-cli")
+project(":command-cli").projectDir = file("service/command-cli")
 
 // The service contracts and their tooling (contracts/build.gradle stays Groovy). Its tasks validate the split
 // contracts and, driven by contracts/tools/bundle.py and client_smoke.py, the bundle; `check` validates the split roots.
