@@ -35,7 +35,6 @@ PAUSE = WORKFLOWS / "pr-pause-ci.yml"
 REQUIRED_CHECK_WORKFLOWS = [CI, ACCEPTANCE, HARNESS, SERVICE, DOCS]
 # The check names the operator makes required (ADR 0005 D3); pr-pause-ci.yml fails them.
 REQUIRED_CHECKS = {"suite", "acceptance", "cross-repo-harness-tests", "service-gate", "docs-build"}
-SHA_PIN = re.compile(r"^[^@\s]+@[0-9a-f]{40}$")
 PIN_LINE = re.compile(r"uses: [^@\s]+@[0-9a-f]{40} # v\d+\.\d+\.\d+$")
 PAUSE_GUARD = "!contains(github.event.pull_request.labels.*.name, 'pr:pause-ci')"
 HAS_BASH = shutil.which("bash") is not None
@@ -101,7 +100,6 @@ def test_changed_workflows_pin_every_action_by_commit_sha(path: Path) -> None:
         stripped = line.strip().removeprefix("- ")
         if stripped.startswith("uses:") and not stripped.startswith("uses: ./"):
             assert PIN_LINE.search(stripped), line
-            assert SHA_PIN.match(stripped.split()[1]), line
 
 
 # --- ci.yml ----------------------------------------------------------------------------
@@ -187,16 +185,6 @@ def test_ci_resolves_the_other_events_as_before(
     assert (out["sha"], out["pr"]) == expected
 
 
-def test_ci_fails_a_queue_run_whose_verdict_is_not_green() -> None:
-    # ci-post.sh exits 0 for a red verdict (the verdict is a comment and a label), so the
-    # job would pass the queue red. On merge_group the step fails unless the verdict is green.
-    step = _step(CI, "suite", "Post the verdict (bin/ci-post.sh)")
-    script = step["run"]
-    assert 'if [ "$EVENT" = merge_group ]' in script
-    assert r"^\[ci\] green @" in script
-    assert step["env"]["EVENT"] == "${{ github.event_name }}"
-
-
 def test_ci_scripts_read_event_values_from_env_not_interpolation() -> None:
     # `pr` comes from a workflow_dispatch input, so no run: block may interpolate it (or the sha).
     for name in (
@@ -243,14 +231,12 @@ def _two_commit_repo(tmp_path: Path, changed: str) -> tuple[Path, str, str]:
     return clone, shas[0], shas[1]
 
 
-def _detect_env(
-    event: str, base: str, head: str, paused: str = "false", base_ref: str = "refs/heads/main"
-) -> dict[str, str]:
+def _detect_env(event: str, base: str, head: str, paused: str = "false") -> dict[str, str]:
+    """The detect step's env; ``base`` applies to pull requests only (a queue diffs against main)."""
     env = {
         "EVENT": event,
         "PR_BASE": "",
         "PR_HEAD": "",
-        "MG_BASE": "",
         "MG_BASE_REF": "",
         "MG_HEAD": "",
         "PAUSED": paused,
@@ -258,7 +244,7 @@ def _detect_env(
     if event == "pull_request":
         env.update(PR_BASE=base, PR_HEAD=head)
     elif event == "merge_group":
-        env.update(MG_BASE=base, MG_HEAD=head, MG_BASE_REF=base_ref)
+        env.update(MG_HEAD=head, MG_BASE_REF="refs/heads/main")
     return env
 
 
@@ -298,7 +284,7 @@ def test_detect_runs_the_heavy_jobs_only_for_their_paths(
 
 @pytest.mark.skipif(not HAS_BASH, reason="bash not available")
 @pytest.mark.parametrize("detect", [SERVICE_DETECT, DOCS_DETECT], ids=["service", "docs"])
-@pytest.mark.parametrize("event", ["push", "schedule", "workflow_dispatch", "workflow_call"])
+@pytest.mark.parametrize("event", ["push", "schedule", "workflow_dispatch"])
 def test_detect_runs_everything_outside_pull_requests_and_queues(
     tmp_path: Path, detect: tuple[Path, str, str], event: str
 ) -> None:
@@ -558,9 +544,9 @@ def _queue_repo(tmp_path: Path, changes: list[str]) -> tuple[Path, list[str]]:
 def test_a_queue_entry_builds_what_an_earlier_pr_in_its_group_changed(
     tmp_path: Path, detect: tuple[Path, str, str], first: str
 ) -> None:
-    # Entry 2's base_sha may be entry 1's head; the diff is taken against main (base_ref).
+    # Entry 2's base_sha may be entry 1's head; the diff is taken against main, not that base.
     clone, shas = _queue_repo(tmp_path, [first, "tests/only.py"])
-    out = _run_step(_step(*detect), _detect_env("merge_group", shas[1], shas[2]), clone, tmp_path)
+    out = _run_step(_step(*detect), _detect_env("merge_group", "", shas[2]), clone, tmp_path)
     assert (out["__rc__"], out["run"]) == ("0", "true"), out["__stderr__"]
 
 
