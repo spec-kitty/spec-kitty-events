@@ -12,6 +12,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 import org.speckitty.missionstatus.adapter.out.filesystem.codec.LedgerLineDecoder;
+import org.speckitty.missionstatus.application.query.port.out.dto.LedgerEnd;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerRead;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerStamp;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerWindow;
@@ -66,16 +67,22 @@ final class FilesystemMissionEventSourceLedger {
 
   /** Size, modification time, file key, terminated length and the digest of the last terminated line. */
   LedgerStamp stamp(Path file) {
+    return end(file).stamp();
+  }
+
+  /** The end position (terminated length and last-line digest) with the stamp, read backward and never through the whole ledger. */
+  LedgerEnd end(Path file) {
     Optional<Open> opened = open(file);
     if (opened.isEmpty()) {
-      return LedgerStamp.of("absent");
+      return new LedgerEnd(0, EMPTY_DIGEST, LedgerStamp.of("absent"));
     }
     try (Open open = opened.get()) {
       long size = open.attributes().size();
       long limit = Math.min(size, open.channel().size());
       long terminated = previousNewlineEnd(open.channel(), limit);
       String digest = terminated == 0 ? EMPTY_DIGEST : digestOfLineEndingAt(open.channel(), terminated);
-      return LedgerStamp.of(size, open.attributes().lastModifiedTime(), String.valueOf(open.attributes().fileKey()), terminated, digest);
+      LedgerStamp stamp = LedgerStamp.of(size, open.attributes().lastModifiedTime(), String.valueOf(open.attributes().fileKey()), terminated, digest);
+      return new LedgerEnd(terminated, digest, stamp);
     } catch (IOException failure) {
       throw new SourceFault(Kind.LEDGER_UNREADABLE);
     }

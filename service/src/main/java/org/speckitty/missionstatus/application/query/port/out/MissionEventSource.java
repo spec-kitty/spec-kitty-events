@@ -1,6 +1,7 @@
 package org.speckitty.missionstatus.application.query.port.out;
 
 import java.util.List;
+import org.speckitty.missionstatus.application.query.port.out.dto.LedgerEnd;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerRead;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerStamp;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerWindow;
@@ -27,6 +28,12 @@ public interface MissionEventSource {
 
   /** A cheap identity of the ledger (a stat and a bounded read of the last line); an absent ledger has a stamp too. */
   LedgerStamp stampLedger(MissionRef ref);
+
+  /**
+   * The ledger's end position now (its terminated length, the digest of the last terminated line and the stamp), read from the end
+   * without materialising the ledger's history. An absent ledger ends at offset 0 with the digest of nothing.
+   */
+  LedgerEnd ledgerEnd(MissionRef ref);
 
   /** The whole ledger, decoded. Called only on a cache miss, with the stamp that missed. */
   LedgerRead readLedger(MissionRef ref, LedgerStamp stamp);
