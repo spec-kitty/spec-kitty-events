@@ -9,6 +9,7 @@ import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
+import org.speckitty.missionstatus.application.query.port.out.dto.LedgerEnd;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerRead;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerStamp;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerWindow;
@@ -119,6 +120,21 @@ class InMemoryMissionEventSourceTest {
     assertThat(with.readLedgerFrom(ref, 0).lines()).as("the tail is not a line").isEqualTo(without.readLedgerFrom(ref, 0).lines());
     assertThat(with.stampLedger(ref)).as("the stamp covers the file length, so a writer in mid-line changes it").isNotEqualTo(without.stampLedger(ref));
     assertThat(without.stampLedger(ref)).isEqualTo(source(LEDGER).stampLedger(ref));
+  }
+
+  @Test
+  void theEndReadAgreesWithTheStampAndTheWholeReadBaseline() {
+    InMemoryMissionEventSource source = source(LEDGER + "{\"hal");
+    MissionRef ref = new MissionRef("m");
+
+    LedgerEnd end = source.ledgerEnd(ref);
+    LedgerRead whole = source.readLedger(ref, source.stampLedger(ref));
+
+    assertThat(end.offset()).as("the terminated length: the tail is not part of the position").isEqualTo(whole.lines().stream().mapToLong(LedgerLine::byteLength).sum());
+    assertThat(end.invariant()).isEqualTo(whole.lines().getLast().rawLineSha256());
+    assertThat(end.stamp()).isEqualTo(source.stampLedger(ref));
+    InMemoryMissionEventSource absent = source(null);
+    assertThat(absent.ledgerEnd(ref)).as("an absent ledger ends at zero with the digest of nothing").isEqualTo(new LedgerEnd(0, StreamCursor.start().invariant(), absent.stampLedger(ref)));
   }
 
   @Test

@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import org.speckitty.missionstatus.adapter.out.filesystem.ReadDirResolver.Resolution;
+import org.speckitty.missionstatus.application.query.port.out.dto.LedgerEnd;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerRead;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerStamp;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerWindow;
@@ -85,6 +86,11 @@ public final class FilesystemMissionEventSource implements MissionEventSource {
   @Override
   public LedgerStamp stampLedger(MissionRef ref) {
     return ledger.stamp(ledgerPath(ref));
+  }
+
+  @Override
+  public LedgerEnd ledgerEnd(MissionRef ref) {
+    return ledger.end(ledgerPath(ref));
   }
 
   @Override
