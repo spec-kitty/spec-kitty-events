@@ -8,6 +8,8 @@ on:
   pull_request:
     paths:
       - 'docs/**'
+      # Changelog fragments are entries, not pages (ADR 0005); adding one builds nothing.
+      - '!docs/changelog/unreleased/**'
       - 'site/**'
       - '.github/workflows/docs-site.yml'
       - 'scripts/docs_index.py'
@@ -15,6 +17,8 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      # Changelog fragments are entries, not pages (ADR 0005); adding one builds nothing.
+      - '!docs/changelog/unreleased/**'
       - 'site/**'
       - '.github/workflows/docs-site.yml'
       - 'scripts/docs_index.py'
@@ -41,6 +45,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      # docs/changelog/unreleased/ holds changelog fragments, not pages (ADR 0005). Toolkit
+      # 0.5.0 walks every .md under docs/, so they would be published and fail the
+      # frontmatter gate. Drop them from this disposable checkout before any npm step.
+      # Replace this with `exclude: ['changelog/unreleased']` in site/astro.config.mjs
+      # once a toolkit release carries it (doc-kitty ADR-0070).
+      - name: Leave the changelog fragments out of the docs build
+        working-directory: .
+        run: rm -rf docs/changelog/unreleased
       - name: Set up Node 22.22 with the GitHub Packages registry
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
