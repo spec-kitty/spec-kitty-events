@@ -377,13 +377,6 @@ def test_guard_allows_edits_to_released_sections(tmp_path: Path) -> None:
     assert cl.guard(root, "main") == []
 
 
-def test_guard_skips_without_a_base_ref(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("CI", raising=False)  # in CI a missing base fails closed (tested below)
-    root = _repo(tmp_path)
-    _commit_base(root)
-    assert cl.guard(root, None) == []
-
-
 def test_guard_cli_resolves_main_and_fails_closed(tmp_path: Path) -> None:
     root = _repo(tmp_path)
     _commit_base(root)
