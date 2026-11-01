@@ -50,8 +50,11 @@ emission until each intended consumer can validate and process the new type.
 
 The work package landing the bump MUST update all of:
 
-1. **`CHANGELOG.md`** — a `### Breaking` section naming each breaking change
-   with a one-line summary and the consumer-visible consequence.
+1. **The changelog** — a `changelog.d/<issue>-<slug>.md` fragment with
+   `section: Breaking` naming each breaking change with a one-line summary and
+   the consumer-visible consequence. The release pull request folds it into
+   `CHANGELOG.md` with `scripts/changelog.py collect` (ADR 0005); no pull request
+   edits `[Unreleased]` by hand.
 2. **`COMPATIBILITY.md`** — the `Current package version` line (see below), plus
    a section explaining the bump's drivers and the migration each affected role
    must perform.
@@ -111,7 +114,8 @@ have been canonicalized.
 ## Forbidden patterns
 
 - Changing `src/` under an already-**released** (tagged `v<version>`) version without declaring a new version.
-- Bumping any version without updating `CHANGELOG.md`.
+- Bumping any version without a changelog entry (a `changelog.d/` fragment, collected into `CHANGELOG.md` at release).
+- Editing `[Unreleased]` in `CHANGELOG.md` by hand instead of adding a `changelog.d/` fragment.
 - Updating Pydantic models without regenerating `*.schema.json`.
 - Documenting a breaking change as additive.
 - Restating the current package version in prose instead of referencing the
