@@ -59,6 +59,8 @@ SECTIONS = (
     "Removed",
     "Fixed",
     "Security",
+    # Last, as in every released section that carries one (10.1.0, 10.5.0-10.5.2; #186).
+    "Compatibility",
 )
 
 _NAME_RE = re.compile(r"^(?P<issue>[1-9][0-9]*)-[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
@@ -240,6 +242,8 @@ def _subsections(text: str) -> list[tuple[str, str]]:
 
 
 def _insert_at(existing: list[str], name: str) -> int:
+    # Assumes the existing known subsections are already in SECTIONS order (collect writes
+    # them so, and guard refuses hand edits); unknown ones keep their place.
     rank = SECTIONS.index(name)
     known = [(i, SECTIONS.index(n)) for i, n in enumerate(existing) if n in SECTIONS]
     later = [i for i, r in known if r > rank]

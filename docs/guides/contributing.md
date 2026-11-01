@@ -2,7 +2,7 @@
 title: Contributing
 description: How a change lands in spec-kitty-events — the one-issue-one-branch-one-PR flow, the tests and conformance gate to run, and the adversarial review.
 doc_status: active
-updated: 2026-10-18T00:00:00Z
+updated: 2026-11-01T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -64,8 +64,8 @@ section: Added
 - What changed and why it matters to a consumer (#<issue>).
 ```
 
-`section` is one of Breaking, Migration, Added, Changed, Deprecated, Removed, Fixed or
-Security; the body is one or more `- ` bullets with no headings. `make lint` runs
+`section` is one of Breaking, Migration, Added, Changed, Deprecated, Removed, Fixed,
+Security or Compatibility; the body is one or more `- ` bullets with no headings. `make lint` runs
 `scripts/changelog.py check` (the fragments are well formed) and `guard` (nobody edited
 `[Unreleased]`'s subsections by hand; its opening paragraph is free text, so a pull request
 that bumps the version may correct it). The release pull request runs `scripts/changelog.py collect`, with
