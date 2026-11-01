@@ -405,6 +405,17 @@ def test_pause_workflow_never_checks_out_or_runs_pr_code() -> None:
     assert "checkout" not in text.lower().replace("never checks out", "")
 
 
+def test_every_required_check_name_is_a_job_name_in_a_gate_workflow() -> None:
+    # A check name is the job's `name:` or, without one, its id; a renamed job would leave the
+    # ruleset waiting on a check that never reports.
+    names = {
+        job.get("name", job_id)
+        for path in REQUIRED_CHECK_WORKFLOWS
+        for job_id, job in _load(path)["jobs"].items()
+    }
+    assert REQUIRED_CHECKS <= names
+
+
 @pytest.mark.skipif(not HAS_BASH, reason="bash not available")
 def test_pause_fails_exactly_the_required_gates(tmp_path: Path) -> None:
     bindir = _fake_gh(tmp_path, {}, "")
