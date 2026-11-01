@@ -45,6 +45,20 @@ class ChangeFeedTest {
     fx.executor.tick();
   }
 
+  private static FixtureSpec manyMissions(int count) {
+    List<FixtureSpec.Mission> missions = new ArrayList<>();
+    for (int i = 0; i < count; i++) {
+      String name = String.format("mission-%03d", i);
+      missions.add(
+          Fx.mission(
+              name,
+              Rows.id(1000 + i),
+              StreamFx.CREATED,
+              Rows.status(Rows.id(2000 + i), Fx.T2, "WP01", "planned", "claimed")));
+    }
+    return FixtureSpec.of(missions.toArray(FixtureSpec.Mission[]::new));
+  }
+
   // ---- forwarding and dropping -----------------------------------------------------------------------------------------------
 
   @Test
@@ -460,9 +474,33 @@ class ChangeFeedTest {
     Fx fx = new Fx(StreamFx.twoMissions());
     try (Subscription first = unscoped(fx)) {
       fx.source.addMission(Fx.mission("gamma", Rows.GAMMA_ID, StreamFx.CREATED, Rows.status(Rows.id(60), Fx.T2, "WP01", "planned", "claimed")));
+      // The floor of that Mission is its ledger end, read through the stamp surface; the injection names the read the connect makes.
+      fx.source.inject("gamma", Op.STAMP, SourceFault.Kind.LEDGER_UNREADABLE);
+
+      try (Subscription second = unscoped(fx)) {
+        assertThat(fx.handles.diagnostics()).containsExactly(new Diagnostic(DiagnosticCode.LEDGER_UNREADABLE, Rows.GAMMA_ID.substring(0, 8), null));
+        append(fx, "alpha", Rows.status(Rows.id(4), Fx.T2, "WP01", "in_progress", "for_review"));
+
+        assertThat(StreamFx.eventIds(StreamFx.changes(StreamFx.drain(first)))).containsExactly(Rows.id(4));
+        assertThat(StreamFx.eventIds(StreamFx.changes(StreamFx.drain(second)))).containsExactly(Rows.id(4));
+      }
+    }
+  }
+
+  @Test
+  void aFaultOfTheReadPathOnlyIsReportedOnceByTheTickAndDropsOnlyThatMission() {
+    Fx fx = new Fx(StreamFx.twoMissions());
+    try (Subscription first = unscoped(fx)) {
+      fx.source.addMission(Fx.mission("gamma", Rows.GAMMA_ID, StreamFx.CREATED, Rows.status(Rows.id(60), Fx.T2, "WP01", "planned", "claimed")));
+      // A connect reads no history, so a window read that faults is found by the catch-up poll of the tick, not by the connect; it is
+      // still reported exactly once, and it drops that Mission only (row S1).
       fx.source.inject("gamma", Op.WINDOW, SourceFault.Kind.LEDGER_UNREADABLE);
 
       try (Subscription second = unscoped(fx)) {
+        assertThat(fx.handles.diagnostics()).as("the end read succeeded: nothing to report at connect").isEmpty();
+        fx.clock.advance(Duration.ofSeconds(2));
+        fx.executor.tick();
+
         assertThat(fx.handles.diagnostics()).containsExactly(new Diagnostic(DiagnosticCode.LEDGER_UNREADABLE, Rows.GAMMA_ID.substring(0, 8), null));
         append(fx, "alpha", Rows.status(Rows.id(4), Fx.T2, "WP01", "in_progress", "for_review"));
 
@@ -676,6 +714,40 @@ class ChangeFeedTest {
     append(fx, "alpha", Rows.status(Rows.id(4), Fx.T2, "WP01", "in_progress", "for_review"));
     assertThat(fx.source.calls("readLedgerFrom")).as("one read of the appended bytes however many listen").isEqualTo(1);
     subscriptions.forEach(Subscription::close);
+  }
+
+  @Test
+  void nfr004AnUnscopedConnectComputesEachFloorFromTheLedgerEndAndReadsNoWholeLedger() {
+    int count = 64;
+    Fx fx = new Fx(manyMissions(count));
+    fx.source.resetCalls();
+
+    try (Subscription subscription = unscoped(fx)) {
+      assertThat(fx.source.calls("readLedgerFrom"))
+          .as("a connect floor is the ledger end, not a materialised whole-ledger baseline per Mission")
+          .isZero();
+      assertThat(fx.source.calls("ledgerEnd")).as("one bounded end read per Mission, not a stamp plus a whole read").isEqualTo(count);
+      StreamFx.assertIdle(subscription);
+    }
+    assertThat(fx.handles.diagnostics()).isEmpty();
+  }
+
+  @Test
+  void aRowWrittenAfterTheLastTickButBeforeAnUnscopedConnectIsHistoryForTheNewSubscriberOnly() {
+    Fx fx = new Fx(StreamFx.twoMissions());
+    try (Subscription first = unscoped(fx)) {
+      String row = Rows.status(Rows.id(4), Fx.T2, "WP01", "in_progress", "for_review");
+      fx.source.appendLedger("alpha", row);
+
+      // The catch-up is deferred to the tick: the row was written before this connect but had not been polled yet.
+      try (Subscription second = unscoped(fx)) {
+        fx.executor.tick();
+
+        assertThat(StreamFx.eventIds(StreamFx.changes(StreamFx.drain(first)))).as("the subscriber that was there gets it").containsExactly(Rows.id(4));
+        assertThat(StreamFx.drain(second)).as("the new subscriber joined after it: FR-003 still holds").isEmpty();
+      }
+    }
+    assertThat(fx.handles.diagnostics()).isEmpty();
   }
 
   @Test

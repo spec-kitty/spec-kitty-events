@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.speckitty.missionstatus.application.query.port.out.dto.LedgerEnd;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerRead;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerStamp;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerWindow;
@@ -53,6 +54,12 @@ public final class CountingSource implements MissionEventSource {
   public LedgerStamp stampLedger(MissionRef ref) {
     count("stampLedger");
     return delegate.stampLedger(ref);
+  }
+
+  @Override
+  public LedgerEnd ledgerEnd(MissionRef ref) {
+    count("ledgerEnd");
+    return delegate.ledgerEnd(ref);
   }
 
   @Override

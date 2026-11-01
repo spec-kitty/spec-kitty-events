@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.speckitty.missionstatus.adapter.out.filesystem.codec.LedgerLineDecoder;
+import org.speckitty.missionstatus.application.query.port.out.dto.LedgerEnd;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerRead;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerStamp;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerWindow;
@@ -219,13 +220,19 @@ public final class InMemoryMissionEventSource implements MissionEventSource {
   @Override
   public synchronized LedgerStamp stampLedger(MissionRef ref) {
     count("stampLedger");
+    return stamp(resolve(ref, Op.STAMP));
+  }
+
+  @Override
+  public synchronized LedgerEnd ledgerEnd(MissionRef ref) {
+    count("ledgerEnd");
     State state = resolve(ref, Op.STAMP);
-    byte[] ledger = state.ledger;
-    if (ledger == null) {
-      return LedgerStamp.of("absent", state.version);
+    if (state.ledger == null) {
+      return new LedgerEnd(0, EMPTY_DIGEST, LedgerStamp.of("absent", state.version));
     }
-    int end = terminatedLength(ledger);
-    return LedgerStamp.of(ledger.length, state.version, end, digestOfLastLine(ledger, end));
+    int end = terminatedLength(state.ledger);
+    String digest = digestOfLastLine(state.ledger, end);
+    return new LedgerEnd(end, digest, LedgerStamp.of(state.ledger.length, state.version, end, digest));
   }
 
   @Override
@@ -260,6 +267,15 @@ public final class InMemoryMissionEventSource implements MissionEventSource {
   }
 
   // ---- helpers -------------------------------------------------------------------------------------------------------------
+
+  private static LedgerStamp stamp(State state) {
+    byte[] ledger = state.ledger;
+    if (ledger == null) {
+      return LedgerStamp.of("absent", state.version);
+    }
+    int end = terminatedLength(ledger);
+    return LedgerStamp.of(ledger.length, state.version, end, digestOfLastLine(ledger, end));
+  }
 
   private static int terminatedLength(byte[] ledger) {
     for (int i = ledger.length - 1; i >= 0; i--) {

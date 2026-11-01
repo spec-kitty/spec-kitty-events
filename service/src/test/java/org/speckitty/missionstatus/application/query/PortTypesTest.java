@@ -13,6 +13,7 @@ import org.speckitty.missionstatus.application.query.port.in.exceptions.MissionS
 import org.speckitty.missionstatus.application.query.port.in.exceptions.StreamRefused;
 import org.speckitty.missionstatus.application.query.port.in.dto.StreamScope;
 import org.speckitty.missionstatus.application.query.port.in.dto.StreamSignal;
+import org.speckitty.missionstatus.application.query.port.out.dto.LedgerEnd;
 import org.speckitty.missionstatus.application.query.port.out.dto.LedgerStamp;
 import org.speckitty.missionstatus.application.query.port.out.dto.MissionRef;
 import org.speckitty.missionstatus.application.query.port.out.exceptions.SourceFault;
@@ -83,6 +84,19 @@ class PortTypesTest {
   void aScopeIsEqualByItsMissionAndRefusesNone() {
     assertThat(StreamScope.mission(ID)).isEqualTo(new StreamScope.OneMission(ID));
     assertThatThrownBy(() -> StreamScope.mission(null)).isInstanceOf(NullPointerException.class);
+  }
+
+  @Test
+  void aLedgerEndKeepsItsPartsAndRefusesANegativeOffsetOrAMissingPart() {
+    LedgerStamp stamp = LedgerStamp.of(1, 2);
+    LedgerEnd end = new LedgerEnd(7, StreamCursor.start().invariant(), stamp);
+
+    assertThat(end.offset()).isEqualTo(7);
+    assertThat(end.invariant()).isEqualTo(StreamCursor.start().invariant());
+    assertThat(end.stamp()).isEqualTo(stamp);
+    assertThatThrownBy(() -> new LedgerEnd(-1, StreamCursor.start().invariant(), stamp)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> new LedgerEnd(0, null, stamp)).isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> new LedgerEnd(0, StreamCursor.start().invariant(), null)).isInstanceOf(NullPointerException.class);
   }
 
   @Test
