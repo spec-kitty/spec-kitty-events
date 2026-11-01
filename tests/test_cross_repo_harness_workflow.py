@@ -95,7 +95,8 @@ def test_no_source_execution_while_harness_token_is_live(config):
 def test_no_privileged_pr_trigger_or_job_credential_exposure(config):
     # BaseLoader preserves YAML's `on` key rather than interpreting it as a boolean.
     workflow = yaml.load(FILE.read_text(), Loader=yaml.BaseLoader)
-    assert set(workflow["on"]) == {"push", "pull_request"}
+    # merge_group: the merge queue runs this required gate too (ADR 0005 D3, #177).
+    assert set(workflow["on"]) == {"push", "pull_request", "merge_group"}
     assert "env" not in workflow
     assert "env" not in config
     assert "continue-on-error" not in config
