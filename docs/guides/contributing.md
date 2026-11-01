@@ -33,10 +33,34 @@ own work. The binding process is the programme constitution; see
 | Implementer blast-radius baseline | `make test-fast` |
 | Whole suite with coverage (CI agent only) | `make test-full` |
 | Packaged conformance gate — **every PR** | `uv run pytest --pyargs spec_kitty_events.conformance` |
-| Lint | `ruff check . && ruff format --check .` |
+| Lint (ruff, the version guard, the changelog fragment checks) | `make lint` |
 
 The conformance gate is the packaged contract other repos consume; the in-repo suite does not
 collect it, so run it explicitly on every PR.
+
+## Recording the change
+
+Every pull request with a user-visible change adds one changelog fragment,
+`changelog.d/<issue>-<slug>.md`, and does **not** add entries to `[Unreleased]` in
+`CHANGELOG.md`:
+
+```markdown
+---
+section: Added
+---
+
+- What changed and why it matters to a consumer (#<issue>).
+```
+
+`section` is one of Breaking, Migration, Added, Changed, Deprecated, Removed, Fixed or
+Security; the body is one or more `- ` bullets with no headings. `make lint` runs
+`scripts/changelog.py check` (the fragments are well formed) and `guard` (nobody edited
+`[Unreleased]`'s subsections by hand; its opening paragraph is free text, so a pull request
+that bumps the version may correct it). The release pull request runs `scripts/changelog.py collect`, with
+`--version X.Y.Z --date YYYY-MM-DD` for a PyPI `v*` release, which folds the fragments into
+`CHANGELOG.md` and deletes them; `preview` shows the result first. Parallel pull requests
+then never touch the same lines. See [ADR 0005](../adr/0005-parallel-landing.md) and
+`changelog.d/README.md`.
 
 ## When you change the contract
 
