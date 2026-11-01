@@ -132,7 +132,7 @@ jobs:
             echo "::warning::could not fetch $base and $head; every job runs"
             echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          if ! changed="$(git diff --name-only "$base" "$head")"; then
+          if ! changed="$(git diff --no-renames --name-only "$base" "$head")"; then
             echo "::warning::could not diff $base..$head; every job runs"; run=true
           elif grep -qE "$PATTERN" <<<"$changed"; then
             run=true
