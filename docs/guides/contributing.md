@@ -21,9 +21,13 @@ own work. The binding process is the programme constitution; see
 
 Label a PR `pr:pause-ci` to stop its CI while you rework it: the label cancels the PR's
 running workflows and marks its required checks failed, and removing it re-runs what was
-cancelled (after a push made under the label, push again once it is off). The merge queue
-ignores PR labels: every entry runs the full suite, including `ci.yml` without the squad label
-(ADR 0005 D3).
+cancelled. A push made under the label re-posts the failures for the new head; the gates
+that would have run have no run from before the pause, so push again once the label is off.
+Any other label added during a pause re-triggers `ci.yml`, whose skipped `suite` can overwrite
+the posted `suite` failure and read green; the pause holds only until then, so remove the
+label as soon as the rework is done. The merge queue ignores PR labels: every entry runs the
+full suite, including `ci.yml` without the squad label (ADR 0005 D3), so a paused PR is still
+tested in full before it merges.
 
 ## The flow
 
