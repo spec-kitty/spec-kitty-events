@@ -13,7 +13,12 @@ authors:
 
 **Status:** Accepted. The operator approved the remedy on 2026-11-01, the same one
 `spec-kitty/spec-kitty` and doc-kitty (ADR-0072) are adopting, and ruled on each open
-point the research raised the same day; the decisions below record those rulings.
+point the research raised the same day; the decisions below record those rulings. The
+three decisions land as three pull requests in order: D1 (changelog fragments) in
+[#178](https://github.com/spec-kitty/spec-kitty-events/pull/178), D2 (generated indexes)
+in [#179](https://github.com/spec-kitty/spec-kitty-events/pull/179), and D3 (merge-queue
+readiness) in #182. "Accepted" means the rulings are decided, not that all three are yet
+built on `main`.
 
 **Date:** 2026-11-01
 
