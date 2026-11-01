@@ -355,11 +355,26 @@ def test_docs_never_uploads_or_deploys_from_a_queue_or_a_pr() -> None:
 
 def test_pause_workflow_reacts_only_to_its_label() -> None:
     workflow = _load(PAUSE)
-    assert workflow["on"] == {"pull_request_target": {"types": ["labeled", "unlabeled"]}}
+    # `synchronize`: a push under the label re-posts the failures, else a skipped gate reads green.
+    assert workflow["on"] == {
+        "pull_request_target": {"types": ["labeled", "unlabeled", "synchronize"]}
+    }
     assert workflow["permissions"] == {}
-    for job in workflow["jobs"].values():
-        assert "github.event.label.name == 'pr:pause-ci'" in job["if"]
-        assert "github.repository == 'spec-kitty/spec-kitty-events'" in job["if"]
+    pause = " ".join(workflow["jobs"]["pause"]["if"].split())
+    resume = " ".join(workflow["jobs"]["resume"]["if"].split())
+    for condition in (pause, resume):
+        assert "github.repository == 'spec-kitty/spec-kitty-events'" in condition
+    assert "github.event.pull_request.state == 'open'" in pause
+    assert "github.event.action == 'labeled' && github.event.label.name == 'pr:pause-ci'" in pause
+    # A push only re-posts while the label is still on the PR.
+    assert (
+        "github.event.action == 'synchronize' && "
+        "contains(github.event.pull_request.labels.*.name, 'pr:pause-ci')"
+    ) in pause
+    assert "github.event.action == 'unlabeled'" in resume
+    assert "github.event.label.name == 'pr:pause-ci'" in resume
+    # Minimal permissions, still no checkout.
+    assert workflow["jobs"]["pause"]["permissions"] == {"actions": "write", "checks": "write"}
 
 
 def test_pause_workflow_never_checks_out_or_runs_pr_code() -> None:
@@ -373,10 +388,21 @@ def test_pause_workflow_never_checks_out_or_runs_pr_code() -> None:
     assert "checkout" not in text.lower().replace("never checks out", "")
 
 
-def test_pause_fails_exactly_the_required_gates() -> None:
-    script = _load(PAUSE)["jobs"]["pause"]["steps"][-1]["run"]
-    gates = set(re.findall(r'"([^"]+)"', script.split("for gate in", 1)[1].split(";", 1)[0]))
-    assert gates == REQUIRED_CHECKS
+@pytest.mark.skipif(not HAS_BASH, reason="bash not available")
+def test_pause_fails_exactly_the_required_gates(tmp_path: Path) -> None:
+    bindir = _fake_gh(tmp_path, {}, "")
+    step = _load(PAUSE)["jobs"]["pause"]["steps"][-1]
+    env = {
+        "PATH": f"{bindir}:{os.environ['PATH']}",
+        "REPO": "spec-kitty/spec-kitty-events",
+        "HEAD_SHA": "a" * 40,
+    }
+    out = _run_step(step, env, tmp_path, tmp_path)
+    assert out["__rc__"] == "0", out["__stderr__"]
+    posted = (tmp_path / "gh.log").read_text(encoding="utf-8").splitlines()
+    assert all(line.startswith("check-run ") and "conclusion=failure" in line for line in posted)
+    names = {m.group(1) for line in posted if (m := re.search(r"name=(\S+)", line))}
+    assert names == REQUIRED_CHECKS and len(posted) == len(REQUIRED_CHECKS)
 
 
 # --- pre-PR squad findings (M1-M3, m2, m3, m9) --------------------------------------------
@@ -537,7 +563,7 @@ GATE_WORKFLOWS = [
 
 
 def _fake_gh(tmp_path: Path, runs: dict[str, list[dict[str, Any]]], label_at: str) -> Path:
-    """A ``gh`` stub: answers the issue-events and run-list queries, logs every rerun."""
+    """A ``gh`` stub: answers the issue-events and run-list queries, logs every rerun and check-run."""
     import json
 
     bindir = tmp_path / "bin"
@@ -551,6 +577,8 @@ def _fake_gh(tmp_path: Path, runs: dict[str, list[dict[str, Any]]], label_at: st
         "import json, sys\n"
         "args = sys.argv[1:]\n"
         f"log = open({str(log)!r}, 'a')\n"
+        "if args[0] == 'api' and args[1].endswith('/check-runs'):\n"
+        "    log.write('check-run ' + ' '.join(args[2:]) + '\\n'); sys.exit(0)\n"
         "if args[:2] == ['run', 'rerun']:\n"
         "    log.write('rerun ' + args[2] + '\\n'); sys.exit(0)\n"
         "if args[0] == 'api' and '/events' in args[1]:\n"
