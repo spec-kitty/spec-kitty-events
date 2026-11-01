@@ -2,9 +2,10 @@
 section: Changed
 ---
 
-- Pull requests record their changelog entry as a `changelog.d/<issue>-<slug>.md` fragment
-  instead of editing `CHANGELOG.md` (#175, ADR 0005), so parallel pull requests stop
-  colliding on `[Unreleased]`.
+- Pull requests record their changelog entry as a fragment,
+  `docs/changelog/unreleased/<issue>-<slug>.md`, instead of editing `CHANGELOG.md` (#175,
+  ADR 0005), so parallel pull requests stop colliding on `[Unreleased]`. The folder holds
+  entries, not pages: the docs build leaves it out.
   - `scripts/changelog.py` checks the fragments, previews `[Unreleased]`, and `collect`s
     them into `CHANGELOG.md` at release time in the existing shape; the released history is
     untouched.

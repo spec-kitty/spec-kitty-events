@@ -3,7 +3,7 @@
 
 Issue #175, ADR 0005. Parallel pull requests used to append to the top of
 ``## [Unreleased]`` in ``CHANGELOG.md``; every merge put the other open pull
-requests into conflict. A pull request now adds ``changelog.d/<issue>-<slug>.md``::
+requests into conflict. A pull request now adds ``docs/changelog/unreleased/<issue>-<slug>.md``::
 
     ---
     section: Added
@@ -45,7 +45,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-FRAGMENT_DIR = "changelog.d"
+FRAGMENT_DIR = "docs/changelog/unreleased"
 CHANGELOG = "CHANGELOG.md"
 
 # The order collect writes subsections in. Breaking and Migration lead, as they do in the
@@ -83,7 +83,7 @@ class Fragment:
 
 
 def _fragment_paths(root: Path) -> list[Path]:
-    """Every entry of ``changelog.d/`` but its README: hidden files and directories included,
+    """Every entry of ``docs/changelog/unreleased/`` but its README: hidden files and directories included,
     so nothing placed there is silently skipped."""
     directory = root / FRAGMENT_DIR
     if not directory.is_dir():

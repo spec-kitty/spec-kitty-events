@@ -29,10 +29,10 @@ The binding process is the programme constitution —
 - Run every test you write or change plus your blast radius, and record the commands and
   counts in the PR (§6). Do **not** run a whole-repo suite before opening the PR — that is
   the CI agent's job (`make test-full`).
-- Record the change as a `changelog.d/<issue>-<slug>.md` fragment; never add entries to
+- Record the change as a `docs/changelog/unreleased/<issue>-<slug>.md` fragment; never add entries to
   `[Unreleased]` in `CHANGELOG.md` by hand — only the release PR's `scripts/changelog.py
   collect` writes its subsections
-  ([ADR 0005](./docs/adr/0005-parallel-landing.md), `changelog.d/README.md`).
+  ([ADR 0005](./docs/adr/0005-parallel-landing.md), `docs/changelog/unreleased/README.md`).
 - Exactly one adversarial-squad review per PR; `[MAJOR]` findings block, minors become
   issues (§7). On exe.dev VMs use `gh api repos/<owner>/<repo>/...`, not `gh pr` /
   `gh issue` (`bin/GH-API.md` in the planning repo).
@@ -58,8 +58,10 @@ not collect it, so run it explicitly on every PR.
 `docs/` follows the DocKitty convention; start at [`docs/README.md`](./docs/README.md).
 Each section's `README.md` is its index and carries frontmatter (`title`, `description`
 ≤ 180 chars, `doc_status`, `updated`, plus `type`/`kind`). With the sibling `doc-kitty`
-checkout, validate with `node ../doc-kitty/src/scripts/validate-frontmatter.mjs docs`
-and `node ../doc-kitty/src/scripts/check-links.mjs docs`.
+checkout, validate with
+`node ../doc-kitty/src/scripts/validate-frontmatter.mjs docs --exclude docs/changelog/unreleased`
+and `node ../doc-kitty/src/scripts/check-links.mjs docs --exclude docs/changelog/unreleased`
+(`docs/changelog/unreleased/` holds changelog fragments, not pages; ADR 0005).
 
 
 <!-- spec-kitty:orientation -->

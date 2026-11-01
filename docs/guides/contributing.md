@@ -41,7 +41,7 @@ collect it, so run it explicitly on every PR.
 ## Recording the change
 
 Every pull request with a user-visible change adds one changelog fragment,
-`changelog.d/<issue>-<slug>.md`, and does **not** add entries to `[Unreleased]` in
+`docs/changelog/unreleased/<issue>-<slug>.md`, and does **not** add entries to `[Unreleased]` in
 `CHANGELOG.md`:
 
 ```markdown
@@ -60,7 +60,7 @@ that bumps the version may correct it). The release pull request runs `scripts/c
 `--version X.Y.Z --date YYYY-MM-DD` for a PyPI `v*` release, which folds the fragments into
 `CHANGELOG.md` and deletes them; `preview` shows the result first. Parallel pull requests
 then never touch the same lines. See [ADR 0005](../adr/0005-parallel-landing.md) and
-`changelog.d/README.md`.
+`docs/changelog/unreleased/README.md`.
 
 ## When you change the contract
 
