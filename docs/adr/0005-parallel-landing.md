@@ -76,7 +76,8 @@ release, and only their index changes (D2).
 ### D2. Generated section indexes (#176)
 
 The lists in `docs/changelog/README.md` and `docs/adr/README.md` are generated from the
-pages' frontmatter at docs-site build time. A check keeps the committed index free of a
+pages themselves (title, file name, `sidebar.order`, and an ADR's `**Status:**` and
+`**Date:**` lines) at docs-site build time. A check keeps the committed index free of a
 hand list. No pull request edits either index, and nothing writes to `main` after a merge:
 no bot commit and no follow-up pull request. The other section indexes change rarely and
 stay hand-kept.
