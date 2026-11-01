@@ -59,9 +59,13 @@ not collect it, so run it explicitly on every PR.
 Each section's `README.md` is its index and carries frontmatter (`title`, `description`
 ≤ 180 chars, `doc_status`, `updated`, plus `type`/`kind`). With the sibling `doc-kitty`
 checkout, validate with
-`node ../doc-kitty/src/scripts/validate-frontmatter.mjs docs --exclude docs/changelog/unreleased`
-and `node ../doc-kitty/src/scripts/check-links.mjs docs --exclude docs/changelog/unreleased`
-(`docs/changelog/unreleased/` holds changelog fragments, not pages; ADR 0005).
+`node ../doc-kitty/src/scripts/validate-frontmatter.mjs docs`
+and `node ../doc-kitty/src/scripts/check-links.mjs docs`. The sibling toolkit (0.5.0)
+cannot exclude a folder yet, so both gates flag `docs/changelog/unreleased/` — its
+README and the fragments have no page frontmatter by design; disregard those two paths'
+findings until #181 swaps in the toolkit's native `exclude`. CI drops the folder from
+its checkout, so it is never actually gated (`docs/changelog/unreleased/` holds changelog
+fragments, not pages; ADR 0005).
 
 
 <!-- spec-kitty:orientation -->

@@ -7,8 +7,10 @@ matches core and doc-kitty (doc-kitty ADR-0072).
 This folder holds **entries, not pages**. It is outside the docs site: the docs build
 drops it (`docs-site.yml`; toolkit 0.5.0 has no folder exclusion yet, so the job removes the
 folder from its checkout; a toolkit release with doc-kitty's `exclude` replaces that), a
-change here alone does not trigger the docs build, the doc-kitty frontmatter and link
-gates run with `--exclude docs/changelog/unreleased`, and no index lists it. A local
+change here alone does not trigger the docs build, and no index lists it. The sibling
+doc-kitty gates cannot exclude a folder yet, so they flag this folder's README and
+fragments as pages missing frontmatter — disregard those findings until #181 swaps in
+the toolkit's native `exclude`. A local
 `npm run validate` or `npm run build` in `site/` still sees these files as pages until
 then: run it in a scratch worktree with the folder removed.
 
