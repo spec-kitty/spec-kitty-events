@@ -8,9 +8,12 @@
     "node": ">=22.22.0"
   },
   "scripts": {
+    "predev": "python3 ../scripts/docs_index.py --write",
     "dev": "astro dev",
+    "prebuild": "python3 ../scripts/docs_index.py --write",
     "build": "astro build",
     "preview": "astro preview",
+    "prevalidate": "python3 ../scripts/docs_index.py --write",
     "validate": "dockitty-validate-frontmatter ../docs && dockitty-check-links ../docs",
     "check:built-links": "dockitty-assert-no-broken-links dist --base /spec-kitty-events --site https://spec-kitty.github.io"
   },
