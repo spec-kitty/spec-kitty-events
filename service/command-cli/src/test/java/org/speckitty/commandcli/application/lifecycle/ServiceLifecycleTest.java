@@ -59,15 +59,15 @@ class ServiceLifecycleTest {
     assertThat(lifecycle.beginDrain()).isFalse();
     assertThat(lifecycle.draining()).isTrue();
 
-    assertThat(lifecycle.finishDrain(Duration.ofSeconds(1), 0)).isTrue();
+    assertThat(lifecycle.finishDrain(Duration.ofSeconds(1))).isTrue();
     assertThat(lifecycle.state()).isEqualTo(ServiceState.STOPPED);
-    assertThat(lifecycle.finishDrain(Duration.ofSeconds(1), 0)).isFalse();
+    assertThat(lifecycle.finishDrain(Duration.ofSeconds(1))).isFalse();
     assertThat(stops).hasValue(1);
   }
 
   @Test
   void finishingADrainThatNeverBeganStopsNothing() throws Exception {
-    assertThat(lifecycle.finishDrain(Duration.ofMillis(10), 0)).isFalse();
+    assertThat(lifecycle.finishDrain(Duration.ofMillis(10))).isFalse();
     assertThat(stops).hasValue(0);
     assertThat(lifecycle.state()).isEqualTo(ServiceState.READY);
   }
@@ -82,7 +82,7 @@ class ServiceLifecycleTest {
             .start(
                 () -> {
                   try {
-                    lifecycle.finishDrain(Duration.ofSeconds(10), 0);
+                    lifecycle.finishDrain(Duration.ofSeconds(10));
                   } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                   }
@@ -103,7 +103,7 @@ class ServiceLifecycleTest {
     lifecycle.beginDrain();
 
     long started = System.nanoTime();
-    assertThat(lifecycle.finishDrain(Duration.ofMillis(100), 0)).isTrue();
+    assertThat(lifecycle.finishDrain(Duration.ofMillis(100))).isTrue();
 
     assertThat(Duration.ofNanos(System.nanoTime() - started)).isGreaterThanOrEqualTo(Duration.ofMillis(90));
     assertThat(stops).hasValue(1);

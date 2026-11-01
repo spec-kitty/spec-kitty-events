@@ -46,7 +46,7 @@ class ServiceController {
       drainExecutor.execute(
           () -> {
             try {
-              lifecycle.finishDrain(ServiceLifecycle.DRAIN_BUDGET, 0);
+              lifecycle.finishDrain(ServiceLifecycle.DRAIN_BUDGET);
             } catch (InterruptedException e) {
               Thread.currentThread().interrupt();
             }
