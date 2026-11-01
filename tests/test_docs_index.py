@@ -190,15 +190,20 @@ def test_check_reports_a_page_the_generator_cannot_index(tmp_path: Path) -> None
 
 def test_the_repository_indexes_are_committed_empty_and_generate() -> None:
     assert di.check(_REPO_ROOT) == []
-    assert len(di.changelog_lines(_REPO_ROOT / "docs" / "changelog")) >= 14
-    assert len(di.adr_lines(_REPO_ROOT / "docs" / "adr")) >= 6
+    changelog = di.changelog_lines(_REPO_ROOT / "docs" / "changelog")
+    adr = di.adr_lines(_REPO_ROOT / "docs" / "adr")
+    # Pin specific rows, not just a count floor: a floor below the real count stays green when
+    # a row is dropped (e.g. by a bad rebase past another PR), which is exactly the hazard here.
+    assert any("2026-10-31-service-v0-1-0-rc-1" in line for line in changelog)
+    assert any("0005-parallel-landing" in row for row in adr)
 
 
-def test_the_docsite_generates_the_indexes_before_it_validates() -> None:
+def test_the_docsite_generates_the_indexes_before_dev_build_and_validate() -> None:
     scripts = json.loads((_REPO_ROOT / "site" / "package.json").read_text(encoding="utf-8"))[
         "scripts"
     ]
     assert scripts["prevalidate"] == "python3 ../scripts/docs_index.py --write"
+    assert scripts["predev"] == scripts["prebuild"] == scripts["prevalidate"]
 
 
 # --- pre-PR squad findings -----------------------------------------------------------
@@ -250,13 +255,6 @@ def test_markers_in_the_wrong_order_are_an_error(tmp_path: Path) -> None:
         "<!-- END GENERATED: index -->\n<!-- BEGIN GENERATED: index -->\n", encoding="utf-8"
     )
     assert any("marker" in e for e in di.check(root))
-
-
-def test_the_docsite_generates_the_indexes_for_dev_and_build_too() -> None:
-    scripts = json.loads((_REPO_ROOT / "site" / "package.json").read_text(encoding="utf-8"))[
-        "scripts"
-    ]
-    assert scripts["predev"] == scripts["prebuild"] == scripts["prevalidate"]
 
 
 def test_the_changelog_fragment_folder_is_not_indexed(tmp_path: Path) -> None:
