@@ -1,0 +1,103 @@
+# pr:pause-ci -- pause a pull request's CI (ADR 0005 D3; ported from spec-kitty/spec-kitty#6961).
+#
+# Every PR-triggered job carries a guard, so runs that START while the label is on build
+# nothing: ci.yml's `suite`, acceptance.yml's `acceptance` and cross-repo-harness-tests.yml's
+# gate skip by `if:`; service.yml's and docs-site.yml's in-job diff reports "nothing to build",
+# so their gates pass without work. This workflow makes the label take effect at once:
+#
+#   labeled   -> cancel every queued or in-progress run for the PR head SHA, and post a failing
+#                check run under each required gate name, so a PR whose gates were already green
+#                stops being mergeable (and enqueueable) at once.
+#   unlabeled -> for each gate workflow, re-run its latest pull_request run for the PR head SHA
+#                that started BEFORE the label was added, whatever its outcome (cancelled by the
+#                pause, or finished green earlier), so every gate reports again and replaces the
+#                failure the pause posted. Events caused by GITHUB_TOKEN start no workflow runs, so
+#                a re-run is the only resume this token can trigger. A re-run replays the original,
+#                label-free payload. A gate with no run from before the pause (a push made under
+#                the label) is reported, not guessed: push again once the label is off.
+#
+# A merge-group run carries no labels, so the queue always tests a paused PR in full.
+#
+# SECURITY: `pull_request_target` runs with a write-capable token in the base repository's
+# context, so this workflow never checks out or executes PR code. It uses only the runner's
+# preinstalled `gh` CLI and passes event values through `env:`, never interpolated into a script.
+name: PR Pause CI
+
+on:
+  pull_request_target:
+    types: [labeled, unlabeled]
+
+concurrency:
+  group: pr-pause-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  pause:
+    if: ${{ github.repository == 'spec-kitty/spec-kitty-events' && github.event.label.name == 'pr:pause-ci' && github.event.action == 'labeled' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      checks: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      OWN_RUN_ID: ${{ github.run_id }}
+    steps:
+      - name: Cancel queued and in-progress runs for the head commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          for status in queued in_progress waiting pending requested; do
+            gh run list --repo "$REPO" --commit "$HEAD_SHA" --status "$status" \
+              --json databaseId -q '.[].databaseId' --limit 200 | while read -r id; do
+              [ "$id" = "$OWN_RUN_ID" ] && continue
+              gh run cancel "$id" --repo "$REPO" || echo "run $id already finished"
+            done
+          done
+      - name: Fail the required gates for the head commit
+        shell: bash
+        # The required checks of ADR 0005 D3; keep in step with the operator's ruleset.
+        run: |
+          set -euo pipefail
+          for gate in "suite" "acceptance" "cross-repo-harness-tests" "service-gate" "docs-build"; do
+            gh api "repos/$REPO/check-runs" -X POST \
+              -f name="$gate" -f head_sha="$HEAD_SHA" \
+              -f status=completed -f conclusion=failure \
+              -f 'output[title]=CI is paused by the pr:pause-ci label' \
+              -f 'output[summary]=CI is paused on this PR by the pr:pause-ci label; remove the label to run CI.'
+          done
+
+  resume:
+    if: ${{ github.repository == 'spec-kitty/spec-kitty-events' && github.event.label.name == 'pr:pause-ci' && github.event.action == 'unlabeled' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Re-run every gate from before the pause for the head commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          # When the label was last added; runs created before it carry a label-free payload.
+          label_at="$(gh api "repos/$REPO/issues/$PR_NUMBER/events" --paginate \
+            --jq '.[] | select(.event == "labeled" and .label.name == "pr:pause-ci") | .created_at' | tail -n 1)"
+          [ -n "$label_at" ] || label_at="9999-12-31T23:59:59Z"
+          for wf in ci.yml acceptance.yml cross-repo-harness-tests.yml service.yml docs-site.yml; do
+            id="$(gh run list --repo "$REPO" --workflow "$wf" --commit "$HEAD_SHA" --event pull_request \
+              --json databaseId,createdAt --limit 100 \
+              | jq -r --arg t "$label_at" '[.[] | select(.createdAt < $t)] | sort_by(.createdAt) | last | .databaseId // empty')"
+            if [ -z "$id" ]; then
+              echo "::warning::$wf has no run for $HEAD_SHA from before the pause; push again to run it"
+              continue
+            fi
+            gh run rerun "$id" --repo "$REPO" || echo "::warning::$wf run $id could not be re-run (still running?)"
+          done
