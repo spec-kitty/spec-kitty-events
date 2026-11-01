@@ -218,7 +218,10 @@ def _git(cwd: Path, *args: str) -> str:
 
 
 def _two_commit_repo(tmp_path: Path, changed: str) -> tuple[Path, str, str]:
-    """A clone whose origin has ``main`` at a base commit and a head that changes only ``changed``."""
+    """A clone whose origin has ``main`` at a base commit and a head that changes only ``changed``.
+
+    ``changed`` of the form ``old>new`` renames the committed file ``old`` to ``new``.
+    """
     clone, shas = _queue_repo(tmp_path, [changed])
     return clone, shas[0], shas[1]
 
@@ -261,6 +264,9 @@ DOCS_DETECT = (DOCS, "build", "Decide whether the change touches the docs")
         (DOCS_DETECT, ".github/workflows/docs-site.yml", "true"),
         (DOCS_DETECT, "docs/changelog/unreleased/177-x.md", "false"),
         (DOCS_DETECT, "service/README.md", "false"),
+        # A rename out of a watched path is still a change there (no rename detection).
+        (SERVICE_DETECT, "service/old.java>elsewhere/old.txt", "true"),
+        (DOCS_DETECT, "docs/old.md>elsewhere/old.txt", "true"),
     ],
 )
 @pytest.mark.parametrize("event", ["pull_request", "merge_group"])
@@ -464,12 +470,21 @@ def _queue_repo(tmp_path: Path, changes: list[str]) -> tuple[Path, list[str]]:
     _git(origin, "init", "-q", "-b", "main")
     _git(origin, "config", "user.email", "t@example.com")
     _git(origin, "config", "user.name", "t")
-    (origin / "README.md").write_text("x\n", encoding="utf-8")
+    for seeded in ("README.md", "service/old.java", "docs/old.md"):
+        (origin / seeded).parent.mkdir(exist_ok=True)
+        (origin / seeded).write_text("x\n", encoding="utf-8")
     _git(origin, "add", "-A")
     _git(origin, "commit", "-q", "-m", "base")
     _git(origin, "checkout", "-q", "-b", "gh-readonly-queue/main/pr-1")
     shas = [_git(origin, "rev-parse", "HEAD")]
     for changed in changes:
+        if ">" in changed:
+            old, new = changed.split(">")
+            (origin / new).parent.mkdir(parents=True, exist_ok=True)
+            _git(origin, "mv", old, new)
+            _git(origin, "commit", "-q", "-m", changed)
+            shas.append(_git(origin, "rev-parse", "HEAD"))
+            continue
         target = origin / changed
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("changed\n", encoding="utf-8")
