@@ -124,3 +124,12 @@ parallel conflict on all five. Not in this delivery's three changes; raised as a
 6. **pr:pause-ci:** port core's design scoped to the required gates.
 7. **Version files:** follow-up issue: after each tag, a release chore opens the next
    `.dev0` version so feature PRs never bump.
+
+## Operator rulings (2026-11-01, relayed by the orchestrator)
+
+All seven recommendations stand except the fragment location. Fragments live in
+`docs/changelog/unreleased/` to match core and doc-kitty (doc-kitty ADR-0072); the folder
+is excluded from the docs site, its build, validate, frontmatter rules and any index, with a
+test. Toolkit 0.5.0 cannot exclude a folder, so the docs job removes it from its checkout
+until a release carries doc-kitty's `exclude` (#181). The version-file hotspot is #180.
+ADR 0005 records the rulings.

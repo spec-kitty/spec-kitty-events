@@ -54,7 +54,7 @@ intended consumer can validate the new type.
 
 ## Artifacts a major bump must ship
 
-a `changelog.d/` fragment (`section: Breaking`, one line per change plus its consequence;
+a `docs/changelog/unreleased/` fragment (`section: Breaking`, one line per change plus its consequence;
 the release folds it into `CHANGELOG.md`, see ADR 0005), `COMPATIBILITY.md`
 (the version line plus the migration per role, and an old-to-new field map for any renamed
 field), `pyproject.toml`, `__version__`, the README masthead and pip lines and `uv.lock`,

@@ -45,7 +45,7 @@ jobs:
           print(f"Tag/version validated: {tag_version}")
           PY
 
-      # ADR 0005: the release PR folds changelog.d/ into CHANGELOG.md with
+      # ADR 0005: the release PR folds docs/changelog/unreleased/ into CHANGELOG.md with
       # `scripts/changelog.py collect --version`. Refuse to publish while a fragment is
       # pending or the version has no `## [X.Y.Z]` section: the tag's version on a tag
       # push, pyproject's on a workflow_dispatch (which has no tag to read).

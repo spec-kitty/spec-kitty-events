@@ -1,6 +1,6 @@
 """Changelog fragments (issue #175, ADR 0005).
 
-A pull request records its changelog entry as ``changelog.d/<issue>-<slug>.md``
+A pull request records its changelog entry as ``docs/changelog/unreleased/<issue>-<slug>.md``
 instead of editing ``CHANGELOG.md``, so parallel pull requests stop colliding on
 the top of ``## [Unreleased]``. ``scripts/changelog.py collect`` folds the
 fragments into ``CHANGELOG.md`` at release time, in the shape the file already
@@ -57,7 +57,7 @@ def _git(cwd: Path, *args: str) -> str:
 
 
 def _write_fragment(root: Path, name: str, section: str, body: str) -> Path:
-    path = root / "changelog.d" / name
+    path = root / "docs/changelog/unreleased" / name
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(f"---\nsection: {section}\n---\n\n{body}", encoding="utf-8")
     return path
@@ -67,8 +67,10 @@ def _repo(tmp_path: Path, changelog: str = _BASE_CHANGELOG) -> Path:
     root = tmp_path / "repo"
     root.mkdir()
     (root / "CHANGELOG.md").write_text(changelog, encoding="utf-8")
-    (root / "changelog.d").mkdir()
-    (root / "changelog.d" / "README.md").write_text("How to write a fragment.\n", encoding="utf-8")
+    (root / "docs/changelog/unreleased").mkdir(parents=True)
+    (root / "docs/changelog/unreleased" / "README.md").write_text(
+        "How to write a fragment.\n", encoding="utf-8"
+    )
     return root
 
 
@@ -121,7 +123,7 @@ def test_an_unknown_section_is_refused(tmp_path: Path) -> None:
 
 def test_missing_frontmatter_is_refused(tmp_path: Path) -> None:
     root = _repo(tmp_path)
-    (root / "changelog.d" / "175-x.md").write_text("- A thing.\n", encoding="utf-8")
+    (root / "docs/changelog/unreleased" / "175-x.md").write_text("- A thing.\n", encoding="utf-8")
     (error,) = cl.check(root)
     assert "frontmatter" in error
 
@@ -265,7 +267,7 @@ def test_the_collect_command_writes_the_changelog_and_deletes_the_fragments(tmp_
     )
 
     assert not fragment.exists()
-    assert (root / "changelog.d" / "README.md").exists()
+    assert (root / "docs/changelog/unreleased" / "README.md").exists()
     assert "## [1.1.0] - 2026-11-02" in (root / "CHANGELOG.md").read_text(encoding="utf-8")
 
 
@@ -312,7 +314,7 @@ def test_guard_refuses_a_hand_edit_of_unreleased(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     (error,) = cl.guard(root, "main")
-    assert "changelog.d/" in error
+    assert "docs/changelog/unreleased/" in error
 
 
 def test_guard_allows_a_collect_that_consumes_fragments(tmp_path: Path) -> None:
@@ -575,7 +577,7 @@ def test_a_duplicate_unreleased_subsection_is_refused_rather_than_merged_lossily
 @pytest.mark.parametrize("name", [".175-hidden.md", "sub"])
 def test_hidden_files_and_directories_are_reported(tmp_path: Path, name: str) -> None:
     root = _repo(tmp_path)
-    target = root / "changelog.d" / name
+    target = root / "docs/changelog/unreleased" / name
     if name == "sub":
         target.mkdir()
     else:
@@ -587,13 +589,13 @@ def test_hidden_files_and_directories_are_reported(tmp_path: Path, name: str) ->
 
 def test_a_gitkeep_is_not_a_fragment(tmp_path: Path) -> None:
     root = _repo(tmp_path)
-    (root / "changelog.d" / ".gitkeep").write_text("", encoding="utf-8")
+    (root / "docs/changelog/unreleased" / ".gitkeep").write_text("", encoding="utf-8")
     assert cl.check(root) == []
 
 
 def test_a_bom_and_crlf_fragment_parses(tmp_path: Path) -> None:
     root = _repo(tmp_path)
-    path = root / "changelog.d" / "175-x.md"
+    path = root / "docs/changelog/unreleased" / "175-x.md"
     path.write_bytes("﻿---\r\nsection: Fixed\r\n---\r\n\r\n- Fixed (#175).\r\n".encode())
     assert cl.parse_fragment(path).body == "- Fixed (#175)."
 
@@ -657,3 +659,41 @@ def test_collect_keeps_every_original_line_and_adds_each_fragment_once() -> None
     assert all(any(line == r for r in remaining) for line in original)  # an ordered subsequence
     for fragment in fragments:
         assert rendered.count(fragment.body) == 1
+
+
+# --- operator ruling 1: the fragment folder is not part of the docs site -------------
+
+_DOCS_SITE = _REPO_ROOT / ".github" / "workflows" / "docs-site.yml"
+
+
+def test_the_docs_job_drops_the_fragment_folder_before_any_npm_step() -> None:
+    # Toolkit 0.5.0 walks every .md under docs/, so fragments would be pages that fail the
+    # frontmatter gate. Until a toolkit release carries `exclude` (doc-kitty ADR-0070), the
+    # docs job removes the folder from its disposable checkout first.
+    workflow = yaml.safe_load(_DOCS_SITE.read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["build"]["steps"]
+    runs = [str(step.get("run", "")) for step in steps]
+    drop = next(i for i, run in enumerate(runs) if "rm -rf docs/changelog/unreleased" in run)
+    npm = [i for i, run in enumerate(runs) if "npm " in run]
+    assert npm and drop < min(npm)
+
+
+def test_a_fragment_only_change_does_not_trigger_the_docs_build() -> None:
+    on = yaml.load(_DOCS_SITE.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)["on"]
+    for event in ("pull_request", "push"):
+        paths = on[event]["paths"]
+        assert paths.index("!docs/changelog/unreleased/**") > paths.index("docs/**"), event
+
+
+def test_the_local_doc_kitty_gates_leave_the_fragment_folder_out() -> None:
+    agents = (_REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    for script in ("validate-frontmatter.mjs", "check-links.mjs"):
+        line = next(line for line in agents.splitlines() if script in line)
+        assert "--exclude docs/changelog/unreleased" in line, line
+
+
+def test_the_fragment_readme_is_not_a_docs_page() -> None:
+    readme = (_REPO_ROOT / "docs" / "changelog" / "unreleased" / "README.md").read_text(
+        encoding="utf-8"
+    )
+    assert not readme.startswith("---"), "the folder holds entries, not pages: no doc frontmatter"

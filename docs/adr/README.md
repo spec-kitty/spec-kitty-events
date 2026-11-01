@@ -37,6 +37,6 @@ index.
 | [0002](./0002-events-domain-owns-its-services.md) | ADR-0002: spec-kitty-events is canonical for the events domain and its services | Accepted | 2026-10-29 |
 | [0003](./0003-gradle-build-and-service-release-line.md) | ADR-0003: one Gradle build and the service-v* release line | Accepted | 2026-10-29 |
 | [0004](./0004-dual-artifact-line.md) | ADR-0004: two independent release lines, the PyPI package and the services | Accepted | 2026-10-29 |
-| [0005](./0005-parallel-landing.md) | ADR-0005: land pull requests in parallel: changelog fragments, generated indexes, merge-queue readiness | Proposed | 2026-11-01 |
+| [0005](./0005-parallel-landing.md) | ADR-0005: land pull requests in parallel: changelog fragments, generated indexes, merge-queue readiness | Accepted | 2026-11-01 |
 
 Design detail for the records above lives under [`docs/architecture/`](../architecture/).

@@ -1,6 +1,6 @@
 ---
 title: 'ADR-0005: land pull requests in parallel: changelog fragments, generated indexes, merge-queue readiness'
-description: 'Proposed: PRs add changelog.d/ fragments, section indexes are generated, and every required-check workflow runs on merge_group, so one merge no longer conflicts every open PR.'
+description: 'Accepted: PRs add changelog fragments, section indexes are generated at docs build, and required-check workflows run on merge_group, so one merge stops conflicting the rest.'
 doc_status: active
 updated: 2026-11-01T00:00:00Z
 type: ADR
@@ -11,9 +11,9 @@ authors:
 
 # ADR-0005: land pull requests in parallel: changelog fragments, generated indexes, merge-queue readiness
 
-**Status:** Proposed. The operator approved the remedy on 2026-11-01, the same one
-`spec-kitty/spec-kitty` is adopting. The detail below is the recommendation sent with the
-research; it becomes Accepted when the operator merges this record.
+**Status:** Accepted. The operator approved the remedy on 2026-11-01, the same one
+`spec-kitty/spec-kitty` and doc-kitty (ADR-0072) are adopting, and ruled on each open
+point the research raised the same day; the decisions below record those rulings.
 
 **Date:** 2026-11-01
 
@@ -48,7 +48,14 @@ check either: there is no branch protection and no merge queue. No workflow runs
 
 ### D1. One changelog fragment per change (#175)
 
-A pull request adds `changelog.d/<issue>-<slug>.md` and never edits `CHANGELOG.md`.
+A pull request adds `docs/changelog/unreleased/<issue>-<slug>.md` and never adds entries to
+`[Unreleased]` in `CHANGELOG.md`. The folder matches core and doc-kitty (operator ruling;
+the research had proposed a root `changelog.d/`). It holds entries, not pages: the docs
+build, its frontmatter and link gates and every index leave it out, and a change to it
+alone does not trigger the docs build. While the site pins toolkit 0.5.0, which cannot
+exclude a folder, the docs job removes the folder from its checkout; a toolkit release with
+doc-kitty's `exclude` (its ADR-0070) replaces that step
+([#181](https://github.com/spec-kitty/spec-kitty-events/issues/181)).
 - The fragment's frontmatter names one `section`: Breaking, Migration, Added, Changed,
   Deprecated, Removed, Fixed or Security.
 - Its body is the bullet(s), as they will read in the changelog.
@@ -96,7 +103,19 @@ the trigger into the jobs, which diff the PR's or the merge group's base and hea
 gate job always reports, so it can be a required check.
 
 On `merge_group`, the `squad:passed`/`squad:exhausted` label gate does not apply: the full
-suite always runs there. The label only saves cost on the pull request side.
+suite always runs there. The label only saves cost on the pull request side. `ci.yml` also
+runs on `opened` and `ready_for_review`, so its `suite` check reports on every pull request.
+
+The queue settings (operator ruling):
+- rebase merge;
+- build concurrency 5;
+- merge groups of 1 to 5;
+- a 5-minute wait;
+- a 120-minute check timeout;
+- only non-failing pull requests merge.
+
+The required checks are `suite`, `acceptance`, `cross-repo-harness-tests`, `service-gate`
+and the docs `build`.
 
 A `pr:pause-ci` label pauses a pull request's CI, as in core (spec-kitty/spec-kitty#6961).
 
@@ -107,8 +126,8 @@ settings.
 
 - Two feature pull requests no longer share a changelog or index hunk. What remains shared
   is the version declaration, which the first `src/` change after a tag must bump
-  (`scripts/check_version_not_amended.py`). That is recorded as a follow-up, not decided
-  here.
+  (`scripts/check_version_not_amended.py`). That is a follow-up
+  ([#180](https://github.com/spec-kitty/spec-kitty-events/issues/180)), not decided here.
 - A release pull request has one more step (`collect`), and `publish-pypi.yml` refuses a
   tag that skipped it.
 - An entry is reviewed as its own file, and it can no longer be misfiled under another
