@@ -5,8 +5,13 @@
 name: ci
 
 on:
+  # opened/ready_for_review make `suite` report on every PR (skipped until the squad label),
+  # so it can be a required check (ADR 0005 D3).
   pull_request:
-    types: [labeled, synchronize, reopened]
+    types: [opened, labeled, synchronize, reopened, ready_for_review]
+  # The merge queue (ADR 0005 D3): the full suite runs on every merge group.
+  merge_group:
+    types: [checks_requested]
   push:
     branches: [main]
   workflow_dispatch:
@@ -14,9 +19,11 @@ on:
       sha: { description: "40-char commit sha to run", required: true, type: string }
       pr: { description: "repo-local PR number (empty = main run)", required: false, default: "", type: string }
 
-# one run per head; a newer push to the same PR supersedes the older run
+# one run per head; a newer push to the same PR supersedes the older run. A merge group has no
+# PR number: it keys on its own gh-readonly-queue ref, so queue entries never cancel each other
+# or a main run (push and dispatch runs key on their ref, as `main` did before).
 concurrency:
-  group: ci-${{ github.event.pull_request.number || inputs.pr || 'main' }}
+  group: ci-${{ github.event.pull_request.number || inputs.pr || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -25,11 +32,14 @@ env:
 
 jobs:
   suite:
-    # same gate as bin/ci-dispatch.sh's priority producer: only squad-passed/exhausted heads (and main) get a run
+    # same gate as bin/ci-dispatch.sh's priority producer: only squad-passed/exhausted heads (and main) get a run.
+    # merge_group, push and dispatch always run: the queue run is the gate for main (ADR 0005 D3). A PR
+    # labelled pr:pause-ci runs nothing (pr-pause-ci.yml).
     if: >-
-      github.event_name != 'pull_request' ||
+      github.event_name != 'pull_request' || (
+      !contains(github.event.pull_request.labels.*.name, 'pr:pause-ci') && (
       contains(github.event.pull_request.labels.*.name, 'squad:passed') ||
-      contains(github.event.pull_request.labels.*.name, 'squad:exhausted')
+      contains(github.event.pull_request.labels.*.name, 'squad:exhausted')))
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 90
     # planning#1876: the pre-suite workflow-integrity check (bin/ci-run.sh ->
@@ -93,15 +103,31 @@ jobs:
           echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
       - name: Resolve target
         id: t
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PUSH_SHA: ${{ github.sha }}
+          MG_SHA: ${{ github.event.merge_group.head_sha }}
+          MG_REF: ${{ github.event.merge_group.head_ref }}
+          INPUT_SHA: ${{ inputs.sha }}
+          INPUT_PR: ${{ inputs.pr }}
+        # merge_group: the queue's merge commit, run as the queued PR's head. A non-empty pr keeps
+        # bin/ci-post.sh from treating the run as main's (it would refresh main's CI baseline with
+        # a temporary queue SHA); its label flip skips itself because the SHA is not the PR head.
         run: |
-          case "${{ github.event_name }}" in
-            pull_request) sha="${{ github.event.pull_request.head.sha }}"; pr="${{ github.event.pull_request.number }}" ;;
-            push)         sha="${{ github.sha }}"; pr="" ;;
-            *)            sha="${{ inputs.sha }}"; pr="${{ inputs.pr }}" ;;
+          case "$EVENT" in
+            pull_request) sha="$PR_SHA"; pr="$PR_NUMBER" ;;
+            push)         sha="$PUSH_SHA"; pr="" ;;
+            merge_group)
+              sha="$MG_SHA"
+              pr="$(sed -nE 's#^refs/heads/gh-readonly-queue/[^/]+/pr-([0-9]+)-[0-9a-f]{40}$#\1#p' <<<"$MG_REF")"
+              [ -n "$pr" ] || { echo "::error::cannot read the queued PR from merge_group.head_ref '$MG_REF'"; exit 64; } ;;
+            *)            sha="$INPUT_SHA"; pr="$INPUT_PR" ;;
           esac
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad sha '$sha'"; exit 64; }
           echo "sha=$sha" >> "$GITHUB_OUTPUT"; echo "pr=$pr" >> "$GITHUB_OUTPUT"
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
       - name: Sibling checkouts (planning + repo under test)
         run: |
           mkdir -p "$SK_HOME"
@@ -133,13 +159,26 @@ jobs:
           # The '!gh auth git-credential' helper reads GH_TOKEN at call time, so
           # the baseline git push picks the re-minted token up automatically.
           GH_TOKEN: ${{ steps.remint.outputs.token || steps.mint.outputs.token }}
+          EVENT: ${{ github.event_name }}
+          SHA: ${{ steps.t.outputs.sha }}
+          PR: ${{ steps.t.outputs.pr }}
+        # bin/ci-post.sh exits 0 for a red verdict: on a PR the verdict is its comment and
+        # ci:green/ci:red label. A merge-queue entry has no one reading that, so there the job
+        # itself must fail unless the verdict is green (ADR 0005 D3).
         run: |
-          run="$SK_HOME/ci-runs/$REPO/${{ steps.t.outputs.sha }}"
+          run="$SK_HOME/ci-runs/$REPO/$SHA"
           [ -f "$run/exit" ] || { echo "::error::no run dir/exit file — suite never completed; not posting a verdict"; exit 1; }
-          bin/ci-post.sh "$REPO" "${{ steps.t.outputs.sha }}" "$run" "${{ steps.t.outputs.pr }}"
+          set +e
+          out="$(bin/ci-post.sh "$REPO" "$SHA" "$run" "$PR")"; rc=$?
+          set -e
+          printf '%s\n' "$out"
+          [ "$rc" -eq 0 ] || exit "$rc"
+          if [ "$EVENT" = merge_group ]; then
+            grep -q '^\[ci\] green @' <<<"$out" || { echo "::error::the merge-queue verdict is not green; the entry leaves the queue"; exit 1; }
+          fi"
       - name: Keep the log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ci-log-${{ steps.t.outputs.sha }}
           path: ${{ env.SK_HOME }}/ci-runs/**/log
