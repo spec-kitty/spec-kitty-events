@@ -17,6 +17,14 @@ own work. The binding process is the programme constitution; see
 [`AGENTS.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/AGENTS.md) and
 [`PROGRAM.md`](https://github.com/spec-kitty/EXPERIMENTAL-spec-kitty-planning/blob/main/PROGRAM.md).
 
+## Pausing CI and the merge queue
+
+Label a PR `pr:pause-ci` to stop its CI while you rework it: the label cancels the PR's
+running workflows and marks its required checks failed, and removing it re-runs what was
+cancelled (after a push made under the label, push again once it is off). The merge queue
+ignores PR labels: every entry runs the full suite, including `ci.yml` without the squad label
+(ADR 0005 D3).
+
 ## The flow
 
 - **One issue → one branch → one PR.** Cut `issue-<n>-<slug>` from `main`; open one PR back to

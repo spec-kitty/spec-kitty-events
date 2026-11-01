@@ -11,14 +11,19 @@ process. There is no pre-programme
 branch ladder here: **`main` IS the integration branch** — every PR targets `main`,
 nothing deploys on merge except the docs site (`docs-site.yml` publishes GitHub Pages on
 a push to `main` that touches `docs/**` or `site/**`), and nothing on GitHub enforces
-anything (no branch protection, no required reviews). The deterministic CI suite is
+anything (no branch protection, no required reviews) until the operator turns on the merge
+queue: every workflow that produces a required check (`suite`, `acceptance`,
+`cross-repo-harness-tests`, `service-gate`, the docs `build`) also runs on `merge_group`, where
+the full suite always runs, and a `pr:pause-ci` label pauses a PR's CI (`pr-pause-ci.yml`;
+ADR 0005 D3, #177). The deterministic CI suite is
 `.github/workflows/ci.yml` (Blacksmith, per `planning#274`); the other workflows run the
 acceptance and cross-repo harness checks (`acceptance.yml`, `cross-repo-harness-tests.yml`)
 and the daily CI canary (`ci-pr-lane-canary.yml`), build and deploy the docs site, and
 publish to PyPI on `v*` tags (`publish-pypi.yml`) or to TestPyPI on manual dispatch
 (`publish-testpypi.yml`). `service.yml` runs the Gradle build (`./gradlew verifyAll`,
-currently the Java binding) on pull requests and `main` pushes that touch the Java, Gradle,
-service, contract or producer-contract paths; its service jobs stay inert until the services
+currently the Java binding) on `main` pushes that touch the Java, Gradle, service, contract or
+producer-contract paths, and on every pull request and merge group, where its `detect` job
+skips the build unless the change touches those paths; its service jobs stay inert until the services
 are imported at cutover, and `service-release.yml` (`service-v*` tags) refuses to release
 before then ([ADR-0003](./docs/adr/0003-gradle-build-and-service-release-line.md)).
 The binding process is the programme constitution —
