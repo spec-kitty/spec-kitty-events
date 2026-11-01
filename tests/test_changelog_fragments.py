@@ -220,7 +220,7 @@ def test_collect_with_a_version_cuts_a_release_section(tmp_path: Path) -> None:
 def test_collect_keeps_unknown_existing_subsections_after_the_known_ones(tmp_path: Path) -> None:
     changelog = _BASE_CHANGELOG.replace(
         "### Fixed\n\n- An existing fix.\n",
-        "### Fixed\n\n- An existing fix.\n\n### Compatibility\n\n- Kept as written.\n",
+        "### Fixed\n\n- An existing fix.\n\n### Notes\n\n- Kept as written.\n",
     )
     root = _repo(tmp_path, changelog)
     _write_fragment(root, "175-sec.md", "Security", "- Hardened (#175).\n")
@@ -229,8 +229,8 @@ def test_collect_keeps_unknown_existing_subsections_after_the_known_ones(tmp_pat
 
     unreleased = text.split("## [1.0.0]")[0]
     assert unreleased.index("### Fixed") < unreleased.index("### Security")
-    assert unreleased.index("### Security") < unreleased.index("### Compatibility")
-    assert "### Compatibility\n\n- Kept as written.\n" in unreleased
+    assert unreleased.index("### Security") < unreleased.index("### Notes")
+    assert "### Notes\n\n- Kept as written.\n" in unreleased
 
 
 def test_collect_into_an_empty_unreleased_section(tmp_path: Path) -> None:
@@ -728,3 +728,24 @@ def test_the_fragment_readme_is_not_a_docs_page() -> None:
         encoding="utf-8"
     )
     assert not readme.startswith("---"), "the folder holds entries, not pages: no doc frontmatter"
+
+
+# --- operator ruling 2026-11-01 (#186): a Compatibility section ------------------------
+
+
+def test_a_compatibility_fragment_is_accepted(tmp_path: Path) -> None:
+    root = _repo(tmp_path)
+    path = _write_fragment(root, "186-compat.md", "Compatibility", "- Consumers keep working.\n")
+    assert cl.check(root) == []
+    assert cl.parse_fragment(path).section == "Compatibility"
+
+
+def test_compatibility_is_written_last_among_the_known_sections(tmp_path: Path) -> None:
+    root = _repo(tmp_path)
+    _write_fragment(root, "186-compat.md", "Compatibility", "- Consumers keep working.\n")
+    _write_fragment(root, "187-sec.md", "Security", "- Hardened.\n")
+    text = cl.render(_BASE_CHANGELOG, cl.load_fragments(root))
+    unreleased = text.split("## [1.0.0]")[0]
+    assert unreleased.index("### Fixed") < unreleased.index("### Security")
+    assert unreleased.index("### Security") < unreleased.index("### Compatibility")
+    assert unreleased.rstrip().endswith("### Compatibility\n\n- Consumers keep working.")

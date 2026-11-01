@@ -30,8 +30,8 @@ section: Added
 ```
 
 - `section` is one of `Breaking`, `Migration`, `Added`, `Changed`, `Deprecated`,
-  `Removed`, `Fixed`, `Security`. One fragment, one section; a change with entries in
-  two sections adds two fragments (`175-x.md`, `175-x-fix.md`).
+  `Removed`, `Fixed`, `Security`, `Compatibility`. One fragment, one section; a change
+  with entries in two sections adds two fragments (`175-x.md`, `175-x-fix.md`).
 - The body is one or more `- ` bullets, written as they will read in `CHANGELOG.md`.
   No headings. Link files relative to the repository root (`docs/adr/…`), never with
   `../`: the entry is read from `CHANGELOG.md`.

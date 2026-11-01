@@ -62,7 +62,7 @@ exclude a folder, the docs job removes the folder from its checkout; a toolkit r
 doc-kitty's `exclude` (its ADR-0070) replaces that step
 ([#181](https://github.com/spec-kitty/spec-kitty-events/issues/181)).
 - The fragment's frontmatter names one `section`: Breaking, Migration, Added, Changed,
-  Deprecated, Removed, Fixed or Security.
+  Deprecated, Removed, Fixed, Security or Compatibility (#186).
 - Its body is the bullet(s), as they will read in the changelog.
 
 `scripts/changelog.py` owns the format:
