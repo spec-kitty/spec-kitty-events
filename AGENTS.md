@@ -29,6 +29,9 @@ The binding process is the programme constitution —
 - Run every test you write or change plus your blast radius, and record the commands and
   counts in the PR (§6). Do **not** run a whole-repo suite before opening the PR — that is
   the CI agent's job (`make test-full`).
+- Record the change as a `changelog.d/<issue>-<slug>.md` fragment; never edit `CHANGELOG.md`
+  by hand — only the release PR's `scripts/changelog.py collect` writes it
+  ([ADR 0005](./docs/adr/0005-parallel-landing.md), `changelog.d/README.md`).
 - Exactly one adversarial-squad review per PR; `[MAJOR]` findings block, minors become
   issues (§7). On exe.dev VMs use `gh api repos/<owner>/<repo>/...`, not `gh pr` /
   `gh issue` (`bin/GH-API.md` in the planning repo).
@@ -41,6 +44,7 @@ The binding process is the programme constitution —
 | Whole suite with coverage — CI agent only | `make test-full` |
 | Packaged conformance gate — every PR | `uv run pytest --pyargs spec_kitty_events.conformance` |
 | Lint (whole repo, part of "Tests run") | `ruff check . && ruff format --check .` |
+| Changelog fragments well formed, `[Unreleased]` not hand-edited (both in `make lint`) | `uv run python scripts/changelog.py check && uv run python scripts/changelog.py guard` |
 | Java build and tests, every Gradle module (binding, services, contracts), with the contract bundle — part of `make test-full` | `make test-gradle` |
 | The same by hand: export `CONTRACT_BUNDLE` and `CONTRACT_BUNDLE_SHA256` first ([runbook §5](./docs/guides/service-cutover-runbook.md#5-verification)) | `./gradlew verifyAll` |
 | Java binding check alone, through the JDK 25 helper | `make test-java` |

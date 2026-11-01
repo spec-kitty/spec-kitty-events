@@ -54,11 +54,12 @@ intended consumer can validate the new type.
 
 ## Artifacts a major bump must ship
 
-`CHANGELOG.md` (`### Breaking`, one line per change plus its consequence), `COMPATIBILITY.md`
+a `changelog.d/` fragment (`section: Breaking`, one line per change plus its consequence;
+the release folds it into `CHANGELOG.md`, see ADR 0005), `COMPATIBILITY.md`
 (the version line plus the migration per role, and an old-to-new field map for any renamed
 field), `pyproject.toml`, `__version__`, the README masthead and pip lines and `uv.lock`,
 every regenerated `*.schema.json`, and conformance fixtures covering the new accept/reject
-boundary. Forbidden: bumping without updating `CHANGELOG.md`, changing models without
+boundary. Forbidden: bumping without a changelog entry, editing `[Unreleased]` by hand, changing models without
 regenerating schemas, documenting a breaking change as additive, or weakening the
 local-CLI compatibility wording.
 
