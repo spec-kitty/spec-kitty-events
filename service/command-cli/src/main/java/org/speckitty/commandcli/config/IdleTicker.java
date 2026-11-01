@@ -31,7 +31,7 @@ public final class IdleTicker implements AutoCloseable {
         () -> {
           if (watch.tick()) {
             try {
-              lifecycle.finishDrain(ServiceLifecycle.DRAIN_BUDGET, 0);
+              lifecycle.finishDrain(ServiceLifecycle.DRAIN_BUDGET);
             } catch (InterruptedException e) {
               Thread.currentThread().interrupt();
             }

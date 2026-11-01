@@ -74,17 +74,16 @@ public final class ServiceLifecycle {
   }
 
   /**
-   * Finishes a drain begun by {@link #beginDrain()}: waits up to {@code budget} for the requests in flight (not counting {@code own} requests
-   * of the caller still on the stack), moves to STOPPED and stops the process. Answers false when the service was not draining or was
-   * already stopped.
+   * Finishes a drain begun by {@link #beginDrain()}: waits up to {@code budget} for the requests in flight, moves to STOPPED and stops the
+   * process. Answers false when the service was not draining or was already stopped.
    */
-  public boolean finishDrain(Duration budget, int own) throws InterruptedException {
+  public boolean finishDrain(Duration budget) throws InterruptedException {
     if (state.get() != ServiceState.DRAINING) {
       return false;
     }
     long deadline = System.nanoTime() + budget.toNanos();
     synchronized (idle) {
-      while (inFlight.get() > own) {
+      while (inFlight.get() > 0) {
         long left = deadline - System.nanoTime();
         if (left <= 0) {
           break;
