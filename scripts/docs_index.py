@@ -152,6 +152,8 @@ INDEXES: dict[str, Callable[[Path], list[str]]] = {
 
 
 def _span(text: str, readme: str) -> tuple[int, int]:
+    # One marker pair per README by design: this takes the first BEGIN/END, so a stray second
+    # pair would be left untouched by --write and unseen by --check.
     begin, end = text.find(BEGIN), text.find(END)
     if begin < 0 or end < begin:
         raise IndexError_(f"{readme}: it needs the marker pair '{BEGIN}' / '{END}'")
