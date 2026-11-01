@@ -15,7 +15,7 @@ import tools.jackson.databind.json.JsonMapper;
  * {@code .../work-package-transitions;x=1} would reach an operation the raw match did not see. No client of the contract needs such a target
  * (every path segment is ASCII and every identifier a ULID or a WpId), so a target that is not in canonical form is refused 400
  * {@code REQUEST_MALFORMED} right after the token: no path parameter ({@code ;}), no percent-encoding ({@code %}), no empty segment
- * ({@code //}) and no dot segment. A query string is not part of the target checked.
+ * ({@code //}), no trailing slash on a target other than the root, and no dot segment. A query string is not part of the target checked.
  */
 public class CanonicalPathFilter extends OncePerRequestFilter {
 
@@ -33,6 +33,9 @@ public class CanonicalPathFilter extends OncePerRequestFilter {
       return false;
     }
     if (target.indexOf(';') >= 0 || target.indexOf('%') >= 0 || target.indexOf('\\') >= 0 || target.contains("//")) {
+      return false;
+    }
+    if (target.length() > 1 && target.endsWith("/")) {
       return false;
     }
     for (String segment : target.split("/", -1)) {
