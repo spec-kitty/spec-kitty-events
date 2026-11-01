@@ -359,12 +359,14 @@ def guard(root: Path, base_ref: str | None) -> list[str]:
     try:
         base_text = _git(root, "show", f"{merge_base}:{CHANGELOG}")
     except subprocess.CalledProcessError:
-        return []
+        # The changelog did not exist at the merge-base: compare against an empty
+        # [Unreleased] rather than waving the change through, so a hand edit still fails closed.
+        base_text = f"{_UNRELEASED}\n"
     text = (root / CHANGELOG).read_text(encoding="utf-8")
     if _subsections(base_text) == _subsections(text):
         return []
     released = _first_heading_below_unreleased(text)
-    if released is not None and released not in _versions(base_text):
+    if released is not None and released not in _versions(base_text) and not _subsections(text):
         return []
     consumed: list[Fragment] = []
     for path in _git(root, "ls-tree", "--name-only", merge_base, f"{FRAGMENT_DIR}/").split():

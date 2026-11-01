@@ -334,6 +334,36 @@ def test_guard_allows_a_release_cut_with_no_fragments(tmp_path: Path) -> None:
     assert cl.guard(root, "main") == []
 
 
+def test_guard_refuses_a_hand_edit_hidden_behind_a_release_cut(tmp_path: Path) -> None:
+    # A new version heading in the tail must not excuse hand edits to [Unreleased]'s own
+    # subsections: those stay in the section body, so the release-cut allowance only holds
+    # when the body has been emptied (as a real collect leaves it).
+    root = _repo(tmp_path)
+    _commit_base(root)
+    changelog = root / "CHANGELOG.md"
+    changelog.write_text(
+        changelog.read_text(encoding="utf-8")
+        .replace("- An existing fix.\n", "- An existing fix.\n- Snuck in by hand.\n")
+        .replace("## [1.0.0] - 2026-10-01", "## [2.0.0] - 2026-11-02\n\nFake cut.\n\n## [1.0.0] - 2026-10-01"),
+        encoding="utf-8",
+    )
+    (error,) = cl.guard(root, "main")
+    assert "docs/changelog/unreleased/" in error
+
+
+def test_guard_fails_closed_when_the_changelog_is_absent_at_the_merge_base(tmp_path: Path) -> None:
+    # The changelog did not exist at the branch point: a hand-edited [Unreleased] must still
+    # be refused, not waved through because the base text could not be read.
+    root = tmp_path / "repo"
+    root.mkdir()
+    (root / "docs/changelog/unreleased").mkdir(parents=True)
+    (root / "docs/changelog/unreleased" / "README.md").write_text("readme\n", encoding="utf-8")
+    _commit_base(root)
+    (root / "CHANGELOG.md").write_text(_BASE_CHANGELOG, encoding="utf-8")
+    (error,) = cl.guard(root, "main")
+    assert "docs/changelog/unreleased/" in error
+
+
 def test_guard_allows_edits_to_released_sections(tmp_path: Path) -> None:
     root = _repo(tmp_path)
     _commit_base(root)
