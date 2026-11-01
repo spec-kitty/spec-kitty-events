@@ -257,3 +257,16 @@ def test_the_docsite_generates_the_indexes_for_dev_and_build_too() -> None:
         "scripts"
     ]
     assert scripts["predev"] == scripts["prebuild"] == scripts["prevalidate"]
+
+
+def test_the_changelog_fragment_folder_is_not_indexed(tmp_path: Path) -> None:
+    # docs/changelog/unreleased/ holds changelog fragments, not pages (ADR 0005 D1).
+    root = _tree(tmp_path)
+    d = root / "docs" / "changelog"
+    _page(d / "2026-10-12-a.md", "A", -202610121)
+    (d / "unreleased").mkdir()
+    (d / "unreleased" / "176-x.md").write_text(
+        "---\nsection: Added\n---\n\n- x\n", encoding="utf-8"
+    )
+    assert di.changelog_lines(d) == ["- [2026-10-12 — A](./2026-10-12-a.md)"]
+    assert di.check(root) == []
