@@ -10,12 +10,14 @@ on:
       - 'docs/**'
       - 'site/**'
       - '.github/workflows/docs-site.yml'
+      - 'scripts/docs_index.py'
   push:
     branches: [main]
     paths:
       - 'docs/**'
       - 'site/**'
       - '.github/workflows/docs-site.yml'
+      - 'scripts/docs_index.py'
   workflow_dispatch:
 
 permissions:

@@ -27,10 +27,11 @@ test-floor: ## Run the whole suite on the declared support floor (Python 3.10)
 test-full: test-floor lint test-gradle ## Run the whole suite with the configured coverage report — what the CI agent runs
 	uv run pytest $(ARGS)
 
-lint: ## Run the pinned ruff check gate, the formatter check, and the version-amendment guard
+lint: ## Run the pinned ruff check gate, the formatter check, the version-amendment guard and the generated-index check
 	uv run ruff check .
 	uv run ruff format --check .
 	uv run python scripts/check_version_not_amended.py
+	uv run python scripts/docs_index.py --check
 
 # The Java binding (java/, spec-kitty-events#92) runs the same upcast corpus as the Python
 # gate. scripts/ensure_jdk25.sh finds a JDK 25+ or provisions Temurin 25 into .cache/ and hands
