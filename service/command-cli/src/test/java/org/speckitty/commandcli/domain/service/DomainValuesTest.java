@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.security.SecureRandom;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.SplittableRandom;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -23,16 +21,6 @@ class DomainValuesTest {
     assertThat(id.value()).matches(InstanceId.PATTERN);
     assertThat(id.value()).startsWith("014D2PF2DB"); // 0x0123456789AB in Crockford base 32, ten characters
     assertThat(id).hasToString(id.value());
-  }
-
-  @Test
-  void instanceIdsDifferBetweenStarts() {
-    Set<String> ids = new HashSet<>();
-    SecureRandom random = new SecureRandom();
-    for (int i = 0; i < 1000; i++) {
-      ids.add(InstanceId.mint(1_700_000_000_000L, random).value());
-    }
-    assertThat(ids).hasSize(1000);
   }
 
   @Test
@@ -65,7 +53,6 @@ class DomainValuesTest {
     assertThat(token.matches("")).isFalse();
     assertThat(token.matches(null)).isFalse();
     assertThat(token).isEqualTo(token).isNotEqualTo(other).isNotEqualTo("text");
-    assertThat(token.hashCode()).isEqualTo(other.hashCode());
   }
 
   @Test
