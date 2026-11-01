@@ -1,5 +1,5 @@
 ---
-title: "11.2.0 release overview: everything new since v11.0.0"
+title: "11.2.0 release overview: everything new since v11.0.0, fully additive"
 description: "v11.2.0 is a cumulative, fully additive minor release over v11.0.0: decision-significance contracts, lifecycle conformance breadth, a timeout producer row, and RACI sentinels."
 doc_status: active
 updated: 2026-10-19T00:00:00Z

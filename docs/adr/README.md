@@ -19,8 +19,8 @@ before it.
 
 ADRs are flat and sequentially numbered: `NNNN-descriptive-title-with-dashes.md`
 (`0001`, `0002`, ...), with no date in the filename. Each ADR carries its status in a
-`**Status:**` line in the body and in the table below. This `README.md` is the section
-index.
+`**Status:**` line and its date in a `**Date:**` line in the body; the generated table
+below reads both. This `README.md` is the section index.
 
 ## Status vocabulary
 
@@ -31,12 +31,12 @@ index.
 
 ## Records
 
-| ID | Title | Status | Date |
-|----|-------|--------|------|
-| [0001](./0001-cloudevents-envelope.md) | ADR-0001: Adopt CloudEvents 1.0 as the event envelope | Accepted | 2026-10-27 |
-| [0002](./0002-events-domain-owns-its-services.md) | ADR-0002: spec-kitty-events is canonical for the events domain and its services | Accepted | 2026-10-29 |
-| [0003](./0003-gradle-build-and-service-release-line.md) | ADR-0003: one Gradle build and the service-v* release line | Accepted | 2026-10-29 |
-| [0004](./0004-dual-artifact-line.md) | ADR-0004: two independent release lines, the PyPI package and the services | Accepted | 2026-10-29 |
-| [0005](./0005-parallel-landing.md) | ADR-0005: land pull requests in parallel: changelog fragments, generated indexes, merge-queue readiness | Accepted | 2026-11-01 |
+The table below is generated from each record's file name, title and `**Status:**` and
+`**Date:**` lines when the docsite builds (`scripts/docs_index.py`,
+[#176](https://github.com/spec-kitty/spec-kitty-events/issues/176)), so a new record needs no edit here. On GitHub, the records in this folder are
+numbered in order.
+
+<!-- BEGIN GENERATED: index -->
+<!-- END GENERATED: index -->
 
 Design detail for the records above lives under [`docs/architecture/`](../architecture/).
