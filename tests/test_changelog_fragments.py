@@ -344,7 +344,10 @@ def test_guard_refuses_a_hand_edit_hidden_behind_a_release_cut(tmp_path: Path) -
     changelog.write_text(
         changelog.read_text(encoding="utf-8")
         .replace("- An existing fix.\n", "- An existing fix.\n- Snuck in by hand.\n")
-        .replace("## [1.0.0] - 2026-10-01", "## [2.0.0] - 2026-11-02\n\nFake cut.\n\n## [1.0.0] - 2026-10-01"),
+        .replace(
+            "## [1.0.0] - 2026-10-01",
+            "## [2.0.0] - 2026-11-02\n\nFake cut.\n\n## [1.0.0] - 2026-10-01",
+        ),
         encoding="utf-8",
     )
     (error,) = cl.guard(root, "main")
@@ -710,9 +713,11 @@ def test_a_fragment_only_change_does_not_trigger_the_docs_build() -> None:
 
 def test_the_local_doc_kitty_gates_leave_the_fragment_folder_out() -> None:
     agents = (_REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
-    for script in ("validate-frontmatter.mjs", "check-links.mjs"):
-        line = next(line for line in agents.splitlines() if script in line)
-        assert "--exclude docs/changelog/unreleased" in line, line
+    # Toolkit 0.5.0 has no folder exclusion, so AGENTS.md must NOT tell contributors to pass
+    # a --exclude flag the toolkit rejects; it documents instead that the fragment folder's
+    # findings are disregarded until #181 adds native exclusion.
+    assert "--exclude" not in agents, "AGENTS.md documents a doc-kitty flag the toolkit lacks"
+    assert "docs/changelog/unreleased" in agents and "#181" in agents
 
 
 def test_the_fragment_readme_is_not_a_docs_page() -> None:
