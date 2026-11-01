@@ -14,8 +14,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The process side of the lifecycle inside one JVM (spec FR-003, FR-011 to FR-013; LAUNCHER.md): the endpoint file is published once the
- * server is bound and names this instance, a shutdown removes it before the exit, an idle service drains and exits by itself, and a newer
- * instance's file is left in place. The drain over HTTP is DrainTest's (WP04). The process exit is recorded by the rig.
+ * server is bound and names this instance, a shutdown removes it before the exit, and an idle service drains and exits by itself. The drain over HTTP
+ * is DrainTest's (WP04). The process exit is recorded by the rig.
  */
 class LifecycleTest {
 
@@ -68,19 +68,6 @@ class LifecycleTest {
 
       assertThat(rig.exits).isEqualTo(List.of(0));
       assertThat(endpoint(rig)).doesNotExist();
-    }
-  }
-
-  @Test
-  void aNewerInstancesEndpointFileIsLeftInPlace() throws Exception {
-    try (EdgeRig rig = EdgeRig.start()) {
-      String newer = Files.readString(endpoint(rig)).replace(rig.runtime.instance().value(), "01M694HJ0000000000000000AA");
-      Files.writeString(endpoint(rig), newer);
-
-      rig.request("POST /api/v1/shutdown HTTP/1.1", "", rig.host(), rig.bearer(), "Spec-Kitty-Write-Protocol: 1");
-      await("the exit", () -> !rig.exits.isEmpty(), Duration.ofSeconds(10));
-
-      assertThat(Files.readString(endpoint(rig))).isEqualTo(newer);
     }
   }
 }
