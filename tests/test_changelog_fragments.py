@@ -705,10 +705,16 @@ def test_the_docs_job_drops_the_fragment_folder_before_any_npm_step() -> None:
 
 
 def test_a_fragment_only_change_does_not_trigger_the_docs_build() -> None:
-    on = yaml.load(_DOCS_SITE.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)["on"]
+    workflow = yaml.load(_DOCS_SITE.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
     for event in ("pull_request", "push"):
-        paths = on[event]["paths"]
-        assert paths.index("!docs/changelog/unreleased/**") > paths.index("docs/**"), event
+        paths = (workflow["on"][event] or {}).get("paths")
+        if paths is not None:
+            assert paths.index("!docs/changelog/unreleased/**") > paths.index("docs/**"), event
+            continue
+        # No trigger filter (the merge-queue gate must always report, ADR 0005 D3): the
+        # in-job diff then leaves fragments out before it decides to build.
+        detect = next(s for s in workflow["jobs"]["build"]["steps"] if s.get("id") == "changes")
+        assert "grep -vE '^docs/changelog/unreleased/'" in detect["run"], event
 
 
 def test_the_local_doc_kitty_gates_leave_the_fragment_folder_out() -> None:

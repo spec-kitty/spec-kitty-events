@@ -5,14 +5,12 @@ name: Docs site
 # docs-site.yml.
 
 on:
+  # No path filter on pull requests or the merge queue (ADR 0005 D3): `build` must report on every
+  # PR to be a required check. Its first step diffs the change against the push paths below and
+  # the rest of the job skips when it misses them.
   pull_request:
-    paths:
-      - 'docs/**'
-      # Changelog fragments are entries, not pages (ADR 0005); adding one builds nothing.
-      - '!docs/changelog/unreleased/**'
-      - 'site/**'
-      - '.github/workflows/docs-site.yml'
-      - 'scripts/docs_index.py'
+  merge_group:
+    types: [checks_requested]
   push:
     branches: [main]
     paths:
@@ -34,6 +32,8 @@ concurrency:
 
 jobs:
   build:
+    # The required check's name; `build` alone also names jobs in the tag-only release workflows.
+    name: docs-build
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -53,7 +53,46 @@ jobs:
       - name: Leave the changelog fragments out of the docs build
         working-directory: .
         run: rm -rf docs/changelog/unreleased
+      - name: Decide whether the change touches the docs
+        id: changes
+        working-directory: .
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          MG_BASE_REF: ${{ github.event.merge_group.base_ref }}
+          MG_HEAD: ${{ github.event.merge_group.head_sha }}
+          PAUSED: ${{ contains(github.event.pull_request.labels.*.name, 'pr:pause-ci') }}
+        # The push paths, as a pattern; changelog fragments (docs/changelog/unreleased/) are not
+        # pages and never count. A PR diffs its base tip against its head; a merge-group entry
+        # diffs main (its base_ref) against its head, so it sees every PR ahead of it in the
+        # group, not only its own. Both can only over-include. If the SHAs cannot be fetched or
+        # diffed, the build runs.
+        run: |
+          PATTERN='^(docs/|site/|\.github/workflows/docs-site\.yml$|scripts/docs_index\.py$)'
+          case "$EVENT" in
+            pull_request) base="$PR_BASE"; fetch_base="$PR_BASE"; head="$PR_HEAD" ;;
+            merge_group)  base=refs/ci/queue-base; fetch_base="+$MG_BASE_REF:refs/ci/queue-base"; head="$MG_HEAD" ;;
+            *) echo "run=true" >> "$GITHUB_OUTPUT"; echo "$EVENT: the docs build runs"; exit 0 ;;
+          esac
+          if [ "$EVENT" = pull_request ] && [ "$PAUSED" = true ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "pr:pause-ci: nothing builds"; exit 0
+          fi
+          if ! git fetch -q --no-tags --depth=1 origin "$fetch_base" "$head"; then
+            echo "::warning::could not fetch $base and $head; the docs build runs"
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if ! changed="$(git diff --name-only "$base" "$head")"; then
+            echo "::warning::could not diff $base..$head; the docs build runs"; run=true
+          elif grep -vE '^docs/changelog/unreleased/' <<<"$changed" | grep -qE "$PATTERN"; then
+            run=true
+          else
+            run=false
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "$EVENT $base..$head touches the docs: $run" >> "$GITHUB_STEP_SUMMARY"
       - name: Set up Node 22.22 with the GitHub Packages registry
+        if: steps.changes.outputs.run == 'true'
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22.22'
@@ -62,14 +101,17 @@ jobs:
           cache: npm
           cache-dependency-path: site/package-lock.json
       - name: Install
+        if: steps.changes.outputs.run == 'true'
         # Exactly what site/package-lock.json records, so a build on main uses the
         # same dependencies as the pull request check did.
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm ci
       - name: Validate frontmatter and source links
+        if: steps.changes.outputs.run == 'true'
         run: npm run validate
       - name: Build
+        if: steps.changes.outputs.run == 'true'
         # Most pages are drafts during the bootstrap, so drafts are published
         # (as noindex pages) rather than dropped.
         env:
@@ -78,9 +120,10 @@ jobs:
           DK_DIAGRAM_BUILD_RENDER: client
         run: npm run build
       - name: Check links in the built site
+        if: steps.changes.outputs.run == 'true'
         run: npm run check:built-links
       - name: Upload the Pages artifact
-        if: github.event_name != 'pull_request'
+        if: steps.changes.outputs.run == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: site/dist
