@@ -37,21 +37,12 @@ on:
       # The Java binding reads the producer contract in place.
       - "src/spec_kitty_events/producer_contract/**"
       - ".github/workflows/service.yml"
+  # No path filter on pull requests or the merge queue (ADR 0005 D3): `service-gate` must report on
+  # every PR to be a required check. `detect` diffs the change against the same paths as `push`
+  # above and the heavy jobs skip when it misses them; skipped counts as passing for the gate.
   pull_request:
-    paths:
-      - "service/**"
-      - "contracts/**"
-      - "java/**"
-      - "build-logic/**"
-      - "gradle/**"
-      - "settings.gradle.kts"
-      - "build.gradle.kts"
-      - "gradle.properties"
-      - "gradlew"
-      - "gradlew.bat"
-      # The Java binding reads the producer contract in place.
-      - "src/spec_kitty_events/producer_contract/**"
-      - ".github/workflows/service.yml"
+  merge_group:
+    types: [checks_requested]
   # The one cron: `nightly-corpus` only. 03:41 UTC, off the hour.
   schedule:
     - cron: "41 3 * * *"
@@ -83,6 +74,10 @@ jobs:
     timeout-minutes: 5
     outputs:
       service: ${{ steps.detect.outputs.service }}
+      # 'true' when this run builds: always on push, schedule, dispatch and call; on a PR or a merge
+      # group only when the change touches the Gradle build (the push paths). A PR labelled
+      # pr:pause-ci builds nothing.
+      run: ${{ steps.changes.outputs.run }}
       core-sha: ${{ steps.detect.outputs.core-sha }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -110,12 +105,48 @@ jobs:
             fi
             echo "core-sha=$sha" >> "$GITHUB_OUTPUT"
           fi
+      - name: Decide whether the change touches the Gradle build
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          MG_BASE_REF: ${{ github.event.merge_group.base_ref }}
+          MG_HEAD: ${{ github.event.merge_group.head_sha }}
+          PAUSED: ${{ contains(github.event.pull_request.labels.*.name, 'pr:pause-ci') }}
+        # A PR diffs its base tip against its head; a merge-group entry diffs main (its base_ref)
+        # against its head, so it sees every PR ahead of it in the group, not only its own. Both
+        # can only over-include (run more, never less). If the SHAs cannot be fetched or diffed,
+        # everything runs. The PATTERN mirrors the push paths (tests/test_merge_queue_workflows.py).
+        run: |
+          PATTERN='^(service/|contracts/|java/|build-logic/|gradle/|settings\.gradle\.kts$|build\.gradle\.kts$|gradle\.properties$|gradlew$|gradlew\.bat$|src/spec_kitty_events/producer_contract/|\.github/workflows/service\.yml$)'
+          case "$EVENT" in
+            pull_request) base="$PR_BASE"; fetch_base="$PR_BASE"; head="$PR_HEAD" ;;
+            merge_group)  base=refs/ci/queue-base; fetch_base="+$MG_BASE_REF:refs/ci/queue-base"; head="$MG_HEAD" ;;
+            *) echo "run=true" >> "$GITHUB_OUTPUT"; echo "$EVENT: every job runs"; exit 0 ;;
+          esac
+          if [ "$EVENT" = pull_request ] && [ "$PAUSED" = true ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "pr:pause-ci: nothing builds"; exit 0
+          fi
+          if ! git fetch -q --no-tags --depth=1 origin "$fetch_base" "$head"; then
+            echo "::warning::could not fetch $base and $head; every job runs"
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if ! changed="$(git diff --name-only "$base" "$head")"; then
+            echo "::warning::could not diff $base..$head; every job runs"; run=true
+          elif grep -qE "$PATTERN" <<<"$changed"; then
+            run=true
+          else
+            run=false
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "$EVENT $base..$head touches the Gradle build: $run" >> "$GITHUB_STEP_SUMMARY"
 
   # The contract document is built once, outside the checkout, so every leg serves the same bytes.
   # bundle.py without --module writes every module (bundle/mission-status, bundle/mission-write).
   contract-bundle:
     needs: detect
-    if: needs.detect.outputs.service == 'true' && github.event_name != 'schedule'
+    if: needs.detect.outputs.service == 'true' && needs.detect.outputs.run == 'true' && github.event_name != 'schedule'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -145,7 +176,7 @@ jobs:
   # contract-bundle is skipped and this job runs anyway.
   gradle:
     needs: [detect, contract-bundle]
-    if: ${{ !cancelled() && github.event_name != 'schedule' && needs.detect.result == 'success' && needs.contract-bundle.result != 'failure' }}
+    if: ${{ !cancelled() && github.event_name != 'schedule' && needs.detect.result == 'success' && needs.detect.outputs.run == 'true' && needs.contract-bundle.result != 'failure' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     defaults:
@@ -211,7 +242,7 @@ jobs:
 
   native:
     needs: [detect, contract-bundle]
-    if: needs.detect.outputs.service == 'true' && github.event_name != 'schedule'
+    if: needs.detect.outputs.service == 'true' && needs.detect.outputs.run == 'true' && github.event_name != 'schedule'
     name: native (${{ matrix.target }})
     runs-on: ${{ matrix.runner }}
     # Provisional, from core's mission-status-api.yml; the first CI run sets it.
@@ -354,7 +385,7 @@ jobs:
   # native-command-cli-<target>, which service-release.yml collects with the native-* pattern.
   native-command-cli:
     needs: detect
-    if: needs.detect.outputs.service == 'true' && github.event_name != 'schedule'
+    if: needs.detect.outputs.service == 'true' && needs.detect.outputs.run == 'true' && github.event_name != 'schedule'
     name: native-command-cli (${{ matrix.target }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
@@ -453,7 +484,7 @@ jobs:
     # Runs core's Python at the pinned SHA, so it stays out of release runs (release-version set):
     # a release run then executes only this repository's code beside its artifacts.
     needs: detect
-    if: needs.detect.outputs.service == 'true' && github.event_name != 'schedule' && inputs.release-version == ''
+    if: needs.detect.outputs.service == 'true' && needs.detect.outputs.run == 'true' && github.event_name != 'schedule' && inputs.release-version == ''
     name: lock-interop (${{ matrix.os }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
