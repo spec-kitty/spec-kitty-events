@@ -8,6 +8,8 @@
 #   labeled   -> cancel every queued or in-progress run for the PR head SHA, and post a failing
 #                check run under each required gate name, so a PR whose gates were already green
 #                stops being mergeable (and enqueueable) at once.
+#   synchronize -> a push made while the label is on does the same as `labeled`: the new head's
+#                gates skip (and so read green), so the failing checks are posted again for it.
 #   unlabeled -> for each gate workflow, re-run its latest pull_request run for the PR head SHA
 #                that started BEFORE the label was added, whatever its outcome (cancelled by the
 #                pause, or finished green earlier), so every gate reports again and replaces the
@@ -15,6 +17,9 @@
 #                a re-run is the only resume this token can trigger. A re-run replays the original,
 #                label-free payload. A gate with no run from before the pause (a push made under
 #                the label) is reported, not guessed: push again once the label is off.
+#
+# Any label added during a pause re-triggers ci.yml and can overwrite a posted failure with a
+# skipped (green) result; see docs/guides/contributing.md.
 #
 # A merge-group run carries no labels, so the queue always tests a paused PR in full.
 #
@@ -25,7 +30,7 @@ name: PR Pause CI
 
 on:
   pull_request_target:
-    types: [labeled, unlabeled]
+    types: [labeled, unlabeled, synchronize]
 
 concurrency:
   group: pr-pause-ci-${{ github.event.pull_request.number }}
@@ -35,7 +40,10 @@ permissions: {}
 
 jobs:
   pause:
-    if: ${{ github.repository == 'spec-kitty/spec-kitty-events' && github.event.label.name == 'pr:pause-ci' && github.event.action == 'labeled' }}
+    if: >-
+      ${{ github.repository == 'spec-kitty/spec-kitty-events' && github.event.pull_request.state == 'open' && (
+      (github.event.action == 'labeled' && github.event.label.name == 'pr:pause-ci') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'pr:pause-ci'))) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
