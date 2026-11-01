@@ -126,17 +126,23 @@ jobs:
             *)            sha="$INPUT_SHA"; pr="$INPUT_PR" ;;
           esac
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::bad sha '$sha'"; exit 64; }
+          [[ "$pr" =~ ^[0-9]*$ ]] || { echo "::error::bad pr '$pr'"; exit 64; }
           echo "sha=$sha" >> "$GITHUB_OUTPUT"; echo "pr=$pr" >> "$GITHUB_OUTPUT"
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
       - name: Sibling checkouts (planning + repo under test)
+        env:
+          SHA: ${{ steps.t.outputs.sha }}
         run: |
           mkdir -p "$SK_HOME"
           git clone -q https://github.com/spec-kitty/spec-kitty-planning.git "$SK_HOME/spec-kitty-planning"
           git clone -q https://github.com/spec-kitty/$REPO.git "$SK_HOME/$REPO"
-          git -C "$SK_HOME/$REPO" fetch -q origin "${{ steps.t.outputs.sha }}"
+          git -C "$SK_HOME/$REPO" fetch -q origin "$SHA"
       - name: Run the suite (bin/ci-run.sh --sync)
         working-directory: ${{ env.SK_HOME }}/spec-kitty-planning
-        run: bin/ci-run.sh --sync "$REPO" "${{ steps.t.outputs.sha }}" "${{ steps.t.outputs.pr }}"
+        env:
+          SHA: ${{ steps.t.outputs.sha }}
+          PR: ${{ steps.t.outputs.pr }}
+        run: bin/ci-run.sh --sync "$REPO" "$SHA" "$PR"
       - name: Re-mint the CI credential (force-remint, planning#1878)
         # Installation tokens live ~1h and the job timeout is 90 min — never serve
         # a stale token to the verdict post. Falls back to the initial mint when
