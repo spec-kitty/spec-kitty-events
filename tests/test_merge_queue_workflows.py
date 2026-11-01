@@ -164,6 +164,13 @@ def test_ci_refuses_a_merge_group_ref_it_cannot_read(tmp_path: Path) -> None:
 
 
 @pytest.mark.skipif(not HAS_BASH, reason="bash not available")
+@pytest.mark.parametrize("pr", ['1"; touch pwned; "', "12 13", "x"])
+def test_ci_refuses_a_dispatch_pr_that_is_not_a_number(tmp_path: Path, pr: str) -> None:
+    out = _resolve({"EVENT": "workflow_dispatch", "INPUT_SHA": SHA_A, "INPUT_PR": pr}, tmp_path)
+    assert out["__rc__"] == "64", out["__stderr__"]
+
+
+@pytest.mark.skipif(not HAS_BASH, reason="bash not available")
 @pytest.mark.parametrize(
     ("env", "expected"),
     [
@@ -191,8 +198,18 @@ def test_ci_fails_a_queue_run_whose_verdict_is_not_green() -> None:
 
 
 def test_ci_scripts_read_event_values_from_env_not_interpolation() -> None:
-    for name in ("Resolve target", "Post the verdict (bin/ci-post.sh)"):
-        assert "${{" not in _step(CI, "suite", name)["run"], name
+    # `pr` comes from a workflow_dispatch input, so no run: block may interpolate it (or the sha).
+    for name in (
+        "Resolve target",
+        "Sibling checkouts (planning + repo under test)",
+        "Run the suite (bin/ci-run.sh --sync)",
+        "Post the verdict (bin/ci-post.sh)",
+    ):
+        step = _step(CI, "suite", name)
+        assert "${{" not in step["run"], name
+    run_env = _step(CI, "suite", "Run the suite (bin/ci-run.sh --sync)")["env"]
+    assert run_env["PR"] == "${{ steps.t.outputs.pr }}"
+    assert run_env["SHA"] == "${{ steps.t.outputs.sha }}"
 
 
 # --- acceptance and the harness gate ----------------------------------------------------
