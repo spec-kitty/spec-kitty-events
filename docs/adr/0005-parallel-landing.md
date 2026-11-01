@@ -115,7 +115,7 @@ The queue settings (operator ruling):
 - only non-failing pull requests merge.
 
 The required checks are `suite`, `acceptance`, `cross-repo-harness-tests`, `service-gate`
-and the docs `build`.
+and `docs-build` (the docs job).
 
 A `pr:pause-ci` label pauses a pull request's CI, as in core (spec-kitty/spec-kitty#6961).
 
