@@ -2,7 +2,7 @@
 title: Building the docsite
 description: How the docs/ tree becomes a doc-kitty site — building and checking it locally, the Build Kitty theme, writing links, and what the CI workflow runs.
 doc_status: active
-updated: 2026-10-19T00:00:00Z
+updated: 2026-11-01T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -32,11 +32,19 @@ toolkit is published to GitHub Packages.
    ```sh
    cd site
    npm ci                      # installs exactly what package-lock.json records
-   npm run validate            # frontmatter and source links in ../docs
+   npm run validate            # generates the section indexes, then checks frontmatter and source links in ../docs
    DK_DIAGRAM_BUILD_RENDER=client npm run build   # writes site/dist
    npm run check:built-links   # every link in the built site resolves under the base
    npm run preview
    ```
+
+`npm run validate` first runs `prevalidate`, which fills the generated lists in
+`docs/changelog/README.md` and `docs/adr/README.md` from the pages themselves
+(`scripts/docs_index.py --write`). Those lists are never committed: run
+`python3 scripts/docs_index.py --clean` from the repository root before you commit, or
+`make lint` (`--check`) fails. A new changelog page or ADR therefore needs no README edit,
+and parallel pull requests never collide on an index
+([#176](https://github.com/spec-kitty/spec-kitty-events/issues/176)).
 
 Mermaid diagrams render in the browser. `DK_DIAGRAM_BUILD_RENDER=client` pins that mode;
 without it the toolkit switches to build-time rendering whenever it finds a Playwright
@@ -78,4 +86,5 @@ is its index and carries frontmatter; the required fields are `title`, `descript
 `.github/workflows/docs-site.yml` builds the site on every PR that touches `docs/**` or
 `site/**` and publishes it to GitHub Pages from `main`. It runs `npm run validate`, then
 `npm run build`, then `npm run check:built-links` — so a frontmatter or link mistake fails the
-PR before it can publish.
+PR before it can publish. `npm run validate` generates the section indexes first, so the
+built site lists every page and their links are checked too.

@@ -1,5 +1,5 @@
 ---
-title: "Unreleased: the events domain takes ownership of its services"
+title: "Unreleased: the events domain takes ownership of its services (no package change)"
 description: "ADRs 0002–0004 and a charter amendment make this repo the home of the events services; the Java binding moves to Gradle; service workflows, guides and a cutover runbook land."
 doc_status: active
 updated: 2026-10-29T00:00:00Z

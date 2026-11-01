@@ -1,5 +1,5 @@
 ---
-title: 'ADR: adopt CloudEvents 1.0 as the event envelope'
+title: 'ADR-0001: Adopt CloudEvents 1.0 as the event envelope'
 description: 'Accepted: CloudEvents 1.0 structured JSON is the Spec Kitty event-log envelope; the 3.0.0 envelope and status-diary row are legacy inputs to a read-time upcaster.'
 doc_status: active
 updated: 2026-10-27T00:00:00Z
