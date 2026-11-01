@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
 
@@ -45,6 +45,13 @@ jobs:
           print(f"Tag/version validated: {tag_version}")
           PY
 
+      # ADR 0005: the release PR folds changelog.d/ into CHANGELOG.md with
+      # `scripts/changelog.py collect --version`. Refuse to publish while a fragment is
+      # pending or the tagged version has no `## [X.Y.Z]` section.
+      - name: Validate the changelog is collected for the tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: python scripts/changelog.py release-check --version "${GITHUB_REF_NAME#v}"
+
       - name: Build distribution artifacts
         run: |
           python -m pip install --upgrade pip
@@ -56,7 +63,7 @@ jobs:
         run: python scripts/release/validate_distribution_metadata.py --package spec-kitty-events
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dist
           path: dist/*
@@ -70,10 +77,10 @@ jobs:
       id-token: write
     steps:
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
           path: dist
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
