@@ -87,9 +87,7 @@ public final class ServiceLock implements AutoCloseable {
       try {
         channel.close();
       } finally {
-        if (channel == lock.channel()) {
-          HELD_HERE.set(false);
-        }
+        HELD_HERE.set(false);
       }
     }
   }

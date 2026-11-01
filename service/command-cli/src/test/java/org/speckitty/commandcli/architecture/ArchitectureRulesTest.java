@@ -44,7 +44,6 @@ class ArchitectureRulesTest {
             .domainModels(ROOT + ".domain..")
             .applicationServices(ROOT + ".application..")
             .adapter("http", ROOT + ".adapter.in.http..")
-            .adapter("process", ROOT + ".adapter.in.process..")
             .adapter("filesystem", ROOT + ".adapter.out..")
             .ignoreDependency(
                 com.tngtech.archunit.base.DescribedPredicate.describe("configuration", c -> c.getPackageName().startsWith(ROOT + ".config")),
