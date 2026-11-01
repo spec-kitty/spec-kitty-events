@@ -49,7 +49,9 @@ class CanonicalPathTest {
         "/api/v1/./shutdown",
         "/api/v1/missions/../shutdown",
         "/api/v1/health;x",
-        "/api/v1/health%41");
+        "/api/v1/health%41",
+        "/api/v1/shutdown/",
+        "/api/v1/health/");
   }
 
   @ParameterizedTest(name = "{0}")
