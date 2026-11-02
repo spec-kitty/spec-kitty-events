@@ -1,6 +1,6 @@
 ---
 title: 'ADR-0005: land pull requests in parallel: changelog fragments, generated indexes, required checks'
-description: 'Accepted: PRs add changelog fragments, section indexes are generated at docs build, and the required checks always report, so one merge stops conflicting the rest. D3 amended 2026-11-02: no merge queue.'
+description: 'Accepted: PRs add changelog fragments, indexes are generated at docs build, and required checks always report. D3 amended 2026-11-02: no merge queue.'
 doc_status: active
 updated: 2026-11-02T00:00:00Z
 type: ADR
