@@ -37,12 +37,10 @@ on:
       # The Java binding reads the producer contract in place.
       - "src/spec_kitty_events/producer_contract/**"
       - ".github/workflows/service.yml"
-  # No path filter on pull requests or the merge queue (ADR 0005 D3): `service-gate` must report on
+  # No path filter on pull requests (ADR 0005 D3): `service-gate` must report on
   # every PR to be a required check. `detect` diffs the change against the same paths as `push`
   # above and the heavy jobs skip when it misses them; skipped counts as passing for the gate.
   pull_request:
-  merge_group:
-    types: [checks_requested]
   # The one cron: `nightly-corpus` only. 03:41 UTC, off the hour.
   schedule:
     - cron: "41 3 * * *"
@@ -111,18 +109,13 @@ jobs:
           EVENT: ${{ github.event_name }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
-          MG_BASE_REF: ${{ github.event.merge_group.base_ref }}
-          MG_HEAD: ${{ github.event.merge_group.head_sha }}
           PAUSED: ${{ contains(github.event.pull_request.labels.*.name, 'pr:pause-ci') }}
-        # A PR diffs its base tip against its head; a merge-group entry diffs main (its base_ref)
-        # against its head, so it sees every PR ahead of it in the group, not only its own. Both
-        # can only over-include (run more, never less). If the SHAs cannot be fetched or diffed,
-        # everything runs. The PATTERN mirrors the push paths (tests/test_merge_queue_workflows.py).
+        # A PR diffs its base tip against its head. If the SHAs cannot be fetched or diffed,
+        # everything runs. The PATTERN mirrors the push paths (tests/test_ci_gate_workflows.py).
         run: |
           PATTERN='^(service/|contracts/|java/|build-logic/|gradle/|settings\.gradle\.kts$|build\.gradle\.kts$|gradle\.properties$|gradlew$|gradlew\.bat$|src/spec_kitty_events/producer_contract/|\.github/workflows/service\.yml$)'
           case "$EVENT" in
             pull_request) base="$PR_BASE"; fetch_base="$PR_BASE"; head="$PR_HEAD" ;;
-            merge_group)  base=refs/ci/queue-base; fetch_base="+$MG_BASE_REF:refs/ci/queue-base"; head="$MG_HEAD" ;;
             *) echo "run=true" >> "$GITHUB_OUTPUT"; echo "$EVENT: every job runs"; exit 0 ;;
           esac
           if [ "$EVENT" = pull_request ] && [ "$PAUSED" = true ]; then

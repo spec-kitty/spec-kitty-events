@@ -1,13 +1,13 @@
 # pr:pause-ci -- pause a pull request's CI (ADR 0005 D3; ported from spec-kitty/spec-kitty#6961).
 #
 # Every PR-triggered job carries a guard, so runs that START while the label is on build
-# nothing: ci.yml's `suite`, acceptance.yml's `acceptance` and cross-repo-harness-tests.yml's
-# gate skip by `if:`; service.yml's and docs-site.yml's in-job diff reports "nothing to build",
+# nothing: ci.yml's `suite` (not a required check), acceptance.yml's `acceptance` and
+# cross-repo-harness-tests.yml's gate skip by `if:`; service.yml's and docs-site.yml's in-job diff reports "nothing to build",
 # so their gates pass without work. This workflow makes the label take effect at once:
 #
 #   labeled   -> cancel every queued or in-progress run for the PR head SHA, and post a failing
 #                check run under each required gate name, so a PR whose gates were already green
-#                stops being mergeable (and enqueueable) at once.
+#                stops being mergeable at once.
 #   synchronize -> a push made while the label is on does the same as `labeled`: the new head's
 #                gates skip (and so read green), so the failing checks are posted again for it.
 #   unlabeled -> for each gate workflow, re-run its latest pull_request run for the PR head SHA
@@ -17,11 +17,6 @@
 #                a re-run is the only resume this token can trigger. A re-run replays the original,
 #                label-free payload. A gate with no run from before the pause (a push made under
 #                the label) is reported, not guessed: push again once the label is off.
-#
-# Any label added during a pause re-triggers ci.yml and can overwrite a posted failure with a
-# skipped (green) result; see docs/guides/contributing.md.
-#
-# A merge-group run carries no labels, so the queue always tests a paused PR in full.
 #
 # SECURITY: `pull_request_target` runs with a write-capable token in the base repository's
 # context, so this workflow never checks out or executes PR code. It uses only the runner's
@@ -68,10 +63,11 @@ jobs:
           done
       - name: Fail the required gates for the head commit
         shell: bash
-        # The required checks of ADR 0005 D3; keep in step with the operator's ruleset.
+        # The required checks of ADR 0005 D3 (amended 2026-11-02: no merge queue, `suite` not required);
+        # keep in step with the operator's ruleset.
         run: |
           set -euo pipefail
-          for gate in "suite" "acceptance" "cross-repo-harness-tests" "service-gate" "docs-build"; do
+          for gate in "acceptance" "cross-repo-harness-tests" "service-gate" "docs-build"; do
             gh api "repos/$REPO/check-runs" -X POST \
               -f name="$gate" -f head_sha="$HEAD_SHA" \
               -f status=completed -f conclusion=failure \

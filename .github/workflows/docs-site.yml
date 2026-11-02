@@ -5,12 +5,10 @@ name: Docs site
 # docs-site.yml.
 
 on:
-  # No path filter on pull requests or the merge queue (ADR 0005 D3): `build` must report on every
+  # No path filter on pull requests (ADR 0005 D3): `build` must report on every
   # PR to be a required check. Its first step diffs the change against the push paths below and
   # the rest of the job skips when it misses them.
   pull_request:
-  merge_group:
-    types: [checks_requested]
   push:
     branches: [main]
     paths:
@@ -60,19 +58,14 @@ jobs:
           EVENT: ${{ github.event_name }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
-          MG_BASE_REF: ${{ github.event.merge_group.base_ref }}
-          MG_HEAD: ${{ github.event.merge_group.head_sha }}
           PAUSED: ${{ contains(github.event.pull_request.labels.*.name, 'pr:pause-ci') }}
         # The push paths, as a pattern; changelog fragments (docs/changelog/unreleased/) are not
-        # pages and never count. A PR diffs its base tip against its head; a merge-group entry
-        # diffs main (its base_ref) against its head, so it sees every PR ahead of it in the
-        # group, not only its own. Both can only over-include. If the SHAs cannot be fetched or
-        # diffed, the build runs.
+        # pages and never count. A PR diffs its base tip against its head. If the SHAs
+        # cannot be fetched or diffed, the build runs.
         run: |
           PATTERN='^(docs/|site/|\.github/workflows/docs-site\.yml$|scripts/docs_index\.py$)'
           case "$EVENT" in
             pull_request) base="$PR_BASE"; fetch_base="$PR_BASE"; head="$PR_HEAD" ;;
-            merge_group)  base=refs/ci/queue-base; fetch_base="+$MG_BASE_REF:refs/ci/queue-base"; head="$MG_HEAD" ;;
             *) echo "run=true" >> "$GITHUB_OUTPUT"; echo "$EVENT: the docs build runs"; exit 0 ;;
           esac
           if [ "$EVENT" = pull_request ] && [ "$PAUSED" = true ]; then
