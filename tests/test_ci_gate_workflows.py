@@ -1,11 +1,11 @@
-"""Merge-queue readiness (issue #177, ADR 0005 D3).
+"""CI gate workflows (ADR 0005 D3, amended 2026-11-02: no merge queue).
 
-Every workflow that produces a required check runs on ``merge_group``; every
-``pull_request``-only expression has a ``merge_group`` branch; the path-filtered
-gates (``service-gate``, the docs ``build``) always report and skip their heavy work
-through an in-job diff instead; ``ci.yml`` never treats a queue SHA as ``main`` (its
-verdict poster would refresh main's CI baseline) and fails a red queue run; and a
-``pr:pause-ci`` label pauses a pull request's CI, as in core (spec-kitty/spec-kitty#6961).
+Every workflow that produces a required check reports on every pull request; the path-filtered
+gates (``service-gate``, the docs ``build``) always report and skip their heavy work through an
+in-job diff instead; no workflow listens on ``merge_group``; and a ``pr:pause-ci`` label pauses a
+pull request's CI, as in core (spec-kitty/spec-kitty#6961). The required checks are
+``acceptance``, ``cross-repo-harness-tests``, ``service-gate`` and ``docs-build``; ``ci.yml``'s
+``suite`` is not required.
 
 The behavioural tests run the workflows' own ``run:`` scripts, extracted from the YAML,
 so they pin what the runner executes, not a copy of it.
@@ -32,9 +32,10 @@ SERVICE = WORKFLOWS / "service.yml"
 DOCS = WORKFLOWS / "docs-site.yml"
 PAUSE = WORKFLOWS / "pr-pause-ci.yml"
 
-REQUIRED_CHECK_WORKFLOWS = [CI, ACCEPTANCE, HARNESS, SERVICE, DOCS]
+GATE_WORKFLOW_FILES = [CI, ACCEPTANCE, HARNESS, SERVICE, DOCS]
 # The check names the operator makes required (ADR 0005 D3); pr-pause-ci.yml fails them.
-REQUIRED_CHECKS = {"suite", "acceptance", "cross-repo-harness-tests", "service-gate", "docs-build"}
+# `suite` (ci.yml) is deliberately absent: it keeps its squad-label gate and does not report on every PR.
+REQUIRED_CHECKS = {"acceptance", "cross-repo-harness-tests", "service-gate", "docs-build"}
 PIN_LINE = re.compile(r"uses: [^@\s]+@[0-9a-f]{40} # v\d+\.\d+\.\d+$")
 PAUSE_GUARD = "!contains(github.event.pull_request.labels.*.name, 'pr:pause-ci')"
 HAS_BASH = shutil.which("bash") is not None
@@ -75,13 +76,15 @@ def _run_step(
     return outputs
 
 
-# --- every required-check workflow runs on merge_group -------------------------------
+# --- no merge queue ---------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("path", REQUIRED_CHECK_WORKFLOWS, ids=lambda p: p.name)
-def test_required_check_workflows_run_on_merge_group(path: Path) -> None:
-    on = _load(path)["on"]
-    assert on["merge_group"] == {"types": ["checks_requested"]}
+@pytest.mark.parametrize("path", GATE_WORKFLOW_FILES + [PAUSE], ids=lambda p: p.name)
+def test_no_gate_workflow_listens_on_merge_group(path: Path) -> None:
+    # The repository has no merge queue (ADR 0005 D3, amended 2026-11-02): a queue duplicated CI
+    # runs in core instead of avoiding reruns.
+    assert "merge_group" not in _load(path)["on"]
+    assert "merge_group" not in path.read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("path", [SERVICE, DOCS], ids=lambda p: p.name)
@@ -92,7 +95,7 @@ def test_gated_workflows_have_no_pull_request_path_filter(path: Path) -> None:
     assert "paths" not in pull_request and "paths-ignore" not in pull_request
 
 
-@pytest.mark.parametrize("path", REQUIRED_CHECK_WORKFLOWS + [PAUSE], ids=lambda p: p.name)
+@pytest.mark.parametrize("path", GATE_WORKFLOW_FILES + [PAUSE], ids=lambda p: p.name)
 def test_changed_workflows_pin_every_action_by_commit_sha(path: Path) -> None:
     # Charter, Quality Gates: a workflow changed after the 2026-10-29 amendment pins every action.
     text = path.read_text(encoding="utf-8")
@@ -105,17 +108,17 @@ def test_changed_workflows_pin_every_action_by_commit_sha(path: Path) -> None:
 # --- ci.yml ----------------------------------------------------------------------------
 
 
-def test_ci_reports_on_every_pull_request() -> None:
-    types = _load(CI)["on"]["pull_request"]["types"]
-    assert {"opened", "synchronize", "reopened", "labeled", "ready_for_review"} <= set(types)
+def test_ci_pull_request_types_are_the_label_driven_ones() -> None:
+    # `suite` is not a required check, so it need not report on opened/ready_for_review.
+    assert _load(CI)["on"]["pull_request"]["types"] == ["labeled", "synchronize", "reopened"]
 
 
-def test_ci_concurrency_never_collapses_a_queue_run_into_main() -> None:
+def test_ci_concurrency_keys_a_pr_by_number_and_main_runs_together() -> None:
     group = _load(CI)["concurrency"]["group"]
-    assert "'main'" not in group and "github.ref" in group
+    assert group == "ci-${{ github.event.pull_request.number || inputs.pr || 'main' }}"
 
 
-def test_ci_suite_runs_unconditionally_on_merge_group_and_is_pausable_on_prs() -> None:
+def test_ci_suite_keeps_its_squad_gate_and_is_pausable_on_prs() -> None:
     condition = " ".join(_load(CI)["jobs"]["suite"]["if"].split())
     assert condition.startswith("github.event_name != 'pull_request' || (")
     assert PAUSE_GUARD in condition
@@ -128,8 +131,6 @@ def _resolve(env: dict[str, str], tmp_path: Path) -> dict[str, str]:
         "PR_SHA": "",
         "PR_NUMBER": "",
         "PUSH_SHA": "",
-        "MG_SHA": "",
-        "MG_REF": "",
         "INPUT_SHA": "",
         "INPUT_PR": "",
     }
@@ -138,27 +139,6 @@ def _resolve(env: dict[str, str], tmp_path: Path) -> dict[str, str]:
 
 SHA_A = "a" * 40
 SHA_B = "b" * 40
-
-
-@pytest.mark.skipif(not HAS_BASH, reason="bash not available")
-def test_ci_resolves_a_merge_group_to_its_sha_and_the_queued_pr(tmp_path: Path) -> None:
-    out = _resolve(
-        {
-            "EVENT": "merge_group",
-            "MG_SHA": SHA_A,
-            "MG_REF": f"refs/heads/gh-readonly-queue/main/pr-178-{SHA_B}",
-        },
-        tmp_path,
-    )
-    assert out["__rc__"] == "0", out["__stderr__"]
-    # A non-empty PR keeps ci-post.sh off main's baseline refresh (it treats pr="" as a main run).
-    assert (out["sha"], out["pr"]) == (SHA_A, "178")
-
-
-@pytest.mark.skipif(not HAS_BASH, reason="bash not available")
-def test_ci_refuses_a_merge_group_ref_it_cannot_read(tmp_path: Path) -> None:
-    out = _resolve({"EVENT": "merge_group", "MG_SHA": SHA_A, "MG_REF": "refs/heads/main"}, tmp_path)
-    assert out["__rc__"] == "64"
 
 
 @pytest.mark.skipif(not HAS_BASH, reason="bash not available")
@@ -227,24 +207,15 @@ def _two_commit_repo(tmp_path: Path, changed: str) -> tuple[Path, str, str]:
 
     ``changed`` of the form ``old>new`` renames the committed file ``old`` to ``new``.
     """
-    clone, shas = _queue_repo(tmp_path, [changed])
+    clone, shas = _origin_with_commits(tmp_path, [changed])
     return clone, shas[0], shas[1]
 
 
 def _detect_env(event: str, base: str, head: str, paused: str = "false") -> dict[str, str]:
-    """The detect step's env; ``base`` applies to pull requests only (a queue diffs against main)."""
-    env = {
-        "EVENT": event,
-        "PR_BASE": "",
-        "PR_HEAD": "",
-        "MG_BASE_REF": "",
-        "MG_HEAD": "",
-        "PAUSED": paused,
-    }
+    """The detect step's env; ``base`` and ``head`` apply to pull requests only."""
+    env = {"EVENT": event, "PR_BASE": "", "PR_HEAD": "", "PAUSED": paused}
     if event == "pull_request":
         env.update(PR_BASE=base, PR_HEAD=head)
-    elif event == "merge_group":
-        env.update(MG_HEAD=head, MG_BASE_REF="refs/heads/main")
     return env
 
 
@@ -272,12 +243,11 @@ DOCS_DETECT = (DOCS, "build", "Decide whether the change touches the docs")
         (DOCS_DETECT, "docs/old.md>elsewhere/old.txt", "true"),
     ],
 )
-@pytest.mark.parametrize("event", ["pull_request", "merge_group"])
 def test_detect_runs_the_heavy_jobs_only_for_their_paths(
-    tmp_path: Path, detect: tuple[Path, str, str], changed: str, expected: str, event: str
+    tmp_path: Path, detect: tuple[Path, str, str], changed: str, expected: str
 ) -> None:
     clone, base, head = _two_commit_repo(tmp_path, changed)
-    out = _run_step(_step(*detect), _detect_env(event, base, head), clone, tmp_path)
+    out = _run_step(_step(*detect), _detect_env("pull_request", base, head), clone, tmp_path)
     assert out["__rc__"] == "0", out["__stderr__"]
     assert out["run"] == expected, out["__stderr__"]
 
@@ -285,7 +255,7 @@ def test_detect_runs_the_heavy_jobs_only_for_their_paths(
 @pytest.mark.skipif(not HAS_BASH, reason="bash not available")
 @pytest.mark.parametrize("detect", [SERVICE_DETECT, DOCS_DETECT], ids=["service", "docs"])
 @pytest.mark.parametrize("event", ["push", "schedule", "workflow_dispatch"])
-def test_detect_runs_everything_outside_pull_requests_and_queues(
+def test_detect_runs_everything_outside_pull_requests(
     tmp_path: Path, detect: tuple[Path, str, str], event: str
 ) -> None:
     out = _run_step(_step(*detect), _detect_env(event, "", ""), tmp_path, tmp_path)
@@ -298,7 +268,9 @@ def test_detect_runs_everything_when_it_cannot_fetch_the_shas(
     tmp_path: Path, detect: tuple[Path, str, str]
 ) -> None:
     clone, _, _ = _two_commit_repo(tmp_path, "README.md")
-    out = _run_step(_step(*detect), _detect_env("merge_group", "c" * 40, "d" * 40), clone, tmp_path)
+    out = _run_step(
+        _step(*detect), _detect_env("pull_request", "c" * 40, "d" * 40), clone, tmp_path
+    )
     assert (out["__rc__"], out["run"]) == ("0", "true"), out["__stderr__"]
 
 
@@ -342,7 +314,7 @@ def test_docs_build_steps_after_detect_skip_when_nothing_changed() -> None:
         assert "steps.changes.outputs.run == 'true'" in step.get("if", ""), step.get("name")
 
 
-def test_docs_never_uploads_or_deploys_from_a_queue_or_a_pr() -> None:
+def test_docs_never_uploads_or_deploys_from_a_pr() -> None:
     workflow = _load(DOCS)
     upload = next(
         s
@@ -396,7 +368,7 @@ def test_every_required_check_name_is_a_job_name_in_a_gate_workflow() -> None:
     # ruleset waiting on a check that never reports.
     names = {
         job.get("name", job_id)
-        for path in REQUIRED_CHECK_WORKFLOWS
+        for path in GATE_WORKFLOW_FILES
         for job_id, job in _load(path)["jobs"].items()
     }
     assert REQUIRED_CHECKS <= names
@@ -431,7 +403,7 @@ def _all_steps(path: Path) -> list[tuple[str, dict[str, Any]]]:
 
 
 @pytest.mark.skipif(not HAS_BASH, reason="bash not available")
-@pytest.mark.parametrize("path", REQUIRED_CHECK_WORKFLOWS + [PAUSE], ids=lambda p: p.name)
+@pytest.mark.parametrize("path", GATE_WORKFLOW_FILES + [PAUSE], ids=lambda p: p.name)
 def test_every_run_block_is_valid_bash(path: Path) -> None:
     # Stands in for shellcheck/actionlint, which this environment does not have.
     for job_id, step in _all_steps(path):
@@ -442,7 +414,7 @@ def test_every_run_block_is_valid_bash(path: Path) -> None:
         assert result.returncode == 0, f"{job_id}/{step.get('name')}: {result.stderr}"
 
 
-@pytest.mark.parametrize("path", REQUIRED_CHECK_WORKFLOWS + [PAUSE], ids=lambda p: p.name)
+@pytest.mark.parametrize("path", GATE_WORKFLOW_FILES + [PAUSE], ids=lambda p: p.name)
 def test_no_step_condition_reads_its_own_or_a_later_step(path: Path) -> None:
     for job_id, job in _load(path)["jobs"].items():
         pending = [s["id"] for s in job.get("steps", []) if "id" in s]
@@ -454,7 +426,7 @@ def test_no_step_condition_reads_its_own_or_a_later_step(path: Path) -> None:
                 pending.remove(step["id"])
 
 
-def _verdict(tmp_path: Path, event: str, first_line: str | None, rc: int = 0) -> dict[str, str]:
+def _verdict(tmp_path: Path, first_line: str | None, rc: int = 0) -> dict[str, str]:
     """Run ci.yml's verdict step with a stub bin/ci-post.sh that prints ``first_line``."""
     planning = tmp_path / "planning"
     (planning / "bin").mkdir(parents=True)
@@ -466,13 +438,9 @@ def _verdict(tmp_path: Path, event: str, first_line: str | None, rc: int = 0) ->
     run_dir = tmp_path / "ci-runs" / "spec-kitty-events" / sha
     run_dir.mkdir(parents=True)
     (run_dir / "exit").write_text("0\n", encoding="utf-8")
-    env = {
-        "EVENT": event,
-        "SHA": sha,
-        "PR": "178",
-        "REPO": "spec-kitty-events",
-        "SK_HOME": str(tmp_path),
-    }
+    if first_line == "no-exit":
+        (run_dir / "exit").unlink()
+    env = {"SHA": sha, "PR": "178", "REPO": "spec-kitty-events", "SK_HOME": str(tmp_path)}
     step = _step(CI, "suite", "Post the verdict (bin/ci-post.sh)")
     return _run_step(step, env, planning, tmp_path)
 
@@ -483,28 +451,27 @@ RED = "[ci] red @" + "a" * 40 + " on vm"
 
 @pytest.mark.skipif(not HAS_BASH, reason="bash not available")
 @pytest.mark.parametrize(
-    ("event", "first_line", "rc", "expected"),
+    ("first_line", "rc", "expected"),
     [
-        ("merge_group", GREEN, 0, "0"),
-        ("merge_group", "[ci] green @" + "a" * 40 + " (3 pre-existing on main) on vm", 0, "0"),
-        ("merge_group", RED, 0, "1"),
-        ("merge_group", None, 0, "1"),
-        ("merge_group", GREEN, 78, "78"),
-        ("pull_request", RED, 0, "0"),
-        ("pull_request", None, 0, "0"),
-        ("push", RED, 0, "0"),
-        ("pull_request", GREEN, 1, "1"),
+        (GREEN, 0, "0"),
+        (RED, 0, "0"),
+        (None, 0, "0"),
+        (GREEN, 1, "1"),
+        (GREEN, 78, "78"),
+        # The suite never completed: no verdict is posted and the job fails.
+        ("no-exit", 0, "1"),
     ],
 )
-def test_the_verdict_step_fails_only_a_non_green_queue_run(
-    tmp_path: Path, event: str, first_line: str | None, rc: int, expected: str
+def test_the_verdict_step_passes_the_posters_exit_code_through(
+    tmp_path: Path, first_line: str | None, rc: int, expected: str
 ) -> None:
-    out = _verdict(tmp_path, event, first_line, rc)
+    # A red verdict is the PR comment and label, not a failed job; only the poster failing fails it.
+    out = _verdict(tmp_path, first_line, rc)
     assert out["__rc__"] == expected, out["__stderr__"]
 
 
-def _queue_repo(tmp_path: Path, changes: list[str]) -> tuple[Path, list[str]]:
-    """origin: main at a base commit, then one queue commit per change (a merge group)."""
+def _origin_with_commits(tmp_path: Path, changes: list[str]) -> tuple[Path, list[str]]:
+    """origin: main at a base commit, then one commit per change on a topic branch."""
     origin = tmp_path / "origin"
     origin.mkdir()
     _git(origin, "init", "-q", "-b", "main")
@@ -515,7 +482,7 @@ def _queue_repo(tmp_path: Path, changes: list[str]) -> tuple[Path, list[str]]:
         (origin / seeded).write_text("x\n", encoding="utf-8")
     _git(origin, "add", "-A")
     _git(origin, "commit", "-q", "-m", "base")
-    _git(origin, "checkout", "-q", "-b", "gh-readonly-queue/main/pr-1")
+    _git(origin, "checkout", "-q", "-b", "topic")
     shas = [_git(origin, "rev-parse", "HEAD")]
     for changed in changes:
         if ">" in changed:
@@ -535,19 +502,6 @@ def _queue_repo(tmp_path: Path, changes: list[str]) -> tuple[Path, list[str]]:
     clone = tmp_path / "clone"
     _git(tmp_path, "clone", "-q", "--depth", "1", "--branch", "main", origin.as_uri(), str(clone))
     return clone, shas
-
-
-@pytest.mark.skipif(not HAS_BASH, reason="bash not available")
-@pytest.mark.parametrize(
-    ("detect", "first"), [(SERVICE_DETECT, "service/x.java"), (DOCS_DETECT, "docs/x.md")]
-)
-def test_a_queue_entry_builds_what_an_earlier_pr_in_its_group_changed(
-    tmp_path: Path, detect: tuple[Path, str, str], first: str
-) -> None:
-    # Entry 2's base_sha may be entry 1's head; the diff is taken against main, not that base.
-    clone, shas = _queue_repo(tmp_path, [first, "tests/only.py"])
-    out = _run_step(_step(*detect), _detect_env("merge_group", "", shas[2]), clone, tmp_path)
-    assert (out["__rc__"], out["run"]) == ("0", "true"), out["__stderr__"]
 
 
 def test_docs_detect_covers_every_push_path() -> None:

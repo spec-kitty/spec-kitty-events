@@ -705,8 +705,8 @@ def test_the_docs_job_drops_the_fragment_folder_before_any_npm_step() -> None:
 
 
 def test_a_fragment_only_change_does_not_trigger_the_docs_build() -> None:
-    # The pull_request trigger has no path filter (the merge-queue gate must always report,
-    # ADR 0005 D3); tests/test_merge_queue_workflows.py runs the in-job diff on a fragment-only
+    # The pull_request trigger has no path filter (the `docs-build` required check must always
+    # report, ADR 0005 D3); tests/test_ci_gate_workflows.py runs the in-job diff on a fragment-only
     # change. The push trigger keeps its filter, which must leave fragments out.
     paths = yaml.load(_DOCS_SITE.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)["on"]["push"][
         "paths"
