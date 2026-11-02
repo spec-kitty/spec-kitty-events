@@ -72,9 +72,9 @@ jobs:
     timeout-minutes: 5
     outputs:
       service: ${{ steps.detect.outputs.service }}
-      # 'true' when this run builds: always on push, schedule, dispatch and call; on a PR or a merge
-      # group only when the change touches the Gradle build (the push paths). A PR labelled
-      # pr:pause-ci builds nothing.
+      # 'true' when this run builds: always on push, schedule, dispatch and call; on a PR only when
+      # the change touches the Gradle build (the push paths). A PR labelled pr:pause-ci builds
+      # nothing.
       run: ${{ steps.changes.outputs.run }}
       core-sha: ${{ steps.detect.outputs.core-sha }}
     steps:
