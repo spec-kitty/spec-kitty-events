@@ -21,7 +21,7 @@ and the daily CI canary (`ci-pr-lane-canary.yml`), build and deploy the docs sit
 publish to PyPI on `v*` tags (`publish-pypi.yml`) or to TestPyPI on manual dispatch
 (`publish-testpypi.yml`). `service.yml` runs the Gradle build (`./gradlew verifyAll`,
 currently the Java binding) on `main` pushes that touch the Java, Gradle, service, contract or
-producer-contract paths, and on every pull request and merge group, where its `detect` job
+producer-contract paths, and on every pull request, where its `detect` job
 skips the build unless the change touches those paths; its service jobs stay inert until the services
 are imported at cutover, and `service-release.yml` (`service-v*` tags) refuses to release
 before then ([ADR-0003](./docs/adr/0003-gradle-build-and-service-release-line.md)).
