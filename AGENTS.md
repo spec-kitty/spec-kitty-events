@@ -11,11 +11,10 @@ process. There is no pre-programme
 branch ladder here: **`main` IS the integration branch** — every PR targets `main`,
 nothing deploys on merge except the docs site (`docs-site.yml` publishes GitHub Pages on
 a push to `main` that touches `docs/**` or `site/**`), and nothing on GitHub enforces
-anything (no branch protection, no required reviews) until the operator turns on the merge
-queue: every workflow that produces a required check (`suite`, `acceptance`,
-`cross-repo-harness-tests`, `service-gate`, `docs-build`) also runs on `merge_group`, where
-the full suite always runs, and a `pr:pause-ci` label pauses a PR's CI (`pr-pause-ci.yml`;
-ADR 0005 D3, #177). The deterministic CI suite is
+anything beyond the operator's ruleset on `main`: required checks only (`acceptance`,
+`cross-repo-harness-tests`, `service-gate`, `docs-build`), "up to date before merging" off,
+no merge queue. `ci.yml`'s `suite` is not required, and a `pr:pause-ci` label pauses a PR's CI
+(`pr-pause-ci.yml`; ADR 0005 D3, amended 2026-11-02, #177). The deterministic CI suite is
 `.github/workflows/ci.yml` (Blacksmith, per `planning#274`); the other workflows run the
 acceptance and cross-repo harness checks (`acceptance.yml`, `cross-repo-harness-tests.yml`)
 and the daily CI canary (`ci-pr-lane-canary.yml`), build and deploy the docs site, and
