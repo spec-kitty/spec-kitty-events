@@ -18,9 +18,6 @@ name: cross-repo-harness-tests
 on:
   pull_request:
     branches: [main]
-  # The merge queue (ADR 0005 D3): this gate is a required check.
-  merge_group:
-    types: [checks_requested]
   push:
     branches: [main]
 

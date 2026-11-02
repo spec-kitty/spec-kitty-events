@@ -3,9 +3,6 @@ name: Acceptance
 on:
   pull_request:
     branches: [main]
-  # The merge queue (ADR 0005 D3): `acceptance` is a required check.
-  merge_group:
-    types: [checks_requested]
   push:
     branches: [main, develop]
   workflow_dispatch:
