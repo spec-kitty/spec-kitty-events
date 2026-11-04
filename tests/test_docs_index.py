@@ -203,7 +203,10 @@ def test_the_docsite_generates_the_indexes_before_dev_build_and_validate() -> No
         "scripts"
     ]
     assert scripts["prevalidate"] == "python3 ../scripts/docs_index.py --write"
-    assert scripts["predev"] == scripts["prebuild"] == scripts["prevalidate"]
+    # The dev/build chain additionally stages the contract bundles (staging stays
+    # fail-closed there; validate remains index-only, #194 / WP03).
+    assert scripts["predev"] == scripts["prebuild"]
+    assert scripts["predev"] == scripts["prevalidate"] + " && node scripts/stage-docs-inputs.mjs"
 
 
 # --- pre-PR squad findings -----------------------------------------------------------

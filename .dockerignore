@@ -90,3 +90,7 @@
 **/build-logic/build
 **/java/build
 **/.cache/jdk-25
+
+# The CI diagram render cache when a local build-mode run sets DK_BEOE_CACHE_DIR the
+# way docs-site.yml does (docs/guides/docsite.md).
+**/.dk-diagram-cache

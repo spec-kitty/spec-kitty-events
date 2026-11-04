@@ -1,0 +1,3 @@
+# Docs-build python deps: bundle.py needs PyYAML (pinned to uv.lock's version; keep in
+# sync on bumps). docs_index.py is standard-library only and needs no packages.
+pyyaml==6.0.3

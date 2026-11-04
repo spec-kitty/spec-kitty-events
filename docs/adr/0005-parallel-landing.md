@@ -1,8 +1,8 @@
 ---
 title: 'ADR-0005: land pull requests in parallel: changelog fragments, generated indexes, required checks'
-description: 'Accepted: PRs add changelog fragments, indexes are generated at docs build, and required checks always report. D3 amended 2026-11-02: no merge queue.'
+description: 'Accepted: fragments per PR, generated indexes, always-on required checks. Amended 2026-11-02: no merge queue; amended 2026-11-03: fragment stopgap replaced by toolkit exclusion.'
 doc_status: active
-updated: 2026-11-02T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: ADR
 kind: ADR
 authors:
@@ -22,6 +22,10 @@ built on `main`.
 
 **Amended 2026-11-02:** D3 originally also called for a merge queue. The operator decided
 against it; see the amendment under D3. D1 and D2 are unchanged.
+
+**Amended 2026-11-03:** D1's CI-only `rm -rf` stopgap is gone; doc-kitty 0.6.0 excludes
+`docs/changelog/unreleased/` natively (toolkit ADR-0070) — nothing about fragments' format
+or the collect flow changes.
 
 **Date:** 2026-11-01
 

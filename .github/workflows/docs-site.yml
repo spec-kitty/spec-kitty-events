@@ -16,6 +16,11 @@ on:
       # Changelog fragments are entries, not pages (ADR 0005); adding one builds nothing.
       - '!docs/changelog/unreleased/**'
       - 'site/**'
+      # Contracts and schemas feed generated pages; their changes must publish the site.
+      - 'contracts/**'
+      - 'src/spec_kitty_events/schemas/**'
+      - 'src/spec_kitty_events/producer_contract/**'
+      - 'scripts/schema_pages.py'
       - '.github/workflows/docs-site.yml'
       - 'scripts/docs_index.py'
   workflow_dispatch:
@@ -33,24 +38,51 @@ jobs:
     # The required check's name; `build` alone also names jobs in the tag-only release workflows.
     name: docs-build
     runs-on: ubuntu-24.04
+    # Diagrams render at build time (DocKitty 0.6.0): Mermaid through Chromium, PlantUML through the
+    # service below. The Playwright image carries Chromium and its OS libraries, so there is
+    # no `playwright install` step. Pinned by the multi-arch index digest, resolved on 2026-11-03 with
+    #   docker buildx imagetools inspect mcr.microsoft.com/playwright:v1.62.1-noble
+    #   -> Digest: sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
+    # The tag equals the `playwright` pin in site/package.json. Bump the tag, the digest and the pin together.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
+      options: --ipc=host --init
+    services:
+      plantuml:
+        # Pinned by the multi-arch index digest of jetty-v1.2026.9 (the same as DocKitty v0.6.0 deploy.yml).
+        # In a container job the service is reached by name; no port mapping is needed.
+        image: plantuml/plantuml-server:jetty-v1.2026.9@sha256:065c66adc6728ba6dd353a29d4ada73f8358b68549a0f710c4bf46b43c103618
+        env:
+          # SANDBOX: PlantUML refuses every URL read, so a diagram cannot reach the network.
+          PLANTUML_SECURITY_PROFILE: SANDBOX
+          # The schematic pages render whole JSON schemas via astro-plantuml, which builds
+          # the request as GET <server>/<encoded>; Jetty's default request-line limit of
+          # 8192 bytes rejects the largest ones (e.g. work_observation_payload encodes to
+          # 8236 chars -> HTTP 414, verified 2026-11-03). _JAVA_OPTIONS because the image's
+          # jetty.start is baked at build time, so container-time JAVA_OPTIONS is ignored;
+          # the JVM honours _JAVA_OPTIONS for its own properties.
+          _JAVA_OPTIONS: -Djetty.httpConfig.requestHeaderSize=1048576
     permissions:
       contents: read
       # @spec-kitty/doc-toolkit is installed from GitHub Packages.
       packages: read
     defaults:
       run:
+        # A container job's default shell is sh (dash), which lacks `set -o pipefail`.
+        shell: bash
         working-directory: site
     steps:
+      - name: Probe the container toolchain
+        # Before checkout there is no site/ directory yet, so run from the root. The image
+        # ships python3 without pip; the venv step below installs python3-venv, which brings it.
+        working-directory: .
+        run: |
+          python3 --version
+          pip --version || echo "no pip in the image"
+          git --version
+          curl --version | head -1
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-      # docs/changelog/unreleased/ holds changelog fragments, not pages (ADR 0005). Toolkit
-      # 0.5.0 walks every .md under docs/, so they would be published and fail the
-      # frontmatter gate. Drop them from this disposable checkout before any npm step.
-      # Replace this with `exclude: ['changelog/unreleased']` in site/astro.config.mjs
-      # once a toolkit release carries it (doc-kitty ADR-0070).
-      - name: Leave the changelog fragments out of the docs build
-        working-directory: .
-        run: rm -rf docs/changelog/unreleased
       - name: Decide whether the change touches the docs
         id: changes
         working-directory: .
@@ -60,10 +92,10 @@ jobs:
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
           PAUSED: ${{ contains(github.event.pull_request.labels.*.name, 'pr:pause-ci') }}
         # The push paths, as a pattern; changelog fragments (docs/changelog/unreleased/) are not
-        # pages and never count. A PR diffs its base tip against its head. If the SHAs
-        # cannot be fetched or diffed, the build runs.
+        # pages and never count. Contracts and schemas feed generated pages, so they count. A PR
+        # diffs its base tip against its head. If the SHAs cannot be fetched or diffed, the build runs.
         run: |
-          PATTERN='^(docs/|site/|\.github/workflows/docs-site\.yml$|scripts/docs_index\.py$)'
+          PATTERN='^(docs/|site/|\.github/workflows/docs-site\.yml$|scripts/docs_index\.py$|scripts/schema_pages\.py$|contracts/|src/spec_kitty_events/schemas/|src/spec_kitty_events/producer_contract/)'
           case "$EVENT" in
             pull_request) base="$PR_BASE"; fetch_base="$PR_BASE"; head="$PR_HEAD" ;;
             *) echo "run=true" >> "$GITHUB_OUTPUT"; echo "$EVENT: the docs build runs"; exit 0 ;;
@@ -88,6 +120,7 @@ jobs:
         if: steps.changes.outputs.run == 'true'
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
+          # doc-toolkit 0.6.0 (Astro 7) requires Node 22.22+.
           node-version: '22.22'
           registry-url: https://npm.pkg.github.com
           scope: '@spec-kitty'
@@ -96,10 +129,80 @@ jobs:
       - name: Install
         if: steps.changes.outputs.run == 'true'
         # Exactly what site/package-lock.json records, so a build on main uses the
-        # same dependencies as the pull request check did.
+        # same dependencies as the pull request check did. --ignore-scripts because a
+        # postinstall never belongs in CI.
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm ci
+        run: npm ci --ignore-scripts
+      - name: Set up Python for the index generator
+        if: steps.changes.outputs.run == 'true'
+        # actions/setup-python cannot run in the Playwright image (no lsb_release), and the
+        # image ships python3 without pip or venv. Install python3-venv from apt (the job runs
+        # as root; it brings pip through python3-pip-whl), then use a venv.
+        working-directory: .
+        run: |
+          set -euo pipefail
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends python3-venv
+          python3 -m venv "$RUNNER_TEMP/docs-venv"
+      - name: Install the docs Python requirements
+        if: steps.changes.outputs.run == 'true'
+        # bundle.py bundles the contracts with PyYAML only (no JVM/Gradle); the pin in
+        # scripts/docs/requirements.txt tracks uv.lock's PyYAML so both environments agree.
+        working-directory: .
+        run: |
+          "$RUNNER_TEMP/docs-venv/bin/pip" install -r scripts/docs/requirements.txt
+      - name: Write the contract bundles
+        if: steps.changes.outputs.run == 'true'
+        # The bundle output must live outside the repository (bundle.py refuses in-tree
+        # output with OUT_INSIDE_REPOSITORY). SKE_CONTRACT_BUNDLES_DIR tells the npm
+        # prebuild staging (site/scripts/stage-docs-inputs.mjs) where the bundles are;
+        # the end-to-end listing records the contracts the build is about to publish.
+        working-directory: .
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/docs-venv/bin/python" contracts/tools/bundle.py --root contracts --out "$RUNNER_TEMP/bundle-out" --bundle-only
+          find "$RUNNER_TEMP/bundle-out/bundle" -type f -exec sha256sum {} +
+          echo "SKE_CONTRACT_BUNDLES_DIR=$RUNNER_TEMP/bundle-out/bundle" >> "$GITHUB_ENV"
+      - name: Wait for the PlantUML server
+        if: steps.changes.outputs.run == 'true'
+        # Hard dependency of the build: schematic and PlantUML diagrams render through this
+        # service. Worst case 24 x (3 s probe + 2 s sleep) = 120 s (NFR-002); a timeout fails
+        # naming the service.
+        run: |
+          for i in $(seq 1 24); do
+            if [ "$(curl -s --max-time 3 -o /dev/null -w '%{http_code}' http://plantuml:8080/svg/)" = 200 ]; then echo "PlantUML ready"; exit 0; fi
+            echo "waiting for PlantUML ($i/24)"; sleep 2
+          done
+          echo "::error::plantuml did not answer 200 on http://plantuml:8080/svg/" >&2; exit 1
+      - name: Restore the diagram render cache
+        if: steps.changes.outputs.run == 'true'
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          # A container job's workspace is /__w/..., not the host path; the cache action maps it itself.
+          path: .dk-diagram-cache
+          # Bump the 0.6.0 in the key and restore-keys together with the @spec-kitty/doc-toolkit pin in site/package.json.
+          key: dk-diagram-0.6.0-${{ hashFiles('docs/**/*.md') }}
+          restore-keys: |
+            dk-diagram-0.6.0-
+      - name: Generate the changelog and ADR indexes
+        if: steps.changes.outputs.run == 'true'
+        # The hubs commit an empty generated block; no pull request edits them (ADR 0005 D2).
+        # Fails when an entry lacks the frontmatter its index line needs. Standard library
+        # only, so the venv needs no packages.
+        working-directory: .
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/docs-venv/bin/python" scripts/docs_index.py --write
+      - name: Check the generated schema pages match the schemas
+        if: steps.changes.outputs.run == 'true'
+        # WP04 (#195): scripts/schema_pages.py --check fails closed, naming the file, when a
+        # schema lacks a page, a page has no schema, page content drifted, or a hub block
+        # misses a link. Standard library only, so the bare venv python suffices.
+        working-directory: .
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/docs-venv/bin/python" scripts/schema_pages.py --check
       - name: Validate frontmatter and source links
         if: steps.changes.outputs.run == 'true'
         run: npm run validate
@@ -109,12 +212,84 @@ jobs:
         # (as noindex pages) rather than dropped.
         env:
           DK_PUBLISH_DRAFTS: 'on'
-          # Mermaid renders in the browser; never switch to build-time rendering.
-          DK_DIAGRAM_BUILD_RENDER: client
-        run: npm run build
+          # Render Mermaid and PlantUML to static SVG at build time (Chromium from the container image).
+          DK_DIAGRAM_BUILD_RENDER: build
+          DK_PLANTUML_SERVER_URL: http://plantuml:8080/svg/
+        run: |
+          # Guard: reads the value declared above, so a later edit cannot silently fall back to client rendering.
+          test "$DK_DIAGRAM_BUILD_RENDER" = build || { echo "::error::DK_DIAGRAM_BUILD_RENDER must be build"; exit 1; }
+          export DK_BEOE_CACHE_DIR="$GITHUB_WORKSPACE/.dk-diagram-cache"
+          npm run build
+      # WP04 inserted the schema drift check above (pre-build); the diagram-count gate follows here.
+      - name: Check every staged schema has a built page with a rendered diagram
+        if: steps.changes.outputs.run == 'true'
+        # WP04 (#195), NFR-003. Fails closed on all three failure classes:
+        #  1. staged set != built set, per name: the staged name is the basename minus
+        #     '.schema.json'; the page directory is that stem, except the three envelope
+        #     pages whose stems scripts/schema_pages.py pins (event -> event-envelope,
+        #     envelope -> producer-envelope-write, envelope.read -> producer-envelope-read).
+        #     Schematic pages live in exactly these three trees, so the globs are precise.
+        #  2. a page without a rendered figure (charter's idiom: the class alone would pass
+        #     an unrendered client-side figure).
+        #  3. a PlantUML ERROR SVG: the toolkit fails the build on render errors, so this is
+        #     defence in depth. The markers below were demonstrated on 2026-11-03 against the
+        #     pinned plantuml-server jetty-v1.2026.9 by feeding it broken diagrams locally:
+        #     a broken class diagram renders an SVG containing the text 'Syntax Error?'
+        #     (with 'Assumed diagram type'), and a broken @startjson renders one containing
+        #     'Your data does not sound like JSON data'.
+        working-directory: .
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          pages=(site/dist/events/*/*/index.html site/dist/architecture/producer-row-schemas/*/index.html site/dist/api/envelope/*/index.html)
+          mapfile -t staged < <(cd site/schemas && find . -name '*.schema.json' -printf '%f\n' | sort)
+          staged_names=()
+          for f in "${staged[@]}"; do
+            stem="${f%.schema.json}"
+            case "$stem" in
+              event) stem=event-envelope ;;
+              envelope) stem=producer-envelope-write ;;
+              envelope.read) stem=producer-envelope-read ;;
+            esac
+            staged_names+=("$stem")
+          done
+          built_names=()
+          for page in "${pages[@]}"; do
+            built_names+=("$(basename "$(dirname "$page")")")
+          done
+          test "${#staged_names[@]}" -gt 0 || { echo "::error::no staged schemas under site/schemas"; exit 1; }
+          offenders=$(comm -3 <(printf '%s\n' "${staged_names[@]}" | sort) <(printf '%s\n' "${built_names[@]}" | sort -u) || true)
+          test -z "$offenders" || { echo "::error::staged schema without a built schematic page (or vice versa): $offenders"; exit 1; }
+          echo "${#built_names[@]} built schematic pages for ${#staged_names[@]} staged schemas"
+          nofigure=$(grep -LE '<figure class="dk-diagram"[^>]*><svg' "${pages[@]}" || true)
+          test -z "$nofigure" || { echo "::error::schematic pages without a rendered diagram: $nofigure"; exit 1; }
+          errfigure=$(grep -le 'Syntax Error?' -e 'Your data does not sound like JSON data' -e '(Assumed diagram type' "${pages[@]}" || true)
+          test -z "$errfigure" || { echo "::error::schematic pages whose diagram is a PlantUML error SVG: $errfigure"; exit 1; }
+          echo "every schematic page carries a rendered, non-error diagram"
+      - name: Check the published contracts equal the bundles
+        if: steps.changes.outputs.run == 'true'
+        # The published raw file must be byte-equal to the bundle the resolver wrote (the
+        # charter's published-check pattern, looped over both modules): verify the emitted
+        # sha256 sidecar, then compare the published digest against the bundle's.
+        working-directory: .
+        run: |
+          set -euo pipefail
+          for module in mission-status mission-write; do
+            published="site/dist/reference/api/$module"
+            (cd "$published" && sha256sum -c openapi.yaml.sha256)
+            published_digest="$(sha256sum "$published/openapi.yaml" | cut -d' ' -f1)"
+            bundle_digest="$(sha256sum "$RUNNER_TEMP/bundle-out/bundle/$module/openapi.yaml" | cut -d' ' -f1)"
+            if [ "$published_digest" != "$bundle_digest" ]; then
+              echo "::error::$module: published sha256 $published_digest != bundle sha256 $bundle_digest"
+              exit 1
+            fi
+            echo "$module: published == bundle (sha256 $published_digest)"
+          done
       - name: Check links in the built site
         if: steps.changes.outputs.run == 'true'
         run: npm run check:built-links
+      # WP04 added its steps above: the pre-build schema drift check and the post-build
+      # staged-status-count + diagram-count gate (its out-of-map edits).
       - name: Upload the Pages artifact
         if: steps.changes.outputs.run == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
