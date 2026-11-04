@@ -142,3 +142,32 @@ also projected onto the volatile relay as a live run moment.
   validate an event and call a reducer.
 - [Ordering and reduction](/architecture/ordering-and-reduction/) — how a
   reducer orders and deduplicates events before folding.
+
+<!-- BEGIN GENERATED: schemas -->
+## Schemas
+
+- [Schema: decision_input_answered_payload](/events/mission-lifecycle/decision_input_answered_payload/) — Payload for DecisionInputAnswered event.
+- [Schema: decision_input_requested_payload](/events/mission-lifecycle/decision_input_requested_payload/) — Payload for DecisionInputRequested event.
+- [Schema: follow_up_recorded_payload](/events/mission-lifecycle/follow_up_recorded_payload/) — Typed payload for ``FollowUpRecorded`` events.
+- [Schema: mission_cancelled_payload](/events/mission-lifecycle/mission_cancelled_payload/) — Typed payload for MissionCancelled events.
+- [Schema: mission_closed_payload](/events/mission-lifecycle/mission_closed_payload/) — Typed payload for MissionClosed catalog events.
+- [Schema: mission_completed_payload](/events/mission-lifecycle/mission_completed_payload/) — Typed payload for MissionCompleted events.
+- [Schema: mission_created_payload](/events/mission-lifecycle/mission_created_payload/) — Typed payload for MissionCreated catalog events.
+- [Schema: mission_reopened_payload](/events/mission-lifecycle/mission_reopened_payload/) — Typed payload for ``MissionReopened`` events.
+- [Schema: mission_run_completed_payload](/events/mission-lifecycle/mission_run_completed_payload/) — Payload for MissionRunCompleted event.
+- [Schema: mission_run_started_payload](/events/mission-lifecycle/mission_run_started_payload/) — Payload for MissionRunStarted event.
+- [Schema: mission_started_payload](/events/mission-lifecycle/mission_started_payload/) — Typed payload for MissionStarted events.
+- [Schema: next_step_auto_completed_payload](/events/mission-lifecycle/next_step_auto_completed_payload/) — Payload for NextStepAutoCompleted event.
+- [Schema: next_step_issued_payload](/events/mission-lifecycle/next_step_issued_payload/) — Payload for NextStepIssued event.
+- [Schema: phase_entered_payload](/events/mission-lifecycle/phase_entered_payload/) — Typed payload for PhaseEntered events.
+- [Schema: plan_completed_payload](/events/mission-lifecycle/plan_completed_payload/) — Plan phase completed for a mission.
+- [Schema: plan_started_payload](/events/mission-lifecycle/plan_started_payload/) — Plan phase started for a mission.
+- [Schema: project_initialized_payload](/events/mission-lifecycle/project_initialized_payload/) — Typed payload for ``ProjectInitialized`` events.
+- [Schema: review_rollback_payload](/events/mission-lifecycle/review_rollback_payload/) — Typed payload for ReviewRollback events.
+- [Schema: reviewer_self_approval_payload](/events/mission-lifecycle/reviewer_self_approval_payload/) — Typed payload for ``ReviewerSelfApproval`` events.
+- [Schema: specify_completed_payload](/events/mission-lifecycle/specify_completed_payload/) — Specify phase completed for a mission.
+- [Schema: specify_started_payload](/events/mission-lifecycle/specify_started_payload/) — Specify phase started for a mission.
+- [Schema: tasks_completed_payload](/events/mission-lifecycle/tasks_completed_payload/) — Tasks phase completed for a mission.
+- [Schema: tasks_started_payload](/events/mission-lifecycle/tasks_started_payload/) — Tasks phase started for a mission.
+- [Schema: wp_created_payload](/events/mission-lifecycle/wp_created_payload/) — Typed payload for ``WPCreated`` events.
+<!-- END GENERATED: schemas -->

@@ -34,6 +34,7 @@ lint: ## Run the pinned ruff check gate, the formatter check, the version-amendm
 	uv run python scripts/changelog.py check
 	uv run python scripts/changelog.py guard
 	uv run python scripts/docs_index.py --check
+	uv run python scripts/schema_pages.py --check
 
 # The Java binding (java/, spec-kitty-events#92) runs the same upcast corpus as the Python
 # gate. scripts/ensure_jdk25.sh finds a JDK 25+ or provisions Temurin 25 into .cache/ and hands

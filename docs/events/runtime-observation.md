@@ -174,3 +174,18 @@ user-level connect/disconnect into a `UserConnectionStatus`.
   reduce these events.
 - [Durability and relay](/architecture/durability-and-relay/) — the journal vs
   volatile split these families sit on either side of.
+
+<!-- BEGIN GENERATED: schemas -->
+## Schemas
+
+- [Schema: connector_degraded_payload](/events/runtime-observation/connector_degraded_payload/) — Payload for ConnectorDegraded events.
+- [Schema: connector_health_checked_payload](/events/runtime-observation/connector_health_checked_payload/) — Payload for ConnectorHealthChecked events.
+- [Schema: connector_provisioned_payload](/events/runtime-observation/connector_provisioned_payload/) — Payload for ConnectorProvisioned events.
+- [Schema: connector_reconnected_payload](/events/runtime-observation/connector_reconnected_payload/) — Payload for ConnectorReconnected events.
+- [Schema: connector_revoked_payload](/events/runtime-observation/connector_revoked_payload/) — Payload for ConnectorRevoked events.
+- [Schema: harness_observation_payload](/events/runtime-observation/harness_observation_payload/) — Typed payload for the six HarnessObservation kinds.
+- [Schema: profile_invocation_started_payload](/events/runtime-observation/profile_invocation_started_payload/) — Payload for ProfileInvocationStarted events.
+- [Schema: user_connected_payload](/events/runtime-observation/user_connected_payload/) — Payload for UserConnected events.
+- [Schema: user_disconnected_payload](/events/runtime-observation/user_disconnected_payload/) — Payload for UserDisconnected events.
+- [Schema: work_observation_payload](/events/runtime-observation/work_observation_payload/) — Typed payload for the 25 durable WorkObservation kinds.
+<!-- END GENERATED: schemas -->

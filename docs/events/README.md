@@ -2,7 +2,7 @@
 title: Event families
 description: The event families the Spec Kitty runtime emits, grouped by concern — mission lifecycle, work and status, review and audit, runtime observation, collaboration, semantics.
 doc_status: active
-updated: 2026-10-18T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Integration
 kind: Hub
 okf_version: "0.2"
@@ -34,6 +34,8 @@ This section groups the families by concern. For the envelope they all ride in, 
   focus, comments and decisions, and bounded cross-mission coordination messages.
 - **[Semantics and analytics](/events/semantics-and-analytics/)** — glossary semantic-integrity
   enforcement and step checkpoints, and token-usage and diff accounting.
+- **[Shared types](/events/shared/)** — the sub-models the payloads compose: identity
+  records, references and value sets, each with a generated schema page.
 
 ## Families at a glance
 

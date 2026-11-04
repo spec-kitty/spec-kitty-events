@@ -1,0 +1,171 @@
+{
+  "version": 1,
+  "_comment": "Family map for scripts/schema_pages.py (spec-kitty-events#195, mission docs-site-overhaul-01M6GBDP WP04). Every *.schema.json in src/spec_kitty_events/schemas/ appears in exactly one bucket; *_payload.schema.json files may only sit in one of the six event families, never in \"shared\"; event.schema.json is the normative envelope.",
+  "normative_envelope": "event.schema.json",
+  "families": {
+    "mission-lifecycle": {
+      "hub": "docs/events/mission-lifecycle.md",
+      "schemas": [
+        "decision_input_answered_payload.schema.json",
+        "decision_input_requested_payload.schema.json",
+        "follow_up_recorded_payload.schema.json",
+        "mission_cancelled_payload.schema.json",
+        "mission_closed_payload.schema.json",
+        "mission_completed_payload.schema.json",
+        "mission_created_payload.schema.json",
+        "mission_reopened_payload.schema.json",
+        "mission_run_completed_payload.schema.json",
+        "mission_run_started_payload.schema.json",
+        "mission_started_payload.schema.json",
+        "next_step_auto_completed_payload.schema.json",
+        "next_step_issued_payload.schema.json",
+        "phase_entered_payload.schema.json",
+        "plan_completed_payload.schema.json",
+        "plan_started_payload.schema.json",
+        "project_initialized_payload.schema.json",
+        "review_rollback_payload.schema.json",
+        "reviewer_self_approval_payload.schema.json",
+        "specify_completed_payload.schema.json",
+        "specify_started_payload.schema.json",
+        "tasks_completed_payload.schema.json",
+        "tasks_started_payload.schema.json",
+        "wp_created_payload.schema.json"
+      ]
+    },
+    "work-and-status": {
+      "hub": "docs/events/work-and-status.md",
+      "schemas": [
+        "status_transition_payload.schema.json"
+      ]
+    },
+    "review-audit-decisions": {
+      "hub": "docs/events/review-audit-decisions.md",
+      "schemas": [
+        "decision_point_discussing_payload.schema.json",
+        "decision_point_opened_payload.schema.json",
+        "decision_point_overridden_payload.schema.json",
+        "decision_point_resolved_payload.schema.json",
+        "decision_point_widened_payload.schema.json",
+        "decision_timeout_expired_payload.schema.json",
+        "gate_failed_payload.schema.json",
+        "gate_passed_payload.schema.json",
+        "mission_audit_completed_payload.schema.json",
+        "mission_audit_decision_requested_payload.schema.json",
+        "mission_audit_failed_payload.schema.json",
+        "mission_audit_requested_payload.schema.json",
+        "mission_audit_started_payload.schema.json",
+        "mission_dossier_artifact_indexed_payload.schema.json",
+        "mission_dossier_artifact_missing_payload.schema.json",
+        "mission_dossier_parity_drift_detected_payload.schema.json",
+        "mission_dossier_snapshot_computed_payload.schema.json",
+        "retrospective_completed_payload.schema.json",
+        "retrospective_failed_payload.schema.json",
+        "retrospective_lifecycle_completed_payload.schema.json",
+        "retrospective_lifecycle_skipped_payload.schema.json",
+        "retrospective_proposal_applied_payload.schema.json",
+        "retrospective_proposal_generated_payload.schema.json",
+        "retrospective_proposal_rejected_payload.schema.json",
+        "retrospective_requested_payload.schema.json",
+        "retrospective_skipped_payload.schema.json",
+        "retrospective_started_payload.schema.json",
+        "significance_evaluated_payload.schema.json"
+      ]
+    },
+    "runtime-observation": {
+      "hub": "docs/events/runtime-observation.md",
+      "schemas": [
+        "connector_degraded_payload.schema.json",
+        "connector_health_checked_payload.schema.json",
+        "connector_provisioned_payload.schema.json",
+        "connector_reconnected_payload.schema.json",
+        "connector_revoked_payload.schema.json",
+        "harness_observation_payload.schema.json",
+        "profile_invocation_started_payload.schema.json",
+        "user_connected_payload.schema.json",
+        "user_disconnected_payload.schema.json",
+        "work_observation_payload.schema.json"
+      ]
+    },
+    "collaboration": {
+      "hub": "docs/events/collaboration.md",
+      "schemas": [
+        "comment_posted_payload.schema.json",
+        "concurrent_driver_warning_payload.schema.json",
+        "decision_captured_payload.schema.json",
+        "drive_intent_set_payload.schema.json",
+        "focus_changed_payload.schema.json",
+        "participant_invited_payload.schema.json",
+        "participant_joined_payload.schema.json",
+        "participant_left_payload.schema.json",
+        "potential_step_collision_detected_payload.schema.json",
+        "presence_heartbeat_payload.schema.json",
+        "prompt_step_execution_completed_payload.schema.json",
+        "prompt_step_execution_started_payload.schema.json",
+        "session_linked_payload.schema.json",
+        "warning_acknowledged_payload.schema.json"
+      ]
+    },
+    "semantics-and-analytics": {
+      "hub": "docs/events/semantics-and-analytics.md",
+      "schemas": [
+        "diff_summary_recorded_payload.schema.json",
+        "generation_blocked_by_semantic_conflict_payload.schema.json",
+        "glossary_clarification_requested_payload.schema.json",
+        "glossary_clarification_resolved_payload.schema.json",
+        "glossary_scope_activated_payload.schema.json",
+        "glossary_sense_updated_payload.schema.json",
+        "glossary_strictness_set_payload.schema.json",
+        "semantic_check_evaluated_payload.schema.json",
+        "step_checkpointed_payload.schema.json",
+        "term_candidate_observed_payload.schema.json",
+        "token_usage_recorded_payload.schema.json"
+      ]
+    },
+    "shared": {
+      "hub": "docs/events/shared/",
+      "schemas": [
+        "activity_ref.schema.json",
+        "actor_identity.schema.json",
+        "agent_profile_ref.schema.json",
+        "artifact_identity.schema.json",
+        "artifact_reference.schema.json",
+        "auth_principal_binding.schema.json",
+        "closure_message_ref.schema.json",
+        "content_hash_ref.schema.json",
+        "coverage_gap.schema.json",
+        "default_channel_ref.schema.json",
+        "factory_attempt_ref.schema.json",
+        "file_action.schema.json",
+        "focus_target.schema.json",
+        "lane.schema.json",
+        "local_namespace_tuple.schema.json",
+        "mission_identity.schema.json",
+        "participant_external_refs.schema.json",
+        "participant_identity.schema.json",
+        "principal_ref.schema.json",
+        "producer_identity.schema.json",
+        "programme_link.schema.json",
+        "provenance_ref.schema.json",
+        "raci_role_binding.schema.json",
+        "repository_identity.schema.json",
+        "resolved_raci_snapshot.schema.json",
+        "retrospective_actor_ref.schema.json",
+        "retrospective_mode.schema.json",
+        "retrospective_mode_source_signal.schema.json",
+        "runtime_actor_identity.schema.json",
+        "session_identity.schema.json",
+        "source_provenance.schema.json",
+        "summary_block.schema.json",
+        "sync_lane_v1.schema.json",
+        "sync_lane_v2.schema.json",
+        "teamspace_ref.schema.json",
+        "test_action.schema.json",
+        "thread_ref.schema.json",
+        "tool_action.schema.json",
+        "typed_rejection.schema.json",
+        "user_connection_status.schema.json",
+        "work_context.schema.json"
+      ]
+    }
+  }
+}

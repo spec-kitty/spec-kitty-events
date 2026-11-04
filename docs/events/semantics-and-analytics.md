@@ -78,3 +78,19 @@ relay.
   reduce these events.
 - [Ordering and reduction](/architecture/ordering-and-reduction/) — how the
   glossary reducer orders and deduplicates its events.
+
+<!-- BEGIN GENERATED: schemas -->
+## Schemas
+
+- [Schema: diff_summary_recorded_payload](/events/semantics-and-analytics/diff_summary_recorded_payload/) — Canonical git diff summary payload.
+- [Schema: generation_blocked_by_semantic_conflict_payload](/events/semantics-and-analytics/generation_blocked_by_semantic_conflict_payload/) — Payload for GenerationBlockedBySemanticConflict event.
+- [Schema: glossary_clarification_requested_payload](/events/semantics-and-analytics/glossary_clarification_requested_payload/) — Payload for GlossaryClarificationRequested event.
+- [Schema: glossary_clarification_resolved_payload](/events/semantics-and-analytics/glossary_clarification_resolved_payload/) — Payload for GlossaryClarificationResolved event.
+- [Schema: glossary_scope_activated_payload](/events/semantics-and-analytics/glossary_scope_activated_payload/) — Payload for GlossaryScopeActivated event.
+- [Schema: glossary_sense_updated_payload](/events/semantics-and-analytics/glossary_sense_updated_payload/) — Payload for GlossarySenseUpdated event.
+- [Schema: glossary_strictness_set_payload](/events/semantics-and-analytics/glossary_strictness_set_payload/) — Payload for GlossaryStrictnessSet event (mission-wide policy change).
+- [Schema: semantic_check_evaluated_payload](/events/semantics-and-analytics/semantic_check_evaluated_payload/) — Payload for SemanticCheckEvaluated event (step-level semantic check).
+- [Schema: step_checkpointed_payload](/events/semantics-and-analytics/step_checkpointed_payload/) — Payload for StepCheckpointed event (resumable step checkpoint).
+- [Schema: term_candidate_observed_payload](/events/semantics-and-analytics/term_candidate_observed_payload/) — Payload for TermCandidateObserved event.
+- [Schema: token_usage_recorded_payload](/events/semantics-and-analytics/token_usage_recorded_payload/) — Canonical token and estimated-cost accounting payload.
+<!-- END GENERATED: schemas -->

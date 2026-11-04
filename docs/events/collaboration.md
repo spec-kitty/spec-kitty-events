@@ -92,3 +92,22 @@ inline prose is bounded to a one-line, broadcast-safe value.
   reduce these events.
 - [Durability and relay](/architecture/durability-and-relay/) — how volatile
   coordination messages reach the relay.
+
+<!-- BEGIN GENERATED: schemas -->
+## Schemas
+
+- [Schema: comment_posted_payload](/events/collaboration/comment_posted_payload/) — Typed payload for CommentPosted events.
+- [Schema: concurrent_driver_warning_payload](/events/collaboration/concurrent_driver_warning_payload/) — Typed payload for ConcurrentDriverWarning events.
+- [Schema: decision_captured_payload](/events/collaboration/decision_captured_payload/) — Typed payload for DecisionCaptured events.
+- [Schema: drive_intent_set_payload](/events/collaboration/drive_intent_set_payload/) — Typed payload for DriveIntentSet events.
+- [Schema: focus_changed_payload](/events/collaboration/focus_changed_payload/) — Typed payload for FocusChanged events.
+- [Schema: participant_invited_payload](/events/collaboration/participant_invited_payload/) — Typed payload for ParticipantInvited events.
+- [Schema: participant_joined_payload](/events/collaboration/participant_joined_payload/) — Typed payload for ParticipantJoined events.
+- [Schema: participant_left_payload](/events/collaboration/participant_left_payload/) — Typed payload for ParticipantLeft events.
+- [Schema: potential_step_collision_detected_payload](/events/collaboration/potential_step_collision_detected_payload/) — Typed payload for PotentialStepCollisionDetected events.
+- [Schema: presence_heartbeat_payload](/events/collaboration/presence_heartbeat_payload/) — Typed payload for PresenceHeartbeat events.
+- [Schema: prompt_step_execution_completed_payload](/events/collaboration/prompt_step_execution_completed_payload/) — Typed payload for PromptStepExecutionCompleted events.
+- [Schema: prompt_step_execution_started_payload](/events/collaboration/prompt_step_execution_started_payload/) — Typed payload for PromptStepExecutionStarted events.
+- [Schema: session_linked_payload](/events/collaboration/session_linked_payload/) — Typed payload for SessionLinked events.
+- [Schema: warning_acknowledged_payload](/events/collaboration/warning_acknowledged_payload/) — Typed payload for WarningAcknowledged events.
+<!-- END GENERATED: schemas -->

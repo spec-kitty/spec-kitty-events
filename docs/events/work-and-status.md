@@ -107,3 +107,9 @@ does not know are passed through unchanged.
   reduce these events.
 - [Ordering and reduction](/architecture/ordering-and-reduction/) — the ordering
   and dedup rules the reducers apply.
+
+<!-- BEGIN GENERATED: schemas -->
+## Schemas
+
+- [Schema: status_transition_payload](/events/work-and-status/status_transition_payload/) — Payload for a WPStatusChanged event describing a lane transition.
+<!-- END GENERATED: schemas -->

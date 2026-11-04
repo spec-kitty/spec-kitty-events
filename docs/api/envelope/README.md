@@ -2,9 +2,10 @@
 title: The envelope
 description: Reference for Event, the single top-level envelope every spec-kitty-events family rides in, and the meaning of each of its context fields.
 doc_status: active
-updated: 2026-10-18T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: API
-kind: Reference
+kind: Hub
+okf_version: "0.2"
 related:
   - architecture/cloudevents-envelope
   - architecture/ordering-and-reduction
@@ -16,7 +17,9 @@ related:
 `Event` is the single top-level envelope. Every event family rides in it: a stable set of
 context fields identifying, ordering and scoping the event, carrying an opaque per-family
 `payload`. It is an immutable (`frozen=True`) Pydantic model; the package validates the
-context fields and leaves the `payload` to the family's own model.
+context fields and leaves the `payload` to the family's own model. The generated
+[schema page](/api/envelope/event-envelope/) renders the normative envelope schema with
+diagram, properties and source.
 
 **Source:** [`src/spec_kitty_events/models.py`](https://github.com/spec-kitty/spec-kitty-events/blob/main/src/spec_kitty_events/models.py).
 
@@ -65,3 +68,12 @@ major versions. It is **not** the package version. The two move independently; s
   CloudEvents 1.0 form and the read-time upcaster.
 - [The strict profile](/api/strict-profile/) — the fail-closed envelope gate and its full key
   set.
+- The producer contract's CloudEvents profiles (non-normative until 12.0.0):
+  [write](/architecture/producer-row-schemas/producer-envelope-write/) ·
+  [read](/architecture/producer-row-schemas/producer-envelope-read/).
+
+<!-- BEGIN GENERATED: schemas -->
+## Schemas
+
+- [Schema: event envelope](/api/envelope/event-envelope/) — Immutable event with causal metadata for distributed conflict detection.
+<!-- END GENERATED: schemas -->
