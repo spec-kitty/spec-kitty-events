@@ -10,6 +10,7 @@ lint guard against hand edits of ``[Unreleased]``, and the release-time check.
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -687,21 +688,16 @@ def test_collect_keeps_every_original_line_and_adds_each_fragment_once() -> None
         assert rendered.count(fragment.body) == 1
 
 
-# --- operator ruling 1: the fragment folder is not part of the docs site -------------
+# --- operator ruling 1: the fragment folder is excluded from the docs site natively ----
 
 _DOCS_SITE = _REPO_ROOT / ".github" / "workflows" / "docs-site.yml"
 
 
-def test_the_docs_job_drops_the_fragment_folder_before_any_npm_step() -> None:
-    # Toolkit 0.5.0 walks every .md under docs/, so fragments would be pages that fail the
-    # frontmatter gate. Until a toolkit release carries `exclude` (doc-kitty ADR-0070), the
-    # docs job removes the folder from its disposable checkout first.
-    workflow = yaml.safe_load(_DOCS_SITE.read_text(encoding="utf-8"))
-    steps = workflow["jobs"]["build"]["steps"]
-    runs = [str(step.get("run", "")) for step in steps]
-    drop = next(i for i, run in enumerate(runs) if "rm -rf docs/changelog/unreleased" in run)
-    npm = [i for i, run in enumerate(runs) if "npm " in run]
-    assert npm and drop < min(npm)
+def test_the_docs_job_has_no_fragment_removal_step() -> None:
+    # Toolkit 0.6.0 excludes docs/changelog/unreleased/ natively (#181, doc-kitty ADR-0070), so
+    # the docs job no longer removes the folder from its disposable checkout; the 0.5.0-era
+    # `rm -rf` stopgap must not reappear in any step.
+    assert "rm -rf docs/changelog/unreleased" not in _DOCS_SITE.read_text(encoding="utf-8")
 
 
 def test_a_fragment_only_change_does_not_trigger_the_docs_build() -> None:
@@ -715,12 +711,16 @@ def test_a_fragment_only_change_does_not_trigger_the_docs_build() -> None:
 
 
 def test_the_local_doc_kitty_gates_leave_the_fragment_folder_out() -> None:
-    agents = (_REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
-    # Toolkit 0.5.0 has no folder exclusion, so AGENTS.md must NOT tell contributors to pass
-    # a --exclude flag the toolkit rejects; it documents instead that the fragment folder's
-    # findings are disregarded until #181 adds native exclusion.
-    assert "--exclude" not in agents, "AGENTS.md documents a doc-kitty flag the toolkit lacks"
-    assert "docs/changelog/unreleased" in agents and "#181" in agents
+    # Toolkit 0.6.0 carries folder exclusion natively (#181, doc-kitty ADR-0070): the build
+    # excludes the fragment folder in astro config, and both local gates skip it via --exclude.
+    config = (_REPO_ROOT / "site" / "astro.config.mjs").read_text(encoding="utf-8")
+    assert "exclude: ['changelog/unreleased']" in config
+    validate = json.loads((_REPO_ROOT / "site" / "package.json").read_text(encoding="utf-8"))[
+        "scripts"
+    ]["validate"]
+    for tool in ("dockitty-validate-frontmatter", "dockitty-check-links"):
+        segment = next(part for part in validate.split("&&") if tool in part)
+        assert "--exclude ../docs/changelog/unreleased" in segment
 
 
 def test_the_fragment_readme_is_not_a_docs_page() -> None:

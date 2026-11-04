@@ -236,8 +236,16 @@ DOCS_DETECT = (DOCS, "build", "Decide whether the change touches the docs")
         (DOCS_DETECT, "docs/guides/contributing.md", "true"),
         (DOCS_DETECT, "site/package.json", "true"),
         (DOCS_DETECT, ".github/workflows/docs-site.yml", "true"),
+        (DOCS_DETECT, "contracts/mission-status/openapi.yaml", "true"),
+        (DOCS_DETECT, "src/spec_kitty_events/schemas/mission_created_payload.schema.json", "true"),
+        (
+            DOCS_DETECT,
+            "src/spec_kitty_events/producer_contract/data/mission.created.v1.schema.json",
+            "true",
+        ),
         (DOCS_DETECT, "docs/changelog/unreleased/177-x.md", "false"),
         (DOCS_DETECT, "service/README.md", "false"),
+        (DOCS_DETECT, "src/spec_kitty_events/analytics.py", "false"),
         # A rename out of a watched path is still a change there (no rename detection).
         (SERVICE_DETECT, "service/old.java>elsewhere/old.txt", "true"),
         (DOCS_DETECT, "docs/old.md>elsewhere/old.txt", "true"),

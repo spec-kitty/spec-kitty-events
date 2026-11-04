@@ -1,14 +1,15 @@
 # The JVM side of the events domain (ADR 0003): one Gradle build at the repository root.
 #
-# What runs today: `detect`, `gradle` (./gradlew verifyAll, currently the Java binding) and the
-# terminal `service-gate`. Every other job needs service/, which arrives with the cutover import
-# (ADR 0002, mission WP07): `detect` reports whether service/build.gradle.kts exists, and the service
-# jobs carry `if: needs.detect.outputs.service == 'true'`, so they turn on with no edit to this file.
+# What runs today: `detect`, `gradle` (./gradlew verifyAll: the Java binding, the services and the
+# contracts), the guarded service jobs and the terminal `service-gate`. The services arrived with the
+# cutover import (ADR 0002, mission WP07); `detect` reports whether service/build.gradle.kts exists,
+# and the service jobs carry `if: needs.detect.outputs.service == 'true'`, so a checkout without
+# service/ skips them with no edit to this file.
 #
 # Jobs:
 #   detect          service/ present? and the core SHA from service/core-pin.json (test-only peers)
 #   contract-bundle the contract bundle/ tree, built once by contracts/tools/bundle.py   [guarded]
-#   gradle          ./gradlew verifyAll; at cutover also the bootJar (JVM fallback asset)
+#   gradle          ./gradlew verifyAll, including the bootJar (the JVM fallback asset)
 #   native          GraalVM native image on four targets, golden replay, size             [guarded]
 #   native-command-cli  the write service (command-cli, #156): native image, tagged native tests and the
 #                   launcher-contract smoke on the same four targets                     [guarded]
@@ -91,7 +92,7 @@ jobs:
             echo "service/ is present: the service jobs run" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "service=false" >> "$GITHUB_OUTPUT"
-            echo "service/ is absent (before the cutover import): the service jobs are skipped" >> "$GITHUB_STEP_SUMMARY"
+            echo "service/ is absent in this checkout: the service jobs are skipped" >> "$GITHUB_STEP_SUMMARY"
           fi
           # service/core-pin.json (WP07): the core SHA for the CI-only peers (charter Package Boundary
           # exception). Read here once, on Linux, so no job needs jq on Windows.
@@ -164,9 +165,9 @@ jobs:
           if-no-files-found: error
           overwrite: true
 
-  # Runs today: the root build's aggregate check. It waits for contract-bundle only so that, after the
-  # cutover, the service modules' check reads the same bundle as the native legs; before it,
-  # contract-bundle is skipped and this job runs anyway.
+  # Runs today: the root build's aggregate check. It waits for contract-bundle only so that
+  # the service modules' check reads the same bundle as the native legs; on a checkout without
+  # service/ the contract-bundle job is skipped and this job runs anyway.
   gradle:
     needs: [detect, contract-bundle]
     if: ${{ !cancelled() && github.event_name != 'schedule' && needs.detect.result == 'success' && needs.detect.outputs.run == 'true' && needs.contract-bundle.result != 'failure' }}

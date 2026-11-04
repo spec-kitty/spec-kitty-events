@@ -1,8 +1,8 @@
 ---
 title: Building the docsite
-description: How the docs/ tree becomes a doc-kitty site — building and checking it locally, the Build Kitty theme, writing links, and what the CI workflow runs.
+description: How the docs/ tree becomes a doc-kitty site — building it locally with OpenAPI and schema staging and build-time diagrams, writing links, and what CI runs.
 doc_status: active
-updated: 2026-11-01T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -12,7 +12,7 @@ related:
 # Building the docsite
 
 The `docs/` tree is rendered by [doc-kitty](https://github.com/spec-kitty/doc-kitty)'s
-published toolkit, `@spec-kitty/doc-toolkit` (pinned to the latest release, `0.4.0`, on Astro 7 and Starlight 0.42). The
+published toolkit, `@spec-kitty/doc-toolkit` (pinned to the latest release, `0.6.0`, on Astro 7 and Starlight 0.42). The
 Astro project that renders it lives in `site/`; it owns no content and reads `../docs`
 directly. The docs tree lives at the **repository root**, not under `site/`.
 
@@ -27,16 +27,37 @@ toolkit is published to GitHub Packages.
    //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
    ```
 
-2. Install, check and build from `site/`:
+2. Install, check and build from `site/`. For full parity with CI, first start the
+   pinned PlantUML server, install the pinned Chromium locally (the workflow runs
+   in the Playwright container instead, so CI has no install step), and produce the
+   contract bundles — they are staged **from outside the repository** (the bundler
+   refuses an output directory inside the working tree, `OUT_INSIDE_REPOSITORY`), so
+   point `SKE_CONTRACT_BUNDLES_DIR` at a scratch directory:
 
    ```sh
+   docker run -d -p 8080:8080 \
+     plantuml/plantuml-server:jetty-v1.2026.9@sha256:065c66adc6728ba6dd353a29d4ada73f8358b68549a0f710c4bf46b43c103618
+   export SKE_CONTRACT_BUNDLES_DIR="$(mktemp -d)/bundle-out/bundle"
+   uv run --frozen --no-sync python contracts/tools/bundle.py --root contracts --out "$(dirname "$SKE_CONTRACT_BUNDLES_DIR")" --bundle-only
    cd site
    npm ci                      # installs exactly what package-lock.json records
+   npx playwright install chromium   # once per machine; CI gets Chromium from the container image
    npm run validate            # generates the section indexes, then checks frontmatter and source links in ../docs
-   DK_DIAGRAM_BUILD_RENDER=client npm run build   # writes site/dist
+   DK_DIAGRAM_BUILD_RENDER=build \
+   DK_PLANTUML_SERVER_URL=http://localhost:8080/svg/ \
+   DK_PUBLISH_DRAFTS=on \
+     npm run build             # writes site/dist, with diagrams rendered to static SVG
    npm run check:built-links   # every link in the built site resolves under the base
    npm run preview
    ```
+
+`npm run validate` natively excludes the fragment folder (`../docs/changelog/unreleased`,
+via `--exclude`; the unreleased changelog holds fragments, not pages — ADR 0005).
+
+Without the PlantUML server the build still succeeds in client mode
+(`DK_DIAGRAM_BUILD_RENDER=client`), but that mode is a local fallback only: CI never
+uses it (the workflow guards against it), and schematic pages omit their diagrams
+without the server, so the local site no longer matches the published one.
 
 `npm run validate`, `npm run build` and `npm run dev` first fill the generated lists in
 `docs/changelog/README.md` and `docs/adr/README.md` from the pages themselves
@@ -48,9 +69,13 @@ fail. A new changelog page or ADR therefore needs no README edit,
 and parallel pull requests never collide on an index
 ([#176](https://github.com/spec-kitty/spec-kitty-events/issues/176)).
 
-Mermaid diagrams render in the browser. `DK_DIAGRAM_BUILD_RENDER=client` pins that mode;
-without it the toolkit switches to build-time rendering whenever it finds a Playwright
-Chromium, which this site does not use.
+Diagrams render at **build time**: Mermaid through a Playwright Chromium,
+schematic/PlantUML diagrams through the PlantUML server named by
+`DK_PLANTUML_SERVER_URL` (ADR-0006). The mode is site-wide and auto-detected — the
+toolkit upgrades to build mode whenever it resolves a Chromium, so `astro.config.mjs`
+sets `diagrams: true` without pinning a mode; CI pins and guards `build`
+(`docs-site.yml`), and a local build without a Chromium falls back to client mode
+with the consequences noted above.
 
 Every build also writes the agent API (`api/index.json`, version 3), a content graph
 (`api/content-graph.json`) and an OKF bundle (`okf/`).
@@ -85,8 +110,28 @@ is its index and carries frontmatter; the required fields are `title`, `descript
 
 ## What CI runs
 
-`.github/workflows/docs-site.yml` builds the site on every PR that touches `docs/**` or
-`site/**` and publishes it to GitHub Pages from `main`. It runs `npm run validate`, then
-`npm run build`, then `npm run check:built-links` — so a frontmatter or link mistake fails the
-PR before it can publish. `npm run validate` generates the section indexes first, so the
-built site lists every page and their links are checked too.
+`.github/workflows/docs-site.yml` builds the site on every PR that touches `docs/**`,
+`site/**`, the contracts and schemas that feed the generated pages
+(`contracts/**`, `src/spec_kitty_events/schemas/**`,
+`src/spec_kitty_events/producer_contract/**`, `scripts/schema_pages.py`) or the
+workflow itself, and publishes it to GitHub Pages from `main` (the push trigger lists
+the same paths). The `build` job runs in the digest-pinned Playwright container with a
+digest-pinned, SANDBOX-profiled PlantUML service, waits for that service (bounded at
+120 s, failing with the service's name), then runs `npm run validate`, then
+`npm run build` with `DK_DIAGRAM_BUILD_RENDER=build` — guarded in-step so a drift back
+to client mode fails the job — then `npm run check:built-links`, so a frontmatter or
+link mistake fails the PR before it can publish. `npm run validate` generates the
+section indexes first, so the built site lists every page and their links are checked
+too.
+
+The pipeline runs two more stages on top of this:
+
+- **OpenAPI staging and the checksum gate**: the contract bundle is
+  produced out-of-repo and staged by the prebuild script; after the build, the published
+  OpenAPI document is compared against the bundle by SHA-256.
+- **Schema pages and the drift gate**: the schema reference pages are
+  generated from the schemas and checked for drift, and every built schema page must
+  carry a rendered diagram.
+
+Local builds read the bundles via `SKE_CONTRACT_BUNDLES_DIR` (see step 2 of
+[Build locally](#build-locally)).

@@ -1,3 +1,11 @@
 node_modules/
 dist/
 .astro/
+# Staged build inputs (scripts/stage-docs-inputs.mjs, run as predev/prebuild): copies of
+# out-of-repo artifacts — the OpenAPI contract bundles ($SKE_CONTRACT_BUNDLES_DIR) and,
+# from WP04, the schemas. The sources stay the single source of truth; never commit these.
+openapi/
+schemas/
+# The local build-time diagram render cache (DK_BEOE_CACHE_DIR default); CI keeps it at
+# the repository root as .dk-diagram-cache (docs-site.yml).
+.beoe-cache/

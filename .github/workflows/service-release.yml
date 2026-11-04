@@ -3,7 +3,7 @@
 # with one .sha256 per asset and SHA256SUMS (scripts/release/service-release-assets.sh; the asset
 # table in ADR 0003 is the contract), attests their build provenance and creates the GitHub release.
 #
-# Before the cutover import there is no service/: `gate` fails loudly, so nothing is built or
+# If the checkout has no service/ the `gate` fails loudly, so nothing is built or
 # published. The tag pattern is disjoint from the package line's v* (publish-pypi.yml): GitHub's glob
 # v* does not match service-v1.0.0 (tests/test_service_workflows.py checks both).
 #
@@ -51,7 +51,7 @@ jobs:
       - name: Require the imported services
         run: |
           if [ ! -d service ]; then
-            echo "::error::service-v* releases need the cutover import: service/ does not exist at $GITHUB_SHA"
+            echo "::error::service-v* releases need the events-domain service tree: service/ does not exist at $GITHUB_SHA"
             exit 1
           fi
       - name: Check the tag and derive the version

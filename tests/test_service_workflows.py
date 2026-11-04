@@ -227,7 +227,7 @@ def test_release_calls_the_service_build_with_the_version() -> None:
     assert jobs["build"]["with"] == {"release-version": "${{ needs.gate.outputs.ver }}"}
     assert "workflow_call" in _on(_load(SERVICE))
     gate = "\n".join(s.get("run", "") for s in jobs["gate"]["steps"])
-    assert "service-v* releases need the cutover import" in gate
+    assert "service-v* releases need the events-domain service tree" in gate
     assert 'git merge-base --is-ancestor "$GITHUB_SHA" origin/main' in gate
 
 
