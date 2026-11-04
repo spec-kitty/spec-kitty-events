@@ -492,7 +492,7 @@ class ChangeFeedTest {
     Fx fx = new Fx(StreamFx.twoMissions());
     try (Subscription first = unscoped(fx)) {
       fx.source.addMission(Fx.mission("gamma", Rows.GAMMA_ID, StreamFx.CREATED, Rows.status(Rows.id(60), Fx.T2, "WP01", "planned", "claimed")));
-      // A connect reads no history, so a window read that faults is found by the catch-up poll of the tick, not by the connect; it is
+      // A new watch reads no history, so a window read that faults is found by the catch-up poll of the tick, not by the connect; it is
       // still reported exactly once, and it drops that Mission only (row S1).
       fx.source.inject("gamma", Op.WINDOW, SourceFault.Kind.LEDGER_UNREADABLE);
 
@@ -717,17 +717,27 @@ class ChangeFeedTest {
   }
 
   @Test
-  void nfr004AnUnscopedConnectComputesEachFloorFromTheLedgerEndAndReadsNoWholeLedger() {
+  void aConnectToAColdFeedStartsEachWatchFromTheLedgerEndAndAConnectOntoThemStampsThem() {
     int count = 64;
     Fx fx = new Fx(manyMissions(count));
     fx.source.resetCalls();
 
-    try (Subscription subscription = unscoped(fx)) {
+    try (Subscription cold = unscoped(fx)) {
       assertThat(fx.source.calls("readLedgerFrom"))
-          .as("a connect floor is the ledger end, not a materialised whole-ledger baseline per Mission")
+          .as("a new watch starts at the ledger end, not at a materialised whole-ledger baseline per Mission")
           .isZero();
+      assertThat(fx.source.calls("readLedger")).isZero();
       assertThat(fx.source.calls("ledgerEnd")).as("one bounded end read per Mission, not a stamp plus a whole read").isEqualTo(count);
-      StreamFx.assertIdle(subscription);
+      StreamFx.assertIdle(cold);
+
+      fx.source.resetCalls();
+      try (Subscription warm = unscoped(fx)) {
+        assertThat(fx.source.calls("stampLedger")).as("the catch-up poll stamps each watch once").isEqualTo(count);
+        assertThat(fx.source.calls("ledgerEnd")).as("the floor is the position the poll left the watch at").isZero();
+        assertThat(fx.source.calls("readLedgerFrom")).as("nothing changed, so nothing is read").isZero();
+        assertThat(fx.source.calls("readLedger")).isZero();
+        StreamFx.assertIdle(warm);
+      }
     }
     assertThat(fx.handles.diagnostics()).isEmpty();
   }
@@ -739,7 +749,7 @@ class ChangeFeedTest {
       String row = Rows.status(Rows.id(4), Fx.T2, "WP01", "in_progress", "for_review");
       fx.source.appendLedger("alpha", row);
 
-      // The catch-up is deferred to the tick: the row was written before this connect but had not been polled yet.
+      // The row was written before this connect but had not been polled yet: the connect's own catch-up poll delivers it.
       try (Subscription second = unscoped(fx)) {
         fx.executor.tick();
 
@@ -748,6 +758,60 @@ class ChangeFeedTest {
       }
     }
     assertThat(fx.handles.diagnostics()).isEmpty();
+  }
+
+  // ---- what happened to a ledger before a connect is history for that subscriber, faults included (the unscoped twins of R-4) --------
+
+  @Test
+  void aBadLineWrittenBeforeAnUnscopedConnectDropsTheMissionOnlyForTheSubscriberThatWasThere() {
+    Fx fx = new Fx(StreamFx.twoMissions());
+    try (Subscription first = unscoped(fx)) {
+      fx.source.appendLedger("alpha", "not json at all\n");
+      try (Subscription second = unscoped(fx)) {
+        append(fx, "alpha", Rows.status(Rows.id(7), Fx.T2, "WP01", "in_progress", "for_review"));
+
+        assertThat(StreamFx.drain(first)).as("it was there when the bad line landed").containsExactly(new StreamSignal.Dropped(MID8_ALPHA));
+        List<StreamSignal> signals = StreamFx.drain(second);
+        assertThat(signals).as("the bad line is history for the new subscriber").noneMatch(signal -> signal instanceof StreamSignal.Dropped);
+        assertThat(StreamFx.eventIds(StreamFx.changes(signals))).as("a row written after it joined reaches it").containsExactly(Rows.id(7));
+      }
+    }
+    assertThat(fx.handles.diagnostics()).hasSize(1);
+  }
+
+  @Test
+  void aTruncationBeforeAnUnscopedConnectIsReportedOnlyToTheSubscriberThatWasThereAndLosesNoLaterRow() {
+    Fx fx = new Fx(StreamFx.twoMissions());
+    try (Subscription first = unscoped(fx)) {
+      long before = StreamFx.alphaHistory().getBytes(StandardCharsets.UTF_8).length;
+      String shorter = Rows.status(Rows.id(2), Fx.T0, "WP01", "planned", "claimed");
+      fx.source.replaceLedger("alpha", shorter.getBytes(StandardCharsets.UTF_8));
+      try (Subscription second = unscoped(fx)) {
+        append(fx, "alpha", Rows.status(Rows.id(9), Fx.T2, "WP01", "claimed", "in_progress"));
+
+        List<StreamSignal> firstSignals = StreamFx.drain(first);
+        assertThat(firstSignals.getFirst()).isEqualTo(new StreamSignal.Truncated(ALPHA, StreamSignal.Truncated.Reason.SIZE_SHRINK, before));
+        assertThat(StreamFx.eventIds(StreamFx.changes(firstSignals))).containsExactly(Rows.id(9));
+        List<StreamSignal> secondSignals = StreamFx.drain(second);
+        assertThat(secondSignals).as("it never held the old position").noneMatch(signal -> signal instanceof StreamSignal.Truncated);
+        assertThat(StreamFx.eventIds(StreamFx.changes(secondSignals))).containsExactly(Rows.id(9));
+      }
+    }
+  }
+
+  @Test
+  void aMissionThatVanishedBeforeAnUnscopedConnectIsDroppedOnlyForTheSubscriberThatWasThere() {
+    Fx fx = new Fx(StreamFx.twoMissions());
+    try (Subscription first = unscoped(fx)) {
+      fx.source.removeMission("beta");
+      try (Subscription second = unscoped(fx)) {
+        fx.executor.tick();
+
+        assertThat(StreamFx.drain(first)).containsExactly(new StreamSignal.Dropped(MID8_BETA));
+        assertThat(StreamFx.drain(second)).as("the Mission was gone before it connected").isEmpty();
+      }
+    }
+    assertThat(fx.handles.diagnostics()).containsExactly(new Diagnostic(DiagnosticCode.MISSION_VANISHED, MID8_BETA, null));
   }
 
   @Test

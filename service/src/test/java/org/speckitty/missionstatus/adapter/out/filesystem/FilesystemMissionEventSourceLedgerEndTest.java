@@ -18,7 +18,7 @@ import org.speckitty.missionstatus.domain.model.LedgerLine;
 import org.speckitty.missionstatus.testsupport.Rows;
 
 /**
- * The cheap end read of the unscoped connect floor: {@code ledgerEnd} must report exactly the position the old whole-ledger baseline
+ * The cheap end read a new watch starts from: {@code ledgerEnd} must report exactly the position the old whole-ledger baseline
  * reported, because the watch starts from it and the truncation check compares it with the digest of the line the next window ends on.
  * An absent ledger ends at zero, and an unterminated tail is not the end.
  */
@@ -27,6 +27,8 @@ class FilesystemMissionEventSourceLedgerEndTest {
   private static final String NAME = AdapterServiceHarness.ALPHA;
   private static final String ID = Rows.ALPHA_ID;
   private static final String CREATED_AT = "2026-09-01T09:00:00+00:00";
+  /** The backward scan's read size in {@code FilesystemMissionEventSourceLedger}. */
+  private static final int CHUNK = 64 * 1024;
 
   @TempDir Path sandbox;
   Path root;
@@ -81,5 +83,56 @@ class FilesystemMissionEventSourceLedgerEndTest {
     assertThat(end.invariant()).isEqualTo(StreamCursor.start().invariant());
     assertThat(end.stamp()).isEqualTo(source.stampLedger(ref));
     assertThat(source.readLedgerFrom(ref, 0).lines()).isEmpty();
+  }
+
+  /** The end read against a position worked out from the bytes here, sharing nothing with the backward scan or the decoder. */
+  private void assertEndOf(String ledger) {
+    AdapterServiceHarness.mission(root, NAME, ID, CREATED_AT, ledger);
+    int terminated = ledger.lastIndexOf('\n') + 1;
+    String digest = terminated == 0
+        ? StreamCursor.start().invariant()
+        : StreamCursor.digestOf(ledger.substring(ledger.lastIndexOf('\n', terminated - 2) + 1, terminated).getBytes(StandardCharsets.UTF_8));
+
+    LedgerEnd end = source.ledgerEnd(ref);
+
+    assertThat(end.offset()).isEqualTo(terminated);
+    assertThat(end.invariant()).isEqualTo(digest);
+    assertThat(source.readLedgerFrom(ref, end.offset()).precedingLineSha256()).isEqualTo(digest);
+  }
+
+  @Test
+  void anEmptyLedgerEndsAtZero() {
+    assertEndOf("");
+  }
+
+  @Test
+  void aLedgerWithNoNewlineEndsAtZero() {
+    assertEndOf("{\"half\":\"a row still being written\"");
+  }
+
+  @Test
+  void aBlankLastLineIsTheLastTerminatedLine() {
+    assertEndOf("first\n\n");
+  }
+
+  @Test
+  void aLastLineLongerThanOneChunkIsHashedWhole() {
+    assertEndOf("first\n" + "x".repeat(200_000) + "\n");
+  }
+
+  @Test
+  void aLastLineOfExactlyOneChunkEndsAtTheChunkBoundary() {
+    assertEndOf("first\n" + "x".repeat(CHUNK - 1) + "\n");
+  }
+
+  @Test
+  void aTailThatFillsTheChunkAfterItsNewlineLeavesTheEndAtThatNewline() {
+    assertEndOf("first\n" + "x".repeat(CHUNK - 1));
+  }
+
+  @Test
+  void aCarriageReturnStaysInTheRawLine() {
+    assertEndOf("first\r\nsecond\r\n");
+    assertEndOf("first\rstill first\n");
   }
 }
