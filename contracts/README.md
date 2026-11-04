@@ -496,7 +496,7 @@ output. `install_tools.py` reports a Python without tarfile extraction filters a
 The repository's markdown lint job (the router's `markdownlint` job) ends in
 `|| true`, so it is advisory and cannot fail a change. This README and each module's
 `CHANGELOG.md` are checked for required headings by a separate structural check,
-`contracts/tools/structure_check.py`, which the Contracts workflow runs:
+`contracts/tools/structure_check.py`, which no workflow in this repository runs yet (#151):
 
 ```bash
 .venv/bin/python contracts/tools/structure_check.py --root contracts
@@ -573,7 +573,9 @@ move at all. Elements marked `x-provisional` are removed from both sides first;
 a difference that exists only because of them never fails and is reported in its own
 section.
 
-Until a release tag exists there is no baseline. The one allowed state is
+`breaking_check.py` resolves baselines only from `contract-<module>-v*` tags, a line that is
+retired (below), so today there is no baseline, and no workflow runs the tool (#151).
+The one allowed state is
 `info.version: 1.0.0-SNAPSHOT` (or `1.0.0` in the release commit) together with a
 heading of the same version in the module's `CHANGELOG.md`; the job prints
 `NO_BASELINE_INITIAL_VERSION` and counts it, so the state is never silent.
@@ -588,8 +590,8 @@ bundles ride on the `service-v*` line: `contract-bundles-<ver>.tar.gz` carries
 pins the `service-v*` tag and the bundle's sha256; the module versions stay semver. Only a
 tag push publishes; a pull request cannot, because `service-release.yml`'s rehearsal build
 publishes nothing. The gate description below is the imported record of the retired
-workflow's checks; in this repository the release gates live in `service-release.yml`,
-whose `gate` job refuses a tag that is not an ancestor of `origin/main`.
+workflow's checks; in this repository `service-release.yml`'s `gate` job refuses a tag that is not an ancestor
+of `origin/main`, and the imported contract checks are not wired yet (#151).
 
 **What the gate checks before it publishes.** The Contracts Release workflow has two
 jobs. The `build` job has a read-only token. It runs every check and builds the

@@ -2,7 +2,7 @@
 title: Service protocol and releases
 description: 'The CLI-to-write-service protocol in practice, the two release lines, the service-v* assets and tarball layouts, how core pins a release, and how to cut one.'
 doc_status: active
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-04T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -123,7 +123,8 @@ asset contract is a service major; a breaking write-protocol change also needs a
 protocol major in core's handshake.
 
 **The docs site flips on the first final tag.** The services' OpenAPI reference pages on
-the docs site show `unreleased` until the first final `service-v*` tag exists (see
+the docs site ([mission-status](/reference/api/mission-status/),
+[mission-write](/reference/api/mission-write/)) show `unreleased` until the first final `service-v*` tag exists (see
 [the services hub](../api/services.md)); the release PR that cuts that first final tag
 flips them by setting `released: true` for both specs in `site/astro.config.mjs` (#194).
 

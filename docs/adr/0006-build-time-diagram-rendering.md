@@ -44,8 +44,7 @@ no ADR had ever taken the decision. Toolkit 0.6.0 made the render mode site-wide
 same switch, `DK_DIAGRAM_BUILD_RENDER`, now drives **both** Mermaid (through a
 Playwright Chromium) and schematic/PlantUML diagrams (through `DK_PLANTUML_SERVER_URL`),
 and the site auto-detects — whenever the toolkit resolves a Chromium it upgrades to
-build mode on its own. The upcoming schema and OpenAPI reference pages (WP03/WP04 of
-the mission) carry diagrams the client mode cannot produce for the published site.
+build mode on its own. The schema and OpenAPI reference pages carry diagrams the client mode cannot produce for the published site.
 
 ## Decision
 
@@ -58,7 +57,8 @@ the mission) carry diagrams the client mode cannot produce for the published sit
 - runs a digest-pinned PlantUML service
   `plantuml/plantuml-server:jetty-v1.2026.9@sha256:065c66adc6728ba6dd353a29d4ada73f8358b68549a0f710c4bf46b43c103618`
   with `PLANTUML_SECURITY_PROFILE: SANDBOX`, so a diagram cannot make the renderer
-  read a URL;
+  read a URL, and `_JAVA_OPTIONS: -Djetty.httpConfig.requestHeaderSize=1048576`, because
+  Jetty's default request limit answers 414 for the largest schemas;
 - waits for that service with a bounded probe — 24 × (3 s probe + 2 s sleep) = 120 s
   worst case (NFR-002) — and on timeout fails with a message naming the service;
 - builds with `DK_DIAGRAM_BUILD_RENDER: build` and `DK_PLANTUML_SERVER_URL`, and the
@@ -102,3 +102,12 @@ reader's browser (flash of unrendered diagram, JavaScript required) and, decisiv
 cannot render the schematic pages the contract and schema references need. The
 maintainer accepted the heavier pipeline for the deterministic, searchable output and
 the fail-closed build.
+
+## Note: generated hub blocks are committed
+
+The schema pages and hub blocks are committed derived content (`scripts/schema_pages.py`),
+which ADR 0005 D2 does not cover: D2 removes only the changelog and ADR indexes from
+committed derived state. With "up to date before merging" off, two cleanly merging schema
+changes can leave `main` drifted. `--check` then stops the deploy, fail-closed, and docs PRs
+go red until someone runs `--write`. That cost is accepted so that the pages stay reviewable
+in the PR that changes them.

@@ -21,6 +21,8 @@ on:
       - 'src/spec_kitty_events/schemas/**'
       - 'src/spec_kitty_events/producer_contract/**'
       - 'scripts/schema_pages.py'
+      - 'scripts/schema_pages_map.json'
+      - 'scripts/docs/requirements.txt'
       - '.github/workflows/docs-site.yml'
       - 'scripts/docs_index.py'
   workflow_dispatch:
@@ -35,6 +37,8 @@ concurrency:
 
 jobs:
   build:
+    # NFR-001 budgets 30 minutes; a hung renderer must not hold a required check for six hours.
+    timeout-minutes: 35
     # The required check's name; `build` alone also names jobs in the tag-only release workflows.
     name: docs-build
     runs-on: ubuntu-24.04
@@ -95,7 +99,7 @@ jobs:
         # pages and never count. Contracts and schemas feed generated pages, so they count. A PR
         # diffs its base tip against its head. If the SHAs cannot be fetched or diffed, the build runs.
         run: |
-          PATTERN='^(docs/|site/|\.github/workflows/docs-site\.yml$|scripts/docs_index\.py$|scripts/schema_pages\.py$|contracts/|src/spec_kitty_events/schemas/|src/spec_kitty_events/producer_contract/)'
+          PATTERN='^(docs/|site/|\.github/workflows/docs-site\.yml$|scripts/docs_index\.py$|scripts/schema_pages\.py$|scripts/schema_pages_map\.json$|scripts/docs/requirements\.txt$|contracts/|src/spec_kitty_events/schemas/|src/spec_kitty_events/producer_contract/)'
           case "$EVENT" in
             pull_request) base="$PR_BASE"; fetch_base="$PR_BASE"; head="$PR_HEAD" ;;
             *) echo "run=true" >> "$GITHUB_OUTPUT"; echo "$EVENT: the docs build runs"; exit 0 ;;
@@ -196,7 +200,7 @@ jobs:
           "$RUNNER_TEMP/docs-venv/bin/python" scripts/docs_index.py --write
       - name: Check the generated schema pages match the schemas
         if: steps.changes.outputs.run == 'true'
-        # WP04 (#195): scripts/schema_pages.py --check fails closed, naming the file, when a
+        # #195: scripts/schema_pages.py --check fails closed, naming the file, when a
         # schema lacks a page, a page has no schema, page content drifted, or a hub block
         # misses a link. Standard library only, so the bare venv python suffices.
         working-directory: .
@@ -220,10 +224,9 @@ jobs:
           test "$DK_DIAGRAM_BUILD_RENDER" = build || { echo "::error::DK_DIAGRAM_BUILD_RENDER must be build"; exit 1; }
           export DK_BEOE_CACHE_DIR="$GITHUB_WORKSPACE/.dk-diagram-cache"
           npm run build
-      # WP04 inserted the schema drift check above (pre-build); the diagram-count gate follows here.
       - name: Check every staged schema has a built page with a rendered diagram
         if: steps.changes.outputs.run == 'true'
-        # WP04 (#195), NFR-003. Fails closed on all three failure classes:
+        # #195, NFR-003. Fails closed on all three failure classes:
         #  1. staged set != built set, per name: the staged name is the basename minus
         #     '.schema.json'; the page directory is that stem, except the three envelope
         #     pages whose stems scripts/schema_pages.py pins (event -> event-envelope,
@@ -288,8 +291,6 @@ jobs:
       - name: Check links in the built site
         if: steps.changes.outputs.run == 'true'
         run: npm run check:built-links
-      # WP04 added its steps above: the pre-build schema drift check and the post-build
-      # staged-status-count + diagram-count gate (its out-of-map edits).
       - name: Upload the Pages artifact
         if: steps.changes.outputs.run == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1

@@ -42,9 +42,9 @@ go-signal (spec constraint C-001). That has since happened:
   2026-10-31 (rulings on
   [spec-kitty/spec-kitty#6117](https://github.com/spec-kitty/spec-kitty/issues/6117#issuecomment-6544221340)).
   The operator pushes the tag.
-- Not yet shipped: the write core's deployable, `command-cli`
-  ([#156](https://github.com/spec-kitty/spec-kitty-events/issues/156)), and core's switch
-  from its own copy of the services to the released assets (core's cut-over PR).
+- The write core's deployable, `command-cli`
+  ([#156](https://github.com/spec-kitty/spec-kitty-events/issues/156)), ships since
+  `service-v0.1.0-rc.2`. Not yet shipped: core's switch from its own copy of the services to the released assets (core's cut-over PR).
 
 The decisions below are unchanged.
 

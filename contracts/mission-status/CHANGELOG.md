@@ -9,9 +9,8 @@ Initial entry. This version is not yet released: an unreleased contract version 
 suffix and becomes `1.0.0` in the release commit. Per
 [ADR-0003](../../docs/adr/0003-gradle-build-and-service-release-line.md) the release ships as this
 module's bundle in `contract-bundles-<ver>.tar.gz` on a `service-v*` release; the standalone
-`contract-mission-status-v1.0.0` tag line is retired. Until then the breaking-change job has no
-baseline and reports
-`NO_BASELINE_INITIAL_VERSION`.
+`contract-mission-status-v1.0.0` tag line is retired. `breaking_check.py` resolves baselines only from that retired tag line, so it has no
+baseline and reports `NO_BASELINE_INITIAL_VERSION`; no workflow runs it yet (#151).
 
 ### Added
 

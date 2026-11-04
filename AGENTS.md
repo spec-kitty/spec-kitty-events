@@ -11,8 +11,9 @@ process. There is no pre-programme
 branch ladder here: **`main` IS the integration branch** — every PR targets `main`,
 nothing deploys on merge except the docs site (`docs-site.yml` publishes GitHub Pages on
 a push to `main` that touches `docs/**`, `site/**`, `contracts/**`,
-`src/spec_kitty_events/schemas/**`, `src/spec_kitty_events/producer_contract/**` or
-`scripts/schema_pages.py`), and nothing on GitHub enforces
+`src/spec_kitty_events/schemas/**`, `src/spec_kitty_events/producer_contract/**`,
+`scripts/schema_pages.py`, `scripts/schema_pages_map.json`, `scripts/docs/requirements.txt`,
+`scripts/docs_index.py` or the workflow itself; changelog fragments never count), and nothing on GitHub enforces
 anything beyond the operator's ruleset on `main`: required checks only (`acceptance`,
 `cross-repo-harness-tests`, `service-gate`, `docs-build`), "up to date before merging" off,
 no merge queue. `ci.yml`'s `suite` is not required, and a `pr:pause-ci` label pauses a PR's CI
