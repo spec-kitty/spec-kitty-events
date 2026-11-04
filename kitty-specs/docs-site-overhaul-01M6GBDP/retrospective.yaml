@@ -1,0 +1,213 @@
+schema_version: 1
+mission_id: 01M6GBDPFCFK09N2AVSD2VWTW3
+mission_slug: docs-site-overhaul-01M6GBDP
+mission_number: 24
+friendly_name: 'Docs site overhaul: doc-kitty 0.6.0, service docs, schema and API reference'
+mission_type: software-dev
+target_branch: issue-122-docs-site-overhaul
+created_at: '2026-11-03T18:09:47.880577+00:00'
+created_by:
+  kind: runtime
+  id: spec-kitty-generator
+  display: Spec Kitty Generator
+provenance:
+  kind: runtime_post_completion
+  invoked_at: '2026-11-03T18:09:47.880577+00:00'
+  policy_resolved_from:
+    enabled: <default>
+    timing: <default>
+    failure_policy: <default>
+    write_record: <default>
+    generate_proposals: <default>
+    apply_proposals: <default>
+    permissions.write_record: <default>
+    permissions.inspect_mission_artifacts: <default>
+    permissions.propose_glossary_changes: <default>
+    permissions.propose_drg_changes: <default>
+    permissions.propose_doctrine_changes: <default>
+    permissions.apply_low_risk_changes: <default>
+    permissions.apply_structural_changes: <default>
+    precedence: <default>
+    generator: <default>
+policy_source:
+  enabled: <default>
+  timing: <default>
+  failure_policy: <default>
+  write_record: <default>
+  generate_proposals: <default>
+  apply_proposals: <default>
+  permissions.write_record: <default>
+  permissions.inspect_mission_artifacts: <default>
+  permissions.propose_glossary_changes: <default>
+  permissions.propose_drg_changes: <default>
+  permissions.propose_doctrine_changes: <default>
+  permissions.apply_low_risk_changes: <default>
+  permissions.apply_structural_changes: <default>
+  precedence: <default>
+  generator: <default>
+findings_status: has_findings
+helped:
+- id: h-001
+  category: implementation
+  summary: WP01 completed without rejection cycles
+  evidence_refs:
+  - e-012
+- id: h-002
+  category: implementation
+  summary: WP02 completed without rejection cycles
+  evidence_refs:
+  - e-012
+- id: h-003
+  category: implementation
+  summary: WP03 completed without rejection cycles
+  evidence_refs:
+  - e-012
+- id: h-004
+  category: implementation
+  summary: WP04 completed without rejection cycles
+  evidence_refs:
+  - e-012
+- id: h-005
+  category: implementation
+  summary: WP05 completed without rejection cycles
+  evidence_refs:
+  - e-012
+- id: h-006
+  category: implementation
+  summary: WP06 completed without rejection cycles
+  evidence_refs:
+  - e-012
+- id: h-007
+  category: implementation
+  summary: WP07 completed without rejection cycles
+  evidence_refs:
+  - e-012
+not_helpful:
+- id: n-008
+  category: doc
+  summary: analysis-report.md records 3 finding(s)
+  evidence_refs:
+  - e-020
+  details: The analysis-report.md artifact for this mission records 3 finding(s) in its structured frontmatter. Review
+    them to understand documented issues and decisions.
+- id: n-001
+  category: process
+  summary: WP01 required 1 --force override(s) during workflow
+  evidence_refs:
+  - e-013
+  details: WP WP01 required 1 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-002
+  category: process
+  summary: WP02 required 2 --force override(s) during workflow
+  evidence_refs:
+  - e-014
+  details: WP WP02 required 2 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-003
+  category: process
+  summary: WP03 required 2 --force override(s) during workflow
+  evidence_refs:
+  - e-015
+  details: WP WP03 required 2 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-004
+  category: process
+  summary: WP04 required 2 --force override(s) during workflow
+  evidence_refs:
+  - e-016
+  details: WP WP04 required 2 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-005
+  category: process
+  summary: WP05 required 2 --force override(s) during workflow
+  evidence_refs:
+  - e-017
+  details: WP WP05 required 2 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-006
+  category: process
+  summary: WP06 required 2 --force override(s) during workflow
+  evidence_refs:
+  - e-018
+  details: WP WP06 required 2 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+- id: n-007
+  category: process
+  summary: WP07 required 2 --force override(s) during workflow
+  evidence_refs:
+  - e-019
+  details: WP WP07 required 2 operator-driven --force lane transition(s). Force overrides typically indicate the runtime
+    guard failed or the operator routed around it; investigate the underlying cause.
+gaps: []
+proposals: []
+evidence_refs:
+- id: e-001
+  kind: file
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/meta.json
+- id: e-002
+  kind: file
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/spec.md
+- id: e-003
+  kind: file
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/plan.md
+- id: e-004
+  kind: file
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/tasks.md
+- id: e-005
+  kind: file
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/tasks/WP01-toolkit-bump-and-exclude.md
+- id: e-006
+  kind: file
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/tasks/WP02-build-mode-diagram-rendering.md
+- id: e-007
+  kind: file
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/tasks/WP03-service-api-reference.md
+- id: e-008
+  kind: file
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/tasks/WP04-generated-schema-pages.md
+- id: e-009
+  kind: file
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/tasks/WP05-entry-point-refresh.md
+- id: e-010
+  kind: file
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/tasks/WP06-truth-pass.md
+- id: e-011
+  kind: file
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/tasks/WP07-fragments-and-final-gates.md
+- id: e-012
+  kind: file
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/status.events.jsonl
+- id: e-013
+  kind: event_range
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/status.events.jsonl
+  range: 01M6GSBM491E5DZYWCN55QRJMM
+- id: e-014
+  kind: event_range
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/status.events.jsonl
+  range: 01M6GV1Z7RYNVYEY586RWE74JS..01M6H7YW029XQH1JTWNHE5XAC8
+- id: e-015
+  kind: event_range
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/status.events.jsonl
+  range: 01M6GWE3N51G7S0XER2XQ8TDF9..01M6H8073JHZGD85N07VFN6K1Y
+- id: e-016
+  kind: event_range
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/status.events.jsonl
+  range: 01M6H1HC9AQBQTVW59NV0WDGPT..01M6H80GJX934B59AMRHAN7B9J
+- id: e-017
+  kind: event_range
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/status.events.jsonl
+  range: 01M6H4N3SGMTH83SCFMTVN3D8B..01M6H80SZJ9RWT6DVETSQ4BWCT
+- id: e-018
+  kind: event_range
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/status.events.jsonl
+  range: 01M6H5RMZ491MDJY9J196CQB2H..01M6H813DM15BNXDH8CV1MT2K5
+- id: e-019
+  kind: event_range
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/status.events.jsonl
+  range: 01M6H7NH22ZZGESMG8GKT88PCP..01M6H81CRYK5S566WXME11B5VV
+- id: e-020
+  kind: file
+  path: kitty-specs/docs-site-overhaul-01M6GBDP/analysis-report.md
+generator_version: '1.0'
+provenance_history: []

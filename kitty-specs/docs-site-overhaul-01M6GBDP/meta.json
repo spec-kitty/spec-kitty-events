@@ -1,0 +1,37 @@
+{
+  "accept_commit": "315bf99afe99e585eaefea3efe46eb4dbd518411",
+  "acceptance_history": [
+    {
+      "accept_commit": "315bf99afe99e585eaefea3efe46eb4dbd518411",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-03T18:08:34.713420+00:00",
+      "accepted_by": "stijn",
+      "accepted_from_commit": "fee8a5b7b45d1e179d354958fe0bbb2dba2f6281"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-03T18:08:34.713420+00:00",
+  "accepted_by": "stijn",
+  "accepted_from_commit": "fee8a5b7b45d1e179d354958fe0bbb2dba2f6281",
+  "baseline_merge_commit": "ebd09530b10f4498ae104e60e3f428ecd252a871",
+  "contracts": "none",
+  "contracts_rationale": "Mission defines no interfaces: it publishes the EXISTING contracts/mission-status + mission-write OpenAPI documents (via bundle.py --bundle-only) and the committed JSON Schemas as docs pages. No endpoint, payload, webhook or integration shape is created or changed (C-004).",
+  "created_at": "2026-11-03T09:21:40.345593+00:00",
+  "flattened": true,
+  "friendly_name": "Docs site overhaul: doc-kitty 0.6.0, service docs, schema and API reference",
+  "merged_at": "2026-11-03T18:09:39.651967+00:00",
+  "merged_commit": "78b0cb1312a6d0c938f5e02dbfabced2dd0fefc2",
+  "mid8": "01M6GBDP",
+  "mission_id": "01M6GBDPFCFK09N2AVSD2VWTW3",
+  "mission_number": 24,
+  "mission_slug": "docs-site-overhaul-01M6GBDP",
+  "mission_type": "software-dev",
+  "pr_bound": true,
+  "purpose_context": "The docs site and README still describe spec-kitty-events as a Python package only, although the repository now also hosts the events-domain read and write services on their own release line. Readers cannot browse the event schemas or the service APIs without opening repository files. This mission adopts doc-kitty 0.6.0 to publish schema and API reference pages, and refreshes the README, entry, architecture and planning docs so they match what the repository ships. It closes #181, #193, #194 and #195 in one change.",
+  "purpose_tldr": "Bring the spec-kitty-events docs site up to doc-kitty 0.6.0 and make the read and write services, their APIs and the event schemas visible to readers.",
+  "slug": "docs-site-overhaul-01M6GBDP",
+  "status_phase": "1",
+  "target_branch": "issue-122-docs-site-overhaul",
+  "vcs": "git",
+  "vcs_locked_at": "2026-11-03T13:15:22.670956+00:00"
+}

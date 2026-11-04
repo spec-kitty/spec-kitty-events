@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "mission_slug": "docs-site-overhaul-01M6GBDP",
+  "mission_id": "01M6GBDPFCFK09N2AVSD2VWTW3",
+  "mission_branch": "kitty/mission-docs-site-overhaul-01M6GBDP",
+  "target_branch": "issue-122-docs-site-overhaul",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "site/astro.config.mjs",
+        "site/package-lock.json",
+        "site/package.json",
+        "tests/test_changelog_fragments.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        ".github/workflows/docs-site.yml",
+        "docs/adr/0006-build-time-diagram-rendering.md",
+        "docs/guides/docsite.md",
+        "tests/test_ci_gate_workflows.py",
+        "tests/test_docs_site_workflow.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tracker-integration",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "docs/api/README.md",
+        "docs/api/services.md",
+        "scripts/docs/requirements.txt",
+        "site/.gitignore",
+        "site/scripts/stage-docs-inputs.mjs",
+        "tests/test_docs_service_reference.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "Makefile",
+        "docs/api/envelope.md",
+        "docs/api/envelope/**",
+        "docs/architecture/producer-row-schemas.md",
+        "docs/architecture/producer-row-schemas/**",
+        "docs/events/**",
+        "scripts/schema_pages.py",
+        "scripts/schema_pages_map.json",
+        "tests/test_schema_pages.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "README.md",
+        "docs/README.md",
+        "docs/_meta/sections.yaml",
+        "docs/architecture/README.md",
+        "docs/context/README.md",
+        "docs/context/system-context.md"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        ".github/workflows/service-release.yml",
+        ".github/workflows/service.yml",
+        "AGENTS.md",
+        "contracts/README.md",
+        "contracts/mission-status/CHANGELOG.md",
+        "contracts/mission-write/CHANGELOG.md",
+        "docs/adr/0005-parallel-landing.md",
+        "docs/architecture/overview.md",
+        "docs/architecture/services/command-cli-research.md",
+        "docs/architecture/services/event-ledger-writers-and-readers.md",
+        "docs/architecture/services/event-log-lock-and-append.md",
+        "docs/glossary/README.md",
+        "docs/guides/README.md",
+        "docs/guides/running-the-service.md",
+        "docs/guides/service-cutover-runbook.md",
+        "docs/guides/service-protocol-and-releases.md"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "legacy-cleanup",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [
+        "lane-d"
+      ],
+      "parallel_group": 4
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "docs/changelog/unreleased/181-docs-site-fragment-exclusion.md",
+        "docs/changelog/unreleased/193-services-entry-docs.md",
+        "docs/changelog/unreleased/194-service-api-reference.md",
+        "docs/changelog/unreleased/195-schema-pages-and-build-render.md"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-e",
+        "lane-f"
+      ],
+      "parallel_group": 5
+    }
+  ],
+  "computed_at": "2026-11-03T10:36:12.637381+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "14a329fdaf946324f956f5fc57f2f623b214dc85"
+}

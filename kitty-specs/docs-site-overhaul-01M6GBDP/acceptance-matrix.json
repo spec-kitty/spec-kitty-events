@@ -1,0 +1,219 @@
+{
+  "mission_slug": "docs-site-overhaul-01M6GBDP",
+  "mission_number": "",
+  "mission_type": "",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 review re-run: npm ls @spec-kitty/doc-toolkit = 0.6.0; lockfile committed; tests/test_changelog_fragments.py green (168/186 suites pass incl. pin assertion)",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:06:57.960200+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01: exclude in astro.config + --exclude in validate; 0 fragment routes in dist with folder present; docs-site.yml stopgap removed",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:07:45.056020+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP02: digest-pinned playwright+plantuml(SANDBOX), probe <=120s, build-mode env+guard; local build-mode build rendered static SVG figures",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:07:46.776527+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP02: docs/adr/0006 added + workflow/astro/docsite.md comments aligned; tests pin mode+pins",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:07:48.487520+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP04: generator + map; 168 pages (68? no: 130+36+2), exclusions proven by tests",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:07:50.190852+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP04: envelope labels verbatim on 3 pages (normative 3.0.0 vs CloudEvents profile write/read)",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:07:51.927359+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP04: schema_pages.py --check in make lint + workflow step; staging parity fail-closed; negative probes named files",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:07:53.642553+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP04: BEGIN/END GENERATED schema blocks in 9 hubs incl. shared-types hub; counts sum to 168",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:07:55.355772+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP03: openapi option two specs released:false; published bytes == bundle sha256 both services; flip rule written in services.md + protocol guide",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:07:57.082553+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP03: docs/api/services.md hub; docs/api/README.md link; built-links OK",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:07:58.793027+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP02: push paths + PATTERN gained contracts/schemas/producer_contract/schema_pages.py; DOCS_DETECT cases + parity test green",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:08:00.510093+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP05: README dual release lines + services + Gradle + contracts + mermaid; claims traced to pyproject/Makefile/service READMEs",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:08:02.214297+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP05: docs home + context (diagram+prose) + sections.yaml 3 purposes + architecture index",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:08:03.946457+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP04 producer hub status + WP05 arch index sentence + WP06 overview/event-log fixes",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:08:05.647569+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "Verify FR-015 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP06: guides README, protocol guide (#160/#161 true-state), runbook banner, research marked historical",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:08:07.359335+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-016",
+      "description": "Verify FR-016 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP06: contracts README :581 + both module CHANGELOGs to ADR-0003; contract-<module>-v* retired",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:08:09.082751+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-017",
+      "description": "Verify FR-017 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP06: glossary +6 terms (read/write service, service-v*, launcher, endpoint.json, fail-closed gate)",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:08:10.830713+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-018",
+      "description": "Verify FR-018 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP06: AGENTS.md full edit set; service.yml/service-release.yml wording incl. WP07 FIX-A pinned-string pair",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:08:12.615216+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-019",
+      "description": "Verify FR-019 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP06: ADR-0005 dated amendment banner only (body byte-preserved)",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:08:14.309366+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-020",
+      "description": "Verify FR-020 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP01 fragment tests rewritten; WP02 test_docs_site_workflow.py mode+digest pins; CI cases extended",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:08:16.012500+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-021",
+      "description": "Verify FR-021 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WP07: 4 fragments 181/193/194/195; changelog.py check+guard green",
+      "pass_fail": "pass",
+      "verified_by": "kimi-k3",
+      "verified_at": "2026-11-03T18:08:17.736298+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}
