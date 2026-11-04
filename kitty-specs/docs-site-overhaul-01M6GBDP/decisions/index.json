@@ -1,0 +1,55 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-03T09:21:55.178280Z",
+      "decision_id": "01M6GBE4ZAKE68Y49MZWR69FS5",
+      "final_answer": "Every schema file gets a generated page (all payload and sub-model schemas in src/spec_kitty_events/schemas/, the 36 producer_contract/data row schemas, and the two envelope pages); a drift test fails on a schema without a page or a page without a schema.",
+      "input_key": "schema_page_granularity",
+      "mission_id": "01M6GBDPFCFK09N2AVSD2VWTW3",
+      "mission_slug": "docs-site-overhaul-01M6GBDP",
+      "opened_by": "cli",
+      "options": [
+        "Every schema file, generated (about 132 payload/sub-model pages + 36 producer rows + 2 envelope pages)",
+        "Top-level event payloads and envelopes only; shared sub-models reached through the property tables of the pages that use them",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Which event schemas get their own Schematic page (diagram + property table)?",
+      "rationale": null,
+      "resolved_at": "2026-11-03T09:24:47.769767Z",
+      "resolved_by": null,
+      "slot_key": "specify.schemas.page-granularity",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-03T09:35:28.999063Z",
+      "decision_id": "01M6GC6ZQ7ATZR6WBA49C03CXV",
+      "final_answer": "Refresh gh auth with the read:packages scope and write the token into user-level ~/.npmrc (operator runs the browser dance; agent prints commands). Plan and quickstart record it; WP01 verifies the auth before regenerating the lockfile.",
+      "input_key": "github_packages_auth",
+      "mission_id": "01M6GBDPFCFK09N2AVSD2VWTW3",
+      "mission_slug": "docs-site-overhaul-01M6GBDP",
+      "opened_by": "cli",
+      "options": [
+        "refresh gh auth with read:packages scope and write it to ~/.npmrc",
+        "I will add a fine-grained PAT with read:packages to ~/.npmrc myself",
+        "defer: implement anyway, do local site verification after the token exists",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Local site builds (npm ci, lockfile regeneration) need a GitHub Packages token with read:packages in ~/.npmrc; none exists on this machine (gh token lacks the scope). How do we get one?",
+      "rationale": null,
+      "resolved_at": "2026-11-03T09:45:47.793280Z",
+      "resolved_by": null,
+      "slot_key": "plan.environment.github-packages-auth",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M6GBDPFCFK09N2AVSD2VWTW3",
+  "version": 1
+}
