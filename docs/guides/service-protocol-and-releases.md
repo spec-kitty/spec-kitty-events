@@ -2,7 +2,7 @@
 title: Service protocol and releases
 description: 'The CLI-to-write-service protocol in practice, the two release lines, the service-v* assets and tarball layouts, how core pins a release, and how to cut one.'
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -15,12 +15,13 @@ related:
 > **Where the services live.** The services and their contracts live in this repository,
 > under `service/` and `contracts/`, imported from core at `512567eee71e31bb39f580c4f7acf8b865e9d1b2` with their history
 > ([ADR-0002](../adr/0002-events-domain-owns-its-services.md)).
-> - The write service, `command-cli`, is built (#156). Its writes refuse fail-closed until #160
->   and #161 land. See
+> - The write service, `command-cli`, is built (#156) and ships on the `service-v*` line since
+>   `service-v0.1.0-rc.2`. Its writes refuse fail-closed while the write core lands in #160
+>   and #161. See
 >   [`service/command-cli/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/command-cli/README.md).
-> - The first `service-v*` release, `service-v0.1.0-rc.1`, carries no `command-cli` assets
->   ([cutover runbook](./service-cutover-runbook.md#6-first-release-and-core-handshake-wp08)).
->   The first release cut after #156 lands carries them.
+> - The rc line exists: `service-v0.1.0-rc.1` carries the read service only;
+>   `service-v0.1.0-rc.2` adds the `command-cli` assets
+>   ([the release notes](../changelog/2026-11-01-service-v0-1-0-rc-2.md)).
 
 This page is the how-to. The reasons are in the architecture pages and the ADRs it links.
 
@@ -98,9 +99,11 @@ There are two `503` codes:
   against the service it names. It carries no `Retry-After`.
 - `SERVICE_BUSY`, still provisional: retry the same service after `Retry-After` seconds.
 
-Until #160 and #161 land, a write that passes every check is refused
-`500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`, and nothing is written. A write answered `201` has been synced to disk; a refused write wrote
-nothing.
+The write gate is fail-closed by design: a write is refused unless the whole gate contract
+holds (see the glossary's [fail-closed write gate](/glossary/) term). Today the write core
+(#160, #161) has not landed, so a write that passes every check is still refused
+`500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`, and nothing is written. A write answered
+`201` has been synced to disk; a refused write wrote nothing.
 
 ## Releases
 
@@ -118,6 +121,11 @@ Each service release's notes name the package version (`pyproject.toml` at the t
 built and tested against. A breaking change to `mission-status`, `mission-write` or the
 asset contract is a service major; a breaking write-protocol change also needs a new
 protocol major in core's handshake.
+
+**The docs site flips on the first final tag.** The services' OpenAPI reference pages on
+the docs site show `unreleased` until the first final `service-v*` tag exists (see
+[the services hub](../api/services.md)); the release PR that cuts that first final tag
+flips them by setting `released: true` for both specs in `site/astro.config.mjs` (#194).
 
 ### The assets
 
@@ -232,8 +240,8 @@ not move or re-push a tag.
 Recorded at the import (#147); the [cutover runbook](./service-cutover-runbook.md#4-post-import-edits-wp07),
 section 4 item 7, holds the same record.
 
-- **Cross-leg native digest comparison and `nativePerf`: deliberately omitted for
-  `service-v0.1.0-rc.1`; follow-up.** Core compared the four `native` legs' replay digests
+- **Cross-leg native digest comparison and `nativePerf`: deliberately omitted so far (as of
+  `service-v0.1.0-rc.2`); follow-up.** Core compared the four `native` legs' replay digests
   (`scripts/ci/mission_status_gate_checks.py digests`) and ran `nativePerf`; neither is wired
   here yet. Each leg still uploads its `digest-<target>` artifact, so compare them by hand
   before you tag.

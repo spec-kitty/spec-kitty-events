@@ -2,7 +2,7 @@
 title: Running the Mission Status Read API
 description: 'How to run the Mission Status Read API from a service-v* release or from source: verify the download, start it, configure it, and which routes it serves.'
 doc_status: active
-updated: 2026-10-30T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -14,8 +14,9 @@ related:
 
 > **Where the service lives.** The service lives in this repository under `service/`,
 > imported with its history from core's `services/mission-status-api/` at `512567eee71e31bb39f580c4f7acf8b865e9d1b2`
-> ([ADR-0002](../adr/0002-events-domain-owns-its-services.md)). Until the first `service-v*`
-> release is cut, run it from source. Every property and route below is quoted from the
+> ([ADR-0002](../adr/0002-events-domain-owns-its-services.md)). The native binaries and the
+> jar are built, attested and published by `service-release.yml` on `service-v*` tags;
+> the current pre-release is `service-v0.1.0-rc.2`. Every property and route below is quoted from the
 > service here ([README](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/README.md),
 > [`application.properties`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/src/main/resources/application.properties)).
 
@@ -43,7 +44,7 @@ Pick one:
    [ADR-0003](../adr/0003-gradle-build-and-service-release-line.md):
 
    ```bash
-   ver=0.1.0-rc.1        # the tag without the service-v prefix
+   ver=0.1.0-rc.2        # the tag without the service-v prefix
    asset=mission-status-api-${ver}-linux-x64
    gh release download "service-v${ver}" --repo spec-kitty/spec-kitty-events \
      --pattern "$asset" --pattern "$asset.sha256"

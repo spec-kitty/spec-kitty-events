@@ -2,7 +2,7 @@
 title: Event ledger writers and readers
 description: 'Core-side map of every event log and ledger core writes and reads, the target the event ADRs set, and the cited gaps with remedies. Imported from core with its history.'
 doc_status: active
-updated: 2026-10-30T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -127,7 +127,7 @@ What does not hold:
 | changelog acceptance | `release/changelog.py:129-155` `_wp_lane_from_event_log` | raw `json.loads` loop over `mission_dir` | none | **last `to_lane` in file order** |
 | status-surface guard | `coordination/status_surface_guard.py` | raw lines, event ids only | none | set membership |
 | retrospective readers | `retrospective/summary.py`, `gate.py`, `generator.py` | raw rows | own fold | own `lamport` field |
-| Mission Status Read API (Java) | `services/mission-status-api/.../reducer/StatusReducer.java`, ordering `AtThenEventId.java` | the log | own port of `reduce_parsed` | plain `(at, event_id)`, **no approved-departure lift** |
+| Mission Status Read API (Java) | core's `services/mission-status-api/.../reducer/StatusReducer.java`, now this repository's [`service/event-log/`](https://github.com/spec-kitty/spec-kitty-events/tree/main/service/event-log) (`domain.readmodel.reducer.StatusReducer`), ordering `AtThenEventId.java` | the log | own port of `reduce_parsed` | plain `(at, event_id)`, **no approved-departure lift** |
 | Read API reference oracle | `tests/contract/_mission_status_*.py` | the log | `materialize_snapshot`, `tail_reader` | same as the CLI |
 | migration ledger | `upgrade/ledger.py`, `registry.py` `migration_settled`, `spec-kitty migrate ledger` | both partitions | own normalizer | last record per id in file order |
 
@@ -139,10 +139,14 @@ to sort after the approval it followed (the #4941 fix, PR #6261). The Lamport re
 carry no Lamport clock. What remains open is narrower than #4941 was: a non-approval
 transition minted on a clock behind the event it follows still sorts before that event.
 
-**The read API contract.** `contracts/mission-status/openapi.yaml:4` is `1.0.0-SNAPSHOT`
-(unreleased until the `contract-mission-status-v1.0.0` tag). The Java service in
-`services/mission-status-api/` serves the project, Mission list, SSE events and both artifact
-routes (#957, PRs #6401 and #6427). `getMission`, `getWorkPackage` and
+**The read API contract.** `contracts/mission-status/openapi.yaml:4` reads
+`1.0.0-SNAPSHOT`; the contract bundle ships as an asset of `service-v*` releases, and the
+standalone `contract-mission-status-v1.0.0` tag line is retired
+([ADR-0003](../../adr/0003-gradle-build-and-service-release-line.md)). The Java service —
+the `:mission-status-api` Gradle module rooted at
+[`service/`](https://github.com/spec-kitty/spec-kitty-events/tree/main/service) in this
+repository — serves the project, Mission list, SSE events and both artifact routes (#957,
+PRs #6401 and #6427). `getMission`, `getWorkPackage` and
 `getWorkPackageDetail` still return 404 by design, pinned by `OutOfScopeRoutesTest` (#6409).
 No CLI command starts the service and it is not in the wheel.
 

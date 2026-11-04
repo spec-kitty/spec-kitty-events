@@ -8,7 +8,7 @@ sections:
     label: Context
     order: 10
     type: Context
-    purpose: What spec-kitty-events is, where it sits in the Build Kitty product line, and how it is produced by the CLI and consumed by other systems.
+    purpose: What spec-kitty-events is, where it sits in the Build Kitty product line, and how the CLI produces events, the read and write services move them, and other systems consume the contract.
 
   - id: events
     label: Event families
@@ -20,7 +20,7 @@ sections:
     label: API & Contracts
     order: 30
     type: API
-    purpose: The consumable contract surface — the envelope, the Python package, lane vocabulary, versioning policy and the fail-closed strict profile.
+    purpose: The consumable contract surface — the envelope, the Python package, lane vocabulary, versioning policy, the fail-closed strict profile, and the service reference hub for the mission-status read and mission-write write APIs.
 
   - id: architecture
     label: Architecture
@@ -43,7 +43,7 @@ sections:
     label: Guides
     order: 90
     type: Guide
-    purpose: Task-oriented how-tos for contributors and consumers of the contract.
+    purpose: Task-oriented how-tos for contributors, consumers of the contract and operators of the services.
 
   - id: changelog
     label: Changelog

@@ -1,8 +1,8 @@
 ---
 title: Glossary
-description: The vocabulary of the Spec Kitty event contract — envelope, aggregate, Lamport clock, lane, reducer, journal and volatile, the strict profile and the relay.
+description: The vocabulary of the Spec Kitty event contract and its services — envelope, aggregate, reducer, journal and volatile, the strict profile, the relay, the service-v* line.
 doc_status: active
-updated: 2026-10-18T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 kind: Glossary
 okf_version: "0.2"
 ---
@@ -98,3 +98,42 @@ by a recursive walk. See [the strict profile](/api/strict-profile/).
 ### Producer / Consumer
 The producer is the one sanctioned emitter (the Spec Kitty CLI / runtime). A consumer is any
 system that imports the contract to validate, order and reduce events. See [Context](/context/).
+
+### Read service
+`mission-status-api`: the loopback, read-only HTTP service that serves one project's Mission
+status — the project header, Mission pages, the SSE change stream and the artifacts. Built
+from `service/` and released on the `service-v*` line. See
+[running the service](/guides/running-the-service/).
+
+### Write service
+`command-cli`: the loopback write service, the canonical event writer — one resident process
+per git common dir that core's launcher starts, checks and stops. See
+[service protocol and releases](/guides/service-protocol-and-releases/).
+
+### `service-v*` line
+The release line of the services and the contract bundles — the `mission-status-api` and
+`command-cli` natives and jars, `contract-bundles-<ver>.tar.gz`, `contract-tools-<ver>.tar.gz`
+and the conformance fixtures — versioned and released apart from the PyPI `v*` line
+([ADR-0004](../adr/0004-dual-artifact-line.md)). See
+[service protocol and releases](/guides/service-protocol-and-releases/).
+
+### Launcher
+The core-side piece that finds or starts a service instance for a git common dir: it resolves
+a pinned asset (env override, entry point, the cached digest-checked native binary, the jar),
+spawns `serve --git-common-dir`, waits for readiness (`endpoint.json`, handshake, health) and
+stops the instance. See [the CLI-to-write-service protocol](/guides/service-protocol-and-releases/).
+
+### `endpoint.json`
+The file that binds a loopback service instance: the write service publishes it by rename into
+`<git-common-dir>/spec-kitty-write-service/`, carrying `schema_version`, the loopback host, the
+port, the bearer token, the `instance_id`, the protocol versions it speaks, plus `pid` and
+`started_at`. The client
+refuses an exposed, malformed or non-loopback file. See
+[finding and checking the endpoint file](/guides/service-protocol-and-releases/).
+
+### Fail-closed write gate
+The write service's posture: a write is refused unless the whole gate contract holds — Host and
+Origin guard, bearer token, protocol header, size cap, body shape — and a refusal writes nothing.
+The domain checks and the durable-write verification join the gate with the write core
+(#160/#161, pending at cutover-review time). See
+[reading a refusal](/guides/service-protocol-and-releases/).

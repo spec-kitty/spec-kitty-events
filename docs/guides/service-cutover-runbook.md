@@ -2,7 +2,7 @@
 title: Service cutover runbook
 description: 'Maintainer procedure to import the events-domain services from core with history, integrate the build, hand the first release to core and move the issues.'
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -12,11 +12,13 @@ related:
 
 # Service cutover runbook
 
-This is the procedure that moves the events-domain services from core
+> **Executed 2026-10-31; kept as the record of the cutover.** Do not re-run.
+
+This was the procedure that moved the events-domain services from core
 (`spec-kitty/spec-kitty`) into this repository with their git history
 ([ADR-0002](../adr/0002-events-domain-owns-its-services.md)). Mission
 `events-domain-services-home-01M64MSB` work packages WP07 (import and build) and WP08 (first
-release and handshake) follow it step by step.
+release and handshake) followed it step by step.
 
 > **Nothing here runs without the operator's go-signal** (spec constraint C-001): no import,
 > no tag, no issue move, no layout-changing PR before it. Steps marked **[operator]** need a

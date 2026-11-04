@@ -1,8 +1,8 @@
 ---
 title: Event-log lock and append
-description: 'How the Java event-log library shares the CLI''s event-log lock, appends atomically and durably, detects and repairs a torn tail, and why CI pins a core SHA for the interop test.'
+description: 'How command-cli appends to the CLI-shared event log under its lock; the write ordering, the Windows atomicity caveat, torn-tail repair, and the core-SHA CI pin.'
 doc_status: active
-updated: 2026-10-30T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Architecture
 kind: Explanation
 ---

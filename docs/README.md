@@ -1,8 +1,8 @@
 ---
 title: spec-kitty-events documentation
-description: Documentation home for the Spec Kitty event contracts — the envelope, event families, reducers and compatibility policy of the Build Kitty product line.
+description: Documentation home for the Spec Kitty event contracts — the envelope, event families, reducers and compatibility policy — and the events-domain services it ships.
 doc_status: active
-updated: 2026-10-18T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 kind: Hub
 okf_version: "0.2"
 ---
@@ -23,6 +23,10 @@ stream. Because the contract is a small, dependency-light package with no runtim
 on the CLI, those consumers stay **orthogonal**: they couple to the event contract, never to
 the CLI's internals. [How it interacts with the CLI core](/context/system-context/).
 
+The repository also ships the two **events-domain services** — the `mission-status-api` read
+service and the `command-cli` write service — on their own `service-v*` release line; see
+[Service APIs](/api/services/).
+
 This tree follows the [doc-kitty](https://github.com/spec-kitty/doc-kitty) convention: each
 section's `README.md` is its index and carries frontmatter, and the sections are registered
 in [`_meta/sections.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/main/docs/_meta/sections.yaml).
@@ -32,9 +36,13 @@ in [`_meta/sections.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/
 - **New to the package?** Read [Context](/context/) for what it is, where it sits in the
   product lines, and the producer → contract → consumer model.
 - **Looking for a specific event?** [Event families](/events/) groups every family by
-  concern, each with its event types, payloads and reducer.
+  concern, each with its event types, payloads, generated schema pages and reducer; the
+  normative envelope is under [The envelope](/api/envelope/).
 - **Integrating as a consumer?** [API & Contracts](/api/) is the envelope, the Python
   package surface, the lane vocabulary, the versioning policy and the strict profile.
+- **Operating or calling the services?** [Service APIs](/api/services/) introduces the read
+  and write services and their API reference; [Running the Mission Status Read
+  API](/guides/running-the-service/) gets the read service up from a release or from source.
 
 ## Sections
 
@@ -42,11 +50,11 @@ in [`_meta/sections.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/
 |---|---|
 | [Context](/context/) | What the package is, the Build Kitty line, and how it is produced and consumed. |
 | [Event families](/events/) | The event families the runtime emits, grouped by concern. |
-| [API & Contracts](/api/) | The envelope, the Python package, the lane vocabulary, versioning and the strict profile. |
-| [Architecture](/architecture/) | The envelope design, total order and reduction, and the journal-versus-volatile durability split. |
+| [API & Contracts](/api/) | The envelope, the Python package, the lane vocabulary, versioning, the strict profile and the service APIs. |
+| [Architecture](/architecture/) | The envelope design, total order and reduction, the journal-versus-volatile durability split, and the services. |
 | [Glossary](/glossary/) | The vocabulary of the event contract. |
 | [Decision Records](/adr/) | Architectural decisions, numbered `NNNN-title`. |
-| [Guides](/guides/) | How to contribute and how to build the docsite. |
+| [Guides](/guides/) | How to contribute, how to build the docsite, and how to run, release and cut over the services. |
 | [Changelog](/changelog/) | Dated pages for notable changes, newest first. |
 
 ## Authoritative sources outside this tree

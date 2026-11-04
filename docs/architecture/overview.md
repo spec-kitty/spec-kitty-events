@@ -1,8 +1,8 @@
 ---
 title: Overview
-description: The shape of the spec-kitty-events package — the envelope, the payload families, the reducers, the strict profile and the conformance corpus — and the producer-consumer flow.
+description: The shape of the spec-kitty-events repository — the contract package's five parts, its two events-domain services, and the producer-consumer flow.
 doc_status: active
-updated: 2026-10-18T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -13,8 +13,13 @@ related:
 
 # Overview
 
-`spec-kitty-events` is a contract package, not a service. It has five parts, and everything
-else builds on them. Read this page first, then the page for the part you care about.
+`spec-kitty-events` is the contract package **and** the home of the events-domain services:
+the Java services and their OpenAPI contracts live here under `service/` and `contracts/`,
+imported from core with their history
+([ADR-0002](../adr/0002-events-domain-owns-its-services.md)). The package itself has five
+parts, and everything else builds on them. Read this page first, then the page for the part
+you care about; for the services, start at [the services hub](/api/services/) and
+[running the Mission Status Read API](/guides/running-the-service/).
 
 ## The five parts
 
@@ -66,6 +71,22 @@ A producer builds an `Event`, fills the family payload, and emits it on one of t
 optionally gates the envelope fail-closed (`validate_strict_envelope`), and folds the stream
 with the family reducer. Because the contract carries no behaviour, consumers stay
 [orthogonal](/context/) to the CLI.
+
+### The services
+
+Two deployables ship from this repository on the `service-v*` line
+([ADR-0003](../adr/0003-gradle-build-and-service-release-line.md),
+[ADR-0004](../adr/0004-dual-artifact-line.md)):
+
+- the **read service** (`mission-status-api`, Gradle module `:mission-status-api` rooted at
+  `service/`): the loopback read-only Mission Status API — see
+  [running the service](/guides/running-the-service/);
+- the **write service** (`command-cli`, at `service/command-cli/`): the canonical event
+  writer core's launcher starts per git common dir — see
+  [service protocol and releases](/guides/service-protocol-and-releases/).
+
+Their OpenAPI contracts live under `contracts/` (`mission-status`, `mission-write`) and are
+published in this site's [services hub](/api/services/).
 
 ## What this package deliberately does not own
 
