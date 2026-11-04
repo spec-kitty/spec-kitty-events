@@ -2,7 +2,7 @@
 title: Architecture
 description: How the spec-kitty-events contract is shaped — the envelope, the total order and reduction pipeline, the journal-versus-volatile split, and the read and write services.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Architecture
 kind: Hub
 okf_version: "0.2"
@@ -24,9 +24,16 @@ these documents support live in the [decision records](/adr/).
   split, which families are durable, and the Zeitgeist `attrs` codec for volatile moments.
 - [Services](/architecture/services/) — the Mission Status Read API and the write service
   (`command-cli`): the read-write split, the event-log lock and append, and the write-service
-  protocol. The code lives here.
+  protocol. The code lives here; the run recipes are in [Guides](/guides/), the rendered
+  contracts in the [API reference](/api/services/).
 
 ## Proposed and in-flight
+
+**Status (FR-014):** the [producer row schemas](/architecture/producer-row-schemas/) entry
+below is no longer proposed — the per-row-kind schemas, the producer registry and the
+total-order comparator are **accepted and shipped since `11.3.0`**, and the pages under it
+are the generated schema reference of the released contract. The envelope cutover and the
+lifecycle reconciliation remain in flight.
 
 - [CloudEvents envelope design](/architecture/cloudevents-envelope/) — adopting CloudEvents
   1.0 as the event-log envelope, supporting [ADR-0001](/adr/0001-cloudevents-envelope/).

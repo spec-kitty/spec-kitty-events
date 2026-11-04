@@ -2,7 +2,7 @@
 title: Services overview
 description: The Mission Status Read API and the write service at C4 levels 1 and 2, the onion layering the ArchUnit tests enforce, and where the code lived in core and lives here.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -101,7 +101,7 @@ flowchart TB
 | `domain-model` | The Mission status types (Mission, work package, lane, status event, snapshot). No declared dependency, no `java.io` or `java.nio.file`. | README, "Package layout"; `DomainModelBoundaryTest` |
 | `event-log` | The line codec, the event ordering and `StatusReducer`, and the ledger file mechanics (`LedgerLocks`, `TornTailRepair`). Depends on `domain-model` and the Jackson streaming parser only. | README, "Package layout"; `EventLogBoundaryTest` |
 | contracts | `contracts/mission-status/openapi.yaml` (read) and `contracts/mission-write/openapi.yaml` (write), both `1.0.0-SNAPSHOT`. | [`contracts/mission-write/CHANGELOG.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/CHANGELOG.md); writers-and-readers page, "The read API contract" |
-| `command-cli` | The write-service deployable named by #6117 decision 12 (`service/command-cli`, #156): Spring Boot 4, Java 25, a GraalVM native binary for four targets plus a JVM jar. It implements the launcher contract and the protocol surface; every write refuses fail-closed until #160 and #161 land. | [`service/command-cli/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/command-cli/README.md); core ADR 2026-10-22-1 D-1 |
+| `command-cli` | The write-service deployable named by #6117 decision 12 (`service/command-cli`, #156): Spring Boot 4, Java 25, a GraalVM native binary for four targets plus a JVM jar. It implements the launcher contract and the protocol surface; every write refuses fail-closed by design while the write core lands in #160 and #161. | [`service/command-cli/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/command-cli/README.md); core ADR 2026-10-22-1 D-1 |
 
 The four module names are #6117 decision 12's: `domain-model`, `event-log`, `query-service`
 and `command-cli` (core ADR 2026-10-22-1 D-1). The read service and the write service share

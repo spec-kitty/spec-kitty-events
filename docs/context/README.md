@@ -2,7 +2,7 @@
 title: Context
 description: Why spec-kitty-events exists, where it sits in the Build Kitty product line, and the producer-contract-consumer model that keeps its consumers orthogonal.
 doc_status: active
-updated: 2026-10-18T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Context
 kind: Hub
 okf_version: "0.2"
@@ -17,7 +17,9 @@ its envelope, its typed payload, and the rules for ordering and reducing a strea
 
 It is deliberately small and dependency-light. It carries **contracts, not behaviour**: no
 CLI, no orchestration, no network. That is what lets every other system read Spec Kitty's
-events without taking on the CLI as a dependency.
+events without taking on the CLI as a dependency. The same repository also ships the
+events-domain **services** — the `mission-status-api` read service and the `command-cli`
+write service — as separate artifacts on the `service-v*` line.
 
 ## The Build Kitty product line
 
@@ -67,5 +69,7 @@ flowchart LR
 ## Where to go next
 
 - [Event families](/events/) — what events exist, grouped by concern.
-- [API & Contracts](/api/) — how to consume the contract from Python.
-- [Architecture](/architecture/) — how the contract is shaped and ordered.
+- [API & Contracts](/api/) — how to consume the contract from Python, and the
+  [Service APIs](/api/services/) for the read and write services the repository ships.
+- [Architecture](/architecture/) — how the contract is shaped and ordered, including
+  [the services](/architecture/services/).

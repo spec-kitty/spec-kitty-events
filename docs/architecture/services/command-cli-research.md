@@ -1,13 +1,17 @@
 ---
 title: command-cli research note
-description: 'Research for #156: what the command-cli write service must implement, what core binds, what this repo already has, and the open decisions.'
+description: '(historical — the operator ruled on 2026-10-31; see the outcome block) Research for #156: what the command-cli write service must implement and the open decisions.'
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
 
 # command-cli research note (#156)
+
+> **Historical.** Research done before the `command-cli` mission; the operator ruled on
+> 2026-10-31 (see the outcome block below). Kept as the record of the research, not as
+> current documentation.
 
 > **Outcome.** The operator ruled on 2026-10-31. #156 delivers the runnable service and its
 > native and jar release, and writes refuse fail-closed. The canonical writer and the authority

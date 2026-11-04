@@ -1,8 +1,8 @@
 ---
 title: System context
-description: The systems around the event contract — the CLI core that produces events, the transports they travel on, and the consumers that validate and reduce them.
+description: The systems around the event contract — the CLI core that produces events, the transports they travel on, the consumers that reduce them, and the loopback read and write services.
 doc_status: active
-updated: 2026-10-18T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: Context
 kind: Explanation
 related:
@@ -31,6 +31,15 @@ flowchart TB
   cli -->|append| diary
   cli -->|broadcast volatile moments| relay
   cli -->|durable work observations| journal
+
+  subgraph services["Events-domain services<br/>(loopback-only)"]
+    readsvc["mission-status-api<br/>read service"]
+    writesvc["command-cli<br/>write service"]
+  end
+  cli -->|launcher starts and drives| writesvc
+  writesvc -->|append — fail-closed gate<br/>until the write core lands| diary
+  diary -->|reads| readsvc
+  readsvc -->|status over loopback HTTP| cli
 
   go["spec-kitty-go<br/>(untyped consumer)"]
   dossier["Team Kitty dossier<br/>reduces the diary"]
@@ -66,6 +75,26 @@ An event reaches consumers on one of three paths, and the contract's
 | **Zeitgeist relay** | volatile "moments" (presence, lane signals, decision broadcasts) projected to a bounded `attrs` wire shape | retention-window only; never the durable record |
 | **Durable journal** | durable `WorkObservation` streams and journal-profile events | gated fail-closed by the [strict profile](/api/strict-profile/) |
 
+## The loopback services
+
+The repository also ships two events-domain services on its own `service-v*` release line
+([ADR-0003](/adr/0003-gradle-build-and-service-release-line/)). Both are strictly local:
+each binds `127.0.0.1`, guards the `Host` and `Origin` headers, and answers to no other
+address.
+
+- **The read service, `mission-status-api`**, is detached and read-only: nothing starts it,
+  and it never writes to the project. Run against one project directory, it serves the
+  project header, the mission page, a change stream and two capped artifact reads from that
+  project's event logs — the diary transport lifted to HTTP. See
+  [Running the Mission Status Read API](/guides/running-the-service/).
+- **The write service, `command-cli`**, is the canonical event writer. The CLI's launcher
+  starts one process per git common dir and drives it; the service publishes its host, its
+  OS-picked port and its bearer token to the launcher alone in `endpoint.json`. Until the
+  write core lands, every write carries the **fail-closed write gate**: the request's shape
+  is checked, then refused, and nothing is appended. The protocol is in
+  [write-service protocol](/architecture/services/write-service-protocol/); both services
+  are mapped in [Services](/architecture/services/).
+
 ## Why consumers stay orthogonal
 
 A consumer depends on `spec_kitty_events` — a small Pydantic package — and nothing else of
@@ -82,6 +111,7 @@ signal. See [lane vocabulary](/api/lane-vocabulary/) and
 
 ## See also
 
+- [Services](/architecture/services/) — the architecture of the read and write services.
 - [Durability and the relay](/architecture/durability-and-relay/) — journal versus volatile,
   and the Zeitgeist `attrs` codec.
 - [The Python package](/api/python-package/) — the import surface a consumer uses.
