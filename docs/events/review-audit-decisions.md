@@ -203,3 +203,36 @@ for idempotency.
   reduce these events.
 - [Ordering and reduction](/architecture/ordering-and-reduction/) — how each
   reducer orders and deduplicates its events.
+
+<!-- BEGIN GENERATED: schemas -->
+## Schemas
+
+- [Schema: decision_point_discussing_payload](/events/review-audit-decisions/decision_point_discussing_payload/) — Payload schema for `DecisionPointDiscussing` events.
+- [Schema: decision_point_opened_payload](/events/review-audit-decisions/decision_point_opened_payload/) — Payload schema for `DecisionPointOpened` events.
+- [Schema: decision_point_overridden_payload](/events/review-audit-decisions/decision_point_overridden_payload/) — Payload for DecisionPointOverridden events.
+- [Schema: decision_point_resolved_payload](/events/review-audit-decisions/decision_point_resolved_payload/) — Payload schema for `DecisionPointResolved` events.
+- [Schema: decision_point_widened_payload](/events/review-audit-decisions/decision_point_widened_payload/) — V1-only: one Slack thread created for an interview-origin Decision Moment.
+- [Schema: decision_timeout_expired_payload](/events/review-audit-decisions/decision_timeout_expired_payload/) — A decision exceeded its configured timeout window.
+- [Schema: gate_failed_payload](/events/review-audit-decisions/gate_failed_payload/) — Payload for a CI gate that concluded with a failure condition.
+- [Schema: gate_passed_payload](/events/review-audit-decisions/gate_passed_payload/) — Payload for a CI gate that concluded successfully.
+- [Schema: mission_audit_completed_payload](/events/review-audit-decisions/mission_audit_completed_payload/) — Payload for MissionAuditCompleted events (FR-006).
+- [Schema: mission_audit_decision_requested_payload](/events/review-audit-decisions/mission_audit_decision_requested_payload/) — Payload for MissionAuditDecisionRequested events (FR-005).
+- [Schema: mission_audit_failed_payload](/events/review-audit-decisions/mission_audit_failed_payload/) — Payload for MissionAuditFailed events (FR-007).
+- [Schema: mission_audit_requested_payload](/events/review-audit-decisions/mission_audit_requested_payload/) — Payload for MissionAuditRequested events (FR-003).
+- [Schema: mission_audit_started_payload](/events/review-audit-decisions/mission_audit_started_payload/) — Payload for MissionAuditStarted events (FR-004).
+- [Schema: mission_dossier_artifact_indexed_payload](/events/review-audit-decisions/mission_dossier_artifact_indexed_payload/) — Payload for MissionDossierArtifactIndexed events.
+- [Schema: mission_dossier_artifact_missing_payload](/events/review-audit-decisions/mission_dossier_artifact_missing_payload/) — Payload for MissionDossierArtifactMissing events.
+- [Schema: mission_dossier_parity_drift_detected_payload](/events/review-audit-decisions/mission_dossier_parity_drift_detected_payload/) — Payload for MissionDossierParityDriftDetected events.
+- [Schema: mission_dossier_snapshot_computed_payload](/events/review-audit-decisions/mission_dossier_snapshot_computed_payload/) — Payload for MissionDossierSnapshotComputed events.
+- [Schema: retrospective_completed_payload](/events/review-audit-decisions/retrospective_completed_payload/) — Payload for RetrospectiveCompleted events.
+- [Schema: retrospective_failed_payload](/events/review-audit-decisions/retrospective_failed_payload/) — Payload for ``retrospective.failed`` events.
+- [Schema: retrospective_lifecycle_completed_payload](/events/review-audit-decisions/retrospective_lifecycle_completed_payload/) — Payload for ``retrospective.completed`` events.
+- [Schema: retrospective_lifecycle_skipped_payload](/events/review-audit-decisions/retrospective_lifecycle_skipped_payload/) — Payload for ``retrospective.skipped`` events.
+- [Schema: retrospective_proposal_applied_payload](/events/review-audit-decisions/retrospective_proposal_applied_payload/) — Payload for ``retrospective.proposal.applied`` events.
+- [Schema: retrospective_proposal_generated_payload](/events/review-audit-decisions/retrospective_proposal_generated_payload/) — Payload for ``retrospective.proposal.generated`` events.
+- [Schema: retrospective_proposal_rejected_payload](/events/review-audit-decisions/retrospective_proposal_rejected_payload/) — Payload for ``retrospective.proposal.rejected`` events.
+- [Schema: retrospective_requested_payload](/events/review-audit-decisions/retrospective_requested_payload/) — Payload for ``retrospective.requested`` events.
+- [Schema: retrospective_skipped_payload](/events/review-audit-decisions/retrospective_skipped_payload/) — Payload for RetrospectiveSkipped events.
+- [Schema: retrospective_started_payload](/events/review-audit-decisions/retrospective_started_payload/) — Payload for ``retrospective.started`` events.
+- [Schema: significance_evaluated_payload](/events/review-audit-decisions/significance_evaluated_payload/) — A decision's significance was scored and routed.
+<!-- END GENERATED: schemas -->
