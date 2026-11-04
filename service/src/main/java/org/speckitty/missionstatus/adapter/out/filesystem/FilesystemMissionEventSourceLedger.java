@@ -21,7 +21,7 @@ import org.speckitty.missionstatus.application.query.port.out.exceptions.SourceF
 import org.speckitty.missionstatus.domain.model.TailClassification;
 
 /**
- * The byte-level half of the ledger: the stamp, the whole read and the window from an offset. It opens the ledger itself (one stat
+ * The byte-level half of the ledger: the stamp, the end position, the whole read and the window from an offset. It opens the ledger itself (one stat
  * without following a link, then a read-only open) so the stamp costs one stat and a backward scan over the final physical lines, and
  * every operation goes through the {@link AllowlistAccess} seam. A ledger that is a link, a directory or any non-regular entry, or that
  * the operating system will not open, is {@code LEDGER_UNREADABLE} (row L2); an absent ledger is a normal state (row L1).
@@ -63,7 +63,7 @@ final class FilesystemMissionEventSourceLedger {
     }
   }
 
-  // ---- the three operations -----------------------------------------------------------------------------------------------------
+  // ---- the four operations ------------------------------------------------------------------------------------------------------
 
   /** Size, modification time, file key, terminated length and the digest of the last terminated line. */
   LedgerStamp stamp(Path file) {

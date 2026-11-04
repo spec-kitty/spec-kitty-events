@@ -228,11 +228,10 @@ public final class InMemoryMissionEventSource implements MissionEventSource {
     count("ledgerEnd");
     State state = resolve(ref, Op.STAMP);
     if (state.ledger == null) {
-      return new LedgerEnd(0, EMPTY_DIGEST, LedgerStamp.of("absent", state.version));
+      return new LedgerEnd(0, EMPTY_DIGEST, stamp(state));
     }
     int end = terminatedLength(state.ledger);
-    String digest = digestOfLastLine(state.ledger, end);
-    return new LedgerEnd(end, digest, LedgerStamp.of(state.ledger.length, state.version, end, digest));
+    return new LedgerEnd(end, digestOfLastLine(state.ledger, end), stamp(state));
   }
 
   @Override

@@ -175,15 +175,17 @@ public final class ChangeFeed {
   }
 
   /**
-   * Opens an unscoped subscription. Rows already in the ledgers are history: the new subscriber's floor for each Mission is that
-   * Mission's end, read now, so nothing written before this call reaches it. A watch that was already there catches up on the next
-   * tick and its existing subscribers still receive those rows; the floor keeps the new subscriber from them. A Mission that nobody
-   * has discovered yet while another unscoped subscriber listens (it was created after the last listing) is watched from offset 0
-   * like a later discovery, so that subscriber still receives every row of it, the ones the new subscriber skips included.
+   * Opens an unscoped subscription. Rows already in the ledgers are history: the watches are first brought up to date for the
+   * subscribers that are already there, before the new subscriber attaches, so a bad line, a truncation or a vanished Mission from
+   * before this call is theirs alone. The new subscriber's floor for each Mission is that Mission's end at this moment, so nothing
+   * written before this call reaches it. A Mission that nobody has discovered yet while another unscoped subscriber listens (it was
+   * created after the last listing) is watched from offset 0 like a later discovery, so that subscriber still receives every row of
+   * it, the ones the new subscriber skips included.
    */
   public UnscopedConnect connectUnscoped(List<MissionRef> listed) {
     lock.lock();
     try {
+      pollAll();
       boolean othersListening = unscopedListening();
       StreamSubscriber subscriber = new StreamSubscriber(this, new StreamScope.All(), settings.queueCapacity());
       List<Diagnostic> skipped = new ArrayList<>();
@@ -217,15 +219,7 @@ public final class ChangeFeed {
   private long joinOffset(MissionRef ref, boolean replay) {
     Watch watch = watches.get(ref);
     if (watch != null) {
-      try {
-        return source.ledgerEnd(ref).offset();
-      } catch (SourceFault fault) {
-        // The cheap end read failed: fall back to the shared poll, which reports the fault and re-baselines past a bad line (R-4).
-        if (poll(watch)) {
-          return watch.offset;
-        }
-        return createWatch(ref, false).offset;
-      }
+      return watch.offset;
     }
     watch = createWatch(ref, replay);
     if (!replay) {
