@@ -135,5 +135,5 @@ refuses an exposed, malformed or non-loopback file. See
 The write service's posture: a write is refused unless the whole gate contract holds — Host and
 Origin guard, bearer token, protocol header, size cap, body shape — and a refusal writes nothing.
 The domain checks and the durable-write verification join the gate with the write core
-(#160/#161, pending at cutover-review time). See
+(#160/#161, open). See
 [reading a refusal](/guides/service-protocol-and-releases/).

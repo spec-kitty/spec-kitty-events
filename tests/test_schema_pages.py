@@ -16,10 +16,15 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import re
 import sys
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import pytest
+
+from spec_kitty_events.conformance.validators import _EVENT_TYPE_TO_SCHEMA
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import schema_pages as sp  # noqa: E402
@@ -284,6 +289,128 @@ def test_an_unmapped_payload_fails_naming_it(
     err = capsys.readouterr().err
     assert "gamma_payload.schema.json" in err
     assert "payload schema not in the family map" in err
+
+
+def _edit_map(root: Path, edit: Callable[[dict[str, Any]], None]) -> None:
+    path = root / "scripts" / "schema_pages_map.json"
+    page_map = json.loads(path.read_text(encoding="utf-8"))
+    edit(page_map)
+    path.write_text(json.dumps(page_map, indent=2) + "\n", encoding="utf-8")
+
+
+def test_a_hand_edited_page_fails_naming_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = _tree(tmp_path)
+    assert _write(root) == 0
+    page = root / "docs" / "events" / "shared" / "shared_thing.md"
+    page.write_text(page.read_text(encoding="utf-8") + "\nHand edit.\n", encoding="utf-8")
+    assert _check(root) == 1
+    err = capsys.readouterr().err
+    assert "docs/events/shared/shared_thing.md (content differs from the generator output)" in err
+
+
+def test_a_deleted_hub_link_fails_naming_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = _tree(tmp_path)
+    assert _write(root) == 0
+    hub = root / "docs" / "events" / "shared" / "README.md"
+    kept = [ln for ln in hub.read_text(encoding="utf-8").splitlines() if "shared_thing" not in ln]
+    hub.write_text("\n".join(kept) + "\n", encoding="utf-8")
+    assert _check(root) == 1
+    assert "docs/events/shared/README.md (hub link missing" in capsys.readouterr().err
+
+
+def test_an_orphan_page_in_a_subdirectory_fails_naming_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = _tree(tmp_path)
+    assert _write(root) == 0
+    orphan = root / "docs" / "events" / "shared" / "old" / "copy.md"
+    orphan.parent.mkdir()
+    orphan.write_text("stray\n", encoding="utf-8")
+    assert _check(root) == 1
+    assert "docs/events/shared/old/copy.md (orphan page" in capsys.readouterr().err
+
+
+def test_a_schema_claimed_by_two_buckets_fails_naming_both(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = _tree(tmp_path)
+    _edit_map(
+        root,
+        lambda m: m["families"]["shared"]["schemas"].append("shared_thing.schema.json"),
+    )
+    assert _check(root) == 1
+    assert "shared_thing.schema.json (claimed by both" in capsys.readouterr().err
+
+
+def test_a_payload_under_shared_fails_naming_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = _tree(tmp_path)
+
+    def move(page_map: dict[str, Any]) -> None:
+        page_map["families"][_FAM_A]["schemas"].remove("alpha_payload.schema.json")
+        page_map["families"]["shared"]["schemas"].append("alpha_payload.schema.json")
+
+    _edit_map(root, move)
+    assert _check(root) == 1
+    assert "alpha_payload.schema.json (a payload schema may not live" in capsys.readouterr().err
+
+
+def test_a_mapped_event_type_replaces_the_camelized_stem(tmp_path: Path) -> None:
+    root = _tree(tmp_path)
+    _edit_map(root, lambda m: m.update(event_types={"alpha_payload": "alpha.done"}))
+    assert _write(root) == 0
+    page = (root / "docs" / "events" / _FAM_A / "alpha_payload.md").read_text(encoding="utf-8")
+    assert "Payload schema for `alpha.done` events." in page
+    beta = next((root / "docs" / "events").rglob("beta_payload.md")).read_text(encoding="utf-8")
+    assert "Payload schema for `Beta` events." in beta
+
+
+def test_an_event_type_for_an_unmapped_payload_fails_naming_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = _tree(tmp_path)
+    _edit_map(root, lambda m: m.update(event_types={"ghost_payload": "ghost"}))
+    assert _check(root) == 1
+    assert "ghost_payload (map's event_types names no mapped payload" in capsys.readouterr().err
+
+
+def test_the_committed_tree_has_no_drift_and_168_pages() -> None:
+    assert sp.main(["--check", "--root", str(_REPO_ROOT)]) == 0
+    pages, _ = sp.build_plan(_REPO_ROOT)
+    assert len(pages) == 168
+
+
+def test_every_read_envelope_page_comes_from_the_read_schema() -> None:
+    pages, _ = sp.build_plan(_REPO_ROOT)
+    sources = {p.source_rel.rsplit("/", 1)[-1] for p in pages}
+    assert {"envelope.schema.json", "envelope.read.schema.json", "event.schema.json"} <= sources
+
+
+def test_every_payload_page_names_the_event_type_the_registry_maps_it_to() -> None:
+    """The pages must name real event types: an integrator copies them into ``event_type``."""
+    registered: dict[str, set[str]] = {}
+    for event_type, stem in _EVENT_TYPE_TO_SCHEMA.items():
+        registered.setdefault(stem, set()).add(event_type)
+    pages, _ = sp.build_plan(_REPO_ROOT)
+    checked = 0
+    for page in pages:
+        stem = page.source_rel.rsplit("/", 1)[-1].removesuffix(".schema.json")
+        if stem not in registered:
+            continue
+        match = re.search(
+            r"Payload schema for `([^`]+)` events",
+            (_REPO_ROOT / page.page_rel).read_text(encoding="utf-8"),
+        )
+        if match is None:
+            continue
+        assert match.group(1) in registered[stem], page.page_rel
+        checked += 1
+    assert checked >= 86  # every payload but the two UserConnected rows the registry omits
 
 
 def test_a_map_entry_naming_a_missing_file_fails(

@@ -36,6 +36,8 @@ toolkit is published to GitHub Packages.
 
    ```sh
    docker run -d -p 8080:8080 \
+     -e PLANTUML_SECURITY_PROFILE=SANDBOX \
+     -e _JAVA_OPTIONS=-Djetty.httpConfig.requestHeaderSize=1048576 \
      plantuml/plantuml-server:jetty-v1.2026.9@sha256:065c66adc6728ba6dd353a29d4ada73f8358b68549a0f710c4bf46b43c103618
    export SKE_CONTRACT_BUNDLES_DIR="$(mktemp -d)/bundle-out/bundle"
    uv run --frozen --no-sync python contracts/tools/bundle.py --root contracts --out "$(dirname "$SKE_CONTRACT_BUNDLES_DIR")" --bundle-only
@@ -113,7 +115,8 @@ is its index and carries frontmatter; the required fields are `title`, `descript
 `.github/workflows/docs-site.yml` builds the site on every PR that touches `docs/**`,
 `site/**`, the contracts and schemas that feed the generated pages
 (`contracts/**`, `src/spec_kitty_events/schemas/**`,
-`src/spec_kitty_events/producer_contract/**`, `scripts/schema_pages.py`) or the
+`src/spec_kitty_events/producer_contract/**`, `scripts/schema_pages.py`,
+`scripts/schema_pages_map.json`, `scripts/docs/requirements.txt`, `scripts/docs_index.py`) or the
 workflow itself, and publishes it to GitHub Pages from `main` (the push trigger lists
 the same paths). The `build` job runs in the digest-pinned Playwright container with a
 digest-pinned, SANDBOX-profiled PlantUML service, waits for that service (bounded at

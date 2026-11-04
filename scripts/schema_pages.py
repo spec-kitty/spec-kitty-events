@@ -253,6 +253,10 @@ def _load_map(root: Path) -> dict:
                     problems.append(f"{name} (a payload schema may not live under 'shared')")
     for name in missing_files:
         problems.append(f"{name} (map entry names a file that does not exist)")
+    event_types: dict[str, str] = data.get("event_types", {})
+    for stem in sorted(event_types):
+        if f"{stem}.schema.json" not in claimed or not stem.endswith("_payload"):
+            problems.append(f"{stem} (map's event_types names no mapped payload schema)")
     for name in sorted(disk - {normative} - set(claimed)):
         flavour = (
             "payload schema not in the family map"
@@ -262,11 +266,15 @@ def _load_map(root: Path) -> dict:
         problems.append(f"name={name} ({flavour})")
     if problems:
         _fail(problems)
-    return {"families": families, "normative_envelope": normative}
+    return {
+        "families": families,
+        "normative_envelope": normative,
+        "event_types": event_types,
+    }
 
 
-def _payload_what(stem: str, doc: dict) -> str:
-    event = _camelize(stem[: -len("_payload")])
+def _payload_what(stem: str, doc: dict, event_types: dict[str, str]) -> str:
+    event = event_types.get(stem) or _camelize(stem[: -len("_payload")])
     line = f"Payload schema for `{event}` events."
     discriminator = doc.get("discriminator")
     if isinstance(discriminator, dict) and discriminator.get("propertyName"):
@@ -319,7 +327,7 @@ def build_plan(root: Path) -> tuple[list[Page], dict[str, Hub]]:
                     section_type=section,
                     hub_id=fam,
                     what_line=(
-                        _payload_what(stem, doc)
+                        _payload_what(stem, doc, family_map["event_types"])
                         if payload
                         else "A shared building block of the event model."
                     ),
@@ -592,7 +600,7 @@ def _find_orphans(root: Path, pages: list[Page]) -> list[str]:
         base = root / directory
         if not base.is_dir():
             continue
-        for path in sorted(base.glob("*.md")):
+        for path in sorted(base.rglob("*.md")):
             rel = path.relative_to(root).as_posix()
             if rel in expected or path.name == "README.md":
                 continue

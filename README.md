@@ -90,10 +90,12 @@ ship on their own `service-v*` release line, versioned and released apart from t
 - **Read: `mission-status-api`** — a detached, read-only HTTP service that reads the
   Missions of one project directory and serves their status (`GET /api/v1/project`,
   `GET /api/v1/missions`, the `GET /api/v1/events` change stream and two artifact reads).
-  No spec-kitty command starts it; run it yourself:
+  No spec-kitty command starts it; run it yourself. From a checkout, after building the jar
+  against the contract bundle
+  ([run from source](https://spec-kitty.github.io/spec-kitty-events/guides/running-the-service/#run-from-source)):
 
   ```bash
-  java -jar build/libs/mission-status-api.jar --mission-status.project-root=<project root> --mission-status.port=8787
+  java -jar service/build/libs/mission-status-api.jar --mission-status.project-root=<project root> --mission-status.port=8787
   ```
 
   How to run it from a release or from source:
@@ -105,10 +107,11 @@ ship on their own `service-v*` release line, versioned and released apart from t
   `endpoint.json` for the launcher alone. Until the write core lands
   ([#160](https://github.com/spec-kitty/spec-kitty-events/issues/160),
   [#161](https://github.com/spec-kitty/spec-kitty-events/issues/161)) every write **refuses
-  fail-closed**. From a checkout:
+  fail-closed**. From a checkout, after building the jar the same way
+  (`./gradlew :command-cli:bootJar`):
 
   ```bash
-  java -jar build/libs/command-cli.jar serve --git-common-dir <absolute git common dir>
+  java -jar service/command-cli/build/libs/command-cli.jar serve --git-common-dir <absolute git common dir>
   ```
 
   Details in [`service/command-cli/README.md`](service/command-cli/README.md) and the
@@ -122,7 +125,7 @@ The normative contracts for both services live under `contracts/`
 each module to a single self-contained OpenAPI file, and the docs site renders them with the
 raw bundle and its sha256 alongside:
 
-- [mission-status API reference](https://spec-kitty.github.io/spec-kitty-events/reference/api/mission-status/) — the read service's endpoints.
+- [mission-status API reference](https://spec-kitty.github.io/spec-kitty-events/reference/api/mission-status/) — the read contract, which is wider than the routes the service serves today ([which routes](https://spec-kitty.github.io/spec-kitty-events/guides/running-the-service/#routes)).
 - [mission-write API reference](https://spec-kitty.github.io/spec-kitty-events/reference/api/mission-write/) — the write service's endpoints.
 - [Service APIs](https://spec-kitty.github.io/spec-kitty-events/api/services/) — the hub for both.
 - [Event envelope schema](https://spec-kitty.github.io/spec-kitty-events/api/envelope/event-envelope/) — the normative envelope the Python payloads ride in.

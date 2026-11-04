@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "_comment": "Family map for scripts/schema_pages.py (spec-kitty-events#195, mission docs-site-overhaul-01M6GBDP WP04). Every *.schema.json in src/spec_kitty_events/schemas/ appears in exactly one bucket; *_payload.schema.json files may only sit in one of the six event families, never in \"shared\"; event.schema.json is the normative envelope.",
+  "_comment": "Family map for scripts/schema_pages.py (spec-kitty-events#195, mission docs-site-overhaul-01M6GBDP WP04). Every *.schema.json in src/spec_kitty_events/schemas/ appears in exactly one bucket; *_payload.schema.json files may only sit in one of the six event families, never in \"shared\"; event.schema.json is the normative envelope. \"event_types\" names the event type of each payload whose type is not the CamelCase of its file stem; tests/test_schema_pages.py holds it equal to the registry in conformance/validators.py.",
   "normative_envelope": "event.schema.json",
   "families": {
     "mission-lifecycle": {
@@ -167,5 +167,17 @@
         "work_context.schema.json"
       ]
     }
+  },
+  "event_types": {
+    "retrospective_failed_payload": "retrospective.failed",
+    "retrospective_lifecycle_completed_payload": "retrospective.completed",
+    "retrospective_lifecycle_skipped_payload": "retrospective.skipped",
+    "retrospective_proposal_applied_payload": "retrospective.proposal.applied",
+    "retrospective_proposal_generated_payload": "retrospective.proposal.generated",
+    "retrospective_proposal_rejected_payload": "retrospective.proposal.rejected",
+    "retrospective_requested_payload": "retrospective.requested",
+    "retrospective_started_payload": "retrospective.started",
+    "status_transition_payload": "WPStatusChanged",
+    "wp_created_payload": "WPCreated"
   }
 }

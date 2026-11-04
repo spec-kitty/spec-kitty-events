@@ -14,6 +14,8 @@ How to build and verify the docs site like CI does, after this mission lands. (T
 3. **PlantUML server** for diagram/schematic rendering parity with CI:
    ```sh
    docker run -d -p 8080:8080 \
+     -e PLANTUML_SECURITY_PROFILE=SANDBOX \
+     -e _JAVA_OPTIONS=-Djetty.httpConfig.requestHeaderSize=1048576 \
      plantuml/plantuml-server:jetty-v1.2026.9@sha256:065c66adc6728ba6dd353a29d4ada73f8358b68549a0f710c4bf46b43c103618
    ```
 4. Contract bundles (only needed for the API reference pages) — **the output must live OUTSIDE the repo** (`bundle.py` refuses in-tree output with `OUT_INSIDE_REPOSITORY`):

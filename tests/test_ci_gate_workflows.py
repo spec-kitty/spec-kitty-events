@@ -234,6 +234,8 @@ DOCS_DETECT = (DOCS, "build", "Decide whether the change touches the docs")
         (SERVICE_DETECT, "docs/guides/contributing.md", "false"),
         (SERVICE_DETECT, "src/spec_kitty_events/status.py", "false"),
         (DOCS_DETECT, "docs/guides/contributing.md", "true"),
+        (DOCS_DETECT, "scripts/schema_pages_map.json", "true"),
+        (DOCS_DETECT, "scripts/docs/requirements.txt", "true"),
         (DOCS_DETECT, "site/package.json", "true"),
         (DOCS_DETECT, ".github/workflows/docs-site.yml", "true"),
         (DOCS_DETECT, "contracts/mission-status/openapi.yaml", "true"),

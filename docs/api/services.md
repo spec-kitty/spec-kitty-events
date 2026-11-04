@@ -2,7 +2,7 @@
 title: Service APIs
 description: 'The mission-status read service and mission-write write service: what they are, the service-v* release line they ship on, and their (unreleased) OpenAPI reference pages.'
 doc_status: active
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-04T00:00:00Z
 type: API
 kind: Hub
 related:
@@ -23,7 +23,8 @@ package's contract surface.
   loopback, read-only status service: it reads a project's missions and serves their
   status over HTTP.
 - The **write service**, `command-cli` (contract module `mission-write`), is the loopback
-  write service the CLI drives; writes pass a fail-closed gate against the contracts.
+  write service the CLI drives. Every write refuses fail-closed until the write core lands
+  (#160, #161).
 
 Both live under [`service/`](https://github.com/spec-kitty/spec-kitty-events/tree/main/service)
 and ship on the `service-v*` line, versioned and released apart from the Python package
@@ -33,7 +34,9 @@ the release line; the contract bundles ride on every `service-v*` tag as release
 ## Running them
 
 See [Running the Mission Status Read API](/guides/running-the-service/) for run-from-release
-and run-from-source recipes.
+and run-from-source recipes for the read service. The write service is started by the CLI's
+launcher; [`service/command-cli/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/command-cli/README.md)
+gives its command line.
 
 ## Contracts
 
@@ -48,9 +51,11 @@ pages always match the resolver output.
 
 ## API reference
 
-- [mission-status API reference](/reference/api/mission-status/) — the read service's
-  endpoints, from the bundled contract, with the raw `openapi.yaml` and its sha256 available
-  for download.
+- [mission-status API reference](/reference/api/mission-status/) — the read contract, from
+  the bundle, with the raw `openapi.yaml` and its sha256 available for download.
+  **The contract is wider than the service today:** a single Mission, a Work Package, its
+  detail, `/drift` and `/ops/invocations` are in the contract but answer `404`. The routes
+  the service serves are listed in [Routes](/guides/running-the-service/#routes).
 - [mission-write API reference](/reference/api/mission-write/) — the same for the write service.
 
 **Both references are unreleased** until the first final `service-v*` tag exists: no tag means

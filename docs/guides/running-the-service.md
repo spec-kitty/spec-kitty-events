@@ -2,7 +2,7 @@
 title: Running the Mission Status Read API
 description: 'How to run the Mission Status Read API from a service-v* release or from source: verify the download, start it, configure it, and which routes it serves.'
 doc_status: active
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-04T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -136,7 +136,9 @@ allow, since the cap is per read.
 
 The service answers these routes, and every other path is `404`
 (the contract is [`contracts/mission-status`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts/mission-status);
-a running service serves it at `/api/v1/openapi.yaml`):
+a running service serves it at `/api/v1/openapi.yaml`, and the
+[mission-status API reference](/reference/api/mission-status/) renders it; the
+[service APIs hub](../api/services.md) introduces both services):
 
 | Route | What it returns |
 |---|---|
