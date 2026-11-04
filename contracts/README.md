@@ -578,11 +578,18 @@ Until a release tag exists there is no baseline. The one allowed state is
 heading of the same version in the module's `CHANGELOG.md`; the job prints
 `NO_BASELINE_INITIAL_VERSION` and counts it, so the state is never silent.
 
-**What a release is.** A release is a tag `contract-<module>-v<semver>` (no leading
-`v` on the module part; for example `contract-mission-status-v1.0.0`), pushed by a
-maintainer to trigger the Contracts Release workflow. It publishes two assets:
-`openapi.yaml` and `openapi.yaml.sha256`. Only a tag push publishes; a pull request
-cannot, because the Contracts workflow runs the same steps there as a dry run.
+**What a release is.** A contract release in this repository has no tag of its own: the
+standalone `contract-<module>-v<semver>` tag line of core's Contracts Release workflow (for
+example `contract-mission-status-v1.0.0`) is retired
+([ADR-0003](../docs/adr/0003-gradle-build-and-service-release-line.md), decision 4). The
+bundles ride on the `service-v*` line: `contract-bundles-<ver>.tar.gz` carries
+`bundle/<module>/openapi.yaml` with its sha256, built, attested and published by
+`service-release.yml` on a `service-v*` tag, and a release is never replaced. A consumer
+pins the `service-v*` tag and the bundle's sha256; the module versions stay semver. Only a
+tag push publishes; a pull request cannot, because `service-release.yml`'s rehearsal build
+publishes nothing. The gate description below is the imported record of the retired
+workflow's checks; in this repository the release gates live in `service-release.yml`,
+whose `gate` job refuses a tag that is not an ancestor of `origin/main`.
 
 **What the gate checks before it publishes.** The Contracts Release workflow has two
 jobs. The `build` job has a read-only token. It runs every check and builds the
@@ -675,7 +682,8 @@ have not been published; until a maintainer pushes them, a consumer pins a commi
 `p0` is the unvalidated shape, a preview with no stability promise; `p1` marks the
 first commit whose Contracts workflow run is green, when generating a client for
 development is reasonable; `p2` is the pin-grade point, with the reality check green
-too. The namespace is outside `contract-<module>-v<semver>` and the CLI's `v*.*.*`, so
+too. The namespace is outside the (retired) `contract-<module>-v<semver>` line and the
+CLI's `v*.*.*`, so
 no release workflow reacts to it. Every shape change after `p0` and before the first
 release is listed in the module's `CHANGELOG.md` under a `Pre-release shape change`
 line.

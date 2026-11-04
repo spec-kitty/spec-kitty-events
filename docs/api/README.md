@@ -2,7 +2,7 @@
 title: API & Contracts
 description: The consumable contract surface of spec-kitty-events — the envelope, the Python package, the lane vocabulary, the versioning policy and the strict profile.
 doc_status: active
-updated: 2026-10-18T00:00:00Z
+updated: 2026-11-03T00:00:00Z
 type: API
 kind: Hub
 okf_version: "0.2"
@@ -24,6 +24,8 @@ contract, that root file governs.
 
 - [The envelope](/api/envelope/) — `Event`, the single top-level envelope every family rides
   in, and each of its context fields.
+- [Service APIs](/api/services/) — the `mission-status` read service and `mission-write`
+  write service, the `service-v*` line they ship on, and their OpenAPI reference pages.
 - [The Python package](/api/python-package/) — the import surface: emitting, validating,
   reducing, and loading JSON Schemas and conformance fixtures.
 - [Lane vocabulary](/api/lane-vocabulary/) — the canonical `Lane` enum, the display subset,
