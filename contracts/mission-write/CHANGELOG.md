@@ -6,7 +6,10 @@ version is the `info.version` of `openapi.yaml`.
 ## 1.0.0-SNAPSHOT
 
 Initial entry (#6675, ADR 2026-10-27-1). This version is not yet released: it becomes `1.0.0` in
-the release commit, and the release is the tag `contract-mission-write-v1.0.0`. Until then the
+the release commit, and per
+[ADR-0003](../../docs/adr/0003-gradle-build-and-service-release-line.md) the release ships as this
+module's bundle in `contract-bundles-<ver>.tar.gz` on a `service-v*` release; the standalone
+`contract-mission-write-v1.0.0` tag line is retired. Until then the
 breaking-change job has no baseline and reports `NO_BASELINE_INITIAL_VERSION`.
 
 ### Added
