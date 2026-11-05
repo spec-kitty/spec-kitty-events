@@ -2,117 +2,117 @@
   "mission_slug": "events-domain-services-home-01M64MSB",
   "mission_number": "",
   "mission_type": "software-dev",
-  "overall_verdict": "pending",
+  "overall_verdict": "pass",
   "criteria": [
     {
       "criterion_id": "FR-001",
       "description": "Verify FR-001 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "proof_type": "code_review",
+      "evidence": "ADR 0002 (docs/adr/0002-events-domain-owns-its-services.md) on main, cross-links core ADRs 2026-10-01-2/-14-1/-22-1/-27-1 and charter ADR-0015; PR #148",
+      "pass_fail": "pass",
+      "verified_by": "claude (session A, post-merge reconciliation)",
+      "verified_at": "2026-11-04T19:15:28+00:00",
+      "notes": "Verified against main b4c4477b at closeout"
     },
     {
       "criterion_id": "FR-002",
       "description": "Verify FR-002 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "proof_type": "code_review",
+      "evidence": "ADR 0003 on main: Gradle Kotlin DSL, JDK 25, 4 native targets, service-v* tags, asset names, sha256, attestation; PR #148",
+      "pass_fail": "pass",
+      "verified_by": "claude (session A, post-merge reconciliation)",
+      "verified_at": "2026-11-04T19:15:28+00:00",
+      "notes": "Verified against main b4c4477b at closeout"
     },
     {
       "criterion_id": "FR-003",
       "description": "Verify FR-003 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "proof_type": "code_review",
+      "evidence": "ADR 0004 on main: independent PyPI and service-v* lines, binding versioned with the package, core pins tag+sha256 (core pins/read-service.source.yaml); PR #148",
+      "pass_fail": "pass",
+      "verified_by": "claude (session A, post-merge reconciliation)",
+      "verified_at": "2026-11-04T19:15:28+00:00",
+      "notes": "Verified against main b4c4477b at closeout"
     },
     {
       "criterion_id": "FR-004",
       "description": "Verify FR-004 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "proof_type": "code_review",
+      "evidence": "Charter amended (charter.yaml languages java/kotlin, regenerated charter.md, amendment log); AGENTS.md/CLAUDE.md list the Gradle commands; WP02, PR #148",
+      "pass_fail": "pass",
+      "verified_by": "claude (session A, post-merge reconciliation)",
+      "verified_at": "2026-11-04T19:15:28+00:00",
+      "notes": "Verified against main b4c4477b at closeout"
     },
     {
       "criterion_id": "FR-005",
       "description": "Verify FR-005 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "Root Gradle build with wrapper 9.8.1, catalog, strict verification-metadata, build-logic; java/pom.xml and mvnw removed; make test-java runs ./gradlew :java-binding:check; parity recorded in WP03; service.yml green on main b4c4477b",
+      "pass_fail": "pass",
+      "verified_by": "claude (session A, post-merge reconciliation)",
+      "verified_at": "2026-11-04T19:15:28+00:00",
+      "notes": "Verified against main b4c4477b at closeout"
     },
     {
       "criterion_id": "FR-006",
       "description": "Verify FR-006 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "At b4c4477b site/package.json pinned @spec-kitty/doc-toolkit 0.5.0; docs-site.yml green on 782c23d7, the last docs run before that commit (2026-11-02, run 41459342980). #201 (97cfe90b) later moved the pin to 0.6.0.",
+      "pass_fail": "pass",
+      "verified_by": "claude (session A, post-merge reconciliation)",
+      "verified_at": "2026-11-04T19:15:28+00:00",
+      "notes": "Verified against main b4c4477b at closeout; evidence corrected after the PR #205 squad"
     },
     {
       "criterion_id": "FR-007",
       "description": "Verify FR-007 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "proof_type": "code_review",
+      "evidence": "docs/architecture/services/ (overview, read-write-split, event-log-lock-and-append, write-service-protocol, event-ledger-writers-and-readers moved with history) and docs/guides/running-the-service.md, service-protocol-and-releases.md; PRs #148, #150",
+      "pass_fail": "pass",
+      "verified_by": "claude (session A, post-merge reconciliation)",
+      "verified_at": "2026-11-04T19:15:28+00:00",
+      "notes": "Verified against main b4c4477b at closeout; evidence corrected after the PR #205 squad. Deviation: the lock-interop-spike report was not moved. Docs link it in core at a pinned SHA, and two service comments cite a path absent here (follow-up #207). The other named material is here, including service/README.md."
     },
     {
       "criterion_id": "FR-008",
       "description": "Verify FR-008 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "service.yml and service-release.yml on main, every external uses: pinned to a 40-hex SHA; activated by the import and green on main (push b4c4477b, nightly 2026-11-03/04)",
+      "pass_fail": "pass",
+      "verified_by": "claude (session A, post-merge reconciliation)",
+      "verified_at": "2026-11-04T19:15:28+00:00",
+      "notes": "Verified against main b4c4477b at closeout"
     },
     {
       "criterion_id": "FR-009",
       "description": "Verify FR-009 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "proof_type": "code_review",
+      "evidence": "docs/guides/service-cutover-runbook.md: frozen-SHA filter-repo, path fixes, core-pin, labels, IssueMove table, session-B handshake; dry-run evidence in research.md (core 4eecb124); used for PR #150. Its IssueMove section is stale (follow-up #207)",
+      "pass_fail": "pass",
+      "verified_by": "claude (session A, post-merge reconciliation)",
+      "verified_at": "2026-11-04T19:15:28+00:00",
+      "notes": "Verified against main b4c4477b at closeout; evidence corrected after the PR #205 squad"
     },
     {
       "criterion_id": "FR-010",
       "description": "Verify FR-010 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "PR #150 (merge f75022f6): service/ and contracts/ imported with history (git log --follow service/build.gradle.kts reaches the core scaffold commit 1d7f605d), joined the root build; service.yml green, including ArchUnit and contract conformance; 2831 tests, 0 failures from the local scripts/verify_all.sh run in PR #150's body",
+      "pass_fail": "pass",
+      "verified_by": "claude (session A, post-merge reconciliation)",
+      "verified_at": "2026-11-04T19:15:28+00:00",
+      "notes": "Verified against main b4c4477b at closeout; evidence corrected after the PR #205 squad"
     },
     {
       "criterion_id": "FR-011",
       "description": "Verify FR-011 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "proof_type": "manual_qa",
+      "evidence": "service-v0.1.0-rc.1 (2f5e0394) released with operator approval, release run green 2026-10-31, assets per ADR 0003; core pins it by tag and sha256 (spec-kitty/spec-kitty PR #7004, pins/read-service.source.yaml; tracker #6915); rc.2 (14682f94, adds command-cli) sha256 sums posted on #6915 2026-11-01",
+      "pass_fail": "pass",
+      "verified_by": "claude (session A, post-merge reconciliation)",
+      "verified_at": "2026-11-04T19:15:28+00:00",
+      "notes": "Verified against main b4c4477b at closeout; evidence corrected after the PR #205 squad"
     }
   ],
   "negative_invariants": []
