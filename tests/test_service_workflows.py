@@ -130,7 +130,7 @@ def test_service_jobs_are_guarded_by_detect() -> None:
 def test_gradle_job_runs_the_aggregate_verify_on_jdk_25() -> None:
     steps = _load(SERVICE)["jobs"]["gradle"]["steps"]
     java = next(s for s in steps if s.get("uses", "").startswith("actions/setup-java@"))
-    assert java["with"] == {"distribution": "temurin", "java-version": "25"}
+    assert java["with"] == {"distribution": "temurin", "java-version": "25.0.2"}
     assert any(s.get("run") == "./gradlew --no-daemon verifyAll" for s in steps)
 
 
