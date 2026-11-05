@@ -2,7 +2,7 @@
 title: Service protocol and releases
 description: 'The CLI-to-write-service protocol in practice, the two release lines, the service-v* assets and tarball layouts, how core pins a release, and how to cut one.'
 doc_status: active
-updated: 2026-11-04T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -222,7 +222,9 @@ A core change that needs a new package and a new service release bumps both pins
    `origin/main`, or a checkout without `service/`. It builds through `service.yml` (natives
    on four targets, golden replay, the jar) in read-only jobs; lock-interop is skipped in a
    release run (see [What CI does not gate](#what-ci-does-not-gate)). Only `publish`
-   holds a write token: it checks every asset against `SHA256SUMS`, attests provenance,
+   holds a write token, and it runs in the `service-release` environment: the run waits until
+   a required reviewer approves it under Actions → the run → Review deployments (see
+   [Release protection](#release-protection)). Then it checks every asset against `SHA256SUMS`, attests provenance,
    re-checks that the tag still names the built commit, and runs
    `gh release create --verify-tag`, with `--prerelease` for a `-` suffix and never as
    latest. An existing release of the tag fails the step; a release is never replaced.
@@ -235,6 +237,36 @@ A core change that needs a new package and a new service release bumps both pins
 
 A failed run publishes nothing. Fix on `main` by a reviewed PR, then tag a new version; do
 not move or re-push a tag.
+
+### Release protection
+
+The workflow side is in `service-release.yml`: `publish` declares `environment: service-release`
+(#152). The protection itself is repository settings, which only an administrator can apply.
+**[operator]** Apply all three before the first non-rc `service-v*` tag, and create the environment
+before a release run needs it: a run that names a missing environment makes GitHub create it with
+no protection.
+
+1. **The `service-release` environment** (Settings → Environments → New environment):
+   - *Required reviewers*: the maintainers who may approve a release; turn on *Prevent self-review*.
+   - *Deployment branches and tags*: *Selected branches and tags*, with one tag rule, `service-v*`.
+     A run from any other ref cannot enter the environment, so it never gets the write token.
+   - No environment secrets are needed: `publish` uses the job's `GITHUB_TOKEN` and OIDC.
+2. **A tag ruleset for `service-v*`** (Settings → Rules → Rulesets → New tag ruleset): target
+   `refs/tags/service-v*`, enforcement *Active*, with *Restrict creations*, *Restrict updates* and
+   *Restrict deletions*; bypass only for the maintainers who cut releases. A published tag can then
+   be neither moved nor deleted, which the release notes and core's pins rely on.
+3. **The `main` ruleset** (`26558116`, at present disabled) set to *Active*, requiring
+   `service-gate`, `acceptance`, `cross-repo-harness-tests` and `docs-build`. The `gate` job's
+   ancestor-of-`main` check is only as strong as what reaches `main` (#208, #111).
+
+Check the result with read-only calls:
+
+```bash
+gh api repos/spec-kitty/spec-kitty-events/environments/service-release \
+  --jq '{reviewers: [.protection_rules[] | select(.type=="required_reviewers") | .reviewers[].reviewer.login], policy: .deployment_branch_policy}'
+gh api repos/spec-kitty/spec-kitty-events/environments/service-release/deployment-branch-policies --jq '.branch_policies[] | {name, type}'
+gh api repos/spec-kitty/spec-kitty-events/rulesets --jq '.[] | {id, name, target, enforcement}'
+```
 
 ### What CI does not gate
 
