@@ -7,7 +7,7 @@ import java.time.Duration;
 /**
  * A cross-process lock on a dedicated lock file, the Java side of the CLI's {@code kernel.locks.machine_file_lock}. Both sides lock the
  * same file, so a Java holder and a Python holder exclude each other (the #6193 lock-interop spike,
- * docs/development/reference/lock-interop-spike.md). The lock file only exists to be locked; nothing is read from or written to it.
+ * docs/architecture/services/lock-interop-spike.md). The lock file only exists to be locked; nothing is read from or written to it.
  */
 public interface LedgerLock {
 
