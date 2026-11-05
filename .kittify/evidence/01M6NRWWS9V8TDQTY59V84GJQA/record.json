@@ -1,0 +1,8 @@
+{
+  "event": "completed",
+  "invocation_id": "01M6NRWWS9V8TDQTY59V84GJQA",
+  "completed_at": "2026-11-05T12:20:21.353416+00:00",
+  "outcome": "done",
+  "closed_by": "agent",
+  "evidence_ref": "kitty-specs/events-domain-services-home-01M64MSB/mission-review-report.md"
+}
