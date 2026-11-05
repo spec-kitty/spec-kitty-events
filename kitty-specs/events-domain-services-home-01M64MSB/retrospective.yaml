@@ -1,0 +1,260 @@
+schema_version: 1
+mission_id: 01M64MSBA3GZ253WAPX3FE9AQX
+mission_slug: events-domain-services-home-01M64MSB
+mission_number:
+friendly_name: events domain services home
+mission_type: software-dev
+target_branch: issue-147-events-services-home
+created_at: '2026-11-05T12:05:05.922218+00:00'
+created_by:
+  kind: human
+  id: cli
+  display: spec-kitty retrospect
+provenance:
+  kind: explicit_create
+  invoked_at: '2026-11-05T12:05:05.922218+00:00'
+  policy_resolved_from:
+    enabled: <default>
+    timing: <default>
+    failure_policy: <default>
+    write_record: <default>
+    generate_proposals: <default>
+    apply_proposals: <default>
+    permissions.write_record: <default>
+    permissions.inspect_mission_artifacts: <default>
+    permissions.propose_glossary_changes: <default>
+    permissions.propose_drg_changes: <default>
+    permissions.propose_doctrine_changes: <default>
+    permissions.apply_low_risk_changes: <default>
+    permissions.apply_structural_changes: <default>
+    precedence: <default>
+    generator: <default>
+  command: spec-kitty retrospect create
+policy_source:
+  enabled: <default>
+  timing: <default>
+  failure_policy: <default>
+  write_record: <default>
+  generate_proposals: <default>
+  apply_proposals: <default>
+  permissions.write_record: <default>
+  permissions.inspect_mission_artifacts: <default>
+  permissions.propose_glossary_changes: <default>
+  permissions.propose_drg_changes: <default>
+  permissions.propose_doctrine_changes: <default>
+  permissions.apply_low_risk_changes: <default>
+  permissions.apply_structural_changes: <default>
+  precedence: <default>
+  generator: <default>
+findings_status: has_findings
+helped:
+- id: h-001
+  category: implementation
+  summary: WP01 completed without rejection cycles
+  evidence_refs:
+  - e-013
+- id: h-002
+  category: implementation
+  summary: WP03 completed without rejection cycles
+  evidence_refs:
+  - e-013
+- id: h-003
+  category: implementation
+  summary: WP04 completed without rejection cycles
+  evidence_refs:
+  - e-013
+- id: h-004
+  category: design
+  summary: The frozen-SHA filter-repo runbook made the import exact and repeatable
+  evidence_refs:
+  - e-021
+  details: >-
+    The import 1e9ec1d3 reproduces core 512567ee:services/mission-status-api as an identical tree (141 commits), as
+    the runbook's dry run predicted; the freeze-breach log stayed empty.
+- id: h-005
+  category: review_loop
+  summary: A pre-merge squad on each landing PR caught record-truth defects before they reached main
+  evidence_refs:
+  - e-023
+  details: >-
+    The squad on PR 205 blocked on WP07/WP08 approval records with no review behind them; the records were corrected
+    before merge.
+not_helpful:
+- id: n-006
+  category: doc
+  summary: analysis-report.md records 5 finding(s)
+  evidence_refs:
+  - e-019
+  details: The analysis-report.md artifact for this mission records 5 finding(s) in its structured frontmatter. Review
+    them to understand documented issues and decisions.
+- id: n-004
+  category: process
+  summary: WP07 required 1 --force override (planned -> done outside the WP loop)
+  evidence_refs:
+  - e-017
+  details: >-
+    Recorded after the fact on 2026-11-04. The import was reviewed by the squad on PR 150, not in the WP loop. The event
+    still says verdict approved (append-only log); review-cycle-1.md says what the review really was.
+- id: n-005
+  category: process
+  summary: WP08 required 1 --force override (planned -> done outside the WP loop, no review)
+  evidence_refs:
+  - e-018
+  details: >-
+    The release and the core handshake ran in operator sessions, and no review ran for the WP; the corrected
+    review-cycle-1.md records the T036 gap, the native binary sizes and the IssueMove deviation.
+- id: n-001
+  category: review_loop
+  summary: WP02 required 2 rejection cycle(s) before approval
+  evidence_refs:
+  - e-014
+  details: WP WP02 was sent back to an earlier lane with documented review feedback 2 time(s).
+- id: n-002
+  category: review_loop
+  summary: WP05 required 1 rejection cycle(s) before approval
+  evidence_refs:
+  - e-015
+  details: WP WP05 was sent back to an earlier lane with documented review feedback 1 time(s).
+- id: n-003
+  category: review_loop
+  summary: WP06 required 2 rejection cycle(s) before approval
+  evidence_refs:
+  - e-016
+  details: WP WP06 was sent back to an earlier lane with documented review feedback 2 time(s).
+- id: n-007
+  category: review_loop
+  summary: mission-review-report.md records 1 finding(s)
+  evidence_refs:
+  - e-020
+  details: The mission-review-report.md artifact for this mission records 1 finding(s) in its frontmatter. Review them
+    to understand documented review outcomes.
+- id: n-008
+  category: tooling
+  summary: A rebase-merged PR mission cannot get a truthful review baseline
+  evidence_refs:
+  - e-020
+  - e-022
+  details: >-
+    PR 148 was rebase-merged as 6 commits; meta.json first appears in the 5th. migrate backfill-merge-commit only
+    accepts that commit with --attest-first-landing-commit, which would be false and drop WP01-WP06 from the scan, so
+    review --mode post-merge stays unreachable. Tracked in events issue 208 and core 4277.
+- id: n-009
+  category: process
+  summary: Squashing landing branches orphaned the commits the mission records cite
+  evidence_refs:
+  - e-001
+  - e-022
+  details: >-
+    lanes.json planning_commit_sha d45c5071 is not in the repo, and meta.json accept_commit a21ed3db is on no branch.
+    accept --diagnose cannot check implementation_evidence. Record commits after the history is final, or re-point them.
+- id: n-010
+  category: process
+  summary: The issue moves were re-filed instead of transferred, dropping every label without an approval on record
+  evidence_refs:
+  - e-021
+  details: >-
+    The runbook and the spec edge case existed to keep labels; events issues 155-170 carry none, while the core
+    originals had priority and domain labels. Tracked on events issue 207.
+gaps:
+- id: g-001
+  category: spec_quality
+  summary: FR-007 accepted as pass although the lock-interop-spike report stayed in core
+  evidence_refs:
+  - e-002
+  - e-020
+  details: >-
+    Two of the three named items moved. The honest verdict is partial; the move is tracked in events issue 207.
+- id: g-002
+  category: process
+  summary: The acceptance matrix covers only FR-001..FR-011
+  evidence_refs:
+  - e-020
+  details: >-
+    NFR-001..004, C-001..005 and SC-001..004 had no rows and negative_invariants was empty; the mission review had to
+    assess them from scratch.
+- id: g-003
+  category: process
+  summary: The service gate the release guide relies on is not required on main
+  evidence_refs:
+  - e-020
+  details: >-
+    Ruleset 26558116 is disabled and classic protection requires only cross-repo-harness-tests; the release workflow
+    checks ancestry, not gate status. Tracked in events issues 208 and 152.
+proposals: []
+evidence_refs:
+- id: e-001
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/meta.json
+- id: e-002
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/spec.md
+- id: e-003
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/plan.md
+- id: e-004
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/tasks.md
+- id: e-005
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/tasks/WP01-adrs-service-ownership.md
+- id: e-006
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/tasks/WP02-charter-amendment.md
+- id: e-007
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/tasks/WP03-gradle-root-binding.md
+- id: e-008
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/tasks/WP04-service-ci-release.md
+- id: e-009
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/tasks/WP05-docsite-architecture.md
+- id: e-010
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/tasks/WP06-guides-runbook-changelog.md
+- id: e-011
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/tasks/WP07-cutover-import.md
+- id: e-012
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/tasks/WP08-first-service-release.md
+- id: e-013
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/status.events.jsonl
+- id: e-014
+  kind: event_range
+  path: kitty-specs/events-domain-services-home-01M64MSB/status.events.jsonl
+  range: 01M64RZ79P6T1V84GQRK637Q3D..01M64SJEW64SFFCNWHK1JKAJSE
+- id: e-015
+  kind: event_range
+  path: kitty-specs/events-domain-services-home-01M64MSB/status.events.jsonl
+  range: 01M64SGKGKHQS2BHAXP6BK7GRY
+- id: e-016
+  kind: event_range
+  path: kitty-specs/events-domain-services-home-01M64MSB/status.events.jsonl
+  range: 01M64VGRN13YMV1645N4K3GSG1..01M64WAVH0FTN5J73ZHKKSHJYE
+- id: e-017
+  kind: event_range
+  path: kitty-specs/events-domain-services-home-01M64MSB/status.events.jsonl
+  range: 01M6KZNMYR2W9KDN5TZBFBFEHQ
+- id: e-018
+  kind: event_range
+  path: kitty-specs/events-domain-services-home-01M64MSB/status.events.jsonl
+  range: 01M6KZNX49S81WT3GFJT9P5Y7S
+- id: e-019
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/analysis-report.md
+- id: e-020
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/mission-review-report.md
+- id: e-021
+  kind: file
+  path: docs/guides/service-cutover-runbook.md
+- id: e-022
+  kind: file
+  path: kitty-specs/events-domain-services-home-01M64MSB/lanes.json
+- id: e-023
+  kind: external
+  url: https://github.com/spec-kitty/spec-kitty-events/pull/205
+generator_version: '1.0'
+provenance_history: []
