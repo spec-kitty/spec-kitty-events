@@ -63,22 +63,24 @@ helped:
   summary: WP04 completed without rejection cycles
   evidence_refs:
   - e-013
-- id: h-004
+- id: h-006
   category: design
   summary: The frozen-SHA filter-repo runbook made the import exact and repeatable
   evidence_refs:
   - e-021
+  - e-024
   details: >-
     The import 1e9ec1d3 reproduces core 512567ee:services/mission-status-api as an identical tree (141 commits), as
-    the runbook's dry run predicted; the freeze-breach log stayed empty.
-- id: h-005
+    the runbook's dry run predicted; PR 150 records an empty freeze-breach log.
+- id: h-007
   category: review_loop
-  summary: A pre-merge squad on each landing PR caught record-truth defects before they reached main
+  summary: Pre-merge squads on the main landing PRs (148, 150, 205) caught record-truth defects before main
   evidence_refs:
   - e-023
+  - e-024
   details: >-
     The squad on PR 205 blocked on WP07/WP08 approval records with no review behind them; the records were corrected
-    before merge.
+    before merge. PRs 154 and 162 landed without a squad.
 not_helpful:
 - id: n-006
   category: doc
@@ -94,7 +96,8 @@ not_helpful:
   - e-017
   details: >-
     Recorded after the fact on 2026-11-04. The import was reviewed by the squad on PR 150, not in the WP loop. The event
-    still says verdict approved (append-only log); review-cycle-1.md says what the review really was.
+    still says verdict approved (append-only log); review-cycle-1.md says what the review really was. This record was
+    hand-edited after generation on 2026-11-05; mission-review-report.md (Retrospective Reminder) lists every edit.
 - id: n-005
   category: process
   summary: WP08 required 1 --force override (planned -> done outside the WP loop, no review)
@@ -133,7 +136,6 @@ not_helpful:
   summary: A rebase-merged PR mission cannot get a truthful review baseline
   evidence_refs:
   - e-020
-  - e-022
   details: >-
     PR 148 was rebase-merged as 6 commits; meta.json first appears in the 5th. migrate backfill-merge-commit only
     accepts that commit with --attest-first-landing-commit, which would be false and drop WP01-WP06 from the scan, so
@@ -153,8 +155,8 @@ not_helpful:
   evidence_refs:
   - e-021
   details: >-
-    The runbook and the spec edge case existed to keep labels; events issues 155-170 carry none, while the core
-    originals had priority and domain labels. Tracked on events issue 207.
+    The runbook and the spec edge case existed to keep labels; events issues 155-161 and 163-170 carry none, while the
+    core originals had priority and domain labels. Tracked on events issue 207.
 gaps:
 - id: g-001
   category: spec_quality
@@ -174,12 +176,12 @@ gaps:
     assess them from scratch.
 - id: g-003
   category: process
-  summary: The service gate the release guide relies on is not required on main
+  summary: main does not enforce the checks the release path assumes
   evidence_refs:
   - e-020
   details: >-
-    Ruleset 26558116 is disabled and classic protection requires only cross-repo-harness-tests; the release workflow
-    checks ancestry, not gate status. Tracked in events issues 208 and 152.
+    Ruleset 26558116 is disabled and classic protection requires only cross-repo-harness-tests, with no reviews. A
+    release run re-runs the service gate but skips lock-interop. Tracked in events issues 208, 152 and 111.
 proposals: []
 evidence_refs:
 - id: e-001
@@ -256,5 +258,8 @@ evidence_refs:
 - id: e-023
   kind: external
   url: https://github.com/spec-kitty/spec-kitty-events/pull/205
+- id: e-024
+  kind: external
+  url: https://github.com/spec-kitty/spec-kitty-events/pull/150
 generator_version: '1.0'
 provenance_history: []
