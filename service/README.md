@@ -214,7 +214,7 @@ The root project holds everything else:
 
 ## Tests
 
-From this directory, with placeholders for what is yours:
+From the repository root (the Gradle wrapper is there), with placeholders for what is yours. `make test-gradle` (`scripts/verify_all.sh`) writes the contract document and runs `./gradlew verifyAll` over every module:
 
 - `./gradlew check` runs the JVM tests of all three projects, the architecture rules, the coverage floors (the JaCoCo gate of the root project counts the libraries' classes and test runs too) and the replay of the native request set against the JVM service. The build needs the contract document as `-PcontractBundle=<file> -PcontractBundleSha256=<digest>`.
 - A library test runs as `./gradlew :event-log:test --tests '*StatusReducerTest'` (or `:domain-model:test`); a root `--tests` filter matches only the root project's tests, and the root `test` task fails when it matches none.

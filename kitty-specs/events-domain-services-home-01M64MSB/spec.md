@@ -66,6 +66,8 @@ A contributor builds and tests every Java artifact in the repo with one Gradle w
 1. **Given** a clean checkout with JDK 25, **When** `./gradlew check` runs, **Then** the binding's tests pass with the same case count as under Maven.
 2. **Given** the Python package, **When** `uv run pytest --pyargs spec_kitty_events.conformance` runs, **Then** it passes unchanged.
 
+**Post-cutover note (2026-11-05, #208)**: since the import (PR #150), `./gradlew check` on a clean checkout also builds `:mission-status-api`, whose `processResources` needs the contract bundle (`CONTRACT_BUNDLE` and `CONTRACT_BUNDLE_SHA256`, `service/build.gradle.kts`). Run the whole build with `make test-gradle` (`scripts/verify_all.sh`, which writes the bundle and runs `./gradlew verifyAll`), or the binding alone with `make test-java` (`./gradlew :java-binding:check`), which needs no bundle.
+
 ---
 
 ### User Story 3: Service CI and the release line are designed and ready (Priority: P2)
@@ -170,6 +172,6 @@ At the go-signal, a maintainer runs the history-preserving import and the issue 
 ### Measurable Outcomes
 
 - **SC-001**: The 3 ADRs and the charter amendment are merged, and doc checks show 0 errors.
-- **SC-002**: `./gradlew check` is green with the binding's full case count, and the Maven toolchain is gone.
+- **SC-002**: `./gradlew check` is green with the binding's full case count, and the Maven toolchain is gone. Since the cutover the whole build runs through `make test-gradle` (see the US2 post-cutover note).
 - **SC-003**: The cutover runbook dry run reproduces 141 commits and content-identical trees for core `4eecb124`.
 - **SC-004**: After cutover, a `service-v0.x` pre-release exposes every listed asset with matching sha256 sums, and core pins it.
