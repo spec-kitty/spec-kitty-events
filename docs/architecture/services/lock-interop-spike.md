@@ -13,6 +13,7 @@ kind: Reference
 > core's CI, before cutover. File paths under `src/`, `scripts/` and `tests/` are core paths,
 > and bare issue numbers are core issues. The ADR it cites is core's
 > [2026-10-22-1](https://github.com/spec-kitty/spec-kitty/blob/824fdca1cd9d6f7d8e714942f6dae259afe0c6f9/docs/adr/4.x/2026-10-22-1-the-java-write-service-is-the-canonical-event-writer.md).
+> The findings and follow-ups are the state at spike time, and some follow-ups have since been done.
 > See [event-log lock and append](./event-log-lock-and-append.md) for the design it supports.
 
 **Verdict: GO for the design of ADR 2026-10-22-1 D-4**, on all three operating systems:
@@ -35,8 +36,8 @@ The harness drives the production code on the Python side, never a copy: `kernel
 | Part | Where |
 |---|---|
 | Python peer | `scripts/ci/lock_interop_peer.py` (unit tests: `tests/ci/test_lock_interop_peer.py`) |
-| Java harness | package `org.speckitty.missionstatus.spike.lockinterop` in the test sources of the `event-log` module, now in spec-kitty-events `service/event-log` (core's `services/mission-status-api` copy was removed, #6915) |
-| CI evidence | the `lock-interop` job, now in spec-kitty-events `.github/workflows/service.yml`, which runs core's peer at the core SHA in `service/core-pin.json` (ubuntu-24.04, macos-15, windows-2025; GraalVM CE 25.0.2) |
+| Java harness | package `org.speckitty.missionstatus.spike.lockinterop` in the test sources of the `event-log` module, in `service/event-log` (core's `services/mission-status-api` copy was removed, #6915) |
+| CI evidence | the `lock-interop` job in `.github/workflows/service.yml`, which runs core's peer at the core SHA in `service/core-pin.json` (ubuntu-24.04, macos-15, windows-2025; GraalVM CE 25.0.2) |
 
 `LockInteropSpikeTest` runs once per Java lock. `java-filechannel` is `FileChannel.tryLock()` over the whole file, on every OS. `java-ffm-flock` is `flock(fd, LOCK_EX | LOCK_NB)` through FFM, on Linux and macOS. Each run uses a fresh git repository, so the lock file is the real `<git-common-dir>/spec-kitty-locks/event-logs/<digest>.lock`. The harness checks four things:
 
@@ -65,12 +66,12 @@ CI run [40557031791](https://github.com/spec-kitty/spec-kitty/actions/runs/40557
 | macos | java-filechannel vs fcntl.flock | true | true | 0 / 667 | 99 / 103 | 0 / 1214 | true / true / true | 444 / 453 | **GO** |
 | windows | java-filechannel vs msvcrt.locking | true | true | 0 / 1779 | 187 / 120 | 0 / 3382 | true / true / true | 560 / 567 | **GO** |
 
-Each row is the `lock-interop result:` record the test writes to `event-log/build/lock-interop/` (artefact `lock-interop-<os>`) and to the job's step summary. The assertions in `LockInteropSpikeTest` pin these outcomes, so a JDK or OS change that moves one turns the job red:
+Each row is the `lock-interop result:` record the test writes to `service/event-log/build/lock-interop/` (artefact `lock-interop-<os>`) and to the job's step summary. The assertions in `LockInteropSpikeTest` pin these outcomes, so a JDK or OS change that moves one turns the job red:
 
 - GO for `java-ffm-flock` on Linux and macOS, and for `java-filechannel` on macOS and Windows;
 - no exclusion for `java-filechannel` on Linux.
 
-Here the job runs when `service.yml`'s `detect` job sees a service path change, and that includes `service/core-pin.json`. A change on core's Python lock side therefore re-runs the evidence only when a reviewed PR moves the pin. The job is one of the jobs `service-gate` needs, so a failure blocks the PR.
+Here the job runs when `service.yml`'s `detect` job matches a changed path, and those paths include `service/core-pin.json`. A change on core's Python lock side therefore re-runs the evidence only when a reviewed PR moves the pin. `service-gate` needs the job, so a failure blocks the PR, while a skipped job counts as passing.
 
 **Without exclusion, the harm is real.** In local Linux runs with `java-filechannel`, the Python append read the log while a Java write was in flight and refused a legitimate append with `EVENT_LOG_TORN_TAIL`. The critical-section count shows the same race directly: about one overlap in three rounds. O_APPEND keeps each line whole on Linux, so the damage shows up as refusals and races in the torn-tail check, not as torn lines.
 

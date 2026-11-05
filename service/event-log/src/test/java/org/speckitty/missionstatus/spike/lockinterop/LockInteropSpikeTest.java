@@ -41,7 +41,7 @@ import tools.jackson.databind.json.JsonMapper;
  * accept?
  *
  * <p>It runs only when {@value PythonPeer#PYTHON_ENV} names the interpreter of a synced checkout (the {@code lock-interop} job of
- * {@code mission-status-api.yml}); an ordinary {@code ./gradlew check} skips it. Each Java lock of {@link #locks()} gets its own
+ * {@code service.yml}); an ordinary {@code ./gradlew check} skips it. Each Java lock of {@link #locks()} gets its own
  * repository. Every run writes its observations to {@code build/lock-interop/} (one JSON and one Markdown row per lock), and the
  * verdict the spike report records is read from there. The assertions pin what the spike established, so a JDK or OS change that
  * moves a result turns this red. Report: {@code docs/architecture/services/lock-interop-spike.md}.

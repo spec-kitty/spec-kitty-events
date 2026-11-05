@@ -136,5 +136,5 @@ stays in core, so this repository's CI checks core out to run it.
 
 A pin rather than core `main` keeps this CI from depending on a moving reference. The cost
 is named in the ADR's risks: a stale pin hides a lock change in core until the pin moves.
-In core today, the `lock-interop` job re-runs whenever `src/kernel/locks.py` or
-`src/kernel/event_log_append.py` change (spike page, "Evidence").
+The `lock-interop` job runs here, not in core, so a lock change in core re-runs it only when
+a reviewed PR moves the pin ([spike page, "Evidence"](./lock-interop-spike.md#evidence)).
