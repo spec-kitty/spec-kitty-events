@@ -72,7 +72,7 @@
       "pass_fail": "pass",
       "verified_by": "claude (session A, post-merge reconciliation)",
       "verified_at": "2026-11-04T19:15:28+00:00",
-      "notes": "Verified against main b4c4477b at closeout; evidence corrected after the PR #205 squad. Deviation: the lock-interop-spike report was not moved. Docs link it in core at a pinned SHA, and two service comments cite a path absent here (follow-up #207). The other named material is here, including service/README.md."
+      "notes": "PARTIAL (mission review FR-1, 2026-11-05): the lock-interop-spike report stayed in core; tracked by #207. pass_fail stays 'pass' because the accept gate turns any 'fail' row into a 'fail' overall verdict, while the mission review's verdict is PASS WITH NOTES. Verified against main b4c4477b at closeout; evidence corrected after the PR #205 squad. Deviation: the lock-interop-spike report was not moved. Docs link it in core at a pinned SHA, and two service comments cite a path absent here (follow-up #207). The other named material is here, including service/README.md."
     },
     {
       "criterion_id": "FR-008",
@@ -113,6 +113,136 @@
       "verified_by": "claude (session A, post-merge reconciliation)",
       "verified_at": "2026-11-04T19:15:28+00:00",
       "notes": "Verified against main b4c4477b at closeout; evidence corrected after the PR #205 squad"
+    },
+    {
+      "criterion_id": "NFR-001",
+      "description": "Verify NFR-001 is satisfied: Python line untouched: conformance, make test-fast and ruff pass, no change under src/spec_kitty_events/",
+      "proof_type": "automated_test",
+      "evidence": "git diff --stat -- src/spec_kitty_events/ is empty for every mission PR range; Gate 1 uv run pytest --pyargs spec_kitty_events.conformance: 1200 passed (mission-review-report.md, FR coverage matrix and Gate 1)",
+      "pass_fail": "pass",
+      "verified_by": "claude (post-merge mission review, Op 01M6NRWWS9V8TDQTY59V84GJQA; rows added for #208)",
+      "verified_at": "2026-11-05T11:53:52.907852+00:00",
+      "notes": "MET"
+    },
+    {
+      "criterion_id": "NFR-002",
+      "description": "Verify NFR-002 is satisfied: Binding parity: the Gradle run executes the same number of tests as the Maven run (± 0), all passing",
+      "proof_type": "automated_test",
+      "evidence": "366 = 366 (363 corpus cases plus 3 @Test); java/ unchanged since b286d6c8 (mission-review-report.md, FR coverage matrix)",
+      "pass_fail": "pass",
+      "verified_by": "claude (post-merge mission review, Op 01M6NRWWS9V8TDQTY59V84GJQA; rows added for #208)",
+      "verified_at": "2026-11-05T11:53:52.907852+00:00",
+      "notes": "MET"
+    },
+    {
+      "criterion_id": "NFR-003",
+      "description": "Verify NFR-003 is satisfied: Supply chain: every uses: in new or changed workflows pinned to a 40-character SHA; strict Gradle dependency verification",
+      "proof_type": "code_review",
+      "evidence": "Mission workflows fully SHA-pinned; wrapper sha256 equals services.gradle.org's; verify-metadata=true (mission-review-report.md, FR coverage matrix)",
+      "pass_fail": "pass",
+      "verified_by": "claude (post-merge mission review, Op 01M6NRWWS9V8TDQTY59V84GJQA; rows added for #208)",
+      "verified_at": "2026-11-05T11:53:52.907852+00:00",
+      "notes": "MET. Finding REL-3 (uv and the JDK floated in the release build) is fixed under #208."
+    },
+    {
+      "criterion_id": "NFR-004",
+      "description": "Verify NFR-004 is satisfied: Docs validity: the doc-kitty frontmatter validator and link checker report 0 errors on docs/",
+      "proof_type": "automated_test",
+      "evidence": "npm run validate: 232 files valid, 171 references resolve; docs-site runs green (mission-review-report.md, FR coverage matrix)",
+      "pass_fail": "pass",
+      "verified_by": "claude (post-merge mission review, Op 01M6NRWWS9V8TDQTY59V84GJQA; rows added for #208)",
+      "verified_at": "2026-11-05T11:53:52.907852+00:00",
+      "notes": "MET"
+    },
+    {
+      "criterion_id": "C-001",
+      "description": "Verify C-001 is satisfied: No code import, tag push, issue transfer or layout-changing PR before the operator's cutover go-signal (D7)",
+      "proof_type": "code_review",
+      "evidence": "Freeze core #6782 merged 2026-10-30T06:58:08Z, then the import at 07:05:50Z; tags after the 2026-10-31 ruling (mission-review-report.md, FR coverage matrix)",
+      "pass_fail": "pass",
+      "verified_by": "claude (post-merge mission review, Op 01M6NRWWS9V8TDQTY59V84GJQA; rows added for #208)",
+      "verified_at": "2026-11-05T11:53:52.907852+00:00",
+      "notes": "MET. REC-3: the go-signal is recorded only in PR #150's body, not in the mission directory."
+    },
+    {
+      "criterion_id": "C-002",
+      "description": "Verify C-002 is satisfied: The service build does not depend on core Python; test-only couplings use a pinned core SHA (D5)",
+      "proof_type": "code_review",
+      "evidence": "The core checkout happens only in service.yml's lock-interop and nightly-corpus jobs, at the service/core-pin.json SHA, never in release runs (mission-review-report.md, FR coverage matrix)",
+      "pass_fail": "pass",
+      "verified_by": "claude (post-merge mission review, Op 01M6NRWWS9V8TDQTY59V84GJQA; rows added for #208)",
+      "verified_at": "2026-11-05T11:53:52.907852+00:00",
+      "notes": "MET"
+    },
+    {
+      "criterion_id": "C-003",
+      "description": "Verify C-003 is satisfied: Asset names are stable across releases; only <ver> changes (D6)",
+      "proof_type": "code_review",
+      "evidence": "service-v0.1.0-rc.1 asset names are a subset of rc.2's; command-cli is additive (mission-review-report.md, FR coverage matrix)",
+      "pass_fail": "pass",
+      "verified_by": "claude (post-merge mission review, Op 01M6NRWWS9V8TDQTY59V84GJQA; rows added for #208)",
+      "verified_at": "2026-11-05T11:53:52.907852+00:00",
+      "notes": "MET. REC-4 (the release-asset contract listed command-cli as future) is fixed under #208."
+    },
+    {
+      "criterion_id": "C-004",
+      "description": "Verify C-004 is satisfied: The PyPI v* tag pattern and publish-pypi.yml stay separate from the service line",
+      "proof_type": "code_review",
+      "evidence": "publish-pypi.yml triggers on v*; only service-release ran for the rc tags (mission-review-report.md, FR coverage matrix)",
+      "pass_fail": "pass",
+      "verified_by": "claude (post-merge mission review, Op 01M6NRWWS9V8TDQTY59V84GJQA; rows added for #208)",
+      "verified_at": "2026-11-05T11:53:52.907852+00:00",
+      "notes": "MET"
+    },
+    {
+      "criterion_id": "C-005",
+      "description": "Verify C-005 is satisfied: Programme process: one issue (#147), one branch, a PR to main; never push main; the operator merges",
+      "proof_type": "code_review",
+      "evidence": "5 operator-merged PRs (#148, #150, #154, #162, #205); WP07 allowed a separate import PR (mission-review-report.md, FR coverage matrix)",
+      "pass_fail": "pass",
+      "verified_by": "claude (post-merge mission review, Op 01M6NRWWS9V8TDQTY59V84GJQA; rows added for #208)",
+      "verified_at": "2026-11-05T11:53:52.907852+00:00",
+      "notes": "MET with a deviation: the import landed as its own PR, as WP07 allowed."
+    },
+    {
+      "criterion_id": "SC-001",
+      "description": "Verify SC-001 is satisfied: The 3 ADRs and the charter amendment are merged, and doc checks show 0 errors",
+      "proof_type": "code_review",
+      "evidence": "ADRs 0002, 0003 and 0004 on main (FR-001..FR-003 ADEQUATE); charter amendment 1f322410 (FR-004); npm run validate: 232 files valid, 171 references resolve (NFR-004) (mission-review-report.md)",
+      "pass_fail": "pass",
+      "verified_by": "claude (post-merge mission review, Op 01M6NRWWS9V8TDQTY59V84GJQA; rows added for #208)",
+      "verified_at": "2026-11-05T11:53:52.907852+00:00",
+      "notes": "The charter.md regeneration step was not performed (GOV-1, FR-004 PARTIAL); tracked in #208."
+    },
+    {
+      "criterion_id": "SC-002",
+      "description": "Verify SC-002 is satisfied: ./gradlew check is green with the binding's full case count, and the Maven toolchain is gone",
+      "proof_type": "automated_test",
+      "evidence": "366 = 366 binding tests (NFR-002); no pom.xml, mvnw or .mvn (FR-005); Gate 2 make test-gradle (scripts/verify_all.sh) passes ArchUnit and conformance; service.yml run 41909590376 green (mission-review-report.md)",
+      "pass_fail": "pass",
+      "verified_by": "claude (post-merge mission review, Op 01M6NRWWS9V8TDQTY59V84GJQA; rows added for #208)",
+      "verified_at": "2026-11-05T11:53:52.907852+00:00",
+      "notes": "Since the cutover the aggregate build needs CONTRACT_BUNDLE, so a clean-checkout run goes through make test-gradle / scripts/verify_all.sh. The local perfTest miss is not counted (Gate 2)."
+    },
+    {
+      "criterion_id": "SC-003",
+      "description": "Verify SC-003 is satisfied: The cutover runbook dry run reproduces 141 commits and content-identical trees for core 4eecb124",
+      "proof_type": "code_review",
+      "evidence": "Import 1e9ec1d3: service/ tree equals core 512567ee:services/mission-status-api, 141 commits (FR-010); dry-run evidence in research.md (mission-review-report.md)",
+      "pass_fail": "pass",
+      "verified_by": "claude (post-merge mission review, Op 01M6NRWWS9V8TDQTY59V84GJQA; rows added for #208)",
+      "verified_at": "2026-11-05T11:53:52.907852+00:00",
+      "notes": ""
+    },
+    {
+      "criterion_id": "SC-004",
+      "description": "Verify SC-004 is satisfied: After cutover a service-v0.x pre-release exposes every listed asset with matching sha256 sums, and core pins it",
+      "proof_type": "manual_qa",
+      "evidence": "service-v0.1.0-rc.1 prerelease: 8 of 8 assets attested; core pins/read-service.source.yaml sha256 equal the release digests; rc.2 13 of 13 attested (mission-review-report.md, FR-011 and Security Notes)",
+      "pass_fail": "pass",
+      "verified_by": "claude (post-merge mission review, Op 01M6NRWWS9V8TDQTY59V84GJQA; rows added for #208)",
+      "verified_at": "2026-11-05T11:53:52.907852+00:00",
+      "notes": ""
     }
   ],
   "negative_invariants": []
