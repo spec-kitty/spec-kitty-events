@@ -2,7 +2,7 @@
 title: Services
 description: The services of the events domain, the Mission Status Read API and the write service (command-cli), and how they read and write the event logs. The code lives here.
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Architecture
 kind: Hub
 okf_version: "0.2"
@@ -25,6 +25,8 @@ stays in core.
   the target.
 - [Event-log lock and append](./event-log-lock-and-append.md): the lock shared with the CLI,
   atomic and durable appends, torn-tail repair, and why CI pins a core SHA.
+- [Lock-interop spike](./lock-interop-spike.md): the verdict and CI evidence for which Java
+  lock excludes the CLI's lock on each OS, and what the write service still needs.
 - [Write-service protocol](./write-service-protocol.md): loopback HTTP, the bearer token,
   the handshake, durability acks, refusal codes and the launcher contract.
 - [Event ledger writers and readers](./event-ledger-writers-and-readers.md): core's map of

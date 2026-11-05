@@ -2,7 +2,7 @@
 title: Event-log lock and append
 description: 'How command-cli appends to the CLI-shared event log under its lock; the write ordering, the Windows atomicity caveat, torn-tail repair, and the core-SHA CI pin.'
 doc_status: active
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -21,7 +21,7 @@ While the CLI still writes a log, a Java writer that touches the same log must e
 CLI's writer and write the same bytes. Even after a log is handed over whole, an older CLI
 installed in another checkout of the same repository can keep appending to it, so the lock
 must hold across languages
-([`docs/development/reference/lock-interop-spike.md`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/docs/development/reference/lock-interop-spike.md)).
+([the lock-interop spike](./lock-interop-spike.md)).
 
 ## The lock the Python appender takes
 

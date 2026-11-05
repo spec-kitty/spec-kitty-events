@@ -18,7 +18,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * The ledger locks: exclusion, release, the bounded wait, the lock file they create, and a refused symbolic link. That these locks also
- * exclude the CLI's {@code kernel.locks} holder is the #6193 lock-interop spike's evidence (docs/development/reference/lock-interop-spike.md).
+ * exclude the CLI's {@code kernel.locks} holder is the #6193 lock-interop spike's evidence (docs/architecture/services/lock-interop-spike.md).
  */
 class LedgerLockTest {
 
