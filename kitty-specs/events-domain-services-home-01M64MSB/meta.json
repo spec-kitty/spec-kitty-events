@@ -1,4 +1,18 @@
 {
+  "accept_commit": "a21ed3db5ec4ce2d22569cad592f9fc45092707b",
+  "acceptance_history": [
+    {
+      "accept_commit": "a21ed3db5ec4ce2d22569cad592f9fc45092707b",
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-04T19:15:41.333272+00:00",
+      "accepted_by": "claude",
+      "accepted_from_commit": "5517c5078483e87ffd6bd16614fcedb4a7bb1794"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-04T19:15:41.333272+00:00",
+  "accepted_by": "claude",
+  "accepted_from_commit": "5517c5078483e87ffd6bd16614fcedb4a7bb1794",
   "created_at": "2026-10-29T20:14:27.487800+00:00",
   "flattened": false,
   "friendly_name": "events domain services home",
@@ -11,6 +25,7 @@
   "purpose_context": "This mission prepares spec-kitty-events to own the Mission Status Read API and Mission Write API Java services moved from core (issue #147): ADRs, charter, Gradle build, CI and service-v* release design, and docs, with the history-preserving import run at cutover.",
   "purpose_tldr": "spec-kitty-events becomes the canonical home of the events-domain Java services",
   "slug": "events-domain-services-home-01M64MSB",
+  "status_phase": "1",
   "target_branch": "issue-147-events-services-home",
   "topology": "single_branch"
 }
