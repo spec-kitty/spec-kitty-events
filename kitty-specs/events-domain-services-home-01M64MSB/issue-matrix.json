@@ -1,27 +1,39 @@
 {
   "rows": {
     "#147": {
-      "evidence_ref": "Tracking issue; closed by this mission's PR",
+      "evidence_ref": "Delivered: PR #148 (governance, build, CI, docs), PR #150 (history-preserving import, merge f75022f6), PR #162/#154; releases service-v0.1.0-rc.1 (2f5e0394) and rc.2 (14682f94); core pins rc.1 (spec-kitty/spec-kitty PR #7004; tracker #6915); loose ends in #207",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
-      "wp": null
+      "title": "Events domain owns its Java services: import mission-status-api + contracts from core, Gradle, service-v* releases",
+      "verdict": "fixed",
+      "wp": "WP07"
+    },
+    "#6676": {
+      "evidence_ref": "The events half is spec-kitty-events #156 (closed; command-cli shipped in service-v0.1.0-rc.2). The residual is core's write-service pin, tracked in core (#6676, #6915); core pins/ holds only the read service so far",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": "WP08"
     },
     "#6692": {
-      "evidence_ref": "Follow-up: core spec-kitty/spec-kitty#6692 is closed at cutover (spec D8, WP08 T037) by the core session, linking ADR 0002",
+      "evidence_ref": "Closed as done in core by the core session with a link to ADR 0002 (WP08 T037)",
       "fr": null,
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
-      "verdict": "deferred-with-followup",
+      "title": "ADR: the Java write core is the canonical event writer (amend 2026-10-14-1 and 2026-10-03-1)",
+      "verdict": "verified-already-fixed",
       "wp": "WP08"
     },
     "#92": {
@@ -32,7 +44,7 @@
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
+      "title": "Mission Write API (2/9): CloudEvents envelope, type registry, schemas and upcaster",
       "verdict": "not-applicable",
       "wp": null
     }
