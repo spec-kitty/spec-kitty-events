@@ -26,7 +26,7 @@ stays in core.
 - [Event-log lock and append](./event-log-lock-and-append.md): the lock shared with the CLI,
   atomic and durable appends, torn-tail repair, and why CI pins a core SHA.
 - [Lock-interop spike](./lock-interop-spike.md): the verdict and CI evidence for which Java
-  lock excludes the CLI's lock on each OS, and what the write service still needs.
+  lock excludes the CLI's lock on each OS, and the follow-ups it named for the write service.
 - [Write-service protocol](./write-service-protocol.md): loopback HTTP, the bearer token,
   the handshake, durability acks, refusal codes and the launcher contract.
 - [Event ledger writers and readers](./event-ledger-writers-and-readers.md): core's map of
