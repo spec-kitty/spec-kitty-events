@@ -1,8 +1,8 @@
 ---
 title: 'ADR-0003: one Gradle build and the service-v* release line'
-description: 'Accepted: Gradle Kotlin DSL on JDK 25 builds every Java artifact; GraalVM native images for 4 targets ship on service-v* tags with stable asset names, sha256 files and provenance.'
+description: 'Accepted: Gradle Kotlin DSL on JDK 25 builds every Java artifact; natives for 4 targets ship on service-v* tags. Amended 2026-11-05: contracts/build.gradle stays Groovy for now.'
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: ADR
 kind: ADR
 authors:
@@ -46,7 +46,10 @@ the first `service-v0.x` pre-release was to be cut only with operator approval. 
   The operator pushes the tag, and `service-release.yml` publishes the asset set of
   [Release assets](#release-assets).
 
-The decisions below are unchanged.
+The decisions below are unchanged, apart from the amendment to decision 1.
+
+**Amended 2026-11-05:** decision 1 gains one exception: the imported `contracts/build.gradle`
+stays Groovy DSL until it is converted. See the amendment under decision 1.
 
 ---
 
@@ -96,6 +99,19 @@ release gate and the asset contract.
    - Gradle wrapper 9.8.1 (sha256-pinned) and JDK 25.
    - The Maven binding migrates to this build (mission WP03), with an unchanged test count.
    - The services and `contracts/` join it at cutover.
+
+   **Amended 2026-11-05 (operator decision).** As first accepted, this decision made the
+   Kotlin DSL the single toolchain with no exception. The cutover import (#150) brought core's
+   `contracts/build.gradle` in as Groovy DSL, and the root build includes it unchanged as
+   `:contracts` (`settings.gradle.kts`); only the mission plan and the cutover runbook recorded
+   that. **Changed decision:** `contracts/build.gradle` is a recorded exception and stays
+   Groovy until it is converted to the Kotlin DSL. **Reason:** converting it was not part of
+   the history-preserving import, and the build runs it green under the same wrapper, JDK and
+   dependency verification as every other module. Every new build script is still Kotlin DSL,
+   and the exception ends with the conversion, which is tracked in a follow-up issue. The
+   Groovy files under `contracts/tools/fixtures/` are test inputs of the contract tools, not
+   build scripts, and are not covered by this decision.
+
 2. **Native image.** GraalVM CE 25 builds 4 targets: linux-x64, linux-arm64, macos-arm64
    and windows-x64. Reachability hints live in code (`@ImportRuntimeHints`) plus Spring
    AOT. There are no hand-written reflect-config files.
