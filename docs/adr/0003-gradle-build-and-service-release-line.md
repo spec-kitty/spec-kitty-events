@@ -108,7 +108,7 @@ release gate and the asset contract.
    Groovy until it is converted to the Kotlin DSL. **Reason:** converting it was not part of
    the history-preserving import, and the build runs it green under the same wrapper, JDK and
    dependency verification as every other module. Every new build script is still Kotlin DSL,
-   and the exception ends with the conversion, which is tracked in a follow-up issue. The
+   and the exception ends with the conversion, which is tracked in #213. The
    Groovy files under `contracts/tools/fixtures/` are test inputs of the contract tools, not
    build scripts, and are not covered by this decision.
 

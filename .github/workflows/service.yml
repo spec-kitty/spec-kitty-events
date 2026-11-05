@@ -187,8 +187,8 @@ jobs:
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          # An exact JDK, the same 25.0.x the GraalVM CE native legs pin (#208).
-          java-version: "25.0.2"
+          # An exact JDK, the Temurin release scripts/ensure_jdk25.sh pins; bump them together (#208).
+          java-version: "25.0.5"
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           # A release run (release-version set) neither restores nor saves the Gradle cache.
@@ -539,8 +539,8 @@ jobs:
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          # An exact JDK, the same 25.0.x the GraalVM CE native legs pin (#208).
-          java-version: "25.0.2"
+          # An exact JDK, the Temurin release scripts/ensure_jdk25.sh pins; bump them together (#208).
+          java-version: "25.0.5"
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           # A release run (release-version set) neither restores nor saves the Gradle cache.
@@ -622,8 +622,8 @@ jobs:
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          # An exact JDK, the same 25.0.x the GraalVM CE native legs pin (#208).
-          java-version: "25.0.2"
+          # An exact JDK, the Temurin release scripts/ensure_jdk25.sh pins; bump them together (#208).
+          java-version: "25.0.5"
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           # A release run (release-version set) neither restores nor saves the Gradle cache.
