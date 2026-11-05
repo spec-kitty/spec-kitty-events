@@ -2,7 +2,7 @@
 title: 'ADR-0002: spec-kitty-events is canonical for the events domain and its services'
 description: 'Accepted: this repo owns the events domain, the Mission Status Read API, the Mission Write API write core and their OpenAPI contracts; core consumes released artifacts.'
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: ADR
 kind: ADR
 authors:
@@ -215,7 +215,7 @@ history that D2 keeps.
   [2026-10-27-1](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-27-1-the-write-service-protocol-is-loopback-http-with-a-bearer-token.md),
   and core's counterpart record
   [2026-10-29-1](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-29-1-the-events-domain-and-its-java-services-live-in-spec-kitty-events.md)
-  (accepted in core PR spec-kitty/spec-kitty#6782; the link resolves once that PR merges).
+  (accepted in core PR spec-kitty/spec-kitty#6782, merged on 2026-10-30).
 - [spec-kitty-charter ADR-0015](https://github.com/spec-kitty/spec-kitty-charter/blob/main/docs/adr/0015-charter-repository-is-canonical-for-charter-structure.md).
 - Mission artifacts: `kitty-specs/events-domain-services-home-01M64MSB/spec.md` (D1–D8),
   `research.md` (R-1, R-2, R-5, R-8), `data-model.md` (IssueMove).

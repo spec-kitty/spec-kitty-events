@@ -2,7 +2,7 @@
 title: Services overview
 description: The Mission Status Read API and the write service at C4 levels 1 and 2, the onion layering the ArchUnit tests enforce, and where the code lived in core and lives here.
 doc_status: active
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -18,8 +18,7 @@ kind: Explanation
 > at core at `4eecb124`, where they were checked.
 > Core's counterpart record is ADR 2026-10-29-1,
 > [the events domain and its Java services live in spec-kitty-events](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-29-1-the-events-domain-and-its-java-services-live-in-spec-kitty-events.md)
-> (accepted in core PR spec-kitty/spec-kitty#6782; the link resolves once that PR merges into
-> core `main`).
+> (accepted in core PR spec-kitty/spec-kitty#6782, merged on 2026-10-30).
 
 The events domain has two services, one per side of a CQRS split
 ([read-write split](./read-write-split.md)):
