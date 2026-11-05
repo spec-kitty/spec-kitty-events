@@ -46,7 +46,12 @@ That baseline cannot be recorded truthfully with the current tooling:
 - PR #148 was rebase-merged as 6 commits on `50e84242`. `kitty-specs/<slug>/meta.json` first appears in the 5th of them, `5bd8eb94`, whose parent `1f322410` belongs to the same PR.
 - `spec-kitty migrate backfill-merge-commit` accepts only `5bd8eb94`, and only with `--attest-first-landing-commit`. That attestation would be false, and it would anchor the baseline at `1f322410`, which leaves out WP01–WP06.
 
-So the field stays absent and the frontmatter verdict stands as the tool computed it. The scan's subject is unaffected: NFR-001 below shows that no mission PR changed `src/spec_kitty_events/`. The finding is a missing anchor, not dead code. The manual verdict is below; #208 tracks the anchor.
+So the field stays absent and the frontmatter verdict stands as the tool computed it. The missing anchor did not hide dead code. I did the scan by hand instead (DEAD-1), and it found some:
+- **Scope.** The CLI's scan covers every changed non-test `.py` file, inside or outside `src/`. NFR-001 holds (no mission PR changed `src/spec_kitty_events/`), but #150 imported 26 non-test, non-fixture Python modules under `contracts/tools/` and `scripts/ci/`.
+- **What is live.** Only `bundle.py`, its `contract_resolver` import, and `scripts/ci/mission_status_gate_checks.py` have a caller from a workflow, the Makefile, a Gradle build or a test.
+- **What is not.** The other 23 are referenced only by each other or in comments; #151 tracks them.
+
+The manual verdict is below. #208 tracks the anchor.
 
 ## Gate Results
 
@@ -58,9 +63,10 @@ So the field stays absent and the frontmatter verdict stands as the tool compute
 ### Gate 2: Architectural tests
 - Command: `scripts/verify_all.sh --continue` (`make test-gradle`, which runs `./gradlew verifyAll` with the contract bundle). It covers the ArchUnit onion and boundary rules and the contract conformance tests of `service/`.
 - Exit code: 1. 62 tasks ran and only `:mission-status-api:perfTest` failed, on one test: `Nfr001OverviewLatencyTest` cold first call, ratio 112.0 and then 104.1 against a limit of 70.0.
-- Result: PASS (ArchUnit and conformance). The perfTest miss is classed as runner noise under ADR 2026-10-05-2, for two reasons:
-  - Both local runs recorded load 12.1 and 17.1 on 32 CPUs, from other sessions' JVM builds on the same machine.
-  - The same `service/` tree passed `perfTest` in CI. `git diff 8dbfbf26 030f4ec8` touches only `kitty-specs/`, and `service.yml` run 41909590376 on `8dbfbf26` passed its `gradle` job (126853576981), including `:mission-status-api:perfTest`.
+- Result: PASS (ArchUnit and conformance). The perfTest miss is not a regression, and it is not counted against this mission:
+  - **The deciding evidence is CI.** The same `service/` tree passed `perfTest` in CI. `git diff 8dbfbf26 030f4ec8` touches only `kitty-specs/`, and `service.yml` run 41909590376 on `8dbfbf26` passed its `gradle` job (126853576981), which ran `:mission-status-api:perfTest` (not from cache).
+  - **The local runs cannot decide either way.** Both had load 12.1 and 17.1 on 32 CPUs, from other sessions' JVM builds on the same machine. Their ratios are above even the planted 50 ms-regression figures (78.3–87.4, `PerfBudgets.java:48`), so on a contended machine the local gate cannot tell contention from a regression.
+  - **The second run was not a retry into green.** It stayed red. Both measurements are recorded in #208 as calibration data for `NFR001_COLD_RATIO_LIMIT`, under core ADR 2026-10-05-2 and `docs/development/testing/testing-flakiness.md`.
 
 ### Gate 3: Cross-repo E2E
 - Command: `cross-repo-harness-tests.yml` on `main`.
@@ -112,7 +118,7 @@ So the field stays absent and the frontmatter verdict stands as the tool compute
 ### DRIFT-1: mission records cite commits that are not on `main`
 **Type**: RECORD-DRIFT. **Severity**: MEDIUM.
 **Evidence**:
-- `lanes.json` `planning_commit_sha` `d45c5071` is not in this repo.
+- `lanes.json` `planning_commit_sha` `d45c5071` is not in the local clone. GitHub still serves it, but it has diverged from `main` (13 ahead, 227 behind) and its branch is deleted.
 - `meta.json` `accept_commit` `a21ed3db` and `accepted_from_commit` `5517c507` are reachable from no branch.
 - `target_branch` `issue-147-events-services-home` has been deleted.
 
@@ -155,41 +161,64 @@ REC-1 and REC-4 are tracked in #208. REC-2 and REC-3 are disclosed in #205.
 
 All tracked in #208. rc.2's missing `CHANGELOG.md` entry is #196.
 
+### DEAD-1: 23 imported contract-tool modules have no live caller
+**Type**: DEAD-CODE. **Severity**: MEDIUM. **Location**: `contracts/tools/*.py`, imported by #150 (`48be13c9..f75022f6`).
+**Evidence**: #150 added 26 non-test, non-fixture Python modules. I traced each to a workflow, the Makefile, a Gradle build, `scripts/*.sh` or a Java test that runs it:
+- **Live (3):**
+  - `bundle.py`, run by `service.yml`, `docs-site.yml`, `scripts/verify_all.sh` and `ContractDocumentTest`;
+  - `contract_resolver.py`, which `bundle.py` imports;
+  - `scripts/ci/mission_status_gate_checks.py`, run by `service.yml`.
+- **Not live (23):** every other module, including `breaking_check`, `structure_check`, `leak_scan`, `citation_check`, `verify_pins`, `gradle_pin_check`, `lint_check`, `tamper_check`, `client_smoke`, `resolver_parity` and `run_negative_cases`. They are reached only from each other or named in comments (`contracts/build.gradle:54,71`, `ArtifactPathRule.java:7`, `VerificationTamperTest.java:22`, `LeakClassesPythonParityTest.java:20`).
+
+**Analysis**:
+- This is the core contract-gate tooling, imported with its history but not its CI (core's `contracts.yml`). A breaking change to `contracts/mission-status` or `contracts/mission-write` is therefore detected nowhere.
+- It is a documented, accepted gap, not a hidden one. `contracts/README.md:499,577` and both module CHANGELOGs say no workflow runs the tools yet, and #151 (with #202's points folded in) tracks porting the CI or retiring tools explicitly.
+- This is the finding the CLI's dead-code gate would have raised with an anchor.
+
 ## Risk Findings
 
-### REL-1: the `service-gate` that guards the release is not required on `main`
-**Type**: BOUNDARY-CONDITION. **Severity**: MEDIUM. **Location**: repository settings and `service-release.yml:81-87`.
-**Trigger condition**: a commit reaches `main` with a red `service-gate`, then gets tagged `service-v*`.
+### REL-1: `main` does not enforce the checks the release path assumes
+**Type**: BOUNDARY-CONDITION. **Severity**: MEDIUM. **Location**: repository settings and `service-release.yml:80-87`.
+**Trigger condition**: a commit whose `lock-interop` is red, or that skipped review, reaches `main` and is tagged `service-v*`.
 **Analysis**:
 - The `main` ruleset 26558116 requires `acceptance`, `service-gate` and `cross-repo-harness-tests`, but it has `enforcement: disabled`.
-- Classic protection requires only `cross-repo-harness-tests`, with no reviews.
-- The release workflow checks that the tag is an ancestor of `main`, not that its gate is green.
+- Classic protection requires only `cross-repo-harness-tests`, with no reviews. So `service-release.yml:80`'s "only a commit on main (so, reviewed)" does not hold.
+- A release run re-runs `service.yml` (`service-release.yml:89-97`), including `gradle` and `service-gate`, before it assembles anything. But `lock-interop` and `nightly-corpus` are skipped in release runs (`service.yml:478-481`), so a red `lock-interop` on the tagged commit goes unchecked.
+- rc.1's commit `2f5e0394` had a green push-triggered `service-gate`. rc.2's `14682f94` has none, but its service tree equals `e59a84ab`, whose run 41302099905 was green on every job, including `lock-interop`.
 
-Both rc commits did have a green `service-gate`. The tag and environment side is #152; the ruleset is tracked in #208.
+The tag and environment side is #152. Enabling the ruleset also closes #111. Tracked in #208.
 
 ### REL-2: no cross-leg native digest comparison
 **Type**: CROSS-WP-INTEGRATION. **Severity**: MEDIUM. **Location**: `service.yml:347-351`.
-**Analysis**: the `digest-<target>` artifacts are uploaded but never compared, and `nativePerf` is not wired. The guide says to compare by hand. Tracked in #208.
+**Analysis**: the `digest-<target>` artifacts are uploaded but never compared, and `nativePerf` is not wired. The guide says to compare by hand. Tracked in #153.
 
 ### REL-3: the release build floats uv and the JDK
-**Type**: SECURITY (supply chain). **Severity**: LOW. **Location**: the `contract-bundle` job of the rc.1 release run (job 124722315393).
-**Analysis**: the job logs "Falling back to latest" for uv (0.13.6), and `setup-java` takes `java-version: "25"`. Dependencies stay hash-locked through `uv sync --frozen`. Tracked in #208.
+**Type**: SECURITY (supply chain). **Severity**: LOW. **Location**: the `contract-bundle` job (uv) and the `gradle` job (`service.yml:184-188`, JDK) of the release runs.
+**Analysis**:
+- Job 124722315393 of the rc.1 release run logs "Could not determine uv version … Falling back to latest" and installs uv 0.13.6.
+- `setup-java` takes `java-version: "25"`.
+- Dependencies stay hash-locked through `uv sync --frozen`.
+
+Tracked in #208.
 
 ### CUT-1: the moved issues lost every label
 **Type**: BOUNDARY-CONDITION. **Severity**: MEDIUM.
-**Analysis**: core originals with `priority:P1` and `domain:*` labels (#6117, #6409, #6196) map to events #155–#170, which carry no labels. The spec's edge case and runbook §7.1 exist to prevent this. Tracked on #207.
+**Analysis**: core originals with `priority:*` and `domain:*` labels (for example, #6117 and #6409 are `priority:P1`) map to events #155–#161 and #163–#170, none of which carries a label. The spec's edge case and runbook §7.1 exist to prevent this. Tracked on #207.
 
 ## Silent Failure Candidates
 
-None found in mission-owned code. The mission changed no Python under `src/`, and the Java service code was imported unchanged from core: `service/` equals core `512567ee:services/mission-status-api`. The release scripts fail closed on a missing `service/`, a tag that is not on `main`, a moved tag, or an existing release.
+None found in mission-owned code:
+- **Python.** The mission changed no Python under `src/`.
+- **Java.** The import `1e9ec1d3` is identical to core `512567ee:services/mission-status-api`. The pre-merge squad's evidence lens read the two later Java changes for swallowed failures and found none: the `EventsController` shutdown-race fix (#162) and the `PythonPeer` lookup (#150).
+- **Release scripts.** They fail closed on a missing `service/`, a tag that is not on `main`, a moved tag, or an existing release.
 
 ## Security Notes
 
 | Finding | Location | Risk class | Recommendation |
 |---|---|---|---|
 | A tag on a branch commit whose workflow has an edited ancestor check would publish attested assets | `service-release.yml:82-87`; no release environment or tag ruleset | Release integrity | #152, before the first non-rc tag |
-| `main` does not require `service-gate` or reviews | ruleset 26558116 disabled | Release integrity | REL-1 (#208) |
-| uv and the JDK float in the release build | `contract-bundle` job | Supply chain | REL-3 (#208) |
+| `main` does not require `service-gate` or reviews | ruleset 26558116 disabled | Release integrity | REL-1 (#208, #111) |
+| uv and the JDK float in the release build | `contract-bundle` and `gradle` jobs | Supply chain | REL-3 (#208) |
 
 Fine as built:
 - The workflow-level token is `contents: read`, and `publish` runs no repository code.
@@ -212,17 +241,37 @@ The merged work realizes the spec:
 - **Import:** a history-preserving import whose tree equals core's at the frozen SHA.
 - **Release:** a pre-release whose sha256 sums core pins.
 
-The Python line is untouched, Gates 1, 3 and 4 pass, and Gate 2 passes for its ArchUnit and conformance content. Only FR-007 is short: the spike report did not move, which is a disclosed gap tracked in #207. No locked decision is violated apart from the deliberate Groovy `contracts/build.gradle` (GOV-2). No finding is CRITICAL or HIGH.
+The Python line is untouched, Gates 1, 3 and 4 pass, and Gate 2 passes for its ArchUnit and conformance content.
 
-The CLI's `fail` reflects only the missing review anchor (DRIFT-2). It could not be recorded without a false attestation, and the scan's subject, `src/`, was not changed by the mission.
+What falls short:
+- **FR-007 is partial.** The spike report did not move, a disclosed gap tracked in #207.
+- **23 imported contract-tool modules have no live caller** (DEAD-1). The contracts README and CHANGELOGs disclose this, and #151 tracks it.
+- **One locked decision is not followed:** `contracts/build.gradle` is still Groovy (GOV-2). It is deliberate and the only one.
+
+No finding is CRITICAL or HIGH.
+
+The CLI's `fail` is the missing review anchor (DRIFT-2), which could not be recorded without a false attestation. The dead code an anchored scan would have found is DEAD-1, which is already tracked.
 
 ### Open items (non-blocking)
 - #207: spike report, runbook §7, labels on the moved issues, golden regeneration, rc.1 attestation verification.
-- #208: release path (`main` ruleset, native digest comparison, uv/JDK pins), mission record drift, docs and changelog drift, charter regeneration, Groovy exception.
-- #151: contract-tooling CI, including `breaking_check`, `structure_check` and `leak_scan` and a `service-v*` baseline.
+- #208: release path (`main` ruleset, uv/JDK pins), mission-record drift, docs and changelog drift, charter regeneration, Groovy exception, perfTest calibration data.
+- #151: contract-tooling CI, with `breaking_check`, `structure_check`, `leak_scan` and a `service-v*` baseline (DEAD-1).
+- #153: cross-leg native digest comparison and `nativePerf` (REL-2).
+- #111: required checks on `main` (REL-1).
 - #152: release environment and tag ruleset.
 - #196: placement of service-line release notes and the missing rc.2 entry.
 
 ## Retrospective Reminder
 
-`retrospective.yaml` is authored next to this report with `spec-kitty retrospect create`, because the mission was accepted through a PR and never consolidated. Surface its findings with `spec-kitty retrospect summary`, and inspect proposals with `spec-kitty agent retrospect synthesize --mission events-domain-services-home-01M64MSB` (a dry run by default).
+`retrospective.yaml` is authored next to this report with `spec-kitty retrospect create`, because the mission was accepted through a PR and never consolidated. The generated record was then hand-edited. spec-kitty has no amend path, so these edits are listed here:
+
+| Edit | Detail |
+|---|---|
+| Removed | The generated h-004 and h-005, "WP07/WP08 completed without rejection cycles". Both WPs ran outside the WP loop (n-004, n-005). |
+| Added | h-006 and h-007, which are new IDs. |
+| Reworded | n-004 and n-005, with the out-of-loop detail. |
+| Added | n-008 to n-010, g-001 to g-003, and evidence e-021 to e-024. |
+
+The record still carries `created_by: spec-kitty retrospect`. The appended `RetrospectiveCaptured` event says `evidence_ref_count: 20`, because it was written before the edits; the record now holds 24, and the event log is append-only. `spec-kitty retrospect create --overwrite` would discard these edits.
+
+Surface the findings with `spec-kitty retrospect summary`. Inspect proposals with `spec-kitty agent retrospect synthesize --mission events-domain-services-home-01M64MSB` (a dry run by default).
