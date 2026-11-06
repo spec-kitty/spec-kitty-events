@@ -62,6 +62,14 @@ until it moves its pin.
   state, so divergence cannot occur and there is nothing to materialize. `WriteRefusalCode` has
   27 codes: 15 are the CLI's codes verbatim and 12 are protocol-only.
 
+### Provisional
+
+- The protocol-only codes `COORDINATION_REF_MOVED`, `COORDINATION_REF_CHECKED_OUT` and
+  `COORDINATION_LEDGER_UNREADABLE` are provisional while ADR-0007 is Proposed. As with the
+  provisional codes of `1.0.0-SNAPSHOT`, an enum value cannot carry `x-provisional`, so they are
+  marked in their descriptions only and `provisional_check.py` does not see them.
+- `statusCommit` of `DurabilityAck` stays provisional until migration step 4 lands.
+
 ### Compatibility
 
 - The protocol major stays 1: a client of the `rc.1`/`rc.2` bundle sending

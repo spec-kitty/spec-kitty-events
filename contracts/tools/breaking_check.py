@@ -82,15 +82,9 @@ import contract_resolver
 from release_check import SNAPSHOT_SUFFIX, is_snapshot  # one definition of a snapshot for the baseline and the release rules
 
 CHECK_NAME = "breaking_check"
-INITIAL_VERSION = "1.0.0"
 #: The line a module stays on until its first final release: 1.0.Z and 1.0.Z-SNAPSHOT.
 INITIAL_LINE = "1.0"
 _INITIAL_LINE_RE = re.compile(r"^1\.0\.(0|[1-9][0-9]*)(-SNAPSHOT)?$")
-
-
-def is_initial_line(version: str) -> bool:
-    """True for ``1.0.Z`` or ``1.0.Z-SNAPSHOT``: the versions allowed while no release tag exists."""
-    return _INITIAL_LINE_RE.fullmatch(version) is not None
 DEFAULT_REF = "HEAD"
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$")
 BREAKING_LEVEL = 2  # oasdiff levels: 1 info, 2 warning, 3 error
@@ -130,6 +124,11 @@ MAX_LINES_PER_KIND = 20
 
 Runner = Callable[[Sequence[str], Path | None], tuple[int, str, str]]
 Which = Callable[[str], str | None]
+
+
+def is_initial_line(version: str) -> bool:
+    """True for ``1.0.Z`` or ``1.0.Z-SNAPSHOT``: the versions allowed while no release tag exists."""
+    return _INITIAL_LINE_RE.fullmatch(version) is not None
 
 
 def subprocess_runner(command: Sequence[str], cwd: Path | None = None) -> tuple[int, str, str]:
