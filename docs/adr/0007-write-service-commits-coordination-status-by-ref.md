@@ -46,12 +46,19 @@ Related records:
   byte-exact rows; migration step 4) and
   [ADR 2026-10-27-1](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-10-27-1-the-write-service-protocol-is-loopback-http-with-a-bearer-token.md)
   (the protocol; a closed-response change after `1.0.0` is a major).
-- The core records of the same slice, landing in the Mission
-  `lane-worktree-model-hardening-01M6QY1M` core pull request: **C-1** (a coordination branch
-  is written by commit, not through a coordination worktree), **C-2** (consolidation gates
-  over a worktree-less coordination branch), **C-3** (the committed ledger of a coordination
-  Mission is the blob on its coordination branch) and the **D-6 amendment** of 2026-10-22-1
-  that names this set. This record does not restate them.
+- The core records of the same slice, landing with the Mission
+  `lane-worktree-model-hardening-01M6QY1M` core pull request (the links resolve once it
+  merges; until then the files are on core branch `issue-7276-lane-worktree-hardening`):
+  - **C-1** [2026-11-06-4](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-11-06-4-coordination-branch-written-by-commit.md): a coordination branch is written by commit, not through a
+    coordination worktree (the non-status artefacts, the drain and removal of existing
+    coordination worktrees, `status.json`);
+  - **C-2** [2026-11-06-5](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-11-06-5-gates-over-worktree-less-coordination.md): consolidation gates over a worktree-less coordination branch
+    (the write fence);
+  - **C-3** [2026-11-06-6](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-11-06-6-committed-ledger-is-the-coordination-blob.md): the committed ledger of a coordination Mission is the blob on
+    its coordination branch (publication seam, `events tail` cursor);
+  - the **D-6 amendment** of 2026-10-22-1 that names this set.
+
+  This record does not restate them.
 - [ADR-0008](./0008-read-service-reads-coordination-ledger-from-git-objects.md): the read side
   of the same change.
 
@@ -107,7 +114,10 @@ Chosen option 1. Each decision below is marked *(ruled)* where it restates an op
 ### D-1: no coordination worktree; the commit is built from git objects *(ruled)*
 
 For `writeSurface: coordination_ref_commit`, the service writes a unit like this, and touches no
-index, working tree or worktree of the repository:
+index, working tree or worktree of the repository. Every git call runs with
+`-c core.hooksPath=<an empty private directory>`, so no repository hook runs: plumbing alone
+would still run `reference-transaction` (on `update-ref`) and `post-index-change` (on the
+temporary index), and the service never runs code from the repository it writes.
 
 1. Read the tip `T` of `refs/heads/<coord>` (`destinationRef`).
 2. Read the Mission's event log blob at `<missionDirectory>/status.events.jsonl` in `T`'s tree;
@@ -116,14 +126,23 @@ index, working tree or worktree of the repository:
    `git hash-object -w --no-filters --stdin` (no clean or `eol` filter, so the bytes are exact).
 4. Build the new tree from `T`'s tree with only that path changed, through a temporary index
    (`GIT_INDEX_FILE` in a private directory of the git common dir: `read-tree T`,
-   `update-index --cacheinfo 100644,<blob>,<path>`, `write-tree`). The repository's own index
-   is never read or written.
+   `update-index --add --replace --cacheinfo 100644,<blob>,<path>`, `write-tree`). `--add` is
+   needed for a Mission's first status write, when the path is not yet in `T`'s tree. The
+   repository's own index is never read or written.
 5. `commit-tree <tree> -p T` with the message of D-6.
-6. `update-ref -m <message> refs/heads/<coord> <new> T`: the compare-and-swap (D-3). It writes a
-   reflog entry. No hook runs at any step.
+6. `update-ref --create-reflog -m <message> refs/heads/<coord> <new> T`: the compare-and-swap
+   (D-3). `--create-reflog` writes a reflog entry even where `core.logAllRefUpdates` is off (a
+   bare repository).
 
 A batch of units (`/work-package-transitions/batch`) is **one** commit, as it is one write and
-one `fsync` today. *(derived)*
+one `fsync` today; so every unit of a batch names the same `missionDirectory`, `writeSurface`
+and `destinationRef`, and a batch that does not is `REQUEST_MALFORMED` (the contract's
+`TransitionBatch`, and `command-cli`'s request-shape check today). *(derived)*
+
+Plumbing never runs `git gc --auto`, which a porcelain commit does today. The service runs it
+after a successful unit, off the request's critical path, so the loose blobs a unit leaves (each
+append writes the whole log as a new blob) are packed and unreachable objects of refused units
+are pruned. *(derived)*
 
 ### D-2: byte and durability contract *(derived)*
 
@@ -134,10 +153,25 @@ one `fsync` today. *(derived)*
   or parsed.
 - "One `O_APPEND` write and `fsync`" becomes, for this surface: every object and the moved ref
   are durable before the acknowledgement. The service runs git with
-  `-c core.fsync=objects,reference` (and `core.fsyncMethod=fsync`), so the loose objects and the
-  ref file are synced. `DurabilityAck.fsynced` keeps its meaning (durable before the answer).
+  `-c core.fsync=objects,reference`, so the contents of the loose objects, the ref and its log
+  are synced; it then syncs the directories that received them (the object fan-out
+  directories, the ref's and the log's parent directories), as the CLI's writer syncs the
+  parent directory after its rename today (`status/store.py`, `_fsync_directory`).
+  `DurabilityAck.fsynced` keeps its meaning (durable before the answer).
 - `DurabilityAck.statusCommit` names the commit `update-ref` moved the ref to. The field stays
   `x-provisional` until migration step 4 ships, because until then no unit commits.
+
+### D-2a: replay on this surface *(derived)*
+
+Idempotent retry (2026-10-27-1 D-5, still provisional in the contract) is judged against the
+event log in the tree of the tip `T` the unit reads:
+
+- every row of the unit is already in that log with identical content: `replayed: true`,
+  `appendedLines: 0`, no commit, and `statusCommit` names the commit that first wrote the rows,
+  found by its `Spec-Kitty-Event-Id:` trailers (D-6). This covers a crash after `update-ref` and
+  before the acknowledgement;
+- only some of the unit's rows are there, or one is there with different content:
+  `EVENT_ID_CONFLICT` (409), nothing written.
 
 ### D-3: a lost compare-and-swap is a refusal, never a retry *(derived)*
 
@@ -145,22 +179,38 @@ one `fsync` today. *(derived)*
   `update-ref <new> <T>` finds the ref no longer at `T`, another writer moved it: the CLI during
   the strangler, consolidation, or the user. The unit is refused with
   **`COORDINATION_REF_MOVED`** (409) and nothing is acknowledged. The objects written in steps
-  3 to 5 are unreachable and left to `git gc`.
+  3 to 5 are unreachable and left to `git gc` (D-1).
+- `update-ref` reports a lost compare-and-swap, a held ref lock (`core.filesRefLockTimeout`) and
+  a deleted ref alike ("cannot lock ref"). The service re-reads the ref after any failure:
+  still at `T` is transient contention, `SERVICE_BUSY` (503, retry the same service); missing is
+  `COORDINATION_BRANCH_DELETED` (422); any other value is `COORDINATION_REF_MOVED`.
 - No blind retry: a retry would append on top of a tip the caller has not seen, and would hide a
   concurrent consolidation. The caller re-reads and decides. Whether consolidation fences writes
   out (a refusal while a consolidation record holds the Mission) is core **C-2**'s decision; the
   compare-and-swap is the service's half of that exclusion either way.
-- A coordination branch that is checked out in any worktree of the repository (the root
-  checkout's `HEAD` or a `git worktree list` entry) is not written: moving a checked-out ref
-  makes that checkout look dirty and invites a lost update on its next commit. The unit is
-  refused with **`COORDINATION_REF_CHECKED_OUT`** (409). This is how an existing coordination
-  worktree is kept out of the way until core **C-1**'s migration drains and removes it.
+- A coordination branch that is checked out in any worktree of the repository is not written:
+  moving a checked-out ref makes that checkout look dirty and invites a lost update on its next
+  commit. The unit is refused with **`COORDINATION_REF_CHECKED_OUT`** (409). "Checked out"
+  follows git's own in-use rule: the `HEAD` of a non-bare root checkout, every
+  `git worktree list --porcelain` entry, and a worktree in the middle of a rebase or bisect on
+  that branch (which `worktree list` shows as detached). A prunable entry whose directory is gone
+  is not a checkout. A bare repository's `HEAD` is not a checkout.
+- **Residual window.** A `git checkout <coord>` or `git worktree add` between this check and
+  `update-ref` is not covered by the compare-and-swap, which guards the ref's value, not its
+  checkouts. Nothing in Spec Kitty checks a coordination branch out once core **C-1**'s
+  migration has removed the coordination worktrees; a user who does it by hand in that window
+  sees a checkout that is behind its branch. This risk is accepted.
 
 ### D-4: placement checks run in the service *(derived)*
 
-- `destinationRef` is required for this surface (enforced by `RequestContext`'s schema). It must
-  be the `coordination_branch` the Mission records; while write-location resolution is still the
-  CLI's (2026-10-22-1 open question 2), a mismatch is `WRITE_LOCATION_UNVERIFIED`.
+- `destinationRef` is required for this surface (enforced by `RequestContext`'s schema and by
+  `command-cli`'s request-shape check). The surface is served from migration step 4, when
+  write-location resolution moves into the service (2026-10-22-1 open question 2): the service
+  resolves the Mission's `coordination_branch` itself, and a request whose `destinationRef`
+  differs is `WRITE_LOCATION_UNVERIFIED`. This changes core ADR 2026-10-27-1 D-3, which keeps
+  `destinationRef` null "until placement moves into the service": for this surface it is never
+  null. Core's client (`write_service_protocol.py`, a core file per 2026-10-29-1 D-7) follows;
+  core **C-1** records the change.
 - The existing ref checks apply unchanged: `DESTINATION_REF_INVALID_SHAPE`,
   `DESTINATION_REF_NOT_LOCAL`, `PROTECTED_BRANCH_REFUSED`, and `COORDINATION_BRANCH_DELETED`
   when the ref does not exist.
@@ -176,6 +226,8 @@ one `fsync` today. *(derived)*
   be a second implementation of ref transactions.
 - Minimum git: the core's floor (2.38, already required for `merge-tree --write-tree`), which
   also has `core.fsync` (2.36).
+- The service decides nothing from the user's git configuration beyond identity (D-6): it passes
+  the `-c` settings this record names on every call.
 - Windows ref-lock semantics follow the lock-interop spike
   ([lock-interop-spike.md](../architecture/services/lock-interop-spike.md), #6193).
 
@@ -204,11 +256,20 @@ The operator ruled on 2026-11-06 that `1.0.0-SNAPSHOT`, which shipped inside the
 - Removed codes: `COORD_STATUS_SURFACE_DIVERGED`, `COORD_STATUS_SURFACE_UNREADABLE`,
   `BOOKKEEPING_WORKTREE_MISSING`, `FALLBACK_COORD_WORKTREE_UNRESOLVED`,
   `COORDINATION_WORKTREE_UNMATERIALIZED`. With no working tree, divergence cannot occur and there
-  is nothing to materialize.
+  is nothing to materialize. The CLI's own codes of the same names retire with the worktree
+  (core **C-1**).
 - Added protocol-only codes: `COORDINATION_REF_MOVED` (409), `COORDINATION_REF_CHECKED_OUT`
-  (409), `COORDINATION_LEDGER_UNREADABLE` (500).
+  (409), `COORDINATION_LEDGER_UNREADABLE` (500), marked provisional while this record is
+  Proposed.
+- The protocol major stays 1. A client built on the `rc.1`/`rc.2` bundle that sends
+  `coordination_transaction_append` gets `REQUEST_MALFORMED`, not `PROTOCOL_VERSION_UNSUPPORTED`
+  at the handshake. That is accepted because no client transport exists yet (2026-10-27-1 D-8)
+  and every write still fails closed; a protocol major is the tool once a client speaks to a
+  serving writer.
+- `breaking_check.py` reads `1.0.Z` and `1.0.Z-SNAPSHOT` as the initial line while no release
+  exists, and `contracts/README.md`'s versioning rule records the ruling.
 
-### Scope
+### Scope and rollout precondition
 
 This record covers the coordination **status** event log, which is what the rulings name. The
 other things the coordination transaction writes today (notes, trace, issue matrix, decision
@@ -216,6 +277,13 @@ artefacts, subprocess byproducts) need their own rule before the coordination wo
 retired; that is core **C-1**'s decision (an artefact-write operation of the service, or a
 partition move, #7266). Whether `status.json` is committed on the coordination branch is also
 C-1's. Nothing here builds the service: implementation follows migration step 4 (#6117).
+
+**Precondition.** `coordination_ref_commit` goes live only in the release that also ships C-1's
+rule for those artefacts and its drain and removal of existing coordination worktrees (steps 4
+and 4a of 2026-10-22-1 land together). Otherwise, from step 4 on, the CLI has no status writer
+(2026-10-22-1 D-4, D-5: no Python fallback writer) and every existing coordination Mission is
+refused with `COORDINATION_REF_CHECKED_OUT` on every transition, because its worktree still
+checks the branch out. *(derived; the ordering itself is C-1's to record)*
 
 ## Consequences
 
@@ -228,16 +296,18 @@ C-1's. Nothing here builds the service: implementation follows migration step 4 
 
 ### Negative
 
-- Plumbing runs no hooks: a repository hook on the coordination branch no longer sees status
-  commits.
+- No repository hook runs on a status commit (`core.hooksPath` is emptied): a hook that watched
+  the coordination branch no longer sees status commits.
 - Building the tree through a temporary index reads the whole tree of `T`; for very large trees a
   path-rewrite of the nested trees (`mktree`) is cheaper and may replace it without changing
   this record.
+- Each append writes the whole log as a new blob; `git gc --auto` after the unit (D-1) bounds
+  the store, but a very large log costs its size per append until it is packed.
 - A refused `COORDINATION_REF_MOVED` puts the retry decision on the caller.
 
 ### Neutral
 
-- Unreachable objects of a refused unit wait for `git gc`.
+- Unreachable objects of a refused unit wait for the next `git gc --auto`.
 
 ## Confirmation
 
@@ -246,14 +316,21 @@ When the step-4 implementation lands, `command-cli` tests show, in a temporary r
 - a unit and a batch each produce exactly one commit whose parent is the prior tip, whose tree
   differs only at the Mission's event log, and whose blob equals the prior bytes plus the rows
   byte for byte (the `status_append` fixture family);
-- the repository's index, `HEAD` and working tree are unchanged, and no hook ran;
+- a Mission's first status write (no log in `T`'s tree) commits;
+- the repository's index, `HEAD` and working tree are unchanged, and a `reference-transaction`
+  and a `post-index-change` hook planted in the repository never ran;
 - a ref moved between read and update gives `COORDINATION_REF_MOVED` and leaves the ref where the
-  other writer put it; a checked-out coordination branch gives `COORDINATION_REF_CHECKED_OUT`; a
-  torn or unreadable log gives `COORDINATION_LEDGER_UNREADABLE`;
+  other writer put it; a held ref lock gives `SERVICE_BUSY`; a deleted ref gives
+  `COORDINATION_BRANCH_DELETED`; a branch checked out in the root checkout, a linked worktree or
+  a worktree mid-rebase gives `COORDINATION_REF_CHECKED_OUT`, and a bare repository's `HEAD` does
+  not; a torn or unreadable log gives `COORDINATION_LEDGER_UNREADABLE`;
+- a retry after a crash between `update-ref` and the answer is `replayed: true` naming the first
+  commit; a partial replay is `EVENT_ID_CONFLICT`;
 - every refusal body validates against `WriteRefusal`.
 
-Today, `OperationsTest` checks that `coordination_ref_commit` is well-formed, that the retired
-`coordination_transaction_append` is malformed, and that the service's surfaces equal the
+Today, `OperationsTest` checks that `coordination_ref_commit` with a branch is well-formed, that
+it is malformed without one, that the retired `coordination_transaction_append` and a batch whose
+units name different locations are malformed, and that the service's surfaces equal the
 contract's; `enum_pins.json` pins the new `WriteSurface`.
 
 ## Pros and Cons of the Options
@@ -261,7 +338,7 @@ contract's; `enum_pins.json` pins the new `WriteSurface`.
 ### Commit from git objects with compare-and-swap (chosen)
 
 - Good: one source of truth; atomic; lost updates detected; no checkout lifecycle.
-- Bad: no hooks; a subprocess per git step.
+- Bad: no hooks; a subprocess per git step; a whole-log blob per append.
 
 ### A coordination worktree owned by the service
 

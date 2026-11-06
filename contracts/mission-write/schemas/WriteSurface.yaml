@@ -7,8 +7,9 @@ description: >-
   branch named by destinationRef, built from git objects and published with a compare-and-swap
   update of that ref; no coordination worktree, index or working tree is read or written
   (ADR-0007). During the strangler the CLI resolves the surface and the service verifies it. The
-  values are this contract's names for the CLI's EventLogWriteTarget values (checkout_append is
-  the CLI's primary_checkout_append).
+  value checkout_append is this contract's name for the CLI's EventLogWriteTarget
+  primary_checkout_append; coordination_ref_commit has no CLI target yet (the CLI's
+  coordination_transaction_append, which it replaces, appends in a coordination worktree).
 type: string
 enum:
   - checkout_append

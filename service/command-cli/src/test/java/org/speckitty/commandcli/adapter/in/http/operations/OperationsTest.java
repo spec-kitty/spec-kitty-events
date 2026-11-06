@@ -136,6 +136,8 @@ class OperationsTest {
     cases.add(Arguments.of("drive letter", transitions, unit.replace("kitty-specs/m", "C:/x"), null));
     cases.add(Arguments.of("unknown surface", transitions, unit.replace("checkout_append", "primary_checkout_append"), null));
     cases.add(Arguments.of("retired coordination worktree surface", transitions, unit.replace("checkout_append", "coordination_transaction_append"), null));
+    cases.add(Arguments.of("ref commit without destinationRef", transitions, unit.replace("checkout_append", "coordination_ref_commit"), null));
+    cases.add(Arguments.of("ref commit with empty destinationRef", transitions, unit.replace("checkout_append", "coordination_ref_commit").replace("\"destinationRef\":null", "\"destinationRef\":\"\""), null));
     cases.add(Arguments.of("numeric destinationRef", transitions, unit.replace("\"destinationRef\":null", "\"destinationRef\":7"), null));
     cases.add(Arguments.of("empty actor", transitions, unit.replace("\"actor\":\"claude\"", "\"actor\":\"\""), null));
     cases.add(Arguments.of("missing context member", transitions, unit.replace(",\"destinationRef\":null", ""), null));
@@ -143,6 +145,7 @@ class OperationsTest {
     String batch = base + "/work-package-transitions/batch";
     cases.add(Arguments.of("empty batch", batch, "{\"units\":[]}", null));
     cases.add(Arguments.of("65 units", batch, "{\"units\":[" + String.join(",", java.util.Collections.nCopies(65, unit)) + "]}", null));
+    cases.add(Arguments.of("mixed-location batch", batch, "{\"units\":[" + unit + "," + unit.replace("kitty-specs/m", "kitty-specs/n") + "]}", "#/units/1"));
     cases.add(Arguments.of("bad second unit", batch, "{\"units\":[" + unit + "," + unit.replace("\"wpId\":\"WP01\"", "\"wpId\":\"x\"") + "]}", "#/units/1"));
     String annotations = base + "/inner-state-annotations";
     cases.add(Arguments.of("annotation without row", annotations, "{\"wpId\":\"WP01\",\"context\":" + context + "}", null));

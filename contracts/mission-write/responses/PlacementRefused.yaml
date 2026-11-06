@@ -1,5 +1,5 @@
 description: >-
-  The write location or its destination refused the write (422): a protected branch, a destination ref problem, an unresolved coordination surface or an unverified write location. Nothing was written.
+  The write location or its destination refused the write (422): a protected branch, a destination ref problem, a deleted coordination branch, an owned checkout that does not hold the Mission or an unverified write location. Nothing was written.
 content:
   application/problem+json:
     schema:

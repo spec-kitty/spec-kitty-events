@@ -96,8 +96,8 @@ the service's check (D-3).
 
 - **27 codes.** 15 are the CLI's codes verbatim (for example `TRANSITION_REJECTED`,
   `WP_ALREADY_CLAIMED`, `DEPENDENCIES_NOT_SATISFIED`, `STATUS_LOCK_HELD`,
-  `PROTECTED_BRANCH_REFUSED`), so moving a write into the service changes no code a user
-  sees. 12 are protocol-only: `REQUEST_MALFORMED`, `PROTOCOL_VERSION_UNSUPPORTED`,
+  `PROTECTED_BRANCH_REFUSED`), so moving a `checkout_append` write into the service changes
+  no code a user sees; the coordination write changes codes on purpose. 12 are protocol-only: `REQUEST_MALFORMED`, `PROTOCOL_VERSION_UNSUPPORTED`,
   `WRITE_TOKEN_INVALID`, `REQUEST_REFUSED`, `WRITE_LOCATION_UNVERIFIED`, `EVENT_ID_CONFLICT`,
   `REQUEST_TOO_LARGE`, `SERVICE_BUSY`, `SERVICE_DRAINING`, and the three of the coordination
   write by ref, `COORDINATION_REF_MOVED`, `COORDINATION_REF_CHECKED_OUT` and

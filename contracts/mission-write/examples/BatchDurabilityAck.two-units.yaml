@@ -3,12 +3,12 @@ units:
       - 01M5Z7A1B2C3D4E5F6G7H8J9KM
     appendedLines: 1
     fsynced: true
-    statusCommit: null
+    statusCommit: 3f73f5904b1d6a2c8e9f0a1b2c3d4e5f6a7b8c9d
     replayed: false
   - eventIds:
       - 01M5Z7A1B2C3D4E5F6G7H8J9KN
     appendedLines: 1
     fsynced: true
-    statusCommit: null
+    statusCommit: 3f73f5904b1d6a2c8e9f0a1b2c3d4e5f6a7b8c9d
     replayed: false
 fsyncs: 1

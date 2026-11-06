@@ -1,5 +1,5 @@
 description: >-
-  The lane state machine, a guard, the claim, the status lock or the event log refused the write (409). Nothing was written.
+  The lane state machine, a guard, the claim, the status lock, the event log, or the coordination branch (moved during the compare-and-swap, or checked out in a worktree) refused the write (409). Nothing was written.
 content:
   application/problem+json:
     schema:

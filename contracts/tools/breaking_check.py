@@ -30,8 +30,10 @@ Failure codes (exit 1), printed as ``CONTRACT-CHECK breaking_check: <CODE>: <mod
   module CHANGELOG has no entry for it.
 * ``RESOLVE_FAILED``: the resolver refused the candidate module.
 
-*First release.* With no release tag the one allowed state is ``info.version == 1.0.0`` together with a
-``## 1.0.0`` heading in the module CHANGELOG, or ``1.0.0-SNAPSHOT`` together with a ``## 1.0.0-SNAPSHOT`` heading. It prints
+*First release.* With no release tag the allowed state is a version on the initial line ``1.0.Z`` (``1.0.0``, or a later
+patch), or its snapshot ``1.0.Z-SNAPSHOT``, together with a heading of the same version in the module CHANGELOG. A snapshot
+that shipped inside a ``service-v*`` pre-release is treated like a release candidate: a change before the first final release
+opens the next patch snapshot instead of rewriting it (operator ruling of 2026-11-06, spec-kitty/spec-kitty#7284). It prints
 ``NO_BASELINE_INITIAL_VERSION`` loudly (and writes the job summary), exits 0, and is counted as ``no_baseline_initial`` in the ``counts:`` line; it is never silent.
 
 *Snapshots.* An unreleased version carries ``-SNAPSHOT`` (``1.0.0-SNAPSHOT``): the work in progress of ``1.0.0``, below it and
@@ -81,6 +83,14 @@ from release_check import SNAPSHOT_SUFFIX, is_snapshot  # one definition of a sn
 
 CHECK_NAME = "breaking_check"
 INITIAL_VERSION = "1.0.0"
+#: The line a module stays on until its first final release: 1.0.Z and 1.0.Z-SNAPSHOT.
+INITIAL_LINE = "1.0"
+_INITIAL_LINE_RE = re.compile(r"^1\.0\.(0|[1-9][0-9]*)(-SNAPSHOT)?$")
+
+
+def is_initial_line(version: str) -> bool:
+    """True for ``1.0.Z`` or ``1.0.Z-SNAPSHOT``: the versions allowed while no release tag exists."""
+    return _INITIAL_LINE_RE.fullmatch(version) is not None
 DEFAULT_REF = "HEAD"
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$")
 BREAKING_LEVEL = 2  # oasdiff levels: 1 info, 2 warning, 3 error
@@ -471,17 +481,17 @@ class Checker:
 
     def first_release(self, module: str, module_dir: Path, version: str) -> None:
         report = self.report
-        if version in (INITIAL_VERSION, INITIAL_VERSION + SNAPSHOT_SUFFIX) and has_changelog_entry(module_dir, version):
+        if is_initial_line(version) and has_changelog_entry(module_dir, version):
             report.no_baseline_initial += 1
             line = (
                 f"CONTRACT-CHECK {CHECK_NAME}: NO_BASELINE_INITIAL_VERSION: {module}: no release tag exists and "
-                f"info.version is the initial version {version} with a CHANGELOG entry; "
+                f"info.version {version} is on the initial line with a CHANGELOG entry; "
                 "nothing to compare against, this is the first release"
             )
             report.notes.append(line)
             report.summary.append(
                 f"### {module}: NO_BASELINE_INITIAL_VERSION\n\n"
-                f"No `contract-{module}-v*` tag exists. Version `{version}` is the initial version (or its snapshot) and "
+                f"No `contract-{module}-v*` tag exists. Version `{version}` is on the initial line (1.0.Z or its snapshot) and "
                 "the CHANGELOG has its entry: first release, nothing compared.\n"
             )
         else:
@@ -489,8 +499,8 @@ class Checker:
                 finding(
                     "NO_BASELINE_NOT_INITIAL",
                     module,
-                    f"no release tag exists, but info.version is {version!r} (initial version {INITIAL_VERSION} "
-                    f"or {INITIAL_VERSION}{SNAPSHOT_SUFFIX}) or the CHANGELOG has no entry for it",
+                    f"no release tag exists, but info.version is {version!r} (not on the initial line {INITIAL_LINE}.Z "
+                    f"or {INITIAL_LINE}.Z{SNAPSHOT_SUFFIX}) or the CHANGELOG has no entry for it",
                 )
             )
 
