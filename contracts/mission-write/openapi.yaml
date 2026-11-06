@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Mission Write API
-  version: 1.0.0-SNAPSHOT
+  version: 1.0.1-SNAPSHOT
   summary: The CLI to write-service protocol of one repository.
   description: >-
     The contract between the CLI's EventBridge client and the resident write service of one

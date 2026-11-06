@@ -98,7 +98,19 @@ allOf:
         - code
       properties:
         code:
-          const: COORD_STATUS_SURFACE_DIVERGED
+          const: COORDINATION_REF_MOVED
+    then:
+      required:
+        - status
+      properties:
+        status:
+          const: 409
+  - if:
+      required:
+        - code
+      properties:
+        code:
+          const: COORDINATION_REF_CHECKED_OUT
     then:
       required:
         - status
@@ -158,43 +170,7 @@ allOf:
         - code
       properties:
         code:
-          const: BOOKKEEPING_WORKTREE_MISSING
-    then:
-      required:
-        - status
-      properties:
-        status:
-          const: 422
-  - if:
-      required:
-        - code
-      properties:
-        code:
-          const: FALLBACK_COORD_WORKTREE_UNRESOLVED
-    then:
-      required:
-        - status
-      properties:
-        status:
-          const: 422
-  - if:
-      required:
-        - code
-      properties:
-        code:
           const: COORDINATION_BRANCH_DELETED
-    then:
-      required:
-        - status
-      properties:
-        status:
-          const: 422
-  - if:
-      required:
-        - code
-      properties:
-        code:
-          const: COORDINATION_WORKTREE_UNMATERIALIZED
     then:
       required:
         - status
@@ -218,7 +194,7 @@ allOf:
         - code
       properties:
         code:
-          const: COORD_STATUS_SURFACE_UNREADABLE
+          const: COORDINATION_LEDGER_UNREADABLE
     then:
       required:
         - status
@@ -534,6 +510,7 @@ allOf:
 examples:
   - $ref: ../examples/WriteRefusal.illegal-transition.yaml
   - $ref: ../examples/WriteRefusal.protected-branch.yaml
+  - $ref: ../examples/WriteRefusal.coordination-ref-moved.yaml
   - $ref: ../examples/WriteRefusal.token-invalid.yaml
   - $ref: ../examples/WriteRefusal.service-busy.yaml
   - $ref: ../examples/WriteRefusal.batch-unit.yaml

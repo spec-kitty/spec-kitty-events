@@ -2,7 +2,7 @@
 title: Write-service protocol
 description: 'How the CLI reaches its write service: loopback HTTP, a bearer token, the handshake, durability-acked writes, refusal codes and the launcher contract.'
 doc_status: active
-updated: 2026-10-31T00:00:00Z
+updated: 2026-11-06T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -24,7 +24,8 @@ kind: Explanation
 > and nothing is written, until the canonical writer (#160) and the lane authority (#161) land.
 > This page describes its contract,
 > [`contracts/mission-write`](https://github.com/spec-kitty/spec-kitty-events/tree/main/contracts/mission-write)
-> (`1.0.0-SNAPSHOT`, #6675), and the record that decides it, core
+> (`1.0.1-SNAPSHOT`, #6675; the coordination write by ref,
+> [ADR-0007](../../adr/0007-write-service-commits-coordination-status-by-ref.md)), and the record that decides it, core
 > [ADR 2026-10-27-1](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/docs/adr/4.x/2026-10-27-1-the-write-service-protocol-is-loopback-http-with-a-bearer-token.md).
 > The client shapes are in core's `src/specify_cli/status/write_service_protocol.py`, which
 > has no transport yet (D-8).
@@ -93,12 +94,15 @@ Every refusal is a `Problem` with a `code` from
 (D-6). The service is authoritative: a CLI pre-check may shape a message but never replaces
 the service's check (D-3).
 
-- **29 codes.** 20 are the CLI's codes verbatim (for example `TRANSITION_REJECTED`,
+- **27 codes.** 15 are the CLI's codes verbatim (for example `TRANSITION_REJECTED`,
   `WP_ALREADY_CLAIMED`, `DEPENDENCIES_NOT_SATISFIED`, `STATUS_LOCK_HELD`,
   `PROTECTED_BRANCH_REFUSED`), so moving a write into the service changes no code a user
-  sees. 9 are protocol-only: `REQUEST_MALFORMED`, `PROTOCOL_VERSION_UNSUPPORTED`,
+  sees. 12 are protocol-only: `REQUEST_MALFORMED`, `PROTOCOL_VERSION_UNSUPPORTED`,
   `WRITE_TOKEN_INVALID`, `REQUEST_REFUSED`, `WRITE_LOCATION_UNVERIFIED`, `EVENT_ID_CONFLICT`,
-  `REQUEST_TOO_LARGE`, `SERVICE_BUSY` and `SERVICE_DRAINING`.
+  `REQUEST_TOO_LARGE`, `SERVICE_BUSY`, `SERVICE_DRAINING`, and the three of the coordination
+  write by ref, `COORDINATION_REF_MOVED`, `COORDINATION_REF_CHECKED_OUT` and
+  `COORDINATION_LEDGER_UNREADABLE` ([ADR-0007](../../adr/0007-write-service-commits-coordination-status-by-ref.md)).
+  The five codes that presupposed a coordination worktree were removed in `1.0.1-SNAPSHOT`.
 - **Order of checks:** the Host and Origin guard (403), the bearer token (401), the protocol
   header (400), the size cap (413), the body's shape (400), then the domain (404, 409, 422).
 - **Parity** with the CLI is held by `tests/contract/fixtures/mission_write_refusal_parity.yaml`,

@@ -13,6 +13,18 @@ required:
   - missionDirectory
   - writeSurface
   - destinationRef
+if:
+  required:
+    - writeSurface
+  properties:
+    writeSurface:
+      const: coordination_ref_commit
+then:
+  properties:
+    destinationRef:
+      type: string
+      minLength: 1
+      description: The coordination branch the service commits the unit onto; never null for coordination_ref_commit.
 properties:
   actor:
     type: string
@@ -26,9 +38,10 @@ properties:
     minLength: 1
     pattern: '^(\.|(?!/)(?![A-Za-z]:)(?!.*\\)(?!(.*/)?\.\.(/|$)).+)$'
     description: >-
-      The checkout that holds the Mission directory, relative to the repository root checkout: a
-      single dot for the repository root checkout, otherwise the worktree's relative path (the
-      coordination worktree for coordination_transaction_append).
+      The caller's checkout, relative to the repository root checkout: a single dot for the
+      repository root checkout, otherwise the worktree's relative path. For checkout_append it is
+      the checkout that holds the Mission directory, always the repository root checkout. For
+      coordination_ref_commit it only names who asks: the write touches no checkout (ADR-0007).
     x-derived:
       rule: The checkout the CLI resolved the write in, relative to the repository root checkout; a single dot for the root.
       inputs:
@@ -38,7 +51,10 @@ properties:
     type: string
     minLength: 1
     pattern: '^(\.|(?!/)(?![A-Za-z]:)(?!.*\\)(?!(.*/)?\.\.(/|$)).+)$'
-    description: The Mission directory (the write location the CLI resolved), relative to the checkout.
+    description: >-
+      The Mission directory (the write location the CLI resolved). For checkout_append it is
+      relative to the checkout; for coordination_ref_commit it is the path of the Mission
+      directory in the tree of destinationRef, relative to the root of that tree.
     x-derived:
       rule: The port's write location, made relative to the checkout.
       inputs:
@@ -51,7 +67,10 @@ properties:
     type:
       - string
       - 'null'
-    description: The branch the unit's status commit lands on, when the CLI resolved one; null otherwise.
+    description: >-
+      The branch the unit's status commit lands on, when the CLI resolved one; null otherwise.
+      Always set for coordination_ref_commit: it is the coordination branch whose ref the
+      service moves.
     x-source:
       path: src/specify_cli/status/write_service_protocol.py
       symbol: RequestContext.destination_ref

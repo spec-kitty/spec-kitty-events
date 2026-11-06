@@ -1,15 +1,18 @@
 title: WriteSurface
 description: >-
-  Which CLI write contract the request was resolved under. checkout_append is a direct append in
-  the checkout that holds the Mission directory (the repository root checkout or a lane worktree);
-  coordination_transaction_append is an append inside the coordination transaction, in the
-  coordination worktree. During the strangler the CLI resolves it and the service verifies it.
-  The values are this contract's names for the CLI's EventLogWriteTarget values
-  (checkout_append is the CLI's primary_checkout_append).
+  Where the unit is written. checkout_append is a direct append in the repository root checkout,
+  which holds the Mission directory; a lane worktree is never a status surface (core ADR
+  2026-10-22-1 D-6 amendment, operator rulings of 2026-11-06 on spec-kitty/spec-kitty#7276).
+  coordination_ref_commit is a commit of the appended event log straight onto the coordination
+  branch named by destinationRef, built from git objects and published with a compare-and-swap
+  update of that ref; no coordination worktree, index or working tree is read or written
+  (ADR-0007). During the strangler the CLI resolves the surface and the service verifies it. The
+  values are this contract's names for the CLI's EventLogWriteTarget values (checkout_append is
+  the CLI's primary_checkout_append).
 type: string
 enum:
   - checkout_append
-  - coordination_transaction_append
+  - coordination_ref_commit
 x-source:
   path: src/specify_cli/status/write_service_protocol.py
   symbol: WriteSurface

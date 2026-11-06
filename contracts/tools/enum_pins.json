@@ -22,7 +22,7 @@
     "OpsRefusalCode": ["ops_unreadable"]
   },
   "mission-write": {
-    "WriteSurface": ["checkout_append", "coordination_transaction_append"],
+    "WriteSurface": ["checkout_append", "coordination_ref_commit"],
     "HealthStatus": ["ready", "draining"]
   }
 }

@@ -135,6 +135,7 @@ class OperationsTest {
     cases.add(Arguments.of("backslash directory", transitions, unit.replace("kitty-specs/m", "kitty-specs\\\\m"), null));
     cases.add(Arguments.of("drive letter", transitions, unit.replace("kitty-specs/m", "C:/x"), null));
     cases.add(Arguments.of("unknown surface", transitions, unit.replace("checkout_append", "primary_checkout_append"), null));
+    cases.add(Arguments.of("retired coordination worktree surface", transitions, unit.replace("checkout_append", "coordination_transaction_append"), null));
     cases.add(Arguments.of("numeric destinationRef", transitions, unit.replace("\"destinationRef\":null", "\"destinationRef\":7"), null));
     cases.add(Arguments.of("empty actor", transitions, unit.replace("\"actor\":\"claude\"", "\"actor\":\"\""), null));
     cases.add(Arguments.of("missing context member", transitions, unit.replace(",\"destinationRef\":null", ""), null));
@@ -178,6 +179,23 @@ class OperationsTest {
     RawClient.Reply reply = post("/api/v1/missions/" + MISSION + "/work-package-transitions", unit);
 
     assertThat(reply.status()).as("well-formed, so it reaches the fail-closed gate").isEqualTo(500);
+  }
+
+  @Test
+  void aCoordinationRefCommitIsWellFormedAndReachesTheGate() {
+    String context = "{\"actor\":\"claude\",\"checkout\":\".\",\"missionDirectory\":\"kitty-specs/m\",\"writeSurface\":\"coordination_ref_commit\",\"destinationRef\":\"kitty/mission-m\"}";
+    String unit = "{\"wpId\":\"WP01\",\"rows\":[{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\"}],\"context\":" + context + "}";
+    List<String> before = server.tree();
+
+    RawClient.Reply reply = post("/api/v1/missions/" + MISSION + "/work-package-transitions", unit);
+
+    assertThat(reply.status()).as("well-formed, so it reaches the fail-closed gate").isEqualTo(500);
+    assertThat(server.tree()).as("nothing written").isEqualTo(before);
+  }
+
+  @Test
+  void theWriteSurfacesAreTheContractValues() {
+    assertThat(ContractSchemas.constants("WriteSurface")).containsExactlyInAnyOrderElementsOf(WriteBodies.WRITE_SURFACES);
   }
 
   @Test
