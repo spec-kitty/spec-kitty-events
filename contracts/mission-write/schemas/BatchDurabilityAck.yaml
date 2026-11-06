@@ -23,7 +23,7 @@ properties:
     type: integer
     minimum: 0
     maximum: 1
-    description: The number of fsync calls behind the batch; 1, or 0 when every unit was replayed.
+    description: The number of durable writes behind the batch (one synced append, or one synced commit for coordination_ref_commit); 1, or 0 when every unit was replayed.
     x-derived:
       rule: 0 when every unit's acknowledgement has replayed true, otherwise 1.
       inputs:

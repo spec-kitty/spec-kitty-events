@@ -526,6 +526,12 @@ A module's `info.version` is semantic.
   client changes its type.
 - An **additive** change moves the minor version.
 - A **documentation-only** change moves the patch version.
+- **Before the first final release** (no `1.0.0` released yet), a module stays on the initial
+  line `1.0.Z`. A snapshot that shipped inside a `service-v*` pre-release is treated like a
+  release candidate: it is not rewritten, and the next change, breaking or not, opens the next
+  patch snapshot (`1.0.0-SNAPSHOT` → `1.0.1-SNAPSHOT`). The module CHANGELOG states what such a
+  version breaks (operator ruling of 2026-11-06, spec-kitty/spec-kitty#7284; `mission-write`
+  `1.0.1-SNAPSHOT`). From the first final release on, the rules above apply unchanged.
 
 **Response schemas are closed.** Every response object schema declares
 `additionalProperties: false` (or `unevaluatedProperties: false` where it is
@@ -575,9 +581,8 @@ section.
 
 `breaking_check.py` resolves baselines only from `contract-<module>-v*` tags, a line that is
 retired (below), so today there is no baseline, and no workflow runs the tool (#151).
-The one allowed state is
-`info.version: 1.0.0-SNAPSHOT` (or `1.0.0` in the release commit) together with a
-heading of the same version in the module's `CHANGELOG.md`; the job prints
+The allowed state is a version on the initial line, `1.0.Z-SNAPSHOT` (or `1.0.Z` in the
+release commit), together with a heading of the same version in the module's `CHANGELOG.md`; the job prints
 `NO_BASELINE_INITIAL_VERSION` and counts it, so the state is never silent.
 
 **What a release is.** A contract release in this repository has no tag of its own: the

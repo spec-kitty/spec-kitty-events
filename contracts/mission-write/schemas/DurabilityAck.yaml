@@ -1,8 +1,13 @@
 title: DurabilityAck
 description: >-
-  The answer to a persisted unit: its rows were appended in one O_APPEND write of full JSON lines
-  and synced (fsync) before this answer was sent. Where the topology commits status, the status
-  commit joins the unit at migration step 4 of ADR 2026-10-22-1; until then statusCommit is null.
+  The answer to a persisted unit. For checkout_append its rows were appended in one O_APPEND
+  write of full JSON lines and synced (fsync) before this answer was sent. For
+  coordination_ref_commit the rows were appended to the event log blob of a new commit on the
+  coordination branch, and the objects and the moved ref were durable before this answer was
+  sent (ADR-0007). For checkout_append, where the topology commits status, the status commit joins
+  the unit at migration step 4 of ADR 2026-10-22-1, and until then statusCommit is null. A
+  coordination_ref_commit is itself the commit, so its statusCommit is always that commit; the
+  surface is served from migration step 4.
 type: object
 additionalProperties: false
 required:
@@ -36,8 +41,9 @@ properties:
     type: boolean
     const: true
     description: >-
-      Always true: the unit's rows are durable. An answer is sent only after the append is synced;
-      for a replay the rows were synced when they were first written.
+      Always true: the unit's rows are durable. An answer is sent only after the append is synced
+      (checkout_append) or the commit's objects and the moved ref are synced
+      (coordination_ref_commit); for a replay the rows were synced when they were first written.
     x-source:
       path: src/specify_cli/status/write_service_protocol.py
       symbol: DurabilityAck.fsynced
@@ -46,14 +52,18 @@ properties:
       - string
       - 'null'
     pattern: '^[0-9a-f]{40,64}$'
-    description: The commit that holds the unit, where the topology commits status and the service owns the commit; null otherwise.
+    description: >-
+      The commit that holds the unit, where the topology commits status and the service owns the
+      commit; null otherwise. For coordination_ref_commit it is the commit the compare-and-swap
+      moved destinationRef to (ADR-0007).
     x-source:
       path: src/specify_cli/coordination/transaction.py
       symbol: BookkeepingTransaction
     x-provisional:
       open_decision: >-
-        When the status commit joins the service's unit of work, and whether the acknowledgement
-        names it, is an open decision of ADR 2026-10-27-1 (migration step 4).
+        When the status commit joins the service's unit of work is an open decision of ADR
+        2026-10-27-1 (migration step 4). ADR-0007 decides that, once it does, the acknowledgement
+        of a coordination_ref_commit names the commit; the marker stays until step 4 lands.
   replayed:
     type: boolean
     description: True when every row of the unit was already persisted with identical content, so nothing was written.
@@ -67,3 +77,4 @@ properties:
 examples:
   - $ref: ../examples/DurabilityAck.appended.yaml
   - $ref: ../examples/DurabilityAck.replayed.yaml
+  - $ref: ../examples/DurabilityAck.ref-commit.yaml

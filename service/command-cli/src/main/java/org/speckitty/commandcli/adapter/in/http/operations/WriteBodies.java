@@ -1,6 +1,7 @@
 package org.speckitty.commandcli.adapter.in.http.operations;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -26,13 +27,16 @@ public final class WriteBodies {
   static final Pattern ULID = Pattern.compile("^[0-9A-HJKMNP-TV-Z]{26}$");
   static final Pattern WP_ID = Pattern.compile("^WP[0-9]{2,}$");
   static final Pattern RELATIVE_PATH = Pattern.compile("^(\\.|(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!(.*/)?\\.\\.(/|$)).+)$");
-  static final Set<String> WRITE_SURFACES = Set.of("checkout_append", "coordination_transaction_append");
+  static final Set<String> WRITE_SURFACES = Set.of("checkout_append", "coordination_ref_commit");
   static final int MAX_BATCH_UNITS = 64;
 
   private static final Set<String> UNIT_FIELDS = Set.of("wpId", "rows", "context");
   private static final Set<String> BATCH_FIELDS = Set.of("units");
   private static final Set<String> ANNOTATION_FIELDS = Set.of("wpId", "row", "context");
   private static final Set<String> CONTEXT_FIELDS = Set.of("actor", "checkout", "missionDirectory", "writeSurface", "destinationRef");
+  /** One batch is one write (one commit for coordination_ref_commit), so its units name one location (ADR-0007). */
+  private static final List<String> SHARED_BATCH_FIELDS = List.of("missionDirectory", "writeSurface", "destinationRef");
+  static final String COORDINATION_REF_COMMIT = "coordination_ref_commit";
 
   private final JsonMapper mapper;
 
@@ -66,6 +70,15 @@ public final class WriteBodies {
       Optional<Malformed> unit = unit(missionId, units.get(i));
       if (unit.isPresent()) {
         return Optional.of(new Malformed(unit.get().detail(), "#/units/" + i));
+      }
+    }
+    JsonNode first = units.get(0).get("context");
+    for (int i = 1; i < units.size(); i++) {
+      JsonNode context = units.get(i).get("context");
+      for (String field : SHARED_BATCH_FIELDS) {
+        if (!context.get(field).equals(first.get(field))) {
+          return Optional.of(new Malformed("Every unit of a batch must share missionDirectory, writeSurface and destinationRef.", "#/units/" + i));
+        }
       }
     }
     return Optional.empty();
@@ -149,6 +162,9 @@ public final class WriteBodies {
     JsonNode destination = context.get("destinationRef");
     if (!destination.isNull() && !destination.isString()) {
       return bad("The context's destinationRef must be a string or null.");
+    }
+    if (COORDINATION_REF_COMMIT.equals(surface.asString()) && (!destination.isString() || destination.asString().isEmpty())) {
+      return bad("The context's destinationRef must be a non-empty string for coordination_ref_commit.");
     }
     return Optional.empty();
   }
