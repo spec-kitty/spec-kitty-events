@@ -4,8 +4,10 @@ post:
   description: >-
     The service validates the transition against the lane state machine, its guards and dependency
     gating (it is authoritative; a CLI pre-check is advisory only), verifies the write location of
-    the request context, then appends the unit's rows in one O_APPEND write of full JSON lines and
-    syncs them before it answers 201. A refusal writes nothing. Writes to one repository are
+    the request context, then persists the unit's rows and answers 201 once they are durable: for
+    checkout_append in one O_APPEND write of full JSON lines, synced; for coordination_ref_commit as
+    one commit onto the coordination branch, moved by compare-and-swap, with its objects and ref
+    synced (ADR-0007). A refusal writes nothing. Writes to one repository are
     serialized by the service.
   tags:
     - WorkPackages

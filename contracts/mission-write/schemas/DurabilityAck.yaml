@@ -4,8 +4,10 @@ description: >-
   write of full JSON lines and synced (fsync) before this answer was sent. For
   coordination_ref_commit the rows were appended to the event log blob of a new commit on the
   coordination branch, and the objects and the moved ref were durable before this answer was
-  sent (ADR-0007). Where the topology commits status, the status commit joins the unit at
-  migration step 4 of ADR 2026-10-22-1; until then statusCommit is null.
+  sent (ADR-0007). For checkout_append, where the topology commits status, the status commit joins
+  the unit at migration step 4 of ADR 2026-10-22-1, and until then statusCommit is null. A
+  coordination_ref_commit is itself the commit, so its statusCommit is always that commit; the
+  surface is served from migration step 4.
 type: object
 additionalProperties: false
 required:

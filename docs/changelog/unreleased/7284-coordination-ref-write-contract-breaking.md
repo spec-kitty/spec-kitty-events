@@ -1,5 +1,5 @@
 ---
-section: Changed
+section: Breaking
 ---
 - `contracts/mission-write` moves to `1.0.1-SNAPSHOT`: the coordination write commits onto the
   coordination branch ref, with no coordination worktree (spec-kitty/spec-kitty#7284,
@@ -13,3 +13,6 @@ section: Changed
   - `command-cli` accepts `coordination_ref_commit` as a well-formed surface and refuses the
     retired value as malformed; writes stay fail-closed until migration step 4.
   - Core follows when it moves its pin past `service-v0.1.0-rc.2`.
+  - `contracts/README.md` records the pre-final-release line `1.0.Z`, and
+    `contracts/tools/breaking_check.py` accepts `1.0.Z[-SNAPSHOT]` with its CHANGELOG heading
+    while no release exists (operator ruling of 2026-11-06).

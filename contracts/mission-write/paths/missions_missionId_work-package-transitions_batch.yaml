@@ -4,7 +4,7 @@ post:
   description: >-
     Each unit is validated as POST /missions/{missionId}/work-package-transitions validates one,
     in order and against the state the earlier units leave. Every unit lands, in one write and one
-    fsync, or none does: the first refusal refuses the batch, names the unit in instance
+    fsync (one commit for coordination_ref_commit), or none does: the first refusal refuses the batch, names the unit in instance
     (#/units/<index>), and nothing is written. More than 64 units is REQUEST_MALFORMED.
   tags:
     - WorkPackages

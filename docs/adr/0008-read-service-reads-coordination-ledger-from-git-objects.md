@@ -37,7 +37,8 @@ Related records:
 - [ADR-0007](./0007-write-service-commits-coordination-status-by-ref.md): the write side. Once the
   write service commits straight onto `refs/heads/<coord>`, there is no coordination worktree
   for the read service to read.
-- Core **C-3** (Mission `lane-worktree-model-hardening-01M6QY1M`): for coordination topologies
+- Core **C-3** [2026-11-06-6](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-11-06-6-committed-ledger-is-the-coordination-blob.md) (Mission `lane-worktree-model-hardening-01M6QY1M`; the link
+  resolves once the core pull request merges): for coordination topologies
   the committed ledger, and the publication seam of core ADR 2026-10-13-2 D-2, is the
   `status.events.jsonl` blob at `refs/heads/<coord>`; it amends core ADR 2026-10-01-2 D-3/D-6
   so the read API's pull reads git objects. C-3 also decides the `events tail` cursor. This
@@ -93,15 +94,33 @@ Chosen option 1. *(derived)* throughout.
   `meta.json` and `lanes.json`) are unchanged.
 - A ref that does not exist, or a tree without the path, is the same answer the oracle gives for
   a missing coordination ledger; the adapter does not fall back to a working tree.
-- One read pins one tip: every file of one answer (event log and any sibling the answer needs)
-  comes from the same commit, so a concurrent write by ADR-0007 is seen whole or not at all.
+- One read pins one tip: every file of one answer that lives on the coordination branch (the
+  event log and any sibling the answer needs) comes from the same commit, so a concurrent write
+  by ADR-0007 is seen whole or not at all. `meta.json` and `lanes.json` still come from the
+  primary directory's working tree, as today, and are not part of that snapshot.
+- **Which source, when.** Until migration step 4, `ReadDirResolver` is unchanged. From the
+  release that ships ADR-0007's `coordination_ref_commit` (together with core
+  [C-1]({C1})'s drain of the coordination worktrees, ADR-0007's precondition), every
+  coordination Mission is read from the ref, whether or not a husk directory is left on disk;
+  there is no period in which a worktree holds status the ref lacks.
+- Parity with the oracle on a missing ref or path depends on core C-1/C-3 changing the oracle
+  too: today's oracle falls back to the primary directory (`probe_coord_state`, UNMATERIALIZED).
+  The Java side follows whatever answer that change gives; it does not keep the fallback alone.
 
 ### D-2: in process, read-only, no process
 
 - The adapter reads the object database in process: loose objects, pack files and their
-  indexes, packed refs and loose refs, through a read-only library (JGit's object and ref
-  readers are the default candidate). It never takes a ref lock, writes no object and starts no
-  process, so architecture rule 10 stands.
+  indexes, packed refs and loose refs. It never takes a ref lock, writes nothing and starts no
+  process.
+- JGit is acceptable only pinned down, because its defaults break those guarantees: its
+  `FS`/`SystemReader` starts processes to find the system config and the `git` executable, and
+  `FS.FileStoreAttributes` writes probe files into the repository and saves them to
+  `$XDG_CONFIG_HOME/jgit/config`. The adapter installs a `SystemReader` that reads no system or
+  user config and starts nothing, and presets the file-store attributes so nothing is probed.
+  If that cannot be guaranteed, the adapter is a minimal reader of loose objects, pack index v2
+  and packs, and loose and packed refs, written here. Architecture rule 10 scans only this
+  project's classes, so it cannot detect a library that breaks the guarantee; the runtime check
+  in Confirmation does.
 - A ref backend the reader does not support (for example `reftable`, if the library lacks it)
   is a named source fault, never a silent fallback to a directory.
 - The library must build into the native image of the read service; that is checked by the
@@ -139,8 +158,10 @@ Nothing here builds the adapter: it follows ADR-0007's implementation at migrati
 
 - The read service grows a dependency that parses git's on-disk formats, and its native-image
   build must accept it.
-- "Reads no git state beyond the one `HEAD` file" (the read-write split page) no longer holds;
-  the guarantee becomes "reads git objects and refs, never writes or locks them".
+- "Reads no git state beyond the one `HEAD` file"
+  ([read-write split](../architecture/services/read-write-split.md)) no longer holds once the
+  adapter ships; the guarantee becomes "reads git objects and refs, never writes or locks them",
+  and that page changes when this record is Accepted.
 
 ### Neutral
 
@@ -149,9 +170,11 @@ Nothing here builds the adapter: it follows ADR-0007's implementation at migrati
 ## Confirmation
 
 When the adapter lands: the oracle parity and corpus comparison pass on the no-worktree fixture;
-architecture rule 10 still passes; a test shows a read during a concurrent ref move returns the
-answer of exactly one of the two tips; a missing ref and an unsupported ref backend each give
-their named answer.
+architecture rule 10 still passes; the native image, run against a read-only copy of a
+repository with no `git` on `PATH` and an empty `HOME`/`XDG_CONFIG_HOME`, answers a coordination
+Mission, starts no process and writes no file anywhere; a read during a concurrent ref move
+returns the answer of exactly one of the two tips; a missing ref and an unsupported ref backend
+each give their named answer.
 
 ## Pros and Cons of the Options
 

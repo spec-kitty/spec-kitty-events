@@ -11,9 +11,11 @@ Not yet released. `1.0.0-SNAPSHOT` shipped inside the `service-v0.1.0-rc.1` and 
 pre-releases, so by operator ruling of 2026-11-06 it is treated like a release candidate: this
 change opens `1.0.1-SNAPSHOT` instead of rewriting it, and a new `service-v*` release candidate
 can carry it. The change removes enum values, so read against a released `1.0.0` it would be a
-major; no `1.0.0` was ever cut, and `breaking_check.py` still has no baseline
-(`NO_BASELINE_INITIAL_VERSION`, #151). A consumer pinned to `service-v0.1.0-rc.1` or `rc.2`
-keeps the old bundle until it moves its pin.
+major; no `1.0.0` was ever cut. The versioning rule in [`contracts/README.md`](../README.md)
+records the pre-final-release line `1.0.Z`, and `breaking_check.py` accepts `1.0.Z[-SNAPSHOT]`
+with its CHANGELOG heading while no release exists (`NO_BASELINE_INITIAL_VERSION`; still not run
+by a workflow, #151). A consumer pinned to `service-v0.1.0-rc.1` or `rc.2` keeps the old bundle
+until it moves its pin.
 
 ### Added
 
@@ -25,7 +27,11 @@ keeps the old bundle until it moves its pin.
 - Three protocol-only refusal codes: `COORDINATION_REF_MOVED` (409, the compare-and-swap lost;
   nothing written, no retry), `COORDINATION_REF_CHECKED_OUT` (409, the coordination branch is
   checked out in a worktree) and `COORDINATION_LEDGER_UNREADABLE` (500, the event log in the tree
-  of the branch tip cannot be read or parsed).
+  of the branch tip cannot be read or parsed). They are marked provisional in their descriptions
+  while ADR-0007 is Proposed.
+- `TransitionBatch`: every unit names the same `missionDirectory`, `writeSurface` and
+  `destinationRef`, since a batch is one write (one commit for `coordination_ref_commit`);
+  `command-cli` refuses a mixed batch as `REQUEST_MALFORMED`.
 - Examples `WriteRefusal.coordination-ref-moved.yaml` and `DurabilityAck.ref-commit.yaml`.
 
 ### Changed
@@ -35,8 +41,13 @@ keeps the old bundle until it moves its pin.
 - `RequestContext.checkout` names the caller's checkout; `missionDirectory` is, for
   `coordination_ref_commit`, the Mission directory's path in the tree of `destinationRef`.
 - `DurabilityAck`: durability of a `coordination_ref_commit` means the commit's objects and the
-  moved ref are synced; `statusCommit` names the commit the ref moved to. `statusCommit` stays
-  provisional until migration step 4 of core ADR 2026-10-22-1.
+  moved ref are synced; `statusCommit` is always the commit the ref moved to (the surface is
+  served from migration step 4), and stays null for `checkout_append` until that step.
+  `statusCommit` stays provisional until migration step 4 of core ADR 2026-10-22-1.
+  `BatchDurabilityAck.fsyncs` counts durable writes (a synced append or a synced commit), and its
+  two-unit example now names the batch's one commit.
+- The operation, batch, `PlacementRefused` and `WriteConflict` descriptions name the ref write;
+  `WriteRefusalCode` says the coordination write changes codes on purpose.
 - `COORDINATION_BRANCH_DELETED` names the `destinationRef` of a `coordination_ref_commit`.
 - The example batch `TransitionBatch.two-units.yaml` uses `coordination_ref_commit`.
 
@@ -53,9 +64,23 @@ keeps the old bundle until it moves its pin.
 
 ### Compatibility
 
-- Core's client (`src/specify_cli/status/write_service_protocol.py`) and its parity fixture
-  (`tests/contract/fixtures/mission_write_refusal_parity.yaml`) follow when core moves its pin
-  to a `service-v*` release that carries this version; the pinned `rc.1` bundle is unaffected.
+- The protocol major stays 1: a client of the `rc.1`/`rc.2` bundle sending
+  `coordination_transaction_append` gets `REQUEST_MALFORMED`, not
+  `PROTOCOL_VERSION_UNSUPPORTED`. Accepted because no client transport exists yet and every write
+  still fails closed (ADR-0007 D-7).
+- Core is unaffected until it moves its pin (`service-v0.1.0-rc.1` today). That one tag also
+  carries the read-service build, so a read-service pin bump takes this contract change too.
+  Core then changes:
+  - `src/specify_cli/status/write_service_protocol.py`: `WriteSurface` and the surface-by-target
+    map; `WriteRefusalCode`, the status families and `PROTOCOL_ONLY_CODES` (five codes out, three
+    in); `transition_unit_from` sets `destination_ref` and a tree-relative `mission_directory`
+    for `coordination_ref_commit` (core ADR 2026-10-27-1 D-3 changes; core C-1 records it);
+  - `tests/contract/fixtures/mission_write_refusal_parity.yaml`: five `cli` rows out, three
+    `protocol` rows in;
+  - `tests/contract/test_mission_write_contract.py`: the refusal-example code list gains
+    `COORDINATION_REF_MOVED`; the `DurabilityAck` example lookup with `replayed=False` now
+    matches two examples; the hard-coded surface list; the unit built for the coordination
+    surface; the lane-worktree checkout case.
 
 ## 1.0.0-SNAPSHOT
 

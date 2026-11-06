@@ -1,6 +1,6 @@
 title: TransitionBatch
 description: >-
-  Several transition units persisted in one write and one fsync, all or nothing. A refusal of any
+  Several transition units persisted in one write and one fsync (one commit for coordination_ref_commit), all or nothing. Every unit names the same missionDirectory, writeSurface and destinationRef, or the batch is malformed (REQUEST_MALFORMED). A refusal of any
   unit refuses the batch and writes nothing.
 type: object
 additionalProperties: false
