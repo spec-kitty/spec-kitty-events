@@ -2,7 +2,7 @@
 title: Service cutover runbook
 description: 'Maintainer procedure to import the events-domain services from core with history, integrate the build, hand the first release to core and move the issues.'
 doc_status: active
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-05T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -310,7 +310,7 @@ Each edit is its own commit after the merge commit.
 3. **The core pin.** Add `service/core-pin.json`:
 
    ```json
-   {"repository": "spec-kitty/spec-kitty", "sha": "<FROZEN_SHA>", "purpose": "CI-only peers: lock interop, corpus oracle, golden regeneration (ADR 0002 D4)"}
+   {"repository": "spec-kitty/spec-kitty", "sha": "<FROZEN_SHA>", "purpose": "CI-only peers: lock interop and the nightly corpus oracle (ADR 0002 D4)"}
    ```
 
    With `service/build.gradle.kts` and the pin present, `service.yml`'s `detect` job turns
@@ -431,6 +431,25 @@ After the import PR is merged:
 3. Send core's session the tag, the asset names and their sha256 sums. Core pins them.
 
 ## 7. Issue moves
+
+> **What happened at the 2026-10-31 cutover.** No issue was transferred. The core session had
+> no write access to this repository, so the operator approved re-filing instead: every
+> "transfer" row below was re-filed here as a new issue linking its core original, and the
+> eight originals 6159, 6194, 6196, 6197, 6198, 6199, 6268 and 6409 were closed `not_planned`.
+> 6117 was split, not moved: its events half is #163 and the core epic stays open. 6159 was not
+> in the plan below and moved too. The labels did not carry over (#207).
+>
+> | Core # | Events # |
+> |---|---|
+> | 6117 (epic, split) | #163 |
+> | 6194 | #160, #161 |
+> | 6196, 6197, 6198, 6199 | #165, #166, #167, #168 |
+> | 6409, 6268 | #169, #170 |
+> | 6159 | #164 |
+> | 6195, 6676, 5528, 957, 6609 (split) | #155, #156, #157, #158, #159 |
+>
+> The table and steps below are the plan as written before the cutover; keep them for a
+> future move where transfer is possible.
 
 **[operator]** Every move below needs the operator's approval first. Transferred issues get
 new numbers here; record the old-to-new map in the PR.
