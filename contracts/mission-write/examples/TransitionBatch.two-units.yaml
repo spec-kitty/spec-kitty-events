@@ -8,9 +8,9 @@ units:
         actor: claude
     context:
       actor: claude
-      checkout: .worktrees/write-service-demo-01M5Z6N5-coord
+      checkout: .
       missionDirectory: kitty-specs/write-service-demo-01M5Z6N5
-      writeSurface: coordination_transaction_append
+      writeSurface: coordination_ref_commit
       destinationRef: kitty/mission-write-service-demo-01M5Z6N5
   - wpId: WP02
     rows:
@@ -21,7 +21,7 @@ units:
         actor: claude
     context:
       actor: claude
-      checkout: .worktrees/write-service-demo-01M5Z6N5-coord
+      checkout: .
       missionDirectory: kitty-specs/write-service-demo-01M5Z6N5
-      writeSurface: coordination_transaction_append
+      writeSurface: coordination_ref_commit
       destinationRef: kitty/mission-write-service-demo-01M5Z6N5

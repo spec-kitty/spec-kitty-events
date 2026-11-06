@@ -26,7 +26,7 @@ public final class WriteBodies {
   static final Pattern ULID = Pattern.compile("^[0-9A-HJKMNP-TV-Z]{26}$");
   static final Pattern WP_ID = Pattern.compile("^WP[0-9]{2,}$");
   static final Pattern RELATIVE_PATH = Pattern.compile("^(\\.|(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!(.*/)?\\.\\.(/|$)).+)$");
-  static final Set<String> WRITE_SURFACES = Set.of("checkout_append", "coordination_transaction_append");
+  static final Set<String> WRITE_SURFACES = Set.of("checkout_append", "coordination_ref_commit");
   static final int MAX_BATCH_UNITS = 64;
 
   private static final Set<String> UNIT_FIELDS = Set.of("wpId", "rows", "context");

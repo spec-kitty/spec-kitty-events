@@ -27,11 +27,13 @@
       {"schema": "AnnotationRequest", "example": "AnnotationRequest.note.yaml", "reason": "request: a standalone annotation"},
       {"schema": "DurabilityAck", "example": "DurabilityAck.appended.yaml", "reason": "response: a durable unit"},
       {"schema": "DurabilityAck", "example": "DurabilityAck.replayed.yaml", "reason": "response: an idempotent replay (provisional)"},
+      {"schema": "DurabilityAck", "example": "DurabilityAck.ref-commit.yaml", "reason": "response: a unit committed onto the coordination branch (provisional statusCommit, ADR-0007)"},
       {"schema": "BatchDurabilityAck", "example": "BatchDurabilityAck.two-units.yaml", "reason": "response: a durable batch"},
       {"schema": "Handshake", "example": "Handshake.example.yaml", "reason": "response: identity and version negotiation"},
       {"schema": "Health", "example": "Health.ready.yaml", "reason": "response: health"},
       {"schema": "WriteRefusal", "example": "WriteRefusal.illegal-transition.yaml", "reason": "refusal: a guard refusal with a reason URN"},
       {"schema": "WriteRefusal", "example": "WriteRefusal.protected-branch.yaml", "reason": "refusal: a placement refusal"},
+      {"schema": "WriteRefusal", "example": "WriteRefusal.coordination-ref-moved.yaml", "reason": "refusal: the compare-and-swap on the coordination branch lost (ADR-0007)"},
       {"schema": "WriteRefusal", "example": "WriteRefusal.token-invalid.yaml", "reason": "refusal: protocol-only, no detail"},
       {"schema": "WriteRefusal", "example": "WriteRefusal.service-busy.yaml", "reason": "refusal: backpressure (provisional)"},
       {"schema": "WriteRefusal", "example": "WriteRefusal.batch-unit.yaml", "reason": "refusal: a batch names the failing unit"}

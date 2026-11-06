@@ -20,8 +20,10 @@ oneOf:
     description: '409. The per-Mission status lock is held by another writer (a CLI writer during the strangler) beyond the wait budget.'
   - const: BOOKKEEPING_DOUBLE_EVENT_ID
     description: '409. The request repeats an event_id inside one unit or batch.'
-  - const: COORD_STATUS_SURFACE_DIVERGED
-    description: '409. The coordination worktree''s event log lost events its HEAD has committed; nothing is written.'
+  - const: COORDINATION_REF_MOVED
+    description: '409. Protocol-only. The coordination branch moved between the read of its tip and the compare-and-swap update of the ref, so another writer committed to it; nothing is written and the service does not retry (ADR-0007).'
+  - const: COORDINATION_REF_CHECKED_OUT
+    description: '409. Protocol-only. The coordination branch is checked out in a worktree of the repository, so a commit to its ref would leave that checkout behind; nothing is written (ADR-0007).'
   - const: PROTECTED_BRANCH_REFUSED
     description: '422. The write would commit to a protected branch.'
   - const: DESTINATION_REF_NOT_FOUND
@@ -30,18 +32,12 @@ oneOf:
     description: '422. The destination ref is empty, padded, fully qualified or starts with a dash or a slash.'
   - const: DESTINATION_REF_NOT_LOCAL
     description: '422. The destination branch exists only as a remote-tracking ref.'
-  - const: BOOKKEEPING_WORKTREE_MISSING
-    description: '422. Neither a coordination worktree nor a lane worktree resolves for the write.'
-  - const: FALLBACK_COORD_WORKTREE_UNRESOLVED
-    description: '422. The Mission commits status through its coordination branch, but the coordination worktree cannot be materialized.'
   - const: COORDINATION_BRANCH_DELETED
-    description: '422. The Mission''s recorded coordination branch no longer exists.'
-  - const: COORDINATION_WORKTREE_UNMATERIALIZED
-    description: '422. The coordination worktree is not materialized.'
+    description: '422. The Mission''s recorded coordination branch (the destinationRef of a coordination_ref_commit) no longer exists.'
   - const: OWNED_MISSION_PATH_REFUSED
     description: '422. The caller''s owned checkout does not hold the Mission of the request.'
-  - const: COORD_STATUS_SURFACE_UNREADABLE
-    description: '500. The coordination worktree''s event log, committed or in the working tree, cannot be read or parsed, so divergence cannot be judged.'
+  - const: COORDINATION_LEDGER_UNREADABLE
+    description: '500. Protocol-only. The Mission''s event log in the tree of the coordination branch tip cannot be read or parsed, so the append cannot be judged against it; nothing is written (ADR-0007).'
   - const: STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED
     description: '500. The append, or its read-back verification, failed; the unit is not acknowledged.'
   - const: BOOKKEEPING_COMMIT_FAILED

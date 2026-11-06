@@ -3,6 +3,60 @@
 All notable changes to the `mission-write` contract are recorded here, newest first. The module
 version is the `info.version` of `openapi.yaml`.
 
+## 1.0.1-SNAPSHOT
+
+The coordination write without a coordination worktree (spec-kitty/spec-kitty#7284, epic
+spec-kitty/spec-kitty#7276; [ADR-0007](../../docs/adr/0007-write-service-commits-coordination-status-by-ref.md)).
+Not yet released. `1.0.0-SNAPSHOT` shipped inside the `service-v0.1.0-rc.1` and `rc.2`
+pre-releases, so by operator ruling of 2026-11-06 it is treated like a release candidate: this
+change opens `1.0.1-SNAPSHOT` instead of rewriting it, and a new `service-v*` release candidate
+can carry it. The change removes enum values, so read against a released `1.0.0` it would be a
+major; no `1.0.0` was ever cut, and `breaking_check.py` still has no baseline
+(`NO_BASELINE_INITIAL_VERSION`, #151). A consumer pinned to `service-v0.1.0-rc.1` or `rc.2`
+keeps the old bundle until it moves its pin.
+
+### Added
+
+- `WriteSurface` value `coordination_ref_commit`: the service commits the appended event log
+  straight onto the coordination branch named by `destinationRef`, from git objects, with a
+  compare-and-swap update of the ref; no coordination worktree is read or written.
+- `RequestContext`: `destinationRef` is a non-empty string whenever `writeSurface` is
+  `coordination_ref_commit` (an `if`/`then` in the schema).
+- Three protocol-only refusal codes: `COORDINATION_REF_MOVED` (409, the compare-and-swap lost;
+  nothing written, no retry), `COORDINATION_REF_CHECKED_OUT` (409, the coordination branch is
+  checked out in a worktree) and `COORDINATION_LEDGER_UNREADABLE` (500, the event log in the tree
+  of the branch tip cannot be read or parsed).
+- Examples `WriteRefusal.coordination-ref-moved.yaml` and `DurabilityAck.ref-commit.yaml`.
+
+### Changed
+
+- `checkout_append` names the repository root checkout only; a lane worktree is never a status
+  surface (operator rulings of 2026-11-06 on spec-kitty/spec-kitty#7276).
+- `RequestContext.checkout` names the caller's checkout; `missionDirectory` is, for
+  `coordination_ref_commit`, the Mission directory's path in the tree of `destinationRef`.
+- `DurabilityAck`: durability of a `coordination_ref_commit` means the commit's objects and the
+  moved ref are synced; `statusCommit` names the commit the ref moved to. `statusCommit` stays
+  provisional until migration step 4 of core ADR 2026-10-22-1.
+- `COORDINATION_BRANCH_DELETED` names the `destinationRef` of a `coordination_ref_commit`.
+- The example batch `TransitionBatch.two-units.yaml` uses `coordination_ref_commit`.
+
+### Removed
+
+- `WriteSurface` value `coordination_transaction_append` (an append in the coordination
+  worktree), replaced by `coordination_ref_commit`.
+- The five refusal codes that presuppose a coordination worktree:
+  `COORD_STATUS_SURFACE_DIVERGED`, `COORD_STATUS_SURFACE_UNREADABLE`,
+  `BOOKKEEPING_WORKTREE_MISSING`, `FALLBACK_COORD_WORKTREE_UNRESOLVED` and
+  `COORDINATION_WORKTREE_UNMATERIALIZED`. With no working tree, the committed tree is the only
+  state, so divergence cannot occur and there is nothing to materialize. `WriteRefusalCode` has
+  27 codes: 15 are the CLI's codes verbatim and 12 are protocol-only.
+
+### Compatibility
+
+- Core's client (`src/specify_cli/status/write_service_protocol.py`) and its parity fixture
+  (`tests/contract/fixtures/mission_write_refusal_parity.yaml`) follow when core moves its pin
+  to a `service-v*` release that carries this version; the pinned `rc.1` bundle is unaffected.
+
 ## 1.0.0-SNAPSHOT
 
 Initial entry (#6675, ADR 2026-10-27-1). This version is not yet released: it becomes `1.0.0` in

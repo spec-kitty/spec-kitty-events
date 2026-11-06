@@ -1,0 +1,4 @@
+title: Coordination ref moved
+status: 409
+code: COORDINATION_REF_MOVED
+detail: The coordination branch moved while the unit was being committed; nothing was written.
