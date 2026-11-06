@@ -32,7 +32,7 @@ consolidation and the write service share a coordination branch.
 
 **Technical Story:** [spec-kitty/spec-kitty#7284](https://github.com/spec-kitty/spec-kitty/issues/7284);
 the `mission-write` contract change is `1.0.1-SNAPSHOT`
-([`contracts/mission-write/CHANGELOG.md`](../../contracts/mission-write/CHANGELOG.md)).
+([`contracts/mission-write/CHANGELOG.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/CHANGELOG.md)).
 
 Related records:
 
