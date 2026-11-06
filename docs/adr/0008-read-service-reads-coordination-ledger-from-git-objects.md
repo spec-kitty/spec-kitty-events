@@ -100,7 +100,7 @@ Chosen option 1. *(derived)* throughout.
   primary directory's working tree, as today, and are not part of that snapshot.
 - **Which source, when.** Until migration step 4, `ReadDirResolver` is unchanged. From the
   release that ships ADR-0007's `coordination_ref_commit` (together with core
-  [C-1]({C1})'s drain of the coordination worktrees, ADR-0007's precondition), every
+  [C-1](https://github.com/spec-kitty/spec-kitty/blob/main/docs/adr/4.x/2026-11-06-4-coordination-branch-written-by-commit.md)'s drain of the coordination worktrees, ADR-0007's precondition), every
   coordination Mission is read from the ref, whether or not a husk directory is left on disk;
   there is no period in which a worktree holds status the ref lacks.
 - Parity with the oracle on a missing ref or path depends on core C-1/C-3 changing the oracle
