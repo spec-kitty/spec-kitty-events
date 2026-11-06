@@ -52,7 +52,7 @@ Related records:
 ## Context and Problem Statement
 
 `ReadDirResolver`
-([`service/src/main/java/org/speckitty/missionstatus/adapter/out/filesystem/ReadDirResolver.java`](../../service/src/main/java/org/speckitty/missionstatus/adapter/out/filesystem/ReadDirResolver.java))
+([`service/src/main/java/org/speckitty/missionstatus/adapter/out/filesystem/ReadDirResolver.java`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/src/main/java/org/speckitty/missionstatus/adapter/out/filesystem/ReadDirResolver.java))
 picks the directory a Mission's ledger is read from. For a stored `coord` or `lanes_with_coord`
 topology it reads the coordination Mission directory
 `.worktrees/<slug>-<mid8>-coord/kitty-specs/<slug>-<mid8>/` when it exists (DD-105), and
