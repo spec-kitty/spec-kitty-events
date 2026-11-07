@@ -445,3 +445,25 @@ Lenses: scope fidelity (Opus) and contract and parity (Opus), 2026-11-07. Every 
 16. **FR-010's allowlist names three packages.**
     - The three: event-log's existing `adapter.out.ledger` (lock files and the read ledger's torn-tail repair, never a status log), the new `adapter.out.statuslog`, and command-cli's `adapter.out.filesystem` (endpoint and service-lock files).
     - The rule's intent is that no other code writes files, and above all that no other code writes a status log.
+
+## 13. Post-tasks squad dispositions
+
+Lenses: coverage and Definition-of-Done rigor (Opus) and brownfield feasibility (Sonnet), 2026-11-07. Every finding was folded into the tasks commit `9317d3b8` and plan `e746f501`, per rulings R1–R14 (orchestrator); none was dropped.
+
+| Finding | Disposition |
+|---|---|
+| WP06 unit order contradicted decision 15 (MAJOR) | Folded: R4 |
+| Production frontmatter reader never run against the corpus (MAJOR) | Folded: R5, `DiskMissionFactsParityTest` |
+| Oracles could be finished without running core (MAJOR) | Folded: R3, a mandatory local `--check` at `512567ee` |
+| Corpus under `fixtures/` breaks the manifest test (MAJOR) | Folded: R1, corpus moved to `conformance/status_transition_parity/` |
+| `statuslog` breaks the root rule 7 of the read-service architecture (MAJOR) | Folded: R9 |
+| Native FFM flags and placement of the metadata (MAJOR) | Folded: R10, metadata in command-cli |
+| `PyIsoDateTime` test has no JSON parser and root-only coverage (MAJOR) | Folded: R11 |
+| CI job in WP04 runs scripts of WPs it does not depend on | Folded: R2, new WP10 |
+| NFR-004 complexity never checked | Folded: R6 (JaCoCo METHOD/COMPLEXITY ≤ 15, ruff C901) |
+| WP08 coverage gaps, `detail` compare, invalid fixtures over HTTP | Folded: R5, R7 |
+| FR-010 predicate lists differ | Folded: R8 |
+| `OperationsTest` base row, examples, native smoke annotation row | Folded: R11 (FR-019's allowed exception recorded) |
+| WP06 corpus floor, `FoldView`, start-from-planned, decision-15 cases | Folded: R4, R13 |
+| `fromisoformat` subset between Python and Java | Folded: R12 |
+| Placeholder acceptance matrix | Folded: R14 |
