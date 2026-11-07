@@ -115,7 +115,9 @@ class OperationsTest {
   static Stream<Arguments> malformedWrites() {
     String base = "/api/v1/missions/" + MISSION;
     String context = "{\"actor\":\"claude\",\"checkout\":\".\",\"missionDirectory\":\"kitty-specs/m\",\"writeSurface\":\"checkout_append\",\"destinationRef\":null}";
-    String row = "{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\"}";
+    String row = "{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\",\"from_lane\":\"planned\",\"to_lane\":\"claimed\","
+        + "\"at\":\"2026-10-27T18:00:00+00:00\",\"actor\":\"claude\",\"force\":false,\"execution_mode\":\"direct_repo\","
+        + "\"reason\":null,\"review_ref\":null,\"evidence\":null,\"policy_metadata\":null}";
     String unit = "{\"wpId\":\"WP01\",\"rows\":[" + row + "],\"context\":" + context + "}";
     List<Arguments> cases = new ArrayList<>();
     String transitions = base + "/work-package-transitions";
@@ -177,7 +179,9 @@ class OperationsTest {
   void aRowWhoseMissionIdIsNullCountsAsNamingNoMission() {
     String context = "{\"actor\":\"claude\",\"checkout\":\".\",\"missionDirectory\":\"kitty-specs/m\",\"writeSurface\":\"checkout_append\",\"destinationRef\":null}";
     String unit =
-        "{\"wpId\":\"WP01\",\"rows\":[{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\",\"mission_id\":null}],\"context\":" + context + "}";
+        "{\"wpId\":\"WP01\",\"rows\":[{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\",\"mission_id\":null,"
+            + "\"from_lane\":\"planned\",\"to_lane\":\"claimed\",\"at\":\"2026-10-27T18:00:00+00:00\",\"actor\":\"claude\","
+            + "\"force\":false,\"execution_mode\":\"direct_repo\",\"reason\":null,\"review_ref\":null,\"evidence\":null,\"policy_metadata\":null}],\"context\":" + context + "}";
 
     RawClient.Reply reply = post("/api/v1/missions/" + MISSION + "/work-package-transitions", unit);
 
@@ -187,7 +191,9 @@ class OperationsTest {
   @Test
   void aCoordinationRefCommitIsWellFormedAndReachesTheGate() {
     String context = "{\"actor\":\"claude\",\"checkout\":\".\",\"missionDirectory\":\"kitty-specs/m\",\"writeSurface\":\"coordination_ref_commit\",\"destinationRef\":\"kitty/mission-m\"}";
-    String unit = "{\"wpId\":\"WP01\",\"rows\":[{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\"}],\"context\":" + context + "}";
+    String unit = "{\"wpId\":\"WP01\",\"rows\":[{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\","
+        + "\"from_lane\":\"planned\",\"to_lane\":\"claimed\",\"at\":\"2026-10-27T18:00:00+00:00\",\"actor\":\"claude\","
+        + "\"force\":false,\"execution_mode\":\"direct_repo\",\"reason\":null,\"review_ref\":null,\"evidence\":null,\"policy_metadata\":null}],\"context\":" + context + "}";
     List<String> before = server.tree();
 
     RawClient.Reply reply = post("/api/v1/missions/" + MISSION + "/work-package-transitions", unit);

@@ -7,7 +7,7 @@ description: >-
 type: string
 oneOf:
   - const: 'urn:spec-kitty:write-refusal:unknown_lane'
-    description: 'The from or to status lane is not one of the nine.'
+    description: 'The from or to status lane is not one of the 11 persisted Lane values.'
   - const: 'urn:spec-kitty:write-refusal:illegal_transition'
     description: 'The edge is not in the lane state machine, or leaves a terminal lane without force.'
   - const: 'urn:spec-kitty:write-refusal:force_requires_actor_and_reason'
@@ -15,7 +15,7 @@ oneOf:
   - const: 'urn:spec-kitty:write-refusal:actor_required'
     description: 'The transition needs an actor identity (a claim, a review claim).'
   - const: 'urn:spec-kitty:write-refusal:dependencies_unsatisfied'
-    description: 'A dependency of the work package is neither approved nor done.'
+    description: 'A dependency of the work package is not approved, done, or canceled with operator provenance.'
   - const: 'urn:spec-kitty:write-refusal:workspace_context_required'
     description: 'claimed to in_progress carries no workspace context.'
   - const: 'urn:spec-kitty:write-refusal:implementation_evidence_required'
