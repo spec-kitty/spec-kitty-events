@@ -11,7 +11,9 @@
 # is given and uploads them as the artifact `service-release`. The publish job does not run.
 #
 # Jobs: gate -> build (service.yml, workflow_call) -> assemble (read-only) -> publish (tag push only,
-# the only job with a write token).
+# the only job with a write token). publish runs in the `service-release` environment, so it waits for
+# a required reviewer, and the environment admits only service-v* tags (#152; the settings are listed in
+# docs/guides/service-protocol-and-releases.md, "Release protection").
 name: service-release
 
 on:
@@ -130,6 +132,7 @@ jobs:
   publish:
     needs: [gate, assemble]
     if: github.event_name == 'push'
+    environment: service-release
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
