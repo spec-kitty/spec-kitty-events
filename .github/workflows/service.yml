@@ -149,6 +149,8 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
+          # An exact uv, so a release builds contract-bundles-<ver>.tar.gz with a fixed tool (#208).
+          version: "0.13.6"
           python-version: "3.12"
       # pyproject.toml lists pyyaml>=6.0,<7 and uv.lock locks PyYAML 6.0.3, which bundle.py imports.
       - name: Install the locked Python environment
@@ -185,7 +187,8 @@ jobs:
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: "25"
+          # An exact JDK, the Temurin release scripts/ensure_jdk25.sh pins; bump them together (#208).
+          java-version: "25.0.5"
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           # A release run (release-version set) neither restores nor saves the Gradle cache.
@@ -522,6 +525,8 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
+          # An exact uv, so a release builds contract-bundles-<ver>.tar.gz with a fixed tool (#208).
+          version: "0.13.6"
           python-version: "3.12"
       - name: Install core's locked Python environment
         working-directory: core
@@ -534,7 +539,8 @@ jobs:
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: "25"
+          # An exact JDK, the Temurin release scripts/ensure_jdk25.sh pins; bump them together (#208).
+          java-version: "25.0.5"
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           # A release run (release-version set) neither restores nor saves the Gradle cache.
@@ -542,7 +548,7 @@ jobs:
       - name: Run the lock-interop spike
         env:
           SPEC_KITTY_LOCK_INTEROP_PYTHON: ${{ github.workspace }}/${{ matrix.python }}
-          # Read by PythonPeer once WP07 adds the lookup (see the job comment).
+          # PythonPeer reads this before its relative walk (see the job comment).
           SPEC_KITTY_LOCK_INTEROP_PEER: ${{ github.workspace }}/core/scripts/ci/lock_interop_peer.py
         run: ./gradlew --no-daemon :event-log:test --tests '*LockInteropSpikeTest'
       - name: Show the verdict table
@@ -603,6 +609,8 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
+          # An exact uv, so a release builds contract-bundles-<ver>.tar.gz with a fixed tool (#208).
+          version: "0.13.6"
           python-version: "3.12"
       - name: Install core's fully synced environment (the oracle imports the test extras)
         working-directory: core
@@ -614,7 +622,8 @@ jobs:
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: "25"
+          # An exact JDK, the Temurin release scripts/ensure_jdk25.sh pins; bump them together (#208).
+          java-version: "25.0.5"
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           # A release run (release-version set) neither restores nor saves the Gradle cache.

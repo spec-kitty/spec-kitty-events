@@ -34,8 +34,11 @@ kind: Explanation
 
 - **Loopback HTTP** (D-1). The service binds `127.0.0.1` only, on a port the OS picks, never
   `localhost`, `0.0.0.0` or IPv6. The contract is served under `/api/v1`.
-- **The read service's guard applies:** `Host` must be `127.0.0.1:<port>`, an `Origin` must
-  name the same, and `Sec-Fetch-Site: cross-site` is refused, all with `403 REQUEST_REFUSED`.
+- **The read service's guard applies:** `Host` must be `127.0.0.1:<port>` or
+  `localhost:<port>` (the raw header, compared exactly), a request with a `Forwarded` or
+  `X-Forwarded-Host` header is refused, an `Origin` must be `http://` plus one of the two
+  accepted host forms, and `Sec-Fetch-Site: cross-site` is refused, all with
+  `403 REQUEST_REFUSED`.
 
 ## The endpoint file and the token
 
@@ -105,8 +108,12 @@ the service's check (D-3).
   The five codes that presupposed a coordination worktree were removed in `1.0.1-SNAPSHOT`.
 - **Order of checks:** the Host and Origin guard (403), the bearer token (401), the protocol
   header (400), the size cap (413), the body's shape (400), then the domain (404, 409, 422).
-- **Parity** with the CLI is held by `tests/contract/fixtures/mission_write_refusal_parity.yaml`,
-  which a test checks against each cited CLI source file.
+- **Parity** with the CLI is held in core, not here: core's
+  [`tests/contract/fixtures/mission_write_refusal_parity.yaml`](https://github.com/spec-kitty/spec-kitty/blob/4eecb12414dac53432f4af21ba958d199d5ce808/tests/contract/fixtures/mission_write_refusal_parity.yaml),
+  which core's `tests/contract/test_mission_write_contract.py` checks against each cited CLI
+  source file. Neither the fixture nor its test was imported with the contracts; porting the
+  contract-tool tests is
+  [#151](https://github.com/spec-kitty/spec-kitty-events/issues/151).
 
 ## Operations
 
