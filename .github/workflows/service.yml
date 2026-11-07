@@ -14,6 +14,7 @@
 #   native-command-cli  the write service (command-cli, #156): native image, tagged native tests and the
 #                   launcher-contract smoke on the same four targets                     [guarded]
 #   lock-interop    Java vs Python event-log lock, Python peer from the pinned core       [guarded]
+#   write-core-parity  core-backed fixture and corpus drift checks at the pinned core SHA [guarded]
 #   nightly-corpus  schedule / workflow_dispatch: Python oracle vs service on the corpus  [guarded]
 #   service-gate    terminal: fails when any needed job failed; skipped counts as success
 #
@@ -37,6 +38,10 @@ on:
       - "gradlew.bat"
       # The Java binding reads the producer contract in place.
       - "src/spec_kitty_events/producer_contract/**"
+      # The Java conformance runners consume these core-generated oracles.
+      - "src/spec_kitty_events/conformance/fixtures/status_append/**"
+      - "src/spec_kitty_events/conformance/status_transition_parity/**"
+      - "scripts/conformance/**"
       - ".github/workflows/service.yml"
   # No path filter on pull requests (ADR 0005 D3): `service-gate` must report on
   # every PR to be a required check. `detect` diffs the change against the same paths as `push`
@@ -114,7 +119,7 @@ jobs:
         # A PR diffs its base tip against its head. If the SHAs cannot be fetched or diffed,
         # everything runs. The PATTERN mirrors the push paths (tests/test_ci_gate_workflows.py).
         run: |
-          PATTERN='^(service/|contracts/|java/|build-logic/|gradle/|settings\.gradle\.kts$|build\.gradle\.kts$|gradle\.properties$|gradlew$|gradlew\.bat$|src/spec_kitty_events/producer_contract/|\.github/workflows/service\.yml$)'
+          PATTERN='^(service/|contracts/|java/|build-logic/|gradle/|settings\.gradle\.kts$|build\.gradle\.kts$|gradle\.properties$|gradlew$|gradlew\.bat$|src/spec_kitty_events/producer_contract/|src/spec_kitty_events/conformance/fixtures/status_append/|src/spec_kitty_events/conformance/status_transition_parity/|scripts/conformance/|\.github/workflows/service\.yml$)'
           case "$EVENT" in
             pull_request) base="$PR_BASE"; fetch_base="$PR_BASE"; head="$PR_HEAD" ;;
             *) echo "run=true" >> "$GITHUB_OUTPUT"; echo "$EVENT: every job runs"; exit 0 ;;
@@ -585,6 +590,54 @@ jobs:
           if-no-files-found: warn
           overwrite: true
 
+  # The three language-neutral oracles are core's behaviour at service/core-pin.json, so this drift
+  # check runs their generators with core's own locked interpreter. It never runs in a release run
+  # because it executes core's code. On pull requests and main it is a hard need of service-gate.
+  write-core-parity:
+    needs: detect
+    if: needs.detect.outputs.service == 'true' && needs.detect.outputs.run == 'true' && github.event_name != 'schedule' && inputs.release-version == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Require the core pin
+        env:
+          CORE_SHA: ${{ needs.detect.outputs.core-sha }}
+        run: |
+          if [ -z "$CORE_SHA" ]; then
+            echo "::error::service/ is present but service/core-pin.json is missing: write-core-parity needs the pinned core SHA"
+            exit 1
+          fi
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      # CI-only, SHA-pinned, test-only peer (charter Package Boundary exception; ADR 0002).
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          repository: spec-kitty/spec-kitty
+          ref: ${{ needs.detect.outputs.core-sha }}
+          path: core
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.13.6"
+          python-version: "3.12"
+      - name: Install core's locked Python environment
+        working-directory: core
+        run: uv sync --frozen
+      # The generators import core's charter, which needs the built-in pack tree.
+      - name: Sync core's packs from its pinned open-packs commits
+        working-directory: core
+        run: PYTHONPATH="$GITHUB_WORKSPACE/core/src" uv run --frozen --no-sync python scripts/sync_packs.py --pack all
+      - name: Check the status_append oracle
+        run: SPEC_KITTY_CORE_CHECKOUT="$GITHUB_WORKSPACE/core" core/.venv/bin/python scripts/conformance/generate_status_append.py --check | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Check the status-transition parity oracle
+        run: SPEC_KITTY_CORE_CHECKOUT="$GITHUB_WORKSPACE/core" core/.venv/bin/python scripts/conformance/generate_transition_parity.py --check | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Check the fromisoformat vectors
+        run: core/.venv/bin/python scripts/conformance/generate_fromisoformat_vectors.py --check | tee -a "$GITHUB_STEP_SUMMARY"
+
   # The full-corpus compare: core's Python oracle (at the pinned SHA) against this service's jar, over
   # core's kitty-specs/ corpus, byte for byte. Schedule or a manual run only; never inside a release.
   nightly-corpus:
@@ -669,7 +722,7 @@ jobs:
           if [ -n "${SERVICE_PID:-}" ]; then kill "$SERVICE_PID" || true; fi
 
   service-gate:
-    needs: [detect, contract-bundle, gradle, native, native-command-cli, lock-interop, nightly-corpus]
+    needs: [detect, contract-bundle, gradle, native, native-command-cli, lock-interop, write-core-parity, nightly-corpus]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
