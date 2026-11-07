@@ -1,0 +1,3 @@
+{
+  "urn:spec-kitty:write-refusal:workspace_context_required": "Transition rows carry no workspace-context field, and every real single or lifecycle door used over the wire fills the default before claimed -> in_progress, as the accepted claimed-start and start-implementation cases demonstrate."
+}
