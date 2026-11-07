@@ -63,6 +63,9 @@ tasks.named<Test>("test") {
     filter.isFailOnNoMatchingTests = false
     // The boundary test imports exactly this module's production classes.
     systemProperty("module.mainClasses", sourceSets.main.get().output.classesDirs.asPath)
+    val statusAppendFixtures = rootProject.file("src/spec_kitty_events/conformance/fixtures/status_append")
+    inputs.dir(statusAppendFixtures).withPathSensitivity(org.gradle.api.tasks.PathSensitivity.RELATIVE)
+    systemProperty("eventLog.statusAppendFixtures", statusAppendFixtures.absolutePath)
     // The ledger lock calls flock(2) through the FFM API (a restricted method); without this the JDK warns on every run.
     jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
