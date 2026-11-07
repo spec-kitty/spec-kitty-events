@@ -193,7 +193,7 @@
     },
     "WP10": {
       "actor": "claude",
-      "agent": "opencode",
+      "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -201,6 +201,9 @@
       "last_event_id": "01M6VN71PYGTW1R266FQZ7BHX5",
       "last_transition_at": "2026-11-07T18:44:26.975001+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Orchestrator review: job SHA-pinned with existing pins, release-run skip, in service-gate needs, detect paths cover generators and oracles; runs core's own venv (3.11); all three --check exit 0 locally with the exact CI invocation (no PYTHONPATH); workflow tests 123 passed"
+      ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
         "reference": "review-cycle://events-write-core-01M6TP6W/WP10-write-core-parity-ci/review-cycle-1.md",
