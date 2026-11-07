@@ -112,7 +112,7 @@
     },
     "WP04": {
       "actor": "claude",
-      "agent": "opencode",
+      "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -120,6 +120,9 @@
       "last_event_id": "01M6VJ5XA7G179XYKJD5RA1ZXN",
       "last_transition_at": "2026-11-07T17:51:23.975590+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Cycle 2: all 3 Opus MAJORs and 8 minors fixed in a9e6909e; orchestrator verified core --check exit 0 (166 core, 0 drift), clock-ahead lift case has approval ahead of departure, legacy unmet dependency and no-tasks-file cases present"
+      ],
       "provider": "__resolved_provider_absent__",
       "review": null,
       "review_result": {
