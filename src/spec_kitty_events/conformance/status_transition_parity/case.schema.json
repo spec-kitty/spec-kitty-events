@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec-kitty.dev/schemas/status-transition-parity-case.schema.json",
+  "title": "Status transition parity case",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "oracle", "layer", "area", "operation", "mission", "tasks", "request", "expected", "notes"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+    "oracle": {"enum": ["core", "protocol"]},
+    "layer": {"enum": ["domain", "edge", "service"]},
+    "area": {"enum": ["lane_machine", "guard", "force", "done_evidence", "force_note", "stale", "unknown_lane", "dependency", "claim", "review_claim", "start_rejected", "batch", "annotation", "fold", "replay", "alias"]},
+    "operation": {"enum": ["transition", "start_implementation", "start_review", "annotation"]},
+    "mission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["directory", "mission_id", "mission_slug"],
+      "properties": {
+        "directory": {"type": "string", "minLength": 1},
+        "mission_id": {"type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"},
+        "mission_slug": {"type": "string", "minLength": 1}
+      }
+    },
+    "log": {"type": "array", "items": true},
+    "log_text": {"type": "string"},
+    "tasks": {"type": "object", "additionalProperties": {"type": "string"}},
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "units"],
+      "properties": {
+        "kind": {"enum": ["unit", "batch", "annotation"]},
+        "units": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["wpId", "rows"],
+            "properties": {
+              "wpId": {"type": "string", "pattern": "^WP[0-9]+$"},
+              "operation": {"enum": ["transition", "start_implementation", "start_review", "annotation"]},
+              "rows": {"type": "array", "minItems": 1, "items": {"type": "object"}}
+            }
+          }
+        }
+      }
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result"],
+      "properties": {
+        "result": {"enum": ["ack", "refusal"]},
+        "units": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["replayed", "appendedLines"],
+            "properties": {
+              "replayed": {"type": "boolean"},
+              "appendedLines": {"type": "integer", "minimum": 0}
+            }
+          }
+        },
+        "fsyncs": {"enum": [0, 1]},
+        "code": {"$ref": "#/$defs/refusalCode"},
+        "reason": {"anyOf": [{"$ref": "#/$defs/reasonUrn"}, {"type": "null"}]},
+        "message": {"type": ["string", "null"]},
+        "unit": {"type": ["integer", "null"], "minimum": 0}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"result": {"const": "ack"}}},
+          "then": {"required": ["units"]}
+        },
+        {
+          "if": {"properties": {"result": {"const": "refusal"}}},
+          "then": {"required": ["code", "reason", "message", "unit"]}
+        }
+      ]
+    },
+    "core_call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entry_point", "kwargs"],
+      "properties": {
+        "entry_point": {"type": "string", "minLength": 1},
+        "kwargs": {"type": "object"}
+      }
+    },
+    "notes": {"type": "string", "minLength": 1}
+  },
+  "allOf": [
+    {"oneOf": [{"required": ["log"]}, {"required": ["log_text"]}]},
+    {
+      "if": {"properties": {"oracle": {"const": "core"}}},
+      "then": {"required": ["core_call"]},
+      "else": {"not": {"required": ["core_call"]}}
+    }
+  ],
+  "$defs": {
+    "reasonUrn": {
+      "enum": [
+        "urn:spec-kitty:write-refusal:unknown_lane",
+        "urn:spec-kitty:write-refusal:illegal_transition",
+        "urn:spec-kitty:write-refusal:force_requires_actor_and_reason",
+        "urn:spec-kitty:write-refusal:actor_required",
+        "urn:spec-kitty:write-refusal:dependencies_unsatisfied",
+        "urn:spec-kitty:write-refusal:workspace_context_required",
+        "urn:spec-kitty:write-refusal:implementation_evidence_required",
+        "urn:spec-kitty:write-refusal:reason_required",
+        "urn:spec-kitty:write-refusal:review_ref_required",
+        "urn:spec-kitty:write-refusal:reviewer_approval_required",
+        "urn:spec-kitty:write-refusal:review_evidence_invalid",
+        "urn:spec-kitty:write-refusal:force_note_required",
+        "urn:spec-kitty:write-refusal:done_evidence_incomplete",
+        "urn:spec-kitty:write-refusal:claim_held_by_other_actor",
+        "urn:spec-kitty:write-refusal:start_rejected"
+      ]
+    },
+    "refusalCode": {
+      "enum": [
+        "TRANSITION_REJECTED", "WP_ALREADY_CLAIMED", "DEPENDENCIES_NOT_SATISFIED", "WP_NOT_FOUND", "MISSION_NOT_FOUND", "STATUS_LOCK_HELD", "BOOKKEEPING_DOUBLE_EVENT_ID", "COORDINATION_REF_MOVED", "COORDINATION_REF_CHECKED_OUT", "PROTECTED_BRANCH_REFUSED", "DESTINATION_REF_NOT_FOUND", "DESTINATION_REF_INVALID_SHAPE", "DESTINATION_REF_NOT_LOCAL", "COORDINATION_BRANCH_DELETED", "OWNED_MISSION_PATH_REFUSED", "COORDINATION_LEDGER_UNREADABLE", "STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED", "BOOKKEEPING_COMMIT_FAILED", "WRITE_LOCATION_UNVERIFIED", "REQUEST_MALFORMED", "PROTOCOL_VERSION_UNSUPPORTED", "WRITE_TOKEN_INVALID", "REQUEST_REFUSED", "EVENT_ID_CONFLICT", "REQUEST_TOO_LARGE", "SERVICE_BUSY", "SERVICE_DRAINING"
+      ]
+    }
+  }
+}
