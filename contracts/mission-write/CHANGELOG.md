@@ -19,6 +19,17 @@ until it moves its pin.
 
 ### Added
 
+- `WriteOperation`: the values `transition` (core's emit pipeline, as `move-task`, `mark-status` and
+  `status emit` use it), `start_implementation` and `start_review` (core's lifecycle starts, which
+  carry the claim rules). A start from `planned` travels as two units of a batch (spec-kitty/spec-kitty-events#160,
+  #161 and #155).
+- Optional `TransitionUnit.operation`, referencing `WriteOperation`; absent means `transition`. The
+  field is additive, and a client that omits it is unaffected (spec-kitty/spec-kitty-events#160, #161
+  and #155).
+- Example `TransitionUnit.start-implementation.yaml`, a claimed work package resumed by
+  `start_implementation` with one `claimed` to `in_progress` row (spec-kitty/spec-kitty-events#160,
+  #161 and #155).
+- The `WriteOperation` enum pin (spec-kitty/spec-kitty-events#160, #161 and #155).
 - `WriteSurface` value `coordination_ref_commit`: the service commits the appended event log
   straight onto the coordination branch named by `destinationRef`, from git objects, with a
   compare-and-swap update of the ref; no coordination worktree is read or written.
@@ -36,6 +47,26 @@ until it moves its pin.
 
 ### Changed
 
+- `STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED` also describes a torn tail (refused, not repaired),
+  a log the write fold cannot reduce, and a failed write or sync after which the append was cut
+  back (spec-kitty/spec-kitty-events#160, #161 and #155).
+- `WRITE_LOCATION_UNVERIFIED` also describes a `coordination_ref_commit` refusal before migration
+  step 4, ahead of any Mission lookup, and the `checkout_append` mismatches of `checkout`,
+  `destinationRef` and `missionDirectory` (spec-kitty/spec-kitty-events#160, #161 and #155).
+- `TRANSITION_REJECTED` may carry no reason URN for a stale unit whose `from_lane` is not the work
+  package's current lane (spec-kitty/spec-kitty-events#160, #161 and #155).
+- `REQUEST_MALFORMED` also describes a row of the wrong kind for its position, a lane alias or
+  non-canonical lane spelling, a non-finite number, and a session-time pair that cannot be
+  subtracted (spec-kitty/spec-kitty-events#160, #161 and #155).
+- `SERVICE_BUSY` names the 10 s budget shared by the in-process turn and the Mission lock
+  (spec-kitty/spec-kitty-events#160, #161 and #155).
+- `DEPENDENCIES_NOT_SATISFIED` records that a dependency is satisfied when `approved`, `done`, or
+  `canceled` with operator provenance (spec-kitty/spec-kitty-events#160, #161 and #155).
+- `WriteRefusalReason.dependencies_unsatisfied` records the same `approved`, `done`, or
+  operator-provenanced `canceled` satisfaction rule (spec-kitty/spec-kitty-events#160, #161 and
+  #155).
+- `WriteRefusalReason.unknown_lane` names the persisted `Lane` vocabulary of 11 values, not the nine
+  display lanes (spec-kitty/spec-kitty-events#160, #161 and #155).
 - `checkout_append` names the repository root checkout only; a lane worktree is never a status
   surface (operator rulings of 2026-11-06 on spec-kitty/spec-kitty#7276).
 - `RequestContext.checkout` names the caller's checkout; `missionDirectory` is, for
