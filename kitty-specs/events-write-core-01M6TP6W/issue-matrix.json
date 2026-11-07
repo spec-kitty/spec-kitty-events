@@ -1,7 +1,7 @@
 {
   "rows": {
     "#121": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "operator ruling 2026-11-07 (3): the BDD suite is other GA work, out of scope (spec C-004)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -9,7 +9,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#155": {
