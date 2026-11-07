@@ -144,7 +144,7 @@ public final class WriteBodies {
 
   private static Parsed parseTypedUnit(String missionId, JsonNode unit) {
     if (!onlyFields(unit, UNIT_REQUIRED, UNIT_FIELDS)) {
-      return failure("A unit must have exactly the members wpId, rows and context.");
+      return failure("A unit must have exactly the members wpId, rows and context, and optionally operation.");
     }
     Optional<String> wpId = wpId(unit.get("wpId"));
     if (wpId.isEmpty()) {

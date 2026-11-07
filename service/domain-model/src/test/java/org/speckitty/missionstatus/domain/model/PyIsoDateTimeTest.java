@@ -19,7 +19,7 @@ class PyIsoDateTimeTest {
           "date_length", "date_digits", "non_ascii_digits", "month", "day", "year", "week", "weekday", "separator",
           "date_separator", "time_short", "time_incomplete", "time_digits", "time_separator", "hour", "minute", "second",
           "fraction", "fraction_digits", "trailing_text", "offset", "offset_digits", "offset_range", "offset_fraction",
-          "offset_trailing_text");
+          "offset_trailing_text", "offset_z_position");
 
   @Test
   void everyPinnedInterpreterVectorMatchesAndEveryRejectionBranchIsExercised() throws Exception {
@@ -40,6 +40,8 @@ class PyIsoDateTimeTest {
         assertThat(parsed.get().aware()).as(text).isEqualTo(vector.get("aware").asBoolean());
         String microsField = vector.get("aware").asBoolean() ? "utc_epoch_micros" : "naive_micros";
         assertThat(parsed.get().micros()).as("%s: %s", text, microsField).isEqualTo(vector.get(microsField).asLong());
+      } else {
+        assertThatThrownBy(() -> PyIsoDateTime.parseOrThrow(text)).as(text).hasMessage(branch);
       }
     }
     assertThat(branches).containsAll(REJECTION_BRANCHES);
