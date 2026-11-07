@@ -10,6 +10,7 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 plugins {
     id("events.service")
     `java-library`
+    `java-test-fixtures`
     id("io.spring.dependency-management")
 }
 
@@ -24,12 +25,36 @@ dependencies {
     api(project(":domain-model"))
     implementation(libs.jackson.core)
 
+    testFixturesImplementation(libs.archunit.junit5)
+
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj.core)
     testImplementation(libs.archunit.junit5)
     // Test-only: the boundary test plants a data-binding dependency to prove the codec rule refuses it.
     testImplementation(libs.jackson.databind.bootmanaged)
     testRuntimeOnly(libs.junit.platform.launcher)
+}
+
+tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    violationRules {
+        rule {
+            element = "METHOD"
+            includes = listOf(
+                "org.speckitty.missionstatus.adapter.out.statuslog.*",
+                "org.speckitty.missionstatus.adapter.out.filesystem.codec.StatusRow*",
+                "org.speckitty.missionstatus.adapter.out.filesystem.codec.PythonFloatRepr",
+            )
+            limit {
+                counter = "COMPLEXITY"
+                value = "TOTALCOUNT"
+                maximum = "15".toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn("jacocoTestCoverageVerification")
 }
 
 tasks.named<Test>("test") {
