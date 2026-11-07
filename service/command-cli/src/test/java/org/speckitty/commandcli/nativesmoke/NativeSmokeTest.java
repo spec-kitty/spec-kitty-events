@@ -52,7 +52,8 @@ class NativeSmokeTest {
           RawClient.request(
               port,
               "POST /api/v1/missions/01J6XW9KQT7M0YB3N4R5CQZ2EX/inner-state-annotations HTTP/1.1",
-              "{\"wpId\":\"WP01\",\"row\":{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\"},\"context\":{\"actor\":\"a\",\"checkout\":\".\","
+              "{\"wpId\":\"WP01\",\"row\":{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"kind\":\"annotation\",\"wp_id\":\"WP01\","
+                  + "\"actor\":\"a\",\"delta\":{\"note\":\"native\"}},\"context\":{\"actor\":\"a\",\"checkout\":\".\","
                   + "\"missionDirectory\":\"kitty-specs/m\",\"writeSurface\":\"checkout_append\",\"destinationRef\":null}}",
               "Host: 127.0.0.1:" + port,
               "Authorization: Bearer " + endpoint.get("token").asString(),

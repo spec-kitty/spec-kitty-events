@@ -34,6 +34,7 @@ version = "0.0.0-dev"
 val serviceVersion: String = providers.gradleProperty("releaseVersion").orElse("0.0.0-dev").get()
 
 dependencies {
+    implementation(project(":domain-model"))
     implementation(libs.spring.boot.starter.web)
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.archunit.junit5)
