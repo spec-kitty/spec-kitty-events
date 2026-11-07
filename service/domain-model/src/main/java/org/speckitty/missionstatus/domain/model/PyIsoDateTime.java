@@ -1,5 +1,6 @@
 package org.speckitty.missionstatus.domain.model;
 
+import java.math.BigDecimal;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,12 +53,16 @@ public final class PyIsoDateTime {
     return micros;
   }
 
-  /** {@code int((end - start).total_seconds())}, computed without losing microseconds to a double. */
+  /**
+   * {@code int((end - start).total_seconds())} exactly as CPython computes it: {@code total_seconds()} rounds the microsecond
+   * count to the nearest double (correctly rounded), and {@code int()} then truncates toward zero. Truncating the exact
+   * microseconds instead differs by one second once a span passes about 2^34 seconds with a fraction such as .999999.
+   */
   public static long truncatedSecondsBetween(PyIsoDateTime start, PyIsoDateTime end) {
     if (start.aware != end.aware) {
       throw new IllegalArgumentException("cannot subtract naive and aware datetimes");
     }
-    return (end.micros - start.micros) / MICROS_PER_SECOND;
+    return (long) new BigDecimal(end.micros - start.micros).movePointLeft(6).doubleValue();
   }
 
   private static PyIsoDateTime parseDateTime(int[] text) {

@@ -74,6 +74,12 @@ CASES = (
         "A reversed aware session pair produces a negative duration truncated toward zero.",
     ),
     Case(
+        "session_pair_long_span",
+        '{"session_started_at":"0001-01-01T00:00:00","session_ended_at":"9999-12-31T23:59:59.999999"}',
+        ("session_pair_long_span",),
+        "A span past 2^34 seconds keeps CPython's float rounding: total_seconds() rounds to a double before int() truncates.",
+    ),
+    Case(
         "session_pair_overwrites_duration",
         '{"session_started_at":"2026-01-01T00:00:00+00:00","session_ended_at":"2026-01-01T00:00:10.900000+00:00","session_duration_s":999}',
         ("session_pair_overwrites_duration",),

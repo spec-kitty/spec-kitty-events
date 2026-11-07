@@ -50,6 +50,7 @@ agree with core on these forms.
 - `pii_nested_and_in_lists`
 - `session_pair_both_parse`
 - `session_pair_negative`
+- `session_pair_long_span`
 - `session_pair_overwrites_duration`
 - `session_pair_one_missing_keeps_duration`
 - `session_pair_unparseable`

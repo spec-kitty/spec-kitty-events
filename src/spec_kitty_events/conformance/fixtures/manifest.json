@@ -3927,6 +3927,15 @@
       "fixture_type": "status_append"
     },
     {
+      "id": "session_pair_long_span",
+      "path": "status_append/valid/session_pair_long_span.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "A span past 2^34 seconds keeps CPython's float rounding before int() truncates.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
       "id": "session_pair_overwrites_duration",
       "path": "status_append/valid/session_pair_overwrites_duration.json",
       "expected_result": "valid",
