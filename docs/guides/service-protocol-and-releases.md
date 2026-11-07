@@ -249,7 +249,9 @@ environment makes GitHub create it with no protection.
    - *Required reviewers*: `stijn-dejongh` and the `admins` team, with *Prevent self-review* on,
      so whoever starts a release cannot approve it. Administrators cannot bypass the rule.
    - *Deployment branches and tags*: *Selected branches and tags*, with one tag rule, `service-v*`.
-     A run from any other ref cannot enter the environment, so it never gets the write token.
+     A run from any other ref cannot enter the environment, so `publish` never runs there. The
+     environment guards only `publish`: another workflow that asks for `contents: write` (for
+     example on a branch with an edited workflow) is not held by it (#221).
    - No environment secrets are needed: `publish` uses the job's `GITHUB_TOKEN` and OIDC.
 2. **A tag ruleset for `service-v*`** (Settings → Rules → Rulesets → New tag ruleset): `service-release-tags`,
    target `refs/tags/service-v*`, enforcement *Active*, with *Restrict creations*, *Restrict updates*,
@@ -257,7 +259,8 @@ environment makes GitHub create it with no protection.
    be neither moved nor deleted, which the release notes and core's pins rely on.
 3. **The `main` ruleset** (`26558116`), *Active* since 2026-11-05, requiring
    `service-gate`, `acceptance`, `cross-repo-harness-tests` and `docs-build`. The `gate` job's
-   ancestor-of-`main` check is only as strong as what reaches `main` (#208, #111).
+   ancestor-of-`main` check is only as strong as what reaches `main` (#208, #111). The ruleset
+   requires no approving review, and `stijn-dejongh` can bypass it.
 
 Check the result with read-only calls:
 
