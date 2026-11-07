@@ -21,10 +21,21 @@ public final class FileWriteApis {
     }
     if (owner.equals("java.nio.file.Files")) {
       return method.startsWith("write")
+          || method.equals("newByteChannel")
           || method.equals("newOutputStream")
           || method.equals("newBufferedWriter")
-          || method.equals("createFile");
+          || method.equals("createFile")
+          || method.equals("createTempFile")
+          || method.equals("copy")
+          || method.equals("move");
     }
-    return (owner.equals("java.io.FileOutputStream") || owner.equals("java.io.RandomAccessFile")) && method.equals("<init>");
+    if (owner.equals("java.nio.channels.AsynchronousFileChannel")) {
+      return method.equals("open");
+    }
+    return (owner.equals("java.io.FileOutputStream")
+            || owner.equals("java.io.FileWriter")
+            || owner.equals("java.io.PrintWriter")
+            || owner.equals("java.io.RandomAccessFile"))
+        && method.equals("<init>");
   }
 }

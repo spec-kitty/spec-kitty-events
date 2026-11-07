@@ -13,6 +13,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.speckitty.missionstatus.adapter.out.ledger.LedgerLock;
 import org.speckitty.missionstatus.adapter.out.ledger.LedgerLocks;
@@ -20,6 +22,7 @@ import org.speckitty.missionstatus.adapter.out.ledger.LedgerLocks;
 class StatusLogAppenderTest {
 
   @TempDir Path repository;
+  @TempDir Path outsideRepository;
 
   private Path gcd;
   private Path mission;
@@ -116,6 +119,31 @@ class StatusLogAppenderTest {
     assertThatThrownBy(this::readCurrent).isInstanceOf(TornTailException.class).hasMessageContaining(log.toString());
     assertThatThrownBy(() -> append("{\"new\": true}\n")).isInstanceOf(TornTailException.class);
     assertThat(Files.readAllBytes(log)).isEqualTo(torn);
+  }
+
+  @Test
+  @DisabledOnOs(OS.WINDOWS)
+  void refusesASymlinkedLogWithoutReadingOrWritingItsTarget() throws Exception {
+    Path target = outsideRepository.resolve("status.events.jsonl");
+    byte[] before = "before\n".getBytes(StandardCharsets.UTF_8);
+    Files.write(target, before);
+    Files.createSymbolicLink(log, target);
+
+    assertThatThrownBy(this::readCurrent).isInstanceOf(PersistenceFailedException.class);
+    assertThatThrownBy(() -> append("after\n")).isInstanceOf(PersistenceFailedException.class);
+    assertThat(Files.readAllBytes(target)).isEqualTo(before);
+  }
+
+  @Test
+  @DisabledOnOs(OS.WINDOWS)
+  void refusesADanglingSymlinkWithoutCreatingItsTarget() throws Exception {
+    Path target = outsideRepository.resolve("missing.events.jsonl");
+    Files.createSymbolicLink(log, target);
+
+    assertThatThrownBy(this::readCurrent).isInstanceOf(PersistenceFailedException.class);
+    assertThatThrownBy(() -> append("after\n")).isInstanceOf(PersistenceFailedException.class);
+    assertThat(target).doesNotExist();
+    assertThat(log).isSymbolicLink();
   }
 
   @Test

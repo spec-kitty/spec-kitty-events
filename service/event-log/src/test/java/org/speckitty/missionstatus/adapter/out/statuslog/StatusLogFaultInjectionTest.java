@@ -10,7 +10,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
@@ -113,6 +115,83 @@ class StatusLogFaultInjectionTest {
                     .anySatisfy(suppressed -> assertThat(suppressed).hasMessage("injected truncate failure")));
   }
 
+  @Test
+  void rollbackTruncatesThenForces() throws Exception {
+    Path gcd = Files.createDirectories(repository.resolve(".git"));
+    Path mission = Files.createDirectories(repository.resolve("kitty-specs/mission"));
+    Path log = mission.resolve("status.events.jsonl");
+    byte[] before = "before\n".getBytes(StandardCharsets.UTF_8);
+    Files.write(log, before);
+    FaultyFileOps files = new FaultyFileOps(Fault.FORCE);
+
+    assertThatThrownBy(() -> append(gcd, mission, files, "after\n"))
+        .isInstanceOf(PersistenceFailedException.class);
+    assertThat(files.rollbackEvents).containsExactly("truncate", "force");
+    assertThat(Files.readAllBytes(log)).isEqualTo(before);
+  }
+
+  @Test
+  void failedParentDirectorySyncRollsBackANewFile() throws Exception {
+    Path gcd = Files.createDirectories(repository.resolve(".git"));
+    Path mission = Files.createDirectories(repository.resolve("kitty-specs/mission"));
+    Path log = mission.resolve("status.events.jsonl");
+    FaultyFileOps files = new FaultyFileOps(Fault.KILL_AFTER_SYNC);
+    files.failDirectorySync = true;
+
+    assertThatThrownBy(() -> append(gcd, mission, files, "first\n"))
+        .isInstanceOf(PersistenceFailedException.class)
+        .hasCauseInstanceOf(IOException.class)
+        .hasRootCauseMessage("injected directory sync failure");
+    assertThat(log).exists().isEmptyFile();
+    assertThat(files.rollbackEvents).containsExactly("truncate", "force");
+  }
+
+  @Test
+  void aLogChangedBetweenTheTailCheckAndOpenIsRefused() throws Exception {
+    Path gcd = Files.createDirectories(repository.resolve(".git"));
+    Path mission = Files.createDirectories(repository.resolve("kitty-specs/mission"));
+    Path log = mission.resolve("status.events.jsonl");
+    byte[] before = "before\n".getBytes(StandardCharsets.UTF_8);
+    Files.write(log, before);
+    FaultyFileOps files = new FaultyFileOps(Fault.KILL_AFTER_SYNC);
+    files.inconsistentRead = true;
+
+    assertThatThrownBy(() -> append(gcd, mission, files, "after\n"))
+        .isInstanceOf(PersistenceFailedException.class);
+    assertThat(Files.readAllBytes(log)).isEqualTo(before);
+    assertThat(files.rollbackEvents).isEmpty();
+  }
+
+  @Test
+  void runtimeFailureIsRolledBackAndWrapped() throws Exception {
+    Path gcd = Files.createDirectories(repository.resolve(".git"));
+    Path mission = Files.createDirectories(repository.resolve("kitty-specs/mission"));
+    Path log = mission.resolve("status.events.jsonl");
+    byte[] before = "before\n".getBytes(StandardCharsets.UTF_8);
+    Files.write(log, before);
+    FaultyFileOps files = new FaultyFileOps(Fault.KILL_AFTER_SYNC);
+    files.failWithRuntime = true;
+
+    assertThatThrownBy(() -> append(gcd, mission, files, "after\n"))
+        .isInstanceOf(PersistenceFailedException.class)
+        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasRootCauseMessage("injected runtime failure");
+    assertThat(files.rollbackEvents).containsExactly("truncate", "force");
+    assertThat(Files.readAllBytes(log)).isEqualTo(before);
+  }
+
+  private static void append(Path gcd, Path mission, FileOps files, String row) throws IOException {
+    new StatusLogAppender(LedgerLocks.forThisOs(), files)
+        .withMissionLock(
+            gcd,
+            mission,
+            System.nanoTime() + 5_000_000_000L,
+            session -> {
+              session.appendAndSync(row.getBytes(StandardCharsets.UTF_8));
+              return null;
+            });
+  }
+
   private static byte[] concat(byte[] first, byte[] second) {
     byte[] joined = new byte[first.length + second.length];
     System.arraycopy(first, 0, joined, 0, first.length);
@@ -129,8 +208,12 @@ class StatusLogFaultInjectionTest {
 
   private static final class FaultyFileOps implements FileOps {
     private final Fault fault;
+    private final List<String> rollbackEvents = new ArrayList<>();
     private boolean forceReturnedNormally;
     private boolean failTruncate;
+    private boolean failDirectorySync;
+    private boolean failWithRuntime;
+    private boolean inconsistentRead;
     private boolean rollbackStarted;
     private int forceCalls;
 
@@ -145,6 +228,9 @@ class StatusLogFaultInjectionTest {
 
     @Override
     public byte[] read(Path path) throws IOException {
+      if (inconsistentRead) {
+        return new byte[0];
+      }
       if (!Files.exists(path) && Files.isDirectory(path.getParent())) {
         return new byte[0];
       }
@@ -162,6 +248,10 @@ class StatusLogFaultInjectionTest {
 
         @Override
         public int write(ByteBuffer bytes) throws IOException {
+          if (failWithRuntime) {
+            channel.write(bytes.slice(0, Math.min(1, bytes.remaining())));
+            throw new IllegalStateException("injected runtime failure");
+          }
           if (fault == Fault.WRITE) {
             throw new IOException("injected write failure");
           }
@@ -174,6 +264,9 @@ class StatusLogFaultInjectionTest {
         @Override
         public void force() throws IOException {
           forceCalls++;
+          if (rollbackStarted) {
+            rollbackEvents.add("force");
+          }
           if (fault == Fault.FORCE && forceCalls == 1) {
             throw new IOException("injected force failure");
           }
@@ -186,6 +279,7 @@ class StatusLogFaultInjectionTest {
         @Override
         public void truncate(long size) throws IOException {
           rollbackStarted = true;
+          rollbackEvents.add("truncate");
           if (failTruncate) {
             throw new IOException("injected truncate failure");
           }
@@ -201,6 +295,9 @@ class StatusLogFaultInjectionTest {
 
     @Override
     public void syncDirectory(Path directory) throws IOException {
+      if (failDirectorySync) {
+        throw new IOException("injected directory sync failure");
+      }
       if (!System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT).contains("win")) {
         try (FileChannel channel = FileChannel.open(directory, StandardOpenOption.READ)) {
           channel.force(true);
