@@ -1,0 +1,7 @@
+{
+  "input_json": "{\"session_started_at\":\"not-a-date\",\"session_ended_at\":\"2026-01-01T00:00:01Z\",\"keep\":true}",
+  "expected_line": "{\"keep\": true}\n",
+  "covers": [
+    "session_pair_unparseable"
+  ]
+}
