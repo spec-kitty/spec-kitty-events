@@ -236,16 +236,25 @@ families' files in the wheel.
      (`writes NaN`, `raises TypeError`), recorded by the generator as evidence.
    - `covers` (list of strings): the NFR-003 classes the case covers (see T004), so coverage is
      machine-checked.
+   - **Timestamp subset (ruling R12)**: the README states that every timestamp in a fixture uses a
+     form in the **shared 3.10-compatible subset**: one that this package's reference parses the
+     same way on Python 3.10 (through `_iso8601.normalize_iso8601_shape`) and on core's 3.12, and
+     that WP03's Java `PyIsoDateTime` parses the same way. Forms outside it (ISO week dates,
+     non-ASCII digits, exotic separators) are pinned only by WP03's `PyIsoDateTime` vectors, never
+     by a fixture.
 3. `manifest.json`: one entry per case, `fixture_type: "status_append"`, `event_type:
    "StatusRow"`, `min_version` set to the next package version (read `pyproject.toml`), `notes`
    one sentence.
-4. `pyproject.toml` package data: add
-   `conformance/fixtures/status_append/README.md`, `.../status_append/valid/*.json`,
-   `.../status_append/invalid/*.json`, **and** the parity corpus's
-   `conformance/fixtures/status_transition_parity/README.md`,
-   `.../status_transition_parity/*.json` (the case schema and the unreachable-reason record),
-   `.../status_transition_parity/cases/*.json` (WP04 creates those files; you own
-   `pyproject.toml`, so the globs are added once, here).
+4. `pyproject.toml` package data (**you own `pyproject.toml`**; nobody else edits it): add
+   `conformance/fixtures/status_append/README.md`, `conformance/fixtures/status_append/valid/*.json`,
+   `conformance/fixtures/status_append/invalid/*.json`, **and** the parity corpus's
+   `conformance/status_transition_parity/README.md`, `conformance/status_transition_parity/*.json`
+   (the case schema and the unreachable-reason record) and
+   `conformance/status_transition_parity/cases/*.json`. The corpus sits **outside** `fixtures/`
+   (orchestrator ruling R1) so `tests/unit/test_fixtures.py:390-405`, which requires a manifest
+   entry for every `.json` under `fixtures/`, is unaffected; WP04 creates those files.
+   `status_append` stays under `fixtures/`, so every one of its `.json` files needs a manifest entry
+   (that same test enforces it).
 
 **Validation**:
 - [ ] `load_fixtures("status_append")` returns `[]` (special type skipped) and does not raise.
@@ -270,7 +279,9 @@ families' files in the wheel.
 7. `session_pair_overwrites_duration`: both parse and an existing `session_duration_s`.
 8. `session_pair_one_missing_keeps_duration`: only one timestamp, existing duration survives.
 9. `session_pair_unparseable`: one malformed timestamp, both removed, no duration.
-10. `session_pair_zulu_and_basic`: `Z` suffix and basic format (pins the 3.11+ grammar).
+10. `session_pair_zulu_and_basic`: `Z` suffix and basic format (inside the shared subset because
+    `normalize_iso8601_shape` handles both on 3.10; drop the basic form if the 3.10 test run
+    disagrees with core's 3.12 output).
 11. `session_pair_both_naive`: two naive timestamps (subtractable).
 12. `nested_session_keys_untouched`: the names inside a nested object.
 13. `escaping_non_ascii_and_astral`: `é`, an em dash (U+2014), `😀` (surrogate pair).
@@ -290,7 +301,8 @@ families' files in the wheel.
 **Validation**:
 - [ ] Each `covers` list is non-empty; the union covers every class above.
 - [ ] Every expected line was written by the generator (T006) and `--check` passes locally
-      against a core checkout at the pin (or record in the commit that it ran in CI only).
+      against a core worktree at the pin (T006 step 7; mandatory, ruling R3).
+- [ ] Every timestamp form is in the shared 3.10-compatible subset (ruling R12).
 
 ### T005 Packaged runner and unit tests
 
@@ -345,10 +357,23 @@ test-only generator, and CI diffs them".
    core on `sys.path`; test the `--check` diff logic and the document writer on a temp directory
    with a stub serializer. The module must import without core (lazy core import inside `main`).
 
+7. **Mandatory local core run (ruling R3).** Add a worktree of the core clone at the pin into a
+   scratch directory (never touch the clone's own working tree) and sync it there:
+   ```bash
+   CORE_SRC=/home/stijn/Documents/code/kitty/spec-kitty      # never modify its working tree
+   CORE=$(mktemp -d)/core-512567ee
+   git -C "$CORE_SRC" fetch -q origin 512567eee71e31bb39f580c4f7acf8b865e9d1b2 || true
+   git -C "$CORE_SRC" worktree add --detach "$CORE" 512567eee71e31bb39f580c4f7acf8b865e9d1b2
+   (cd "$CORE" && uv sync --frozen)
+   SPEC_KITTY_CORE_CHECKOUT="$CORE" "$CORE/.venv/bin/python" scripts/conformance/generate_status_append.py          # write
+   SPEC_KITTY_CORE_CHECKOUT="$CORE" "$CORE/.venv/bin/python" scripts/conformance/generate_status_append.py --check  # must exit 0
+   git -C "$CORE_SRC" worktree remove --force "$CORE"     # when done
+   ```
+   On success the script prints the case count per class (`covers`) and the interpreter version;
+   record both in the final commit message.
+
 **Validation**:
-- [ ] Locally, with a core checkout at the pin and core's venv:
-      `SPEC_KITTY_CORE_CHECKOUT=/path/to/core /path/to/core/.venv/bin/python
-      scripts/conformance/generate_status_append.py --check` exits 0.
+- [ ] The step 7 `--check` exits 0 against the core worktree at `512567ee`.
 - [ ] Without `SPEC_KITTY_CORE_CHECKOUT` the script exits 2 with a one-line message.
 - [ ] `uv run pytest tests/test_generate_status_append.py -q` green without core.
 
@@ -359,13 +384,18 @@ uv run pytest tests/test_status_log.py tests/test_generate_status_append.py -q
 uv run pytest --pyargs spec_kitty_events.conformance -q
 uv run mypy --strict src/spec_kitty_events
 uv run ruff check . && uv run ruff format --check .
-# Optional, with a core checkout at service/core-pin.json and core's venv:
-SPEC_KITTY_CORE_CHECKOUT=/path/to/core /path/to/core/.venv/bin/python scripts/conformance/generate_status_append.py --check
+# NFR-004 complexity gate on the new Python (ruling R6; a command-line flag, no ruff config change):
+uv run ruff check --select C901 --config 'lint.mccabe.max-complexity = 15' src/spec_kitty_events/status_log.py src/spec_kitty_events/conformance/test_status_append.py scripts/conformance/generate_status_append.py
+# Mandatory (T006 step 7): core worktree at 512567ee, uv sync --frozen in it
+SPEC_KITTY_CORE_CHECKOUT="$CORE" "$CORE/.venv/bin/python" scripts/conformance/generate_status_append.py --check
 ```
 
-Blast radius: `tests/test_fixture_determinism.py` and `tests/test_conformance_classes.py` read
-`manifest.json`; run them (`uv run pytest tests/test_fixture_determinism.py
-tests/test_conformance_classes.py -q`) after adding the entries.
+Blast radius: `tests/unit/test_fixtures.py` (every `.json` under `fixtures/` has a manifest entry),
+`tests/test_fixture_determinism.py` and `tests/test_conformance_classes.py` read `manifest.json`;
+run them (`uv run pytest tests/unit/test_fixtures.py tests/test_fixture_determinism.py
+tests/test_conformance_classes.py -q`) after adding the entries. The package also runs on Python
+3.10: run `uv run --python 3.10 pytest tests/test_status_log.py -q` once to prove the reference
+agrees with the fixtures there (ruling R12).
 
 ## Definition of Done
 
@@ -373,16 +403,20 @@ tests/test_conformance_classes.py -q`) after adding the entries.
 - [ ] ≥ 12 valid and ≥ 4 invalid `status_append` cases, each produced by the generator, each
       registered in `manifest.json`, shipped as package data.
 - [ ] The packaged runner and the unit tests are green; mypy --strict and ruff are clean.
-- [ ] `generate_status_append.py --check` passes against core at the pin (locally or as recorded
-      for WP04's CI job).
-- [ ] `pyproject.toml` ships both new families' globs.
+- [ ] `generate_status_append.py --check` was run locally against a core worktree at `512567ee`
+      (`uv sync --frozen` in it) and exited 0; the per-class counts and core's Python version are in
+      the final commit message (ruling R3). WP10's CI job repeats it on every PR.
+- [ ] `pyproject.toml` ships both new families' globs (the corpus at
+      `conformance/status_transition_parity/`, ruling R1).
+- [ ] The C901 check (max 15) is clean on the new Python files; the reference passes on 3.10.
 - [ ] The final commit message lists the commands run and their pass counts.
 
 ## Risks
 
 - **Interpreter drift**: Python 3.10's `fromisoformat` rejects `Z` and basic format; core's 3.12
   accepts them. The reference must agree with the generator's output on every supported
-  interpreter (CI runs the package on 3.10+). The `session_pair_zulu_and_basic` case catches it.
+  interpreter (CI runs the package on 3.10+). Fixtures stay in the shared 3.10-compatible subset
+  (ruling R12); the `session_pair_zulu_and_basic` case is the guard.
 - **Mis-modelled invalid cases**: core does not refuse NaN; the expected error is the protocol's.
   Keep `core_behaviour` honest so reviewers see the deliberate divergence.
 - **Hand-edited expected lines**: never. `--check` is the gate.

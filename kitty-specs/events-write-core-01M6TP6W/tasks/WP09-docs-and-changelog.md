@@ -3,6 +3,7 @@ work_package_id: WP09
 title: Documentation, contract CHANGELOG pass and changelog fragment
 dependencies:
 - WP08
+- WP10
 requirement_refs:
 - FR-021
 - C-005
@@ -69,7 +70,8 @@ behaviour and cite files, not the mission's planning artifacts (do not link `kit
     native downcall metadata, the status-log interop in `lock-interop`.
   - WP03: the contract delta (`WriteOperation`, `TransitionUnit.operation`, widened descriptions),
     the refusal vocabulary, the typed edge and its row rules.
-  - WP04: the parity corpus, its generator, the `write-core-parity` CI job.
+  - WP04: the parity corpus (`src/spec_kitty_events/conformance/status_transition_parity/`) and its
+    generator; WP10: the `write-core-parity` CI job.
   - WP05: the Java encoder and sanitizer.
   - WP06/WP07: `command-cli`'s pure `domain.authority` (fold, machine, guards, dependency verdict,
     claim rules, batches) and the reason ledger (which reasons are unreachable over the wire, and

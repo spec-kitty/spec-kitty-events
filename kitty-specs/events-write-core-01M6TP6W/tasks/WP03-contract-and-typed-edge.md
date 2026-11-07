@@ -63,6 +63,7 @@ owned_files:
 - service/domain-model/src/main/java/org/speckitty/missionstatus/domain/model/PyIsoDateTime.java
 - service/domain-model/src/test/java/org/speckitty/missionstatus/domain/model/PyIsoDateTimeTest.java
 - service/domain-model/src/test/resources/pyisodatetime/**
+- service/domain-model/build.gradle.kts
 - scripts/conformance/generate_fromisoformat_vectors.py
 role: implementer
 tags: []
@@ -148,16 +149,31 @@ the planning base and merge target recorded here are `main`.
 - No new dependency (NFR-005). No dependency on core (C-001); core paths are cited for parity only.
 - The edge order (guard, token, protocol, size, draining, shape) does not move (FR-019).
 - No refusal detail echoes a value, a path or a token (FR-025): every detail is a fixed text.
-- Declared out-of-map edits (the files belong to WP08):
-  1. `service/command-cli/build.gradle.kts`: add `implementation(project(":domain-model"))` and
-     nothing else.
+- Declared out-of-map edits (the files belong to WP08; record each in the PR):
+  1. `service/command-cli/build.gradle.kts`, **the shared `dependencies { }` block**: add
+     `implementation(project(":domain-model"))` and nothing else. WP08 later edits the same block
+     (event-log, SnakeYAML, test fixtures); this is the one declared shared edit between WP03 and
+     WP08 (ruling R11).
   2. `service/command-cli/src/test/java/org/speckitty/commandcli/adapter/in/http/operations/OperationsTest.java`:
-     only the minimal-row bodies of `aRowWhoseMissionIdIsNullCountsAsNamingNoMission` (`:177`)
-     and `aCoordinationRefCommitIsWellFormedAndReachesTheGate` (`:188`) gain the transition-row
-     fields T019 requires (`from_lane`, `to_lane`, `actor`), so they still reach the gate. Record
-     both edits in the PR.
+     the base `row` of `malformedWrites()` (`:118`) becomes a **valid transition row** (`event_id`,
+     `wp_id`, `from_lane`, `to_lane`, `actor`, and the other fields of
+     `examples/TransitionUnit.claim.yaml`), so every malformed case still fails for its own reason;
+     the minimal-row bodies of `aRowWhoseMissionIdIsNullCountsAsNamingNoMission` (`:177`) and
+     `aCoordinationRefCommitIsWellFormedAndReachesTheGate` (`:188`) gain the same fields so they
+     still reach the gate. This is FR-019's allowed exception (tests that asserted the old
+     shape-only contract); say so in the PR.
+  3. `service/command-cli/src/test/java/org/speckitty/commandcli/nativesmoke/NativeSmokeTest.java`:
+     only the write body's bare row (`:51-60`) becomes a valid transition row, so the native legs
+     stay green between WP03 and WP08 (it still expects the fail-closed 500 until WP08 rewrites it).
+- Every example under `contracts/mission-write/examples/` that carries rows must pass the new row
+  rules (T019); a test iterates them all (ruling R11).
+- Native test floor: `DomainValuesTest` is `@Tag("native")` and counts toward the command-cli native
+  floor (≥ 120, `.github/workflows/service.yml:432`); do not move tests out of native-tagged classes.
 - Python (`scripts/conformance/generate_fromisoformat_vectors.py`) is linted by
-  `uv run ruff check . && uv run ruff format --check .`.
+  `uv run ruff check . && uv run ruff format --check .` and complexity-gated by
+  `uv run ruff check --select C901 --config 'lint.mccabe.max-complexity = 15' scripts/conformance/generate_fromisoformat_vectors.py`
+  (ruling R6). Java complexity ≤ 15 is enforced by WP08's command-cli JaCoCo METHOD/COMPLEXITY rule
+  and by the domain-model `jacocoTestCoverageVerification` you run.
 - Do not run `make test-full`.
 - Record the test commands you ran and their pass counts in your final commit message.
 
@@ -175,7 +191,8 @@ the planning base and merge target recorded here are `main`.
    a description from the delta doc (`transition`: core's emit pipeline as `move-task`,
    `mark-status` and `status emit` use it; the starts: core's
    `work_package_lifecycle.start_implementation_status` / `start_review_status`, which carry the
-   claim rules), and an `x-source` like its neighbours.
+   claim rules), and an `x-derived` annotation (not `x-source`: the enum is minted by this
+   contract, derived from core's door names, so no single core symbol is its source; ruling R11).
 2. `TransitionUnit.yaml`: add optional `operation: {$ref: WriteOperation.yaml}` with a
    description ("absent means `transition`"). It stays `additionalProperties: false`; `required`
    unchanged. `TransitionBatch` inherits it through its unit items.
@@ -230,8 +247,10 @@ the planning base and merge target recorded here are `main`.
 
 **Steps**:
 1. Tests first: every `RefusalCode` is a `WriteRefusalCode` value with the status
-   `WriteRefusal.yaml` binds it (extend the existing `DomainValuesTest:97` check; it reads the
-   contract); every `RefusalReason` URN is a `WriteRefusalReason` value, all 15 present, and each
+   `WriteRefusal.yaml` binds it. The **contract-reading** check goes in the new, **untagged**
+   `RefusalVocabularyTest` (it reads files under `commandCli.contractRoot`, which the native test
+   binary cannot; `DomainValuesTest` is `@Tag("native")`, so it keeps only in-memory checks and
+   loses none of its tests); every `RefusalReason` URN is a `WriteRefusalReason` value, all 15 present, and each
    binds the code research §2 gives (`dependencies_unsatisfied → DEPENDENCIES_NOT_SATISFIED`,
    `claim_held_by_other_actor → WP_ALREADY_CLAIMED`, the other 13 → `TRANSITION_REJECTED`).
 2. `RefusalCode` adds: `TRANSITION_REJECTED` 409, `WP_ALREADY_CLAIMED` 409,
@@ -267,7 +286,12 @@ edge (T019) and by WP05's sanitizer.
    `+05:30`, `-00:00`, offsets with seconds and microseconds, fractions of 1 to 9 digits (and the
    `,` decimal mark), hour-only and hour-minute times, date-only, ISO week dates
    (`2026-W01-1`), invalid months/days/hours (`24:00`, `23:60`), trailing garbage, empty
-   string, non-ASCII digits. Add a `--check` mode that diffs.
+   string, non-ASCII digits. **At least one vector per rejection branch** of the port (every place
+   `_pydatetime` raises `ValueError`: bad separator, bad date length, bad week, bad hour, minute,
+   second, fraction, offset, trailing text), each named in the vector's `branch` field so the Java
+   test can assert every branch is exercised (ruling R11). Add a `--check` mode that diffs.
+   Fixtures in WP01 use only the shared 3.10-compatible subset; the full grammar lives here
+   (ruling R12).
 2. Port CPython 3.12's pure-Python reference (`Lib/_pydatetime.py`:
    `_find_isoformat_datetime_separator`, `_parse_isoformat_date`, `_parse_isoformat_time`,
    `_parse_hh_mm_ss_ff`, `_parse_isoformat_timezone`) rather than writing a regex; it is the
@@ -278,8 +302,13 @@ edge (T019) and by WP05's sanitizer.
    throws `IllegalArgumentException` when exactly one side is aware, the Python `TypeError`).
 4. Respect `DomainModelBoundaryTest` (java.time is allowed; no java.util.concurrent, no I/O).
    Complexity ≤ 15 per method: one method per grammar piece.
+5. Build (`service/domain-model/build.gradle.kts`, **you own it**, ruling R11): add
+   `testImplementation(libs.jackson.databind.bootmanaged)` as event-log's build does, so the test
+   reads `vectors.json`; nothing in `main` changes. The module's `jacocoTestCoverageVerification`
+   and `jacocoScopeCheck` (the root convention's tasks) must pass with the new class.
 
-**Validation**: [ ] the test runs every vector; [ ] `:domain-model:check` green.
+**Validation**: [ ] the test runs every vector and asserts every `branch` value occurs; [ ]
+`:domain-model:check`, `:domain-model:jacocoTestCoverageVerification` and `jacocoScopeCheck` green.
 
 ### T018 Typed `WriteRequest`
 
@@ -341,18 +370,22 @@ edge (T019) and by WP05's sanitizer.
    `delta: {}` and with `delta: {"note": ""}`; `from_lane: "doing"`, `"Planned"`, `" planned"`,
    `"in-review"` (passes: unknown, not an alias); `1e400` nested in a list; a naive/aware pair
    and an aware/aware pair; a batch where unit 3 breaks a rule (`instance: #/units/3`).
-6. Run the existing edge and operations tests unmodified, except the two declared minimal-row
-   bodies (ground rules): `./gradlew :command-cli:test --tests '*edge*' --tests '*OperationsTest'`.
+6. A test iterates every file under `contracts/mission-write/examples/` that carries `rows` or
+   `row` and asserts the new rules accept it (ruling R11).
+7. Run the existing edge and operations tests unmodified, except the declared `OperationsTest`
+   rows (ground rules): `./gradlew :command-cli:test --tests '*edge*' --tests '*OperationsTest'`.
 
 ## Test strategy
 
 ```bash
-jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :domain-model:check
+jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :domain-model:check :domain-model:jacocoTestCoverageVerification
+jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh jacocoScopeCheck
 jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :command-cli:check
 jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :contracts:check
 uv run pytest tests -k "contract or mission_write" -q
 uv run python scripts/conformance/generate_fromisoformat_vectors.py --check   # under Python 3.12
 uv run ruff check . && uv run ruff format --check .
+uv run ruff check --select C901 --config 'lint.mccabe.max-complexity = 15' scripts/conformance/generate_fromisoformat_vectors.py
 ```
 
 Blast radius: `:event-log:check` and `:mission-status-api:test` compile against domain-model;
@@ -364,10 +397,14 @@ run them once.
       records every addition and widening.
 - [ ] `RefusalCode` has every code the write path answers with its status; `RefusalReason` has the
       15 URNs with their codes; `RefusalBody` carries `type` when set.
-- [ ] `PyIsoDateTime` passes every committed vector; the vectors regenerate unchanged under 3.12.
+- [ ] `PyIsoDateTime` passes every committed vector, with a vector per rejection branch; the vectors
+      regenerate unchanged under 3.12; domain-model's JaCoCo verification and scope check pass.
+- [ ] Every contract example with rows passes the new rules; the contract-reading vocabulary check
+      is in the untagged `RefusalVocabularyTest`; the native floor (≥ 120) is untouched.
 - [ ] `WriteBodies` returns a typed `WriteRequest` and enforces the four row rules with fixed
       details; the existing edge and operations tests are green.
-- [ ] The two declared out-of-map edits are recorded in the PR.
+- [ ] The three declared out-of-map edits (command-cli build dependency block, `OperationsTest`
+      rows, `NativeSmokeTest` row) are recorded in the PR.
 - [ ] The final commit message lists the commands and counts.
 
 ## Risks

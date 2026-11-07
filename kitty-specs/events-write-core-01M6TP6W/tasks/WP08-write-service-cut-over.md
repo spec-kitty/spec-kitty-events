@@ -64,6 +64,9 @@ create_intent:
 - service/command-cli/src/test/java/org/speckitty/commandcli/adapter/in/http/operations/WriteRig.java
 - service/command-cli/src/test/java/org/speckitty/commandcli/architecture/WriteOwnershipRulesTest.java
 - service/command-cli/src/test/java/org/speckitty/commandcli/architecture/fixture/writes/
+- service/command-cli/src/main/resources/META-INF/native-image/org.speckitty/command-cli/reachability-metadata.json
+- service/command-cli/src/test/java/org/speckitty/commandcli/config/ServiceWiringTest.java
+- service/command-cli/src/test/java/org/speckitty/commandcli/config/NativeDowncallMetadataTest.java
 execution_mode: code_change
 owned_files:
 - service/command-cli/src/main/java/org/speckitty/commandcli/application/write/WriteService.java
@@ -95,6 +98,10 @@ owned_files:
 - service/command-cli/src/test/java/org/speckitty/commandcli/architecture/fixture/writes/**
 - service/command-cli/src/test/java/org/speckitty/commandcli/nativesmoke/**
 - service/command-cli/src/test/java/org/speckitty/commandcli/config/CommandCliHintsTest.java
+- service/command-cli/src/test/java/org/speckitty/commandcli/config/ServiceWiringTest.java
+- service/command-cli/src/test/java/org/speckitty/commandcli/config/NativeDowncallMetadataTest.java
+- service/command-cli/src/test/java/org/speckitty/commandcli/process/ServiceProcess.java
+- service/command-cli/src/main/resources/META-INF/native-image/**
 role: implementer
 tags: []
 tracker_refs: []
@@ -248,8 +255,12 @@ answers 422, not 404.
 **Steps**:
 1. `RootCheckout.of(gcd)`: the gcd's real path must be named `.git`, its parent's `.git` must
    resolve to the same real path (so the parent is the root checkout, not a linked worktree whose
-   `.git` is a file), and the repository must not be bare (`core.bare`). Anything else: no
-   Mission is found (404), never a guess. Resolve once at startup.
+   `.git` is a file), and the repository must not be bare (`core.bare`). Anything else (a gcd of a
+   bare repository, a gcd reached through a linked/lane worktree) means the service cannot verify any
+   write location: every write answers `422 WRITE_LOCATION_UNVERIFIED` (ruling R7), reported by the
+   catalog as "root unverifiable", distinct from "Mission not found", and checked before the
+   `missionId` scan. Never a guess. Resolve once at startup. A request whose `checkout` names a lane
+   worktree (anything but `.`) answers `422` at step 4.
 2. `find(missionId)`: scan `<root>/kitty-specs/*/meta.json` (Jackson tree read, no binding), match
    `mission_id`; zero or several → absent. Cache nothing that can go stale across writes, or
    invalidate on each write (a Mission can be created while the service runs).
@@ -268,6 +279,16 @@ answers 422, not 404.
 6. `Frontmatter`: the block between a leading `---` line and the next `---` line, capped (64 KiB),
    loaded with `new Yaml(new SafeConstructor(new LoaderOptions()))` (default alias limit, no type
    tags). Malformed YAML → `Unresolvable`, never an exception out of the adapter.
+7. **`DiskMissionFactsParityTest`** (ruling R5; in the `adapter/out/mission` test package): for every
+   WP04 corpus case with `layer: domain`, write its `tasks` texts to `kitty-specs/<dir>/tasks/` of a
+   temp repository (a real `git init`, so `.git` is a directory), build **`DiskMissionFacts`** (the
+   production reader, not WP06's `CorpusMissionFacts`) and run `Authority.standard()` with it; the
+   outcome must equal the case's `expected` (ack, or code, reason, message, unit). This proves the
+   production frontmatter reader agrees with core on every declaration form the corpus holds.
+8. Tests: a gcd of a bare repository and a gcd of a linked worktree → `WRITE_LOCATION_UNVERIFIED`;
+   two Missions with one `mission_id` → `MISSION_NOT_FOUND`; a Mission created after start is found.
+   Every temp repository is made with `git init` (a real `.git` directory), never a hand-made
+   `.git` file.
 
 ### T046 `adapter.out.statuslog`
 
@@ -299,7 +320,9 @@ answers 422, not 404.
    All rows present and identical → replay; none present → new; anything else →
    `EVENT_ID_CONFLICT`. In a batch, a replayed unit **after** a new unit → `EVENT_ID_CONFLICT`.
    Replay is decided before the authority, so a retry with a now-stale `from_lane` is a replay
-   (§11.1).
+   (§11.1). Test (ruling R7): a log in which one `event_id` appears twice with different bytes; a
+   unit equal to the **first** occurrence is a replay, a unit equal only to the second is
+   `EVENT_ID_CONFLICT`.
 2. `AckBody` (native-friendly, an ordered map like `RefusalBody.java:17-52`, never bean
    introspection): `DurabilityAck` `{appendedLines, eventIds, fsynced: true, replayed,
    statusCommit: null}`; `BatchDurabilityAck` `{fsyncs, units}` with `fsyncs` 0 only when every
@@ -309,7 +332,8 @@ answers 422, not 404.
 3. `WriteController`: drain (unchanged), then the typed parse, then `writeService.write(request)`,
    then `AckBody` or `RefusalBody` (with `withType(reason.urn())` when a reason is present,
    `withInstance("#/units/" + i)` for a batch unit, `Retry-After: 1` on `SERVICE_BUSY`).
-4. `ServiceWiring`: build `FilesystemMissionCatalog(runtime.options().gitCommonDir())`,
+4. `ServiceWiring` (test: `config/ServiceWiringTest` asserts the wired `WriteService` budget is
+   exactly 10 s, ruling R7): build `FilesystemMissionCatalog(runtime.options().gitCommonDir())`,
    `EventLogStatusLog(new StatusLogAppender(), gcd)`, `EventLogRowCodec`, `WriteTurn`,
    `Authority.standard()`, `WriteService`; remove the `writeGate()` bean and the class; update
    `ServiceLifecycleTest` (it referenced `WriteGate`).
@@ -329,8 +353,9 @@ answers 422, not 404.
 2. The budget is 10 s (core's bounded status-lock timeout, §11.4). Inject the budget and a
    `LongSupplier` nano clock through the constructor so tests use 200 ms; production wiring passes
    10 s.
-3. Tests: two concurrent writes to one Mission are serialized and the second is judged against the
-   first's result; a held turn past the budget → `SERVICE_BUSY`; a Mission lock held by another
+3. Tests: a batch of n new units makes **exactly one** `appendAndSync` call (a recording
+   `StatusLog` fake counts it; ruling R7), an all-replayed batch makes none; two concurrent writes to
+   one Mission are serialized and the second is judged against the first's result; a held turn past the budget → `SERVICE_BUSY`; a Mission lock held by another
    holder (WP02's `LedgerLocks` from the test) → `STATUS_LOCK_HELD`, nothing written.
 
 ### T049 File-write ownership rule (FR-010, command-cli half)
@@ -341,13 +366,14 @@ answers 422, not 404.
 **Steps**:
 1. Rule over command-cli's main classes: no class outside the allowlist
    `org.speckitty.commandcli.adapter.out.filesystem..` (the state directory: endpoint file and
-   service lock) calls a JDK file-write API (`Files.write*`, `Files.newOutputStream`,
-   `Files.newBufferedWriter`, `Files.copy`, `Files.move`, `Files.createFile`, `FileOutputStream`,
-   `FileWriter`, `RandomAccessFile`, `FileChannel.open`, `AsynchronousFileChannel.open`). Status
-   logs are written only through event-log's appender (WP02 holds the event-log side). Name the
-   allowlist in `.because(...)`.
+   service lock) matches **WP02's shared predicate** `FileWriteApis` (event-log test fixtures; add
+   `testImplementation(testFixtures(project(":event-log")))`; ruling R8). Do not keep a second list.
+   Status logs are written only through event-log's appender (WP02 holds the event-log side). Name the
+   allowlist in `.because(...)`, and record the FR-010 scope in the test's Javadoc: command-cli
+   here, event-log in `EventLogBoundaryTest` (WP02), and the read service (`mission-status-api`) by
+   the root `ArchitectureRules` rule 7 (research §11 decision 16).
 2. Planted violation: `RogueWriter` calls `Files.write`; a test asserts the rule fires on it; a
-   conforming fixture holds.
+   conforming fixture (reads with `Files.readString`) holds.
 
 ### T050 Integration tests over HTTP and the benchmark
 
@@ -379,8 +405,16 @@ answers 422, not 404.
   an empty history; drain during a write (the started write is acknowledged; a write after drain
   begins → 503 `SERVICE_DRAINING`); a CRLF log replays.
 - `ProtocolCorpusTest`: every WP04 case with `layer: edge` or `layer: service`, materialized into a
-  `WriteRig` repository and posted over HTTP; compare code, reason, unit index, and for acks
+  `WriteRig` repository and posted over HTTP; compare code, reason, unit index, **and `detail`**
+  (the refusal's `detail` equals the case's `message` when `DetailPolicy` shows core's text, else
+  the fixed text, and never contains a row value: FR-025, ruling R5), and for acks
   `replayed`/`appendedLines`/`fsyncs`.
+- `status_append` invalid fixtures over HTTP (ruling R7): each invalid fixture's row
+  (`input_json`) placed in an otherwise valid unit and posted → `400 REQUEST_MALFORMED`, nothing
+  written. (The `NaN` token is refused as non-JSON; the others by the row rules.)
+- `WriteRig` uses `git init` for a real `.git` directory; process tests use
+  `process/ServiceProcess.java` (you own it; extend it with a Mission-holding repository if the
+  process tests need one).
 - `WriteBenchmarkTest` (`@Tag("benchmark")`): a Mission whose log holds 10,000 rows; ≥ 50
   acknowledged units (a legal chain across work packages); record p50 and p95 to the test output
   and to `build/benchmark/write-latency.json`; assert p95 ≤ 1,000 ms (NFR-001).
@@ -398,21 +432,53 @@ answers 422, not 404.
    binary gets `buildArgs.add("--enable-native-access=ALL-UNNAMED")`; `test` and
    `nativeTagJvmTest` exclude the `benchmark` tag; a `benchmarkTest` task runs it and `check`
    depends on it (the gate runs in CI's Gradle job).
-2. `NativeSmokeTest` (`@Tag("native-binary")`): replace the fail-closed assertion: start the binary
+2. **FFM metadata in command-cli, not event-log (ruling R10)**:
+   `service/command-cli/src/main/resources/META-INF/native-image/org.speckitty/command-cli/reachability-metadata.json`
+   registers the three downcalls of `FlockLedgerLock.Native` (research §5.3): `open` (returns
+   `jint`; pointer, `jint`, `jint`; `firstVariadicArg: 2`, `captureCallState: true`), `flock`
+   (`jint`; `jint`, `jint`; `captureCallState: true`), `close` (`jint`; `jint`). Keeping it out of
+   event-log's jar leaves the read service's image unchanged. Read
+   <https://www.graalvm.org/jdk25/reference-manual/native-image/native-code-interoperability/ffm-api>
+   first and write what it specifies: the metadata schema, whether the GraalVM 25 build needs
+   `-H:+ForeignAPISupport` (with `-H:+UnlockExperimentalVMOptions` if the doc says so) or any other
+   `-H:` flag, for **both** the `main` and the `test` native binaries, plus
+   `--enable-native-access=ALL-UNNAMED`. `config/NativeDowncallMetadataTest` (JVM, untagged) parses
+   the file and asserts exactly those three descriptors, so a drift from `FlockLedgerLock` turns the
+   build red. **Fallbacks**, in order, if the native legs show the metadata is not picked up:
+   (a) pass the file explicitly with `-H:ReachabilityMetadataResources` /
+   `-H:ConfigurationFileDirectories` as the doc names them; (b) a GraalVM `Feature` that calls
+   `RuntimeForeignAccess.registerForDowncall` for the three descriptors, registered with
+   `--features` (compile-only GraalVM SDK; check `gradle/verification-metadata.xml` first: a new
+   artifact needs a reviewed verification entry, NFR-005); (c) stop and escalate. Never fall back to
+   the JDK channel lock on POSIX: it does not exclude core's `flock` on Linux (the spike).
+3. `NativeSmokeTest` (`@Tag("native-binary")`): replace the fail-closed assertion: start the binary
    against a temp repository holding a Mission, post one legal unit, expect `201` with a valid
    `DurabilityAck`, check the log line and that `<gcd>/spec-kitty-locks/<dir>.status.lock` exists
    (the FFM `open`/`flock`/`close` downcalls ran in the image, FR-006). `native-image` is not
    installed locally; this runs in the `native-command-cli` CI legs.
-3. `CommandCliHints`: register what the image needs that AOT does not see (nothing for SnakeYAML's
+4. `CommandCliHints`: register what the image needs that AOT does not see (nothing for SnakeYAML's
    `SafeConstructor` maps in principle; add hints only for failures the native legs show).
-4. JaCoCo floor file: raise `domain` and `application` to the new class counts (the floors are
-   minimums; raising them keeps the rules from passing vacuously).
+5. JaCoCo floor file: set `domain` and `application` to the **exact** new class counts the report
+   shows (ruling R7; the floors are minimums, and an exact value keeps the rules from passing
+   vacuously).
+6. **Complexity gate (NFR-004, ruling R6)**: add a JaCoCo `jacocoTestCoverageVerification` rule with
+   `element = "METHOD"`, `limit { counter = "COMPLEXITY"; value = "TOTALCOUNT"; maximum = 15 }` over
+   the new packages (`org.speckitty.commandcli.domain.authority.*`,
+   `org.speckitty.commandcli.application.write.*`, `org.speckitty.commandcli.adapter.out.mission.*`,
+   `org.speckitty.commandcli.adapter.out.statuslog.*`, and `WriteBodies`, `AckBody`), so WP03, WP06
+   and WP07's code is held to it too; `check` already depends on the verification task.
+7. Native test floor: the command-cli native legs require ≥ 120 executed `@Tag("native")` tests
+   (`.github/workflows/service.yml:432`); keep the JVM twin's count at or above it (no corpus- or
+   file-reading test is tagged `native`).
+8. The `dependencies { }` block is shared with WP03's declared edit (the domain-model line):
+   keep it, or drop it as redundant through event-log's `api`, and say which in the PR (ruling R11).
 
 ## Test strategy
 
 ```bash
 jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :command-cli:test --tests '*application.write*' --tests '*adapter.out*' --tests '*operations*' --tests '*architecture*'
 jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :command-cli:benchmarkTest
+jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :command-cli:jacocoTestCoverageVerification :command-cli:jacocoScopeCheck :command-cli:nativeTagJvmTest
 jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :command-cli:check
 jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :event-log:check :mission-status-api:test
 uv run pytest --pyargs spec_kitty_events.conformance -q
@@ -430,7 +496,17 @@ agent's; run it only if the reviewer asks.
 - [ ] Acks validate against the contract; `fsyncs` is 0 only for an all-replayed batch;
       `statusCommit` is null.
 - [ ] Turn and lock share one deadline; `SERVICE_BUSY` carries `Retry-After: 1`.
-- [ ] `WriteOwnershipRulesTest` holds and fires on its planted violation.
+- [ ] `WriteOwnershipRulesTest` uses WP02's shared `FileWriteApis`, holds, and fires on its planted
+      violation; the FR-010 scope (command-cli, event-log, root rule 7) is recorded.
+- [ ] `DiskMissionFactsParityTest` passes every domain corpus case through the production
+      `DiskMissionFacts`; `ProtocolCorpusTest` compares `detail` too (ruling R5).
+- [ ] The R7 tests exist and pass: `ServiceWiringTest` (10 s), first-occurrence duplicate-id replay,
+      bare-repository and lane-worktree → `WRITE_LOCATION_UNVERIFIED`, one `appendAndSync` per batch,
+      every `status_append` invalid row over HTTP → 400.
+- [ ] The FFM metadata lives in command-cli's resources with the flags the GraalVM doc requires for
+      main and test binaries; `NativeDowncallMetadataTest` guards it; native floor ≥ 120 kept.
+- [ ] The JaCoCo METHOD/COMPLEXITY rule (max 15) covers the new packages and passes; the class
+      floors are the exact new counts.
 - [ ] `benchmarkTest` p95 ≤ 1 s, numbers recorded; native smoke performs a locked write (CI).
 - [ ] `:command-cli:check` green; the final commit message lists commands, counts and p50/p95.
 

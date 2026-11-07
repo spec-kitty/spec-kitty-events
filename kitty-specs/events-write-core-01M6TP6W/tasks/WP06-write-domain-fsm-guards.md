@@ -112,7 +112,7 @@ covers everything except dependency gating, the lifecycle claim rules and batch 
   - `service/command-cli/build.gradle.kts:189-217`: JaCoCo per-class floors for
     `org.speckitty.commandcli.domain.*`: 90 % lines **and** 80 % branches per class. Every class you
     add must meet both.
-  - WP04's corpus: `src/spec_kitty_events/conformance/fixtures/status_transition_parity/`
+  - WP04's corpus: `src/spec_kitty_events/conformance/status_transition_parity/`
     (`README.md` for the fields, layers and areas; `cases/*.json`).
 
 ## Branch Strategy
@@ -165,10 +165,15 @@ the planning base and merge target recorded here are `main`.
    subtask state, `implementerOfRecord`, the folded `review` slot. Fold annotation deltas exactly
    as core does (research §1.7: `subtasks`, `note`, `review`, `agent`, `role`, release and claim
    metadata; scalar `""` is absent).
-4. API: `static Map<String, WpWriteState> fold(List<LogLine> lines)` and an overload that takes
-   already-decoded rows (`List<Map<String,Object>>`) so WP07's batch judge can re-fold log plus
-   earlier accepted units without re-decoding. Performance: one pass plus one sort; WP08 measures
-   10,000 rows (NFR-001).
+4. API: `static FoldView fold(List<LogLine> lines)` and an overload that takes already-decoded
+   rows (`List<Map<String,Object>>`) so WP07's batch judge can re-fold log plus earlier accepted
+   units without re-decoding. Performance: one pass plus one sort; WP08 measures 10,000 rows
+   (NFR-001).
+5. **`FoldView`** (`FoldView.java`, ruling R4): the read-only result of a fold, the one type the gates
+   and judges receive. `WpWriteState of(String wpId)` (a work package with no row in the log gets
+   the state core's reducer gives it, pinned by a corpus case: never `null`),
+   `Map<String, WpWriteState> all()` (unmodifiable), and `boolean known(String wpId)`. It holds no
+   reference to the input rows and cannot be mutated.
 
 ### T033 `LaneMachine`
 
@@ -233,10 +238,19 @@ the planning base and merge target recorded here are `main`.
 4. Done evidence (`emit.py:461-489`): `to_lane == done` with non-null evidence whose `review` is not
    a map, or whose reviewer, verdict or reference is blank → `done_evidence_incomplete` with core's
    text.
-5. Order inside the unit, before the machine: unknown lane, stale, `ClaimGate` (WP07; no-op here),
-   force note, done evidence, then `DependencyGate` (fills `dependencyReady`), then
-   `LaneMachine.check`. Confirm the force-note/done-evidence order against
-   `transition_pipeline.py:355-388` and pin it with a test.
+5. **Order inside the unit (binding: research §11 decision 15, the ruling block at the end of this
+   prompt, ruling R4)**: (1) unknown lane → (2) `ClaimGate`, for the lifecycle operations
+   (`START_IMPLEMENTATION`, `START_REVIEW`) only, judged against the work package's **actual lane
+   in the fold**, not the row's `from_lane` (WP07 implements it; `ClaimGate.NONE` here) → (3) stale
+   `from_lane` → (4) force note → (5) done evidence → (6) `DependencyGate` (fills
+   `dependencyReady`) → (7) `LaneMachine.check`. Confirm the force-note/done-evidence order against
+   `transition_pipeline.py:355-388` and pin each adjacent pair with a test.
+6. **Unit test: a `ClaimGate` refusal beats a stale `from_lane`.** With a stub `ClaimGate` that
+   refuses `WP_ALREADY_CLAIMED`, a `START_IMPLEMENTATION` unit whose `from_lane` is also stale is
+   answered `WP_ALREADY_CLAIMED`, not the stale refusal; the same unit with `Operation.TRANSITION`
+   gets the stale refusal (the gate is not consulted for `TRANSITION`). Also: a stub gate that
+   allows, on a unit whose row matches a zero-event no-op (compatible holder already in the target
+   lane), yields the stale refusal.
 
 ### T036 `UnitJudge`, `Refusal`, `Judgement` and the gate seams
 
@@ -269,13 +283,17 @@ the planning base and merge target recorded here are `main`.
 
 **Steps**:
 1. Rule (parameterized by package, like `EventLogBoundaryTest`'s `codecRule(String)`): classes in
-   `org.speckitty.commandcli.domain.authority..` depend only on themselves,
+   `org.speckitty.commandcli.domain.authority..` (WP07's sub-packages included) depend only on
+   themselves,
    `org.speckitty.commandcli.domain.service..`, `org.speckitty.missionstatus.domain.model..` and
    `java.lang..`, `java.util..` except `java.util.concurrent..`, `java.math..`, `java.time..` except
-   `java.time.Clock` and `java.time.InstantSource`. Import main classes the way
+   `java.time.Clock` and `java.time.InstantSource`. That allowlist excludes `java.io..`,
+   `java.nio..` and `java.net..` entirely (no `java.io` in `domain.authority`, not even
+   `UncheckedIOException` or `Serializable`; ruling R4). Import main classes the way
    `ArchitectureRulesTest` does (exclude tests and `aotTest`).
 2. Non-vacuity: assert the import contains `domain.authority.UnitJudge` and `WriteFold`.
-3. Planted violations, one test each: a fixture that uses `java.nio.file.Files`, one that uses
+3. Planted violations, one test each: a fixture that uses `java.io.File` (or any `java.io` type), one
+   that uses `java.nio.file.Files`, one that uses
    `java.util.concurrent.locks.ReentrantLock`, one that uses `org.springframework` or
    `tools.jackson`, one that uses `java.time.Clock`; and a conforming fixture that holds.
 
@@ -287,7 +305,7 @@ the planning base and merge target recorded here are `main`.
 
 **Steps**:
 1. Locate the corpus without a build change: walk up from `user.dir` to the directory holding
-   `pyproject.toml` and `src/spec_kitty_events/conformance/fixtures/status_transition_parity/cases`;
+   `pyproject.toml` and `src/spec_kitty_events/conformance/status_transition_parity/cases`;
    fail (not skip) when it is not found or holds fewer than 150 cases.
 2. Read each case with the test-classpath Jackson and convert to the value tree (`BigInteger`,
    `Double`, ordered maps). `log` → `LogLine.Value`; `log_text` → split on `\n`, strip one trailing
@@ -302,6 +320,16 @@ the planning base and merge target recorded here are `main`.
    reason and message equal (`message` exact for `core` cases).
 5. Report: a `@TestFactory` with one dynamic test per case id, so the CI log names each failing
    case. The skipped areas are listed in the test's Javadoc with "owned by WP07".
+6. **Floors on the subset you run (ruling R4)**, asserted by the test itself so a thin corpus cannot
+   pass vacuously: ≥ 29 accepted `lane_machine` cases (one per legal edge), and ≥ 1 refusal case for
+   every reason this WP owns (`unknown_lane`, `illegal_transition`,
+   `force_requires_actor_and_reason`, `actor_required`, `implementation_evidence_required`,
+   `reason_required`, `review_ref_required`, `reviewer_approval_required`,
+   `review_evidence_invalid`, `force_note_required`, `done_evidence_incomplete`, and
+   `workspace_context_required` unless WP04's `unreachable.json` lists it), plus ≥ 1 `stale` case.
+   WP07 owns `dependencies_unsatisfied`, `claim_held_by_other_actor` and `start_rejected`.
+7. `ParityCorpusTest` (and every corpus-reading test) is **not** `@Tag("native")`: it reads files
+   from the repository, which the native test binary cannot (ruling R4).
 
 ## Test strategy
 
@@ -319,7 +347,11 @@ Record in the commit message how many corpus cases ran, passed and were skipped 
       rule, `UnitJudge` and the two gate seams; every class meets the JaCoCo 90 % line and 80 %
       branch floors; complexity ≤ 15.
 - [ ] `AuthorityPurityTest` holds on the real package and fires on every planted fixture.
-- [ ] `ParityCorpusTest` passes every `domain` case outside `WP07_AREAS` (100 %); the skip list is
+- [ ] The unit order is unknown lane → ClaimGate (lifecycle ops, actual lane) → stale → force note →
+      done evidence → DependencyGate → machine, with the ClaimGate-beats-stale test; `FoldView` is
+      defined and is the only state type the gates see.
+- [ ] `ParityCorpusTest` (untagged) asserts its floors (≥ 29 accepted `lane_machine` cases, ≥ 1
+      case per WP06 reason) and passes every `domain` case outside `WP07_AREAS` (100 %); the skip list is
       explicit and named.
 - [ ] No use of `StatusReducer` or any event-log class; the read service is unchanged (C-010).
 - [ ] `:command-cli:check` green; the final commit message lists the commands and counts.
@@ -338,3 +370,13 @@ Record in the commit message how many corpus cases ran, passed and were skipped 
 - Read three guard messages against core at the pin.
 - Check `WP07_AREAS` is the only skip mechanism and is used nowhere else.
 - Check the purity rule's planted fixtures actually fail the rule (run them).
+
+## Orchestrator ruling (2026-11-07): lifecycle operations and the review re-claim
+
+This ruling is binding (research.md §11, decision 15). For `start_implementation` and `start_review`, core's lifecycle logic runs against the current lane in the fold before the stale-`from_lane` check. It gives one of three outcomes:
+
+- an incompatible holder → `WP_ALREADY_CLAIMED` / `claim_held_by_other_actor`;
+- a lane the start does not accept → `TRANSITION_REJECTED` / `start_rejected`;
+- a compatible holder already in the target lane, which is core's zero-event no-op → stale `from_lane` (`TRANSITION_REJECTED`, no URN, `oracle: protocol`).
+
+A start from `planned` is a batch of two units, both `start_implementation`. A review re-claim is a `start_review` unit with row `for_review → in_review`. A different actor holding `in_review` with role `reviewer` → `WP_ALREADY_CLAIMED`. The corpus pins each of these.

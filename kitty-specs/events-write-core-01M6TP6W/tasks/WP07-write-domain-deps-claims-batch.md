@@ -147,7 +147,8 @@ the planning base and merge target recorded here are `main`.
 **Files**: `domain/authority/claim/ClaimRules.java`, `ActorCompatibility.java`, tests.
 
 **Steps**:
-1. `ClaimRules.check(Operation, UnitInput, FoldView)` returns `Optional.empty()` for
+1. `ClaimRules.check(Operation, UnitInput, FoldView)` (WP06's `FoldView`) judges against the actual
+   lane in the fold and returns `Optional.empty()` for
    `TRANSITION` (core's emit pipeline has no claim rules; applying them to `move-task` would change
    its codes, research §11.2).
 2. `START_IMPLEMENTATION`, by the work package's lane in the fold (`work_package_lifecycle.py:323-453`):
@@ -180,11 +181,15 @@ the planning base and merge target recorded here are `main`.
    `start_rejected` (`FORCE_NOTE_REQUIRED` or `--force only applies to ...`); a force exit from
    `in_review` without the note is a review claim conflict, from `approved` a `start_rejected`.
    Port the messages verbatim; route echoing ones through `DetailPolicy`.
-3. Zero-event outcomes (same-actor idempotent starts) never reach the service (spec assumption:
-   the client sends no unit). A unit that nonetheless arrives for such a state is judged by what
-   its row says (WP06's stale rule and machine). WP04's README records the wire shape the corpus
-   chose for a review re-claim; follow it, and if it is undecided, raise it in the PR rather than
-   inventing one.
+3. Zero-event outcomes and the review re-claim are **settled** by research §11 decision 15 (the
+   ruling block at the end of this prompt): `ClaimRules` judges against the work package's
+   **actual lane in the fold**, never the row's `from_lane`, and runs before WP06's stale check.
+   A compatible holder already in the start's target lane (core's zero-event no-op) is **allowed**
+   by `ClaimRules`, so WP06's stale-`from_lane` check then refuses it (`TRANSITION_REJECTED`, no
+   URN). A review re-claim is a `start_review` unit with row `for_review → in_review`; when the fold
+   shows `in_review` held by a different actor whose folded role is exactly `reviewer`, answer
+   `WP_ALREADY_CLAIMED`; otherwise allow (and the stale check refuses the no-op). Tests first, one
+   per outcome, mirroring WP04's T024 step 5 cases.
 
 ### T042 `BatchJudge` and `Authority`
 

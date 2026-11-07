@@ -19,7 +19,7 @@ Implementation follows ATDD, red first. Each WP writes its acceptance tests befo
 | T009 | `StatusLogSession.appendAndSync`: one `O_APPEND` write, force, parent-dir sync on create, truncate rollback, `FileOps` seam | WP02 | |
 | T010 | Fault-injection tests (NFR-006, ≥ 100 iterations, fault-injecting channel) | WP02 | |
 | T011 | `EventLogBoundaryTest`: the fourth package, its rule, event-log file-write ownership, planted violations | WP02 | |
-| T012 | Native `reachability-metadata.json`: the `open`, `flock`, `close` downcalls | WP02 | [P] |
+| T012 | Read service's rule 7 exempts `adapter.out.statuslog` (event-log-source scope check) | WP02 | [P] |
 | T013 | `StatusLogInteropTest` against core's Python status writer, wired into the `lock-interop` job (SC-005) | WP02 | |
 | T014 | Contract: `WriteOperation.yaml`, optional `TransitionUnit.operation`, example, `enum_pins.json` | WP03 | [P] |
 | T015 | Contract: the description widenings of the delta and the `1.0.1-SNAPSHOT` CHANGELOG entries | WP03 | |
@@ -33,7 +33,7 @@ Implementation follows ATDD, red first. Each WP writes its acceptance tests befo
 | T023 | The committed `core` corpus, meeting NFR-002's coverage counts | WP04 | |
 | T024 | Hand-written `oracle: protocol` cases: stale `from_lane`, aliases, replay ordering | WP04 | |
 | T025 | Packaged Python test: schema validation and NFR-002 coverage counts | WP04 | |
-| T026 | CI job `write-core-parity` in `service.yml`, `service-gate` needs, detect paths, workflow tests | WP04 | |
+| T026 | CI job `write-core-parity` in `service.yml` running the three `--check` generators | WP10 | |
 | T027 | Python float repr port (shortest round trip, thresholds, signed zero) | WP05 | |
 | T028 | `StatusRowEncoder`: separators, ASCII escaping with surrogate pairs, code-point key order, LF | WP05 | |
 | T029 | `StatusRowSanitizer`: PII recursion, session pair through `PyIsoDateTime`, refusals | WP05 | |
@@ -64,6 +64,8 @@ Implementation follows ATDD, red first. Each WP writes its acceptance tests befo
 | T054 | `service/README.md` and `docs/guides/service-protocol-and-releases.md`: the fail-closed wording retired | WP09 | |
 | T055 | Contract CHANGELOG final pass | WP09 | |
 | T056 | Changelog fragment(s) and the docs and changelog gates | WP09 | |
+| T057 | `service-gate` needs and the detect paths (push paths and `PATTERN`) | WP10 | |
+| T058 | Workflow tests: `SERVICE_JOBS`, detect guard, release exclusion, the job's commands | WP10 | |
 
 ## WP01 - Python reference encoder and the `status_append` fixtures
 
@@ -91,10 +93,10 @@ T008 Locked session and torn tail (WP02)
 T009 Append, sync, rollback, FileOps (WP02)
 T010 Fault injection (WP02)
 T011 Boundary test (WP02)
-T012 Native metadata (WP02)
+T012 Read-service rule 7 exemption (WP02)
 T013 Status-log interop (WP02)
 
-Risks: a short `FileChannel.write`; rollback that itself fails; the `lock-interop` result-count step counts JSON files and must not be disturbed; `service.yml` is WP04's file (one declared out-of-map edit to the `lock-interop` block).
+Risks: a short `FileChannel.write`; rollback that itself fails; the `lock-interop` result-count step counts JSON files and must not be disturbed; `service.yml` is WP10's file (one declared out-of-map edit to the `lock-interop` block). The FFM native metadata moved to WP08 (ruling R10).
 
 ## WP03 - Contract `operation` and the typed write edge
 
@@ -111,11 +113,11 @@ T019 Row rules at the edge (WP03)
 
 Risks: the contract tools (enum pins, examples, provisional and breaking checks) must stay green; the edge order (FR-019) must not move.
 
-## WP04 - Parity corpus, its generator and the drift job
+## WP04 - Parity corpus and its generator
 
 Prompt: [tasks/WP04-parity-corpus.md](./tasks/WP04-parity-corpus.md). Priority P1. Wave 1. Dependencies: none. Profile: python-pedro.
 
-Summary: the language-neutral case schema, a test-only generator that runs core's real entry points at the pin against materialized temporary Missions, the committed corpus (≥ 150 cases), hand-written `protocol` cases, the packaged shape-and-coverage test, and the `write-core-parity` CI job that re-runs both generators with `--check` (FR-015, NFR-002).
+Summary: the language-neutral case schema, a test-only generator that runs core's real entry points at the pin against materialized temporary Missions, the committed corpus (≥ 150 cases), hand-written `protocol` cases (including the research §11 decision 15 cases), and the packaged shape-and-coverage test (FR-015, NFR-002). The corpus lives at `src/spec_kitty_events/conformance/status_transition_parity/`, outside `fixtures/` (ruling R1). A local `--check` against core at `512567ee` is mandatory (ruling R3); the CI drift job is WP10's (ruling R2).
 
 T020 Case schema and README (WP04)
 T021 Materialize and call core (WP04)
@@ -123,9 +125,8 @@ T022 Mapping, determinism, --check (WP04)
 T023 Committed core corpus (WP04)
 T024 Protocol cases (WP04)
 T025 Packaged shape and coverage test (WP04)
-T026 write-core-parity CI job (WP04)
 
-Risks: nondeterministic ids and timestamps in core's rows; a generator that reimplements core instead of calling it (a second authority); a CI job that leaks into release runs.
+Risks: nondeterministic ids and timestamps in core's rows; a generator that reimplements core instead of calling it (a second authority); skipping the mandatory local core run.
 
 ## WP05 - Java status-row encoder and sanitizer
 
@@ -190,7 +191,7 @@ Risks: replay judged after authority (breaks retries); a lock held across the HT
 
 ## WP09 - Documentation, contract CHANGELOG pass and changelog fragment
 
-Prompt: [tasks/WP09-docs-and-changelog.md](./tasks/WP09-docs-and-changelog.md). Priority P2. Wave 5. Depends on WP08. Profile: scribe-sally.
+Prompt: [tasks/WP09-docs-and-changelog.md](./tasks/WP09-docs-and-changelog.md). Priority P2. Wave 5. Depends on WP08 and WP10. Profile: scribe-sally.
 
 Summary: the service README, the services architecture pages, the guide, the contract CHANGELOG final pass and the changelog fragment describe the write core as built; the docs and changelog gates pass (FR-021, C-007).
 
@@ -201,6 +202,18 @@ T055 Contract CHANGELOG pass (WP09)
 T056 Changelog fragment and gates (WP09)
 
 Risks: describing planned behaviour instead of shipped behaviour; a frontmatter `description` over 180 characters; a fragment link written with `../`.
+
+## WP10 - write-core-parity CI drift job
+
+Prompt: [tasks/WP10-write-core-parity-ci.md](./tasks/WP10-write-core-parity-ci.md). Priority P1. Wave 2. Depends on WP01, WP03, WP04. Profile: python-pedro.
+
+Summary: split out of WP04 (ruling R2). A `write-core-parity` job in `service.yml` checks out core at the pin, runs `generate_status_append.py --check` and `generate_transition_parity.py --check` under core's locked interpreter and `generate_fromisoformat_vectors.py --check` under Python 3.12, is skipped on release and scheduled runs, and is a need of `service-gate`; the detect paths learn the new fixture trees; the workflow tests pin it all (FR-003, FR-015, NFR-005, SC-006).
+
+T026 write-core-parity job (WP10)
+T057 service-gate and detect paths (WP10)
+T058 Workflow tests (WP10)
+
+Risks: release leakage (the job runs core's code); push paths and `PATTERN` disagreeing; WP02's `lock-interop` edit in the same file.
 
 ## Dependency graph
 
@@ -214,17 +227,31 @@ flowchart LR
   WP03 --> WP08
   WP05 --> WP08
   WP07 --> WP08 --> WP09
+  WP01 --> WP10
+  WP03 --> WP10
+  WP04 --> WP10
+  WP10 --> WP09
 ```
 
 Two edges are added to the plan's graph, both inside the same waves. WP06 depends on WP03 as well as WP04: its `Refusal` carries the `RefusalCode` values WP03 adds, and it builds on the domain-model dependency WP03 adds to command-cli (the plan routes that through WP03 → WP07). WP05 depends on WP03 as well as WP01: its sanitizer parses the session pair with the `PyIsoDateTime` port WP03 adds to domain-model, so the edge (WP03) and the encoder (WP05) share one port of Python's `fromisoformat`.
+
+## Orchestrator rulings folded after the post-tasks squad (2026-11-07)
+
+R1 corpus outside `fixtures/` (WP01 package data, WP04, WP06-WP08 paths); R2 WP10 split; R3 mandatory local `--check` against core at `512567ee` (WP01, WP04); R4 unit order per research §11 decision 15 and WP06 floors (WP06, WP07); R5 production frontmatter parity and `detail` comparison (WP08); R6 enforced complexity ≤ 15 (JaCoCo METHOD/COMPLEXITY in event-log by WP02 and command-cli by WP08; `ruff --select C901` per WP); R7 WP08 coverage adds; R8 one shared FR-010 predicate list (`FileWriteApis`, event-log test fixtures, WP02; consumed by WP08; the read service covered by root rule 7); R9 WP02 owns the read service's rule 7 exemption and `Path missionDirectory`; R10 FFM metadata in command-cli (WP08); R11 WP03 domain-model build, vectors per branch, examples, native-safe tests; R12 fixtures in the shared 3.10-compatible timestamp subset; R13 start-from-`planned` exception and the decision-15 cases (WP04).
 
 ## Coordination points (shared files and declared out-of-map edits)
 
 | File | Owner | Declared out-of-map edit |
 |---|---|---|
-| `.github/workflows/service.yml`, `tests/test_service_workflows.py`, `tests/test_ci_gate_workflows.py` | WP04 | WP02 edits only the `lock-interop` job block (run step and result check) |
-| `service/command-cli/build.gradle.kts` | WP08 | WP03 adds `implementation(project(":domain-model"))` only |
-| `service/command-cli/.../operations/OperationsTest.java` | WP08 | WP03 adds lane fields to the two minimal-row bodies that must still reach the gate |
+| `.github/workflows/service.yml`, `tests/test_service_workflows.py`, `tests/test_ci_gate_workflows.py` | WP10 | WP02 edits only the `lock-interop` job block (run step, result check, artifact path) |
+| `service/command-cli/build.gradle.kts` | WP08 | WP03 adds `implementation(project(":domain-model"))` to the shared `dependencies { }` block only |
+| `service/command-cli/.../operations/OperationsTest.java` | WP08 | WP03 makes the base `row` of `malformedWrites()` and the two minimal-row bodies valid transition rows (FR-019's allowed exception) |
+| `service/command-cli/.../nativesmoke/NativeSmokeTest.java` | WP08 | WP03 makes the write body's bare row a valid transition row so native CI stays green until WP08 |
+| `service/event-log/build.gradle.kts` | WP02 | WP05 adds the `status_append` fixture-directory system property to the `test` task |
+| `service/domain-model/build.gradle.kts` | WP03 | none |
+| `service/src/test/.../architecture/ArchitectureRules.java`, `LedgerExemptionScopeTest.java`, `ArchitectureControlsTest.java` | WP02 | none |
+| `service/command-cli/src/main/resources/META-INF/native-image/**` (FFM metadata) | WP08 | none |
+| `src/spec_kitty_events/conformance/status_transition_parity/unreachable.json` | WP04 | WP07 may add or remove an entry, with its cause, if the Java ledger disagrees |
 | `service/command-cli/.../operations/WriteBodies.java` | WP03 | WP08 may delete the `Optional<Malformed>` delegates once the controller uses the typed parse |
 | `contracts/mission-write/CHANGELOG.md` | WP03 | WP09's final pass |
-| `src/spec_kitty_events/conformance/loader.py`, `fixtures/manifest.json`, `pyproject.toml` | WP01 | none: WP01 adds the package-data globs of both new families; the corpus is loaded by WP04's own `parity_corpus.py`, not through the manifest |
+| `src/spec_kitty_events/conformance/loader.py`, `fixtures/manifest.json`, `pyproject.toml` | WP01 | none: WP01 owns `pyproject.toml` and adds the package-data globs of both new families (`conformance/fixtures/status_append/...` and `conformance/status_transition_parity/{README.md,*.json,cases/*.json}`); the corpus sits outside `fixtures/` and is loaded by WP04's own `parity_corpus.py`, not through the manifest |

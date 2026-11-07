@@ -6,283 +6,283 @@
   "criteria": [
     {
       "criterion_id": "FR-001",
-      "description": "Verify FR-001 is satisfied",
+      "description": "The Python reference and the Java encoder write each status row as core does (sanitize, sorted-key json.dumps with ', '/': ', ASCII escapes, Python float repr, one LF).",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP01 conformance/test_status_append.py; WP05 StatusAppendFixtureTest"
     },
     {
       "criterion_id": "FR-002",
-      "description": "Verify FR-002 is satisfied",
+      "description": "The sanitizer matches core's sanitize_event_for_log: PII keys stripped at every depth, top-level session pair folded into a truncated session_duration_s.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP01 tests/test_status_log.py; WP05 StatusRowSanitizerTest"
     },
     {
       "criterion_id": "FR-003",
-      "description": "Verify FR-003 is satisfied",
+      "description": "The status_append family ships with >= 12 valid and >= 4 invalid cases; both bindings pass all; the generator's --check against core at the pin exits 0 locally and in CI.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP01 test_status_append.py + local --check; WP05 runner; WP10 write-core-parity job"
     },
     {
       "criterion_id": "FR-004",
-      "description": "Verify FR-004 is satisfied",
+      "description": "An accepted unit or batch is one O_APPEND write plus a sync (and a parent-directory sync on create) before 201; refused or fully replayed requests write and sync nothing.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP02 StatusLogAppender tests; WP08 one-appendAndSync-per-batch test and WriteIntegrationTest"
     },
     {
       "criterion_id": "FR-005",
-      "description": "Verify FR-005 is satisfied",
+      "description": "Every write holds <gcd>/spec-kitty-locks/<dir>.status.lock with core's lock semantics; a lock held past the 10 s budget answers 409 STATUS_LOCK_HELD.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP02 StatusLogInteropTest (lock-interop) and lock tests; WP08 US1-5 integration test"
     },
     {
       "criterion_id": "FR-006",
-      "description": "Verify FR-006 is satisfied",
-      "proof_type": "automated_test",
+      "description": "The open/flock/close downcalls are registered for the native image and the native smoke performs a real locked write.",
+      "proof_type": "ci_native_matrix",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP08 NativeDowncallMetadataTest and NativeSmokeTest (native-command-cli CI)"
     },
     {
       "criterion_id": "FR-007",
-      "description": "Verify FR-007 is satisfied",
+      "description": "A torn tail or unreducible log is refused with 500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED and the file is unchanged.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP02 torn-tail tests; WP08 WriteIntegrationTest US1-6 and fold protocol cases"
     },
     {
       "criterion_id": "FR-008",
-      "description": "Verify FR-008 is satisfied",
+      "description": "event_id idempotency: identical retry is replayed (appendedLines 0), partial or differing ids are EVENT_ID_CONFLICT, a repeated id in a request is BOOKKEEPING_DOUBLE_EVENT_ID, first occurrence wins.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP08 ReplayClassifierTest, ProtocolCorpusTest replay cases, WriteIntegrationTest"
     },
     {
       "criterion_id": "FR-009",
-      "description": "Verify FR-009 is satisfied",
+      "description": "Write location verified against the service's own resolution; mismatches, bare repositories, lane worktrees and coordination_ref_commit answer 422 WRITE_LOCATION_UNVERIFIED.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP08 WriteService step tests and US4 integration tests"
     },
     {
       "criterion_id": "FR-010",
-      "description": "Verify FR-010 is satisfied",
+      "description": "No class outside the three allowlisted packages calls a JDK open-for-write API, enforced by ArchUnit with one shared predicate list and planted violations.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP02 EventLogBoundaryTest + read-service rule 7; WP08 WriteOwnershipRulesTest"
     },
     {
       "criterion_id": "FR-011",
-      "description": "Verify FR-011 is satisfied",
+      "description": "The lane machine (11 lanes, 29 edges, terminals, force semantics) and the write fold are ported from core at the pin, separate from StatusReducer.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP06 LaneMachine tests and ParityCorpusTest"
     },
     {
       "criterion_id": "FR-012",
-      "description": "Verify FR-012 is satisfied",
+      "description": "Every guard refusal carries the contract code and reason URN core raises; each of the 15 reasons is reached by a parity case or recorded unreachable with its cause.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP06/WP07 parity runners; WP07 ReasonLedgerTest; WP04 unreachable.json"
     },
     {
       "criterion_id": "FR-013",
-      "description": "Verify FR-013 is satisfied",
+      "description": "Dependency gating on planned->claimed and claimed->in_progress follows core's verdict (approved, done, operator-canceled; unresolvable is unsatisfied; force bypasses).",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP07 DependencyVerdict tests and FullParityCorpusTest; WP08 DiskMissionFactsParityTest"
     },
     {
       "criterion_id": "FR-014",
-      "description": "Verify FR-014 is satisfied",
+      "description": "A batch judges each unit against the state earlier units leave, may span work packages, and a refusal names #/units/<i> and writes nothing.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP07 BatchJudge tests; WP08 US3 integration tests"
     },
     {
       "criterion_id": "FR-015",
-      "description": "Verify FR-015 is satisfied",
+      "description": "The parity corpus (>= 150 cases, NFR-002 coverage) ships at conformance/status_transition_parity/, is validated by the packaged test, regenerated from core locally and checked by the CI drift job.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP04 test_status_transition_parity.py + local --check; WP10 write-core-parity job"
     },
     {
       "criterion_id": "FR-016",
-      "description": "Verify FR-016 is satisfied",
+      "description": "The write domain is framework-free, I/O-free and concurrency-free, enforced by an ArchUnit rule with planted violations.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP06 AuthorityPurityTest"
     },
     {
       "criterion_id": "FR-017",
-      "description": "Verify FR-017 is satisfied",
+      "description": "Transition, batch and annotation operations acknowledge legal writes with contract-valid DurabilityAck/BatchDurabilityAck; fsyncs is 0 only for an all-replayed batch; the fail-closed refusal is gone.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP08 AckBodyTest and WriteIntegrationTest"
     },
     {
       "criterion_id": "FR-018",
-      "description": "Verify FR-018 is satisfied",
+      "description": "MISSION_NOT_FOUND and WP_NOT_FOUND answer before the lock, as core's lookup does (ambiguous mission ids refuse).",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP08 FilesystemMissionCatalog tests and US2-5 integration test"
     },
     {
       "criterion_id": "FR-019",
-      "description": "Verify FR-019 is satisfied",
+      "description": "The edge order and every existing edge refusal are unchanged; existing edge and operations tests stay green except the declared fail-closed and row-shape exceptions.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP03 and WP08 runs of the existing edge and operations tests"
     },
     {
       "criterion_id": "FR-020",
-      "description": "Verify FR-020 is satisfied",
+      "description": "Writes are serialized by one fair in-process turn; turn and lock share one 10 s deadline; a missed turn answers 503 SERVICE_BUSY with Retry-After: 1.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP08 WriteTurn tests and ServiceWiringTest"
     },
     {
       "criterion_id": "FR-021",
-      "description": "Verify FR-021 is satisfied",
+      "description": "Service README, architecture pages, contract CHANGELOG and a changelog fragment describe the write core as built; docs and changelog gates pass.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP09: npm run validate, changelog.py check/guard"
     },
     {
       "criterion_id": "FR-022",
-      "description": "Verify FR-022 is satisfied",
+      "description": "Guard inputs a row does not carry (workspace context, subtasks complete, implementation evidence, dependency readiness) are derived as core derives them.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP06 GuardContext tests; WP07 DependencyVerdict; parity runners"
     },
     {
       "criterion_id": "FR-023",
-      "description": "Verify FR-023 is satisfied",
+      "description": "A stale from_lane is refused 409 TRANSITION_REJECTED without a URN; lane aliases and non-canonical spellings are 400 REQUEST_MALFORMED.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP03 WriteBodiesTest; WP06 stale tests; WP04 protocol cases"
     },
     {
       "criterion_id": "FR-024",
-      "description": "Verify FR-024 is satisfied",
+      "description": "TransitionUnit.operation selects core's door; the lifecycle claim rules (actor compatibility, placeholders, implementer of record, role-aware review re-claim, start_rejected) apply per research decision 15.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP03 contract tools; WP07 ClaimRules tests and FullParityCorpusTest"
     },
     {
       "criterion_id": "FR-025",
-      "description": "Verify FR-025 is satisfied",
+      "description": "A refusal's detail is core's message unless it would echo a request value, then a fixed text.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP06 DetailPolicy tests; WP08 ProtocolCorpusTest detail comparison"
     },
     {
       "criterion_id": "FR-026",
-      "description": "Verify FR-026 is satisfied",
+      "description": "Checks run in the spec's eleven-step order and the first failure answers.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP08 per-step WriteService tests (no later port called)"
     },
     {
       "criterion_id": "FR-027",
-      "description": "Verify FR-027 is satisfied",
+      "description": "Row kinds are checked at the edge: a transition row first, then annotation rows with wp_id and a non-empty delta; anything else is 400.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP03 WriteBodiesTest and the examples test"
     },
     {
       "criterion_id": "FR-028",
-      "description": "Verify FR-028 is satisfied",
+      "description": "Failed writes or syncs are truncated back and answer 500; non-finite numbers and unsubtractable session pairs are 400 and pinned by invalid fixtures.",
       "proof_type": "automated_test",
       "evidence": null,
       "pass_fail": "pending",
       "verified_by": null,
       "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "notes": "Planned evidence: WP02 StatusLogFaultInjectionTest; WP01/WP05 invalid fixtures; WP08 invalid fixtures over HTTP"
     }
   ],
   "negative_invariants": []

@@ -37,14 +37,18 @@ agent_profile: java-jenny
 authoritative_surface: service/event-log/src/main/java/org/speckitty/missionstatus/adapter/out/statuslog/
 create_intent:
 - service/event-log/src/main/java/org/speckitty/missionstatus/adapter/out/statuslog/
-- service/event-log/src/main/resources/META-INF/native-image/org.speckitty/event-log/reachability-metadata.json
+- service/event-log/src/testFixtures/java/org/speckitty/missionstatus/architecture/FileWriteApis.java
 - service/event-log/src/test/java/org/speckitty/missionstatus/adapter/out/statuslog/
 - service/event-log/src/test/java/org/speckitty/missionstatus/architecture/fixture/statuslog/
 - service/event-log/src/test/resources/statuslog/status_writer_peer.py
 execution_mode: code_change
 owned_files:
 - service/event-log/src/main/java/org/speckitty/missionstatus/adapter/out/statuslog/**
-- service/event-log/src/main/resources/META-INF/native-image/org.speckitty/event-log/reachability-metadata.json
+- service/event-log/src/testFixtures/java/org/speckitty/missionstatus/architecture/FileWriteApis.java
+- service/event-log/build.gradle.kts
+- service/src/test/java/org/speckitty/missionstatus/architecture/ArchitectureRules.java
+- service/src/test/java/org/speckitty/missionstatus/architecture/LedgerExemptionScopeTest.java
+- service/src/test/java/org/speckitty/missionstatus/architecture/ArchitectureControlsTest.java
 - service/event-log/src/test/java/org/speckitty/missionstatus/adapter/out/statuslog/**
 - service/event-log/src/test/java/org/speckitty/missionstatus/architecture/EventLogBoundaryTest.java
 - service/event-log/src/test/java/org/speckitty/missionstatus/architecture/fixture/statuslog/**
@@ -77,8 +81,11 @@ rows** (the encoder is WP05's, the decisions are WP06 to WP08's) and guarantees:
 4. any failed, short or unsynced write truncates back to the size before the write and throws
    `PersistenceFailedException`; nothing is ever reported durable after an uncertain outcome
    (FR-028, NFR-006, SC-004);
-5. the downcalls behind the POSIX lock are registered for the native image (FR-006, metadata
-   half; WP08 proves it with a native locked write);
+5. the read service's architecture rule 7 (file APIs only in named packages) exempts the new
+   package with the same event-log-source scope check the ledger exemption has, so
+   `:mission-status-api:check` stays green with event-log on its classpath (ruling R9). The FFM
+   native metadata is **not** here: it lives in command-cli's resources and is WP08's (ruling R10),
+   so the read service's image is unaffected;
 6. a service write and core's Python status writer never interleave (SC-005), proven in the
    `lock-interop` CI job over ≥ 100 contended iterations.
 
@@ -88,7 +95,8 @@ rows** (the encoder is WP05's, the decisions are WP06 to WP08's) and guarantees:
   NFR-005, NFR-006, SC-004, SC-005, C-001, C-006, C-009; edge cases "Mission's first write",
   "Empty log file", "Crash between the sync and the answer", "Windows".
 - Plan: "Placement decisions" (the appender takes bytes, depends only on the JDK and
-  `adapter.out.ledger`, exposes `withMissionLock(gcd, missionDirName, deadline, session -> ...)`,
+  `adapter.out.ledger`, exposes `withMissionLock(gcd, missionDirectory, deadline, session -> ...)`
+  where `missionDirectory` is a `Path` and the lock name is its basename (ruling R9; plan wording fixed),
   a package-private `FileOps` seam). Data model: `MissionLockPath`, `StatusLogSession` and its
   invariant (append at most once, after the torn-tail check).
 - Research: §4.4 (core's interim `kernel/event_log_append.py:208-330` pattern: check the last
@@ -111,8 +119,15 @@ rows** (the encoder is WP05's, the decisions are WP06 to WP08's) and guarantees:
     `build/lock-interop/`.
   - `service/event-log/src/test/java/org/speckitty/missionstatus/architecture/EventLogBoundaryTest.java:57-169`:
     the three package rules, `ONLY_THE_THREE_PACKAGES`, and the planted-violation pattern.
-  - `service/event-log/build.gradle.kts:35-43`: the test task already passes
-    `--enable-native-access=ALL-UNNAMED` and `module.mainClasses`. You should not need to edit
+  - `service/src/test/java/org/speckitty/missionstatus/architecture/ArchitectureRules.java:120-135,182-183,234`
+    (the read service's rule 7: file APIs only in `adapter.out.filesystem` and event-log's
+    `adapter.out.ledger`; it scans event-log's classes because they are on the read service's
+    classpath), `LedgerExemptionScopeTest.java:13-23` (the ledger exemption holds only for classes
+    whose source is the event-log module), `ArchitectureControlsTest.java:160-170` (every rule has a
+    control; counts).
+  - `service/event-log/build.gradle.kts:35-43` (**you own it now**, ruling R6): the test task already passes
+    `--enable-native-access=ALL-UNNAMED` and `module.mainClasses`. WP05 later adds one test-task
+    system property there as a declared out-of-map edit. You should not need to edit
     it (WP05 owns it); if you do, coordinate.
   - `.github/workflows/service.yml:480-580`: the `lock-interop` job (core checkout at the pin,
     `uv sync --frozen`, pack sync, `--tests '*LockInteropSpikeTest'`, a step that requires
@@ -131,13 +146,18 @@ the planning base and merge target recorded here are `main`.
   the right reason.
 - Java 25. Build and test with
   `jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :event-log:check`.
-- Cyclomatic complexity ≤ 15 per method (NFR-004); JaCoCo class floors of the convention plugin
-  met for every new class.
+- Cyclomatic complexity ≤ 15 per method (NFR-004), **enforced** (ruling R6): add to
+  `service/event-log/build.gradle.kts` a JaCoCo `jacocoTestCoverageVerification` rule with
+  `element = "METHOD"`, `limit { counter = "COMPLEXITY"; value = "TOTALCOUNT"; maximum = 15 }` over
+  the new classes (`org.speckitty.missionstatus.adapter.out.statuslog.*` and WP05's future codec
+  classes `...adapter.out.filesystem.codec.StatusRow*` and `...codec.PythonFloatRepr`; patterns that
+  match nothing yet are fine), and make `check` depend on it. JaCoCo class floors of the convention
+  plugin met for every new class.
 - No new dependency (NFR-005, strict dependency verification). Everything is JDK.
 - No dependency on core. Core is reached only by the interop peer, in CI, at the pin (C-001).
 - The new package depends only on itself, `adapter.out.ledger` and `java..`: no domain-model, no
   codec, no Jackson. It never parses a row.
-- `.github/workflows/service.yml` is owned by WP04. Your one declared out-of-map edit is inside the
+- `.github/workflows/service.yml` is owned by WP10. Your one declared out-of-map edit is inside the
   `lock-interop` job block (T013). Every action stays pinned by its 40-hex SHA.
 - If you need Python for the peer, it is linted by `uv run ruff check . && uv run ruff format --check .`.
 - Do not run `make test-full`.
@@ -268,14 +288,25 @@ planted fixtures under `.../architecture/fixture/statuslog/` (new).
 1. Add `STATUSLOG = ROOT + ".adapter.out.statuslog.."` and `statusLogRule(String pkg)`: classes
    there depend only on themselves, `adapter.out.ledger..` and `java..` (no domain-model, no
    codec, no `tools.jackson`).
-2. `ONLY_THE_THREE_PACKAGES` becomes `ONLY_THE_FOUR_PACKAGES` (update its `.as(...)` text and the
-   class Javadoc list). Add `adapter.out.statuslog.StatusLogAppender` to the "is imported and
-   checked" assertions.
-3. Write ownership inside event-log (FR-010, event-log half): a rule that no class outside
-   `STATUSLOG` and `LEDGER` calls a JDK file-write API: `Files.write*`, `Files.newOutputStream`,
-   `Files.newBufferedWriter`, `Files.copy`, `Files.move`, `FileOutputStream` constructors,
-   `FileWriter`, `RandomAccessFile` constructors, `FileChannel.open`,
-   `AsynchronousFileChannel.open`, and `FileChannel.write`/`truncate`. `adapter.out.ledger` stays
+2. Rename `ONLY_THE_THREE_PACKAGES` to `ONLY_THE_FOUR_PACKAGES` (update its `.as(...)` text, the
+   class Javadoc list and every reference). Update `EXTRACTED_TYPES`' non-vacuity: keep the 8
+   extracted types and add a second list, `STATUSLOG_TYPES` (`adapter.out.statuslog.StatusLogAppender`,
+   `StatusLogSession`, `MissionLockPath`), each asserted "imported and checked".
+3. **One shared predicate list (ruling R8).** Create `FileWriteApis` in event-log's **test
+   fixtures** source set (`service/event-log/src/testFixtures/java/org/speckitty/missionstatus/architecture/FileWriteApis.java`;
+   apply Gradle's built-in `java-test-fixtures` plugin in `service/event-log/build.gradle.kts`,
+   `testFixturesImplementation(libs.archunit.junit5)`, no new artifact). It exposes one ArchUnit
+   predicate, "calls a JDK open-for-write API": `FileChannel.open` (ArchUnit cannot see the
+   `WRITE`/`APPEND` option arguments, so every `FileChannel.open` counts; read-only code uses
+   `Files.read*`/`Files.newInputStream`), `Files.write*`, `Files.newOutputStream`,
+   `Files.newBufferedWriter`, `Files.createFile`, the `FileOutputStream` and `RandomAccessFile`
+   constructors, `FileChannel.write` and `FileChannel.truncate`. WP08 consumes the same class from
+   command-cli through `testImplementation(testFixtures(project(":event-log")))`; nobody keeps a
+   second copy of the list.
+   Write ownership inside event-log (FR-010, event-log half): no class outside `STATUSLOG` and
+   `LEDGER` matches `FileWriteApis`. Scope record (put it in the rule's Javadoc): event-log is held
+   here, command-cli by WP08, and the read service (`mission-status-api`) by the root
+   `ArchitectureRules` rule 7 (T012). `adapter.out.ledger` stays
    allowed because its lock classes open lock files read-write and `TornTailRepair` repairs
    ledgers (pre-existing, never a status log). **Settled (research §11, decision 16)**: FR-010's text names only
    command-cli's state-directory adapter as an exception; the ledger lock files are a necessary,
@@ -283,29 +314,36 @@ planted fixtures under `.../architecture/fixture/statuslog/` (new).
 4. Planted violations, each with its own test, as the file does today: a fixture
    `fixture/statuslog/RowParsingAppender` that imports `tools.jackson.core` breaks
    `statusLogRule`; a fixture `fixture/statuslog/ConformingAppender` holds it; a fixture class
-   outside both packages that calls `Files.write` breaks the write-ownership rule; and
-   `ConformingDecoder` outside the four packages still breaks the module rule.
+   outside both packages that calls `Files.write` breaks the write-ownership rule, and one that calls
+   `FileChannel.open` breaks it too; and `ConformingDecoder` outside the four packages still breaks
+   the module rule.
 
-### T012 Native reachability metadata
+### T012 The read service's rule 7 exempts `adapter.out.statuslog` (ruling R9)
 
-**Files**: `service/event-log/src/main/resources/META-INF/native-image/org.speckitty/event-log/reachability-metadata.json`
-(new); `NativeDowncallMetadataTest.java` (new, in the statuslog test package).
+**Files**: `service/src/test/java/org/speckitty/missionstatus/architecture/ArchitectureRules.java`,
+`LedgerExemptionScopeTest.java`, `ArchitectureControlsTest.java` (all in the read service's test
+tree; you own them for this change).
+
+**Why**: the read service imports event-log's classes (they are on its classpath), and its rule 7
+allows file APIs only in `adapter.out.filesystem` and `adapter.out.ledger`
+(`ArchitectureRules.java:128-130,182-183,234`). The new `adapter.out.statuslog` would fail
+`:mission-status-api:check` the moment it exists.
 
 **Steps**:
-1. Register the three downcalls of `FlockLedgerLock.Native` (research §5.3) as `foreign.downcalls`
-   entries, in the GraalVM 25 reachability-metadata format (read
-   <https://www.graalvm.org/jdk25/reference-manual/native-image/native-code-interoperability/ffm-api>
-   and the metadata schema it links; write what it specifies, not what you remember):
-   - `open`: returns `jint`; parameters pointer, `jint`, `jint`; options `firstVariadicArg: 2`,
-     `captureCallState: true`;
-   - `flock`: returns `jint`; parameters `jint`, `jint`; `captureCallState: true`;
-   - `close`: returns `jint`; parameter `jint`; no options.
-2. A JVM test reads the JSON (plain `java.util` parsing or Jackson from the test classpath) and
-   asserts exactly those three entries, so a change to `FlockLedgerLock`'s descriptors without
-   the metadata turns the build red. Reference the descriptor lines in a comment.
-3. The image picks the file up from the event-log jar on command-cli's classpath (WP08 adds the
-   dependency and the native smoke that performs a real locked write). `native-image` is not
-   installed locally; native proof is CI's.
+1. Red first: run `./gradlew --no-daemon :mission-status-api:test --tests '*Architecture*'` with the
+   new package present and see rule 7 fail on it.
+2. `ArchitectureRules`: add `String statuslog = p(root, "adapter.out.statuslog..")` beside `ledger`,
+   with a comment like the ledger one, and exempt it in rule 7's `resideOutsideOfPackages(...)` and
+   in its `Rule(7, ...)` scope and description ("... and event-log's ledger and status-log
+   packages").
+3. `LedgerExemptionScopeTest`: generalize it (or add a sibling test) so **both** exempted packages
+   hold only classes whose source URI contains `event-log`, each non-vacuous (the status-log package
+   must be on the classpath). A read-service class placed in `adapter.out.statuslog` would otherwise
+   get file APIs.
+4. `ArchitectureControlsTest`: keep every rule's control; if you add a control for the new
+   exemption, update the counts the test asserts (`:160-170`) and `DEFINED_RULE_COUNT` only if a
+   rule is added (it should not be: rule 7 is widened, not duplicated).
+5. Green: `:mission-status-api:test --tests '*Architecture*' --tests '*LedgerExemptionScopeTest*'`.
 
 ### T013 `StatusLogInteropTest` against core's Python status writer (SC-005)
 
@@ -343,8 +381,8 @@ out-of-map edit to the `lock-interop` job in `.github/workflows/service.yml`.
    `./gradlew --no-daemon :event-log:test --tests '*LockInteropSpikeTest' --tests '*StatusLogInteropTest'`;
    add a step after the existing count check that fails unless exactly one
    `service/event-log/build/status-log-interop/*.json` exists; add that directory to the
-   artifact upload. Change nothing else in the job; keep every SHA pin. WP04 owns the file and the
-   workflow tests; tell WP04's implementer (or note in the PR) if a workflow test pins the old
+   artifact upload. Change nothing else in the job; keep every SHA pin. WP10 owns the file and the
+   workflow tests; tell WP10's implementer (or note in the PR) if a workflow test pins the old
    run command.
 
 **Validation**:
@@ -358,7 +396,9 @@ out-of-map edit to the `lock-interop` job in `.github/workflows/service.yml`.
 jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :event-log:check
 jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :event-log:test --tests '*statuslog*' --tests '*EventLogBoundaryTest'
 uv run ruff check . && uv run ruff format --check .
-uv run pytest tests/test_service_workflows.py tests/test_ci_gate_workflows.py -q   # after the service.yml edit
+jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :mission-status-api:test --tests '*Architecture*' --tests '*LedgerExemptionScopeTest*'
+jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :event-log:jacocoTestCoverageVerification   # METHOD COMPLEXITY <= 15
+uv run pytest tests/test_service_workflows.py tests/test_ci_gate_workflows.py -q   # after the lock-interop edit
 ```
 
 Blast radius: `:mission-status-api:check` depends on event-log; run
@@ -372,7 +412,11 @@ service is untouched (C-010).
 - [ ] Torn tail refused, never repaired; empty and missing logs are empty histories.
 - [ ] One write, one sync, parent sync on create, truncate rollback; ≥ 100 fault-injected
       iterations with 0 lost acks, 0 acks without a sync, 0 bytes left by a failed unit.
-- [ ] The three downcalls are in `reachability-metadata.json`, guarded by a JVM test.
+- [ ] The read service's rule 7 exempts `adapter.out.statuslog` with an event-log-source scope
+      check; `:mission-status-api:test` architecture tests green.
+- [ ] `FileWriteApis` (event-log test fixtures) is the single FR-010 predicate list; the event-log
+      write-ownership rule uses it and fires on its planted violations.
+- [ ] The JaCoCo METHOD/COMPLEXITY rule (max 15) is in event-log's build and passes.
 - [ ] `StatusLogInteropTest` passes against core's Python writer in the `lock-interop` job on
       Linux, macOS and Windows (record the CI run in the PR once it exists).
 - [ ] `:event-log:check` green; the final commit message lists the commands and counts.

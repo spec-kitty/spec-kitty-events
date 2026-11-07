@@ -48,7 +48,6 @@ owned_files:
 - service/event-log/src/test/java/org/speckitty/missionstatus/adapter/out/filesystem/codec/StatusRowSanitizerTest.java
 - service/event-log/src/test/java/org/speckitty/missionstatus/adapter/out/filesystem/codec/PythonFloatReprTest.java
 - service/event-log/src/test/java/org/speckitty/missionstatus/adapter/out/filesystem/codec/StatusAppendFixtureTest.java
-- service/event-log/build.gradle.kts
 role: implementer
 tags: []
 tracker_refs: []
@@ -101,7 +100,9 @@ the append and the replay comparison.
   - `service/event-log/src/test/java/org/speckitty/missionstatus/architecture/EventLogBoundaryTest.java:69-74`:
     the codec rule (codec, domain-model, `tools.jackson.core`, `java.nio`, the rule 1b JDK). The
     new classes must hold it unchanged (no `java.io`, no `java.nio.file`, no data binding).
-  - `service/event-log/build.gradle.kts:35-43`: the `test` task; you own this file.
+  - `service/event-log/build.gradle.kts:35-43`: the `test` task. WP02 owns this file (ruling R6);
+    your one edit there, the fixture-directory system property of T030, is a declared out-of-map
+    edit inside the `test` task block.
 
 ## Branch Strategy
 
@@ -115,7 +116,9 @@ the planning base and merge target recorded here are `main`.
 - ATDD, red first: the fixture runner (T030) is written first and runs red against stub classes.
 - Java 25. Build and test with
   `jh=$(scripts/ensure_jdk25.sh); JAVA_HOME=$jh ./gradlew --no-daemon -Dorg.gradle.java.installations.paths=$jh :event-log:check`.
-- Cyclomatic complexity ≤ 15 per method (NFR-004): one method per value kind; the float repr in its
+- Cyclomatic complexity ≤ 15 per method (NFR-004), enforced by WP02's JaCoCo METHOD/COMPLEXITY rule
+  (max 15) in event-log's build, which already names your classes (`StatusRow*`, `PythonFloatRepr`):
+  run `:event-log:jacocoTestCoverageVerification`. One method per value kind; the float repr in its
   own class.
 - No new dependency (NFR-005). No dependency on core (C-001).
 - Pure: no clock, no I/O, no concurrency; the codec boundary rule must hold.
@@ -196,7 +199,8 @@ the planning base and merge target recorded here are `main`.
 
 ### T030 `StatusAppendFixtureTest`: the Java runner
 
-**Files**: `StatusAppendFixtureTest.java` (new), `service/event-log/build.gradle.kts`.
+**Files**: `StatusAppendFixtureTest.java` (new), `service/event-log/build.gradle.kts` (declared
+out-of-map edit: the `test` task block only; WP02 owns the file).
 
 **Steps**:
 1. Build: in the `test` task, add
@@ -245,7 +249,9 @@ Blast radius: `:mission-status-api:test` (it depends on event-log); run it once.
       `StatusRowRefusedException` exist in the codec package and hold the codec boundary rule.
 - [ ] `StatusAppendFixtureTest` passes every `status_append` case (100 %, SC-001) and asserts the
       NFR-003 counts.
-- [ ] Unit and round-trip tests green; complexity ≤ 15; JaCoCo floors met.
+- [ ] Unit and round-trip tests green; complexity ≤ 15 proven by
+      `:event-log:jacocoTestCoverageVerification` (WP02's METHOD/COMPLEXITY rule); JaCoCo floors met.
+- [ ] The build edit is recorded in the PR as a declared out-of-map edit.
 - [ ] `:event-log:check` green; the final commit message lists the commands and counts.
 
 ## Risks

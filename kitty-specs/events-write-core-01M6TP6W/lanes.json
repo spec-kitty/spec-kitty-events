@@ -16,6 +16,7 @@
         "WP06",
         "WP07",
         "WP08",
+        "WP10",
         "WP09"
       ],
       "write_scope": [
@@ -65,6 +66,7 @@
         "service/command-cli/src/main/java/org/speckitty/commandcli/domain/authority/dependency/**",
         "service/command-cli/src/main/java/org/speckitty/commandcli/domain/service/RefusalCode.java",
         "service/command-cli/src/main/java/org/speckitty/commandcli/domain/service/RefusalReason.java",
+        "service/command-cli/src/main/resources/META-INF/native-image/**",
         "service/command-cli/src/test/java/org/speckitty/commandcli/adapter/in/http/edge/RefusalBodyTest.java",
         "service/command-cli/src/test/java/org/speckitty/commandcli/adapter/in/http/operations/AckBodyTest.java",
         "service/command-cli/src/test/java/org/speckitty/commandcli/adapter/in/http/operations/OperationsTest.java",
@@ -82,6 +84,8 @@
         "service/command-cli/src/test/java/org/speckitty/commandcli/architecture/fixture/authority/**",
         "service/command-cli/src/test/java/org/speckitty/commandcli/architecture/fixture/writes/**",
         "service/command-cli/src/test/java/org/speckitty/commandcli/config/CommandCliHintsTest.java",
+        "service/command-cli/src/test/java/org/speckitty/commandcli/config/NativeDowncallMetadataTest.java",
+        "service/command-cli/src/test/java/org/speckitty/commandcli/config/ServiceWiringTest.java",
         "service/command-cli/src/test/java/org/speckitty/commandcli/domain/authority/*.java",
         "service/command-cli/src/test/java/org/speckitty/commandcli/domain/authority/batch/**",
         "service/command-cli/src/test/java/org/speckitty/commandcli/domain/authority/claim/**",
@@ -89,7 +93,9 @@
         "service/command-cli/src/test/java/org/speckitty/commandcli/domain/service/DomainValuesTest.java",
         "service/command-cli/src/test/java/org/speckitty/commandcli/domain/service/RefusalVocabularyTest.java",
         "service/command-cli/src/test/java/org/speckitty/commandcli/nativesmoke/**",
+        "service/command-cli/src/test/java/org/speckitty/commandcli/process/ServiceProcess.java",
         "service/command-cli/src/test/resources/jacoco-class-floor.properties",
+        "service/domain-model/build.gradle.kts",
         "service/domain-model/src/main/java/org/speckitty/missionstatus/domain/model/PyIsoDateTime.java",
         "service/domain-model/src/test/java/org/speckitty/missionstatus/domain/model/PyIsoDateTimeTest.java",
         "service/domain-model/src/test/resources/pyisodatetime/**",
@@ -100,7 +106,6 @@
         "service/event-log/src/main/java/org/speckitty/missionstatus/adapter/out/filesystem/codec/StatusRowRefusedException.java",
         "service/event-log/src/main/java/org/speckitty/missionstatus/adapter/out/filesystem/codec/StatusRowSanitizer.java",
         "service/event-log/src/main/java/org/speckitty/missionstatus/adapter/out/statuslog/**",
-        "service/event-log/src/main/resources/META-INF/native-image/org.speckitty/event-log/reachability-metadata.json",
         "service/event-log/src/test/java/org/speckitty/missionstatus/adapter/out/filesystem/codec/PythonFloatReprTest.java",
         "service/event-log/src/test/java/org/speckitty/missionstatus/adapter/out/filesystem/codec/StatusAppendFixtureTest.java",
         "service/event-log/src/test/java/org/speckitty/missionstatus/adapter/out/filesystem/codec/StatusRowEncoderTest.java",
@@ -109,11 +114,15 @@
         "service/event-log/src/test/java/org/speckitty/missionstatus/architecture/EventLogBoundaryTest.java",
         "service/event-log/src/test/java/org/speckitty/missionstatus/architecture/fixture/statuslog/**",
         "service/event-log/src/test/resources/statuslog/**",
+        "service/event-log/src/testFixtures/java/org/speckitty/missionstatus/architecture/FileWriteApis.java",
+        "service/src/test/java/org/speckitty/missionstatus/architecture/ArchitectureControlsTest.java",
+        "service/src/test/java/org/speckitty/missionstatus/architecture/ArchitectureRules.java",
+        "service/src/test/java/org/speckitty/missionstatus/architecture/LedgerExemptionScopeTest.java",
         "src/spec_kitty_events/conformance/fixtures/manifest.json",
         "src/spec_kitty_events/conformance/fixtures/status_append/**",
-        "src/spec_kitty_events/conformance/fixtures/status_transition_parity/**",
         "src/spec_kitty_events/conformance/loader.py",
         "src/spec_kitty_events/conformance/parity_corpus.py",
+        "src/spec_kitty_events/conformance/status_transition_parity/**",
         "src/spec_kitty_events/conformance/test_status_append.py",
         "src/spec_kitty_events/conformance/test_status_transition_parity.py",
         "src/spec_kitty_events/status_log.py",
@@ -128,8 +137,8 @@
       "parallel_group": 0
     }
   ],
-  "computed_at": "2026-11-07T11:39:56.549456+00:00",
+  "computed_at": "2026-11-07T11:55:45.444142+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [],
-  "planning_commit_sha": "3e106caf41a46869d12cc0408647ffe166341e19"
+  "planning_commit_sha": "b8c86ba027109cb78bde8560d72782cafd58f5cd"
 }
