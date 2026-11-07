@@ -82,7 +82,7 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": "opencode",
+      "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -90,6 +90,9 @@
       "last_event_id": "01M6VKMGPD8Y6AHXM4TQMW6BK2",
       "last_transition_at": "2026-11-07T18:16:51.149632+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Cycle 2: Opus MAJORs (ISO week 1, C-parser divergences) and minors fixed in 043ad534; orchestrator re-ran the committed differential: 1455 forms, 0 mismatches vs CPython 3.11.15"
+      ],
       "provider": "__resolved_provider_absent__",
       "review": null,
       "review_result": {
