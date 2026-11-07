@@ -13,7 +13,7 @@
       "wp": null
     },
     "#155": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "spec.md FR-017..FR-020, FR-026, FR-027; WP03, WP08",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -21,7 +21,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "in-mission",
       "wp": null
     },
     "#156": {
