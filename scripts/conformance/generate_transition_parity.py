@@ -21,8 +21,23 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
 CORE_SHA = "512567eee71e31bb39f580c4f7acf8b865e9d1b2"
-CORE_PYTHON = (3, 11)
 REASON_PREFIX = "urn:spec-kitty:write-refusal:"
+ROW_CALL_KWARGS = {
+    "transition": frozenset(
+        {
+            "force",
+            "reason",
+            "reason_source",
+            "review_ref",
+            "evidence",
+            "review_result",
+            "policy_metadata",
+        }
+    ),
+    "start_implementation": frozenset({"policy_metadata"}),
+    "start_review": frozenset({"review_ref", "policy_metadata"}),
+    "annotation": frozenset({"delta"}),
+}
 CORPUS_DIR = (
     Path(__file__).parents[2] / "src/spec_kitty_events/conformance/status_transition_parity"
 )
@@ -91,8 +106,12 @@ class Intent:
 def map_exception_to_refusal(
     exception: Exception, sources: Sequence[ReasonSource]
 ) -> dict[str, str]:
-    """Map a core exception through its class and verified source text."""
+    """Map only core's refusal exception family through its class and source text."""
 
+    exception_name = type(exception).__name__
+    refusal_classes = {"TransitionError", "WorkPackageClaimConflict", "WorkPackageStartRejected"}
+    if exception_name not in refusal_classes:
+        raise GenerationError(f"Unsupported core exception type: {exception_name}: {exception}")
     message = str(exception)
     class_reason = {
         "WorkPackageClaimConflict": "claim_held_by_other_actor",
@@ -150,7 +169,7 @@ def write_case_files(rendered: Mapping[str, str], case_dir: Path) -> None:
         (case_dir / f"{case_id}.json").write_text(text, encoding="utf-8", newline="\n")
 
 
-def task_text(wp_id: str = "WP01", *, dependencies: str = "[]", subtasks: str = "[]") -> str:
+def task_text(wp_id: str = "WP01", *, dependencies: str = '"[]"', subtasks: str = "[]") -> str:
     return (
         "---\n"
         f"work_package_id: {wp_id}\n"
@@ -166,6 +185,28 @@ def default_tasks() -> dict[str, str]:
     return {f"WP{number:02d}.md": task_text(f"WP{number:02d}") for number in range(1, 4)}
 
 
+def _ensure_row_kwargs(operation: str, kwargs: Mapping[str, Any]) -> None:
+    unsupported = sorted(set(kwargs) - ROW_CALL_KWARGS[operation])
+    if unsupported:
+        raise GenerationError(
+            f"Core arguments are not derivable from {operation} rows: {', '.join(unsupported)}"
+        )
+
+
+def _call(
+    operation: str,
+    wp_id: str,
+    to_lane: str | None,
+    actor: Any,
+    from_lane: str | None,
+    kwargs: Mapping[str, Any],
+) -> Call:
+    """Build a call only from fields the language-neutral request can carry."""
+
+    _ensure_row_kwargs(operation, kwargs)
+    return Call(operation, wp_id, to_lane, actor, kwargs, from_lane)
+
+
 def tr(
     to_lane: str,
     *,
@@ -174,7 +215,7 @@ def tr(
     from_lane: str | None = None,
     **kwargs: Any,
 ) -> Call:
-    return Call("transition", wp_id, to_lane, actor, kwargs, from_lane)
+    return _call("transition", wp_id, to_lane, actor, from_lane, kwargs)
 
 
 def start_impl(
@@ -184,13 +225,13 @@ def start_impl(
     from_lane: str | None = None,
     **kwargs: Any,
 ) -> Call:
-    return Call("start_implementation", wp_id, "in_progress", actor, kwargs, from_lane)
+    return _call("start_implementation", wp_id, "in_progress", actor, from_lane, kwargs)
 
 
 def start_review(
     *, wp_id: str = "WP01", actor: Any = "reviewer-b", from_lane: str | None = None, **kwargs: Any
 ) -> Call:
-    return Call("start_review", wp_id, "in_review", actor, kwargs, from_lane)
+    return _call("start_review", wp_id, "in_review", actor, from_lane, kwargs)
 
 
 def ann(delta: Mapping[str, Any], *, wp_id: str = "WP01", actor: Any = "implementer-a") -> Call:
@@ -221,14 +262,7 @@ def path_to(
     calls.append(tr("claimed", wp_id=wp_id, actor=actor))
     if lane == "claimed":
         return tuple(calls)
-    calls.append(
-        tr(
-            "in_progress",
-            wp_id=wp_id,
-            actor=actor,
-            workspace_context=f"worktree:/parity/{wp_id}",
-        )
-    )
+    calls.append(tr("in_progress", wp_id=wp_id, actor=actor))
     if lane == "in_progress":
         return tuple(calls)
     calls.append(tr("for_review", wp_id=wp_id, actor=actor))
@@ -334,6 +368,30 @@ def _guard_intents() -> list[Intent]:
             "done",
             {"evidence": {"review": {"reviewer": "r", "verdict": "approved", "reference": "  "}}},
         ),
+        (
+            "approved-missing-reviewer",
+            "approved",
+            "done",
+            {"evidence": {"review": {"verdict": "approved", "reference": "r"}}},
+        ),
+        (
+            "in-review-missing-reference",
+            "in_review",
+            "done",
+            {"evidence": {"review": {"reviewer": "r", "verdict": "approved"}}},
+        ),
+        (
+            "approved-rework-verdict",
+            "approved",
+            "done",
+            {"evidence": {"review": REWORK}},
+        ),
+        (
+            "in-review-rework-verdict",
+            "in_review",
+            "done",
+            {"review_result": APPROVAL, "evidence": {"review": REWORK}},
+        ),
     ]
     cases = [
         _intent("guard-unknown-lane", "unknown_lane", path_to("planned"), tr("in-review")),
@@ -367,12 +425,6 @@ def _guard_intents() -> list[Intent]:
             path_to("in_progress"),
             tr("for_review"),
             tasks=incomplete_tasks,
-        ),
-        _intent(
-            "guard-implementation-evidence-missing",
-            "guard",
-            path_to("in_progress"),
-            tr("for_review", implementation_evidence_present=False),
         ),
         _intent(
             "guard-reason-required", "guard", path_to("in_progress"), tr("planned", reason="  ")
@@ -475,6 +527,8 @@ def _dependency_intents() -> list[Intent]:
     malformed_tasks["WP02.md"] = task_text("WP02", dependencies="{bad: WP01}")
     unreadable_tasks = dict(dep_tasks)
     unreadable_tasks["WP02.md"] = "---\nwork_package_id: WP02\ndependencies: [WP01]\n"
+    start_refused_tasks = default_tasks()
+    start_refused_tasks["WP01.md"] = task_text("WP01", dependencies="[WP99]")
     synthetic_setup = (
         *path_to("canceled", reason_source="synthetic"),
         *path_to("planned", wp_id="WP02"),
@@ -499,11 +553,25 @@ def _dependency_intents() -> list[Intent]:
             tasks=dep_tasks,
         ),
         _intent(
+            "dependency-start-planned-two-units-refused",
+            "dependency",
+            path_to("planned"),
+            start_impl(),
+            tasks=start_refused_tasks,
+        ),
+        _intent(
             "dependency-missing-declaration",
             "dependency",
             path_to("planned", wp_id="WP02"),
             tr("claimed", wp_id="WP02"),
             tasks=missing_tasks,
+        ),
+        _intent(
+            "dependency-no-tasks-file-accepted",
+            "dependency",
+            path_to("planned", wp_id="WP02"),
+            tr("claimed", wp_id="WP02"),
+            tasks={},
         ),
         _intent(
             "dependency-ambiguous-declaration",
@@ -575,8 +643,8 @@ def _dependency_intents() -> list[Intent]:
     )
     for name, declaration in (
         ("bare", "WP01"),
-        ("comma", "WP01, WP02"),
-        ("empty-string", "[]"),
+        ("comma", '"WP01, WP02"'),
+        ("empty-string", '"[]"'),
     ):
         tasks = default_tasks()
         tasks["WP03.md"] = task_text("WP03", dependencies=declaration)
@@ -589,6 +657,23 @@ def _dependency_intents() -> list[Intent]:
                     *path_to("approved", wp_id="WP02"),
                     *path_to("planned", wp_id="WP03"),
                 ),
+                tr("claimed", wp_id="WP03"),
+                tasks=tasks,
+            )
+        )
+    legacy_unmet_setup = (
+        *path_to("approved"),
+        *path_to("in_progress", wp_id="WP02"),
+        *path_to("planned", wp_id="WP03"),
+    )
+    for name, declaration in (("bare", "WP01"), ("comma", '"WP01, WP02"')):
+        tasks = default_tasks()
+        tasks["WP03.md"] = task_text("WP03", dependencies=declaration)
+        cases.append(
+            _intent(
+                f"dependency-legacy-{name}-unmet",
+                "dependency",
+                legacy_unmet_setup,
                 tr("claimed", wp_id="WP03"),
                 tasks=tasks,
             )
@@ -680,6 +765,20 @@ def _claim_intents() -> list[Intent]:
             start_impl(actor="implementer-b"),
         ),
         _intent(
+            "claim-third-actor-after-rework",
+            "claim",
+            (
+                *path_to("in_review"),
+                tr(
+                    "in_progress",
+                    actor="reviewer-a",
+                    review_result=REWORK,
+                    review_ref=REWORK["reference"],
+                ),
+            ),
+            start_impl(actor="implementer-b"),
+        ),
+        _intent(
             "claim-review-reviewer-conflict",
             "review_claim",
             (
@@ -696,18 +795,6 @@ def _claim_intents() -> list[Intent]:
         ),
         _intent("claim-start-review-done", "start_rejected", path_to("done"), start_review()),
         _intent("claim-start-genesis", "start_rejected", (), start_impl()),
-        _intent(
-            "claim-start-blank-force-note",
-            "start_rejected",
-            path_to("planned"),
-            start_impl(operator_force_note=" "),
-        ),
-        _intent(
-            "claim-start-force-outside-review",
-            "start_rejected",
-            path_to("planned"),
-            start_impl(review_lane_exit=True, operator_force_note="operator"),
-        ),
         _intent(
             "claim-structured-actor-tool",
             "claim",
@@ -1014,6 +1101,7 @@ class CoreOracle:
         ]
 
     def _core_kwargs(self, call: Call, mission_dir: Path, repo: Path) -> dict[str, Any]:
+        _ensure_row_kwargs(call.operation, call.kwargs)
         if call.operation == "transition":
             kwargs: dict[str, Any] = {
                 "feature_dir": mission_dir,
@@ -1178,6 +1266,35 @@ class CoreOracle:
             row["evidence"] = raw_evidence
         return row
 
+    def _would_be_rows(self, call: Call, mission_dir: Path, repo: Path) -> list[dict[str, Any]]:
+        """Build the refused request, including the R13 planned-start claim row."""
+
+        from_lane = call.request_from_lane or self.emit_module._derive_from_lane(
+            mission_dir, call.wp_id
+        )
+        if call.operation != "start_implementation" or str(from_lane) != "planned":
+            return [self._would_be_row(call, mission_dir, repo)]
+        planned_call = Call(
+            call.operation,
+            call.wp_id,
+            "claimed",
+            call.actor,
+            call.kwargs,
+            "planned",
+        )
+        claimed_call = Call(
+            call.operation,
+            call.wp_id,
+            "in_progress",
+            call.actor,
+            call.kwargs,
+            "claimed",
+        )
+        return [
+            self._would_be_row(planned_call, mission_dir, repo),
+            self._would_be_row(claimed_call, mission_dir, repo),
+        ]
+
     def _edit_log(self, rows: list[dict[str, Any]], edit: str | None) -> list[dict[str, Any]]:
         if edit is None:
             return rows
@@ -1187,9 +1304,12 @@ class CoreOracle:
             duplicate["to_lane"] = "blocked"
             return [duplicate, *edited]
         if edit == "clock-ahead-approval":
+            approval_at = max(datetime.fromisoformat(str(row["at"])) for row in edited) + timedelta(
+                days=1
+            )
             for row in edited:
                 if row.get("to_lane") == "approved":
-                    row["at"] = "2026-01-02T00:00:00+00:00"
+                    row["at"] = approval_at.isoformat()
             return edited
         raise GenerationError(f"Unknown log edit: {edit}")
 
@@ -1211,14 +1331,18 @@ class CoreOracle:
             calls_record: list[dict[str, Any]] = []
             refusal: dict[str, Any] | None = None
             for call in intent.calls:
+                unit_index = len(units)
                 try:
                     groups, recorded = self._execute(call, mission_dir, repo)
                 except Exception as exception:
                     if isinstance(exception, GenerationError):
                         raise
                     mapped = map_exception_to_refusal(exception, self.sources)
-                    row = self._would_be_row(call, mission_dir, repo)
-                    units.append({"wpId": call.wp_id, "operation": call.operation, "rows": [row]})
+                    rows = self._would_be_rows(call, mission_dir, repo)
+                    units.extend(
+                        {"wpId": call.wp_id, "operation": call.operation, "rows": [row]}
+                        for row in rows
+                    )
                     calls_record.append(
                         {
                             "entry_point": self._entry_point(call),
@@ -1227,7 +1351,10 @@ class CoreOracle:
                             ),
                         }
                     )
-                    refusal = {**mapped, "unit": len(units) - 1 if len(intent.calls) > 1 else None}
+                    refusal = {
+                        **mapped,
+                        "unit": unit_index if len(intent.calls) > 1 or len(rows) > 1 else None,
+                    }
                     break
                 calls_record.append(recorded)
                 for rows in groups:
@@ -1295,19 +1422,34 @@ def _print_area_counts(case_dir: Path) -> None:
     print(f"total: {total}")
 
 
+def core_python(checkout: Path) -> tuple[int, int]:
+    """Read the required interpreter major.minor from core's own version pin."""
+
+    version = (checkout / ".python-version").read_text(encoding="utf-8").strip()
+    parts = version.split(".")
+    try:
+        if len(parts) < 2:
+            raise ValueError
+        return int(parts[0]), int(parts[1])
+    except ValueError as error:
+        raise GenerationError(f"Invalid core .python-version: {version!r}") from error
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--check", action="store_true", help="diff generated core cases without writing"
     )
     args = parser.parse_args(argv)
-    if sys.version_info[:2] != CORE_PYTHON:
-        parser.error(f"core's locked Python {'.'.join(map(str, CORE_PYTHON))} is required")
     checkout_value = os.environ.get("SPEC_KITTY_CORE_CHECKOUT")
     if not checkout_value:
         parser.error("SPEC_KITTY_CORE_CHECKOUT is required")
     try:
-        oracle = CoreOracle(Path(checkout_value).resolve())
+        checkout = Path(checkout_value).resolve()
+        required_python = core_python(checkout)
+        if sys.version_info[:2] != required_python:
+            parser.error(f"core's locked Python {'.'.join(map(str, required_python))} is required")
+        oracle = CoreOracle(checkout)
         rendered: dict[str, str] = {}
         for number, intent in enumerate(build_intents(), 1):
             try:

@@ -130,16 +130,32 @@ def load_parity_cases() -> list[dict[str, Any]]:
     return sorted(cases, key=lambda case: str(case["id"]))
 
 
-def load_unreachable() -> dict[str, str]:
-    """Return each unreachable reason URN and its non-empty explanation."""
-
-    document = _read_json(_corpus_root().joinpath("unreachable.json"))
-    unreachable: dict[str, str] = {}
+def _reason_causes(document: dict[str, Any]) -> dict[str, str]:
+    causes: dict[str, str] = {}
     for reason, cause in document.items():
         if not isinstance(reason, str) or not isinstance(cause, str):
-            raise ValueError("unreachable.json must map reason URNs to strings")
-        unreachable[reason] = cause
-    return unreachable
+            raise ValueError("unreachable reason groups must map reason URNs to strings")
+        causes[reason] = cause
+    return causes
+
+
+def load_unreachable() -> dict[str, str]:
+    """Return each wholly unreachable reason URN and its explanation."""
+
+    document = _read_json(_corpus_root().joinpath("unreachable.json"))
+    return _reason_causes(
+        {reason: cause for reason, cause in document.items() if reason != "partial"}
+    )
+
+
+def load_partial_unreachable() -> dict[str, str]:
+    """Return explanations for unreachable halves of otherwise reached reasons."""
+
+    document = _read_json(_corpus_root().joinpath("unreachable.json"))
+    partial = document.get("partial", {})
+    if not isinstance(partial, dict):
+        raise ValueError("unreachable.json's partial entry must be an object")
+    return _reason_causes(cast(dict[str, Any], partial))
 
 
 def coverage(cases: list[dict[str, Any]]) -> ParityCoverage:

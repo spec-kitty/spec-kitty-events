@@ -37,8 +37,8 @@
   "log": [
     {
       "actor": "implementer-a",
-      "at": "2026-01-06T18:53:22+00:00",
-      "event_id": "0000000000000000000007A121",
+      "at": "2026-01-06T16:06:42+00:00",
+      "event_id": "00000000000000000000077A11",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -53,8 +53,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-06T18:53:24+00:00",
-      "event_id": "0000000000000000000007A123",
+      "at": "2026-01-06T16:06:44+00:00",
+      "event_id": "00000000000000000000077A13",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -69,8 +69,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-06T18:53:26+00:00",
-      "event_id": "0000000000000000000007A125",
+      "at": "2026-01-06T16:06:46+00:00",
+      "event_id": "00000000000000000000077A15",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -85,8 +85,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-06T18:53:28+00:00",
-      "event_id": "0000000000000000000007A127",
+      "at": "2026-01-06T16:06:48+00:00",
+      "event_id": "00000000000000000000077A17",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -101,8 +101,8 @@
     },
     {
       "actor": "reviewer-a",
-      "at": "2026-01-06T18:53:30+00:00",
-      "event_id": "0000000000000000000007A129",
+      "at": "2026-01-06T16:06:50+00:00",
+      "event_id": "00000000000000000000077A19",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -132,8 +132,8 @@
         "rows": [
           {
             "actor": "implementer-a",
-            "at": "2026-01-06T18:53:32+00:00",
-            "event_id": "0000000000000000000007A12B",
+            "at": "2026-01-06T16:06:52+00:00",
+            "event_id": "00000000000000000000077A1B",
             "evidence": {
               "review": {
                 "reference": "other",
@@ -163,8 +163,8 @@
     ]
   },
   "tasks": {
-    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP01\n",
-    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP02\n",
-    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP03\n"
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP03\n"
   }
 }

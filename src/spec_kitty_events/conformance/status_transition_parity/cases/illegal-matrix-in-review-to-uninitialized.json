@@ -25,8 +25,8 @@
   "log": [
     {
       "actor": "implementer-a",
-      "at": "2026-01-16T17:46:42+00:00",
-      "event_id": "0000000000000000000014C081",
+      "at": "2026-01-17T10:26:42+00:00",
+      "event_id": "0000000000000000000015AAE1",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -41,8 +41,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-16T17:46:44+00:00",
-      "event_id": "0000000000000000000014C083",
+      "at": "2026-01-17T10:26:44+00:00",
+      "event_id": "0000000000000000000015AAE3",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -57,8 +57,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-16T17:46:46+00:00",
-      "event_id": "0000000000000000000014C085",
+      "at": "2026-01-17T10:26:46+00:00",
+      "event_id": "0000000000000000000015AAE5",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -73,8 +73,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-16T17:46:48+00:00",
-      "event_id": "0000000000000000000014C087",
+      "at": "2026-01-17T10:26:48+00:00",
+      "event_id": "0000000000000000000015AAE7",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -89,8 +89,8 @@
     },
     {
       "actor": "reviewer-a",
-      "at": "2026-01-16T17:46:50+00:00",
-      "event_id": "0000000000000000000014C089",
+      "at": "2026-01-17T10:26:50+00:00",
+      "event_id": "0000000000000000000015AAE9",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -120,8 +120,8 @@
         "rows": [
           {
             "actor": "implementer-a",
-            "at": "2026-01-16T17:46:52+00:00",
-            "event_id": "0000000000000000000014C08B",
+            "at": "2026-01-17T10:26:52+00:00",
+            "event_id": "0000000000000000000015AAEB",
             "evidence": null,
             "execution_mode": "worktree",
             "force": false,
@@ -140,8 +140,8 @@
     ]
   },
   "tasks": {
-    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP01\n",
-    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP02\n",
-    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP03\n"
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP03\n"
   }
 }

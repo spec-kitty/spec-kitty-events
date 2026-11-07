@@ -13,6 +13,7 @@ from spec_kitty_events.conformance.parity_corpus import (
     REASON_URNS,
     WRITE_REFUSAL_CODES,
     coverage,
+    load_partial_unreachable,
     load_parity_cases,
     load_unreachable,
 )
@@ -78,7 +79,11 @@ def test_nfr_002_coverage() -> None:
 def test_every_reason_is_reached_or_has_an_unreachable_cause() -> None:
     refused = coverage(_CASES).refused_reasons
     unreachable = load_unreachable()
+    partial = load_partial_unreachable()
     assert set(unreachable) <= REASON_URNS
-    assert all(cause.strip() for cause in unreachable.values())
+    assert set(partial) <= REASON_URNS
+    assert all(cause.strip() for cause in (*unreachable.values(), *partial.values()))
     assert refused.isdisjoint(unreachable)
+    assert set(partial) <= refused
+    assert set(partial).isdisjoint(unreachable)
     assert refused | set(unreachable) == REASON_URNS

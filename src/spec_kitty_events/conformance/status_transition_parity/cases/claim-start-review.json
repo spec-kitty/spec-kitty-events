@@ -26,8 +26,8 @@
   "log": [
     {
       "actor": "implementer-a",
-      "at": "2026-01-10T22:53:22+00:00",
-      "event_id": "000000000000000000000D1F61",
+      "at": "2026-01-11T18:20:02+00:00",
+      "event_id": "000000000000000000000E30D1",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -42,8 +42,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-10T22:53:24+00:00",
-      "event_id": "000000000000000000000D1F63",
+      "at": "2026-01-11T18:20:04+00:00",
+      "event_id": "000000000000000000000E30D3",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -58,8 +58,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-10T22:53:26+00:00",
-      "event_id": "000000000000000000000D1F65",
+      "at": "2026-01-11T18:20:06+00:00",
+      "event_id": "000000000000000000000E30D5",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -74,8 +74,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-10T22:53:28+00:00",
-      "event_id": "000000000000000000000D1F67",
+      "at": "2026-01-11T18:20:08+00:00",
+      "event_id": "000000000000000000000E30D7",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -105,8 +105,8 @@
         "rows": [
           {
             "actor": "reviewer-b",
-            "at": "2026-01-10T22:53:30+00:00",
-            "event_id": "000000000000000000000D1F69",
+            "at": "2026-01-11T18:20:10+00:00",
+            "event_id": "000000000000000000000E30D9",
             "evidence": null,
             "execution_mode": "worktree",
             "force": false,
@@ -125,8 +125,8 @@
     ]
   },
   "tasks": {
-    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP01\n",
-    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP02\n",
-    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP03\n"
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP03\n"
   }
 }

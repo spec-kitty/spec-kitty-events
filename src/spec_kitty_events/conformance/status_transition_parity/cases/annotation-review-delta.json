@@ -4,7 +4,7 @@
     "entry_point": "specify_cli.status.wp_state.annotate",
     "kwargs": {
       "actor": "reviewer-a",
-      "at": "2026-01-14T01:53:31+00:00",
+      "at": "2026-01-14T18:33:31+00:00",
       "delta": {
         "review": {
           "actor": "reviewer-a",
@@ -13,7 +13,7 @@
           "wp_id": "WP01"
         }
       },
-      "event_id": "00000000000000000000113E1C",
+      "event_id": "0000000000000000000012287C",
       "wp_id": "WP01"
     }
   },
@@ -31,8 +31,8 @@
   "log": [
     {
       "actor": "implementer-a",
-      "at": "2026-01-14T01:53:22+00:00",
-      "event_id": "00000000000000000000113E11",
+      "at": "2026-01-14T18:33:22+00:00",
+      "event_id": "00000000000000000000122871",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -47,8 +47,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-14T01:53:24+00:00",
-      "event_id": "00000000000000000000113E13",
+      "at": "2026-01-14T18:33:24+00:00",
+      "event_id": "00000000000000000000122873",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -63,8 +63,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-14T01:53:26+00:00",
-      "event_id": "00000000000000000000113E15",
+      "at": "2026-01-14T18:33:26+00:00",
+      "event_id": "00000000000000000000122875",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -79,8 +79,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-14T01:53:28+00:00",
-      "event_id": "00000000000000000000113E17",
+      "at": "2026-01-14T18:33:28+00:00",
+      "event_id": "00000000000000000000122877",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -95,8 +95,8 @@
     },
     {
       "actor": "reviewer-a",
-      "at": "2026-01-14T01:53:30+00:00",
-      "event_id": "00000000000000000000113E19",
+      "at": "2026-01-14T18:33:30+00:00",
+      "event_id": "00000000000000000000122879",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -126,7 +126,7 @@
         "rows": [
           {
             "actor": "reviewer-a",
-            "at": "2026-01-14T01:53:31+00:00",
+            "at": "2026-01-14T18:33:31+00:00",
             "delta": {
               "review": {
                 "actor": "reviewer-a",
@@ -135,7 +135,7 @@
                 "wp_id": "WP01"
               }
             },
-            "event_id": "00000000000000000000113E1C",
+            "event_id": "0000000000000000000012287C",
             "kind": "annotation",
             "wp_id": "WP01"
           }
@@ -145,8 +145,8 @@
     ]
   },
   "tasks": {
-    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP01\n",
-    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP02\n",
-    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP03\n"
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP03\n"
   }
 }

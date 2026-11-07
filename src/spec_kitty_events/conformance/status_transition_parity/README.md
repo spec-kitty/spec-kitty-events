@@ -46,8 +46,9 @@ one unit.
 ## Regeneration and drift
 
 Run with core's locked interpreter from the pinned core checkout and with
-`SPEC_KITTY_CORE_CHECKOUT` naming that checkout. The supplied WP04 environment
-uses core's Python **3.11.15** (overriding the older 3.12 note in the WP text):
+`SPEC_KITTY_CORE_CHECKOUT` naming that checkout. The generator reads the required
+`major.minor` from that checkout's `.python-version` and exits 2 on an interpreter
+mismatch. The supplied WP04 environment uses core's Python **3.11.15**:
 
 ```sh
 CORE=/path/to/core-pin
@@ -59,9 +60,12 @@ SPEC_KITTY_CORE_CHECKOUT="$CORE" "$CORE/.venv/bin/python" \
 
 Generation initializes a fresh temporary git repository per case, writes the
 Mission metadata and tasks, uses core calls to build prior logs, then calls the
-operation's real core entry point. It stops batches at their first refusal.
-`--check` writes nothing, reports differing core ids (including deleted
-intents), and exits nonzero on drift. Generation never rewrites protocol cases.
+operation's real core entry point. Caller-supplied core arguments are restricted
+to fields present in the request rows; all other guard inputs are core-derived.
+It stops batches at their first refusal. `--check` writes nothing, reports
+differing core ids (including deleted intents), and exits nonzero on drift.
+Generation never rewrites protocol cases.
 
-`unreachable.json` maps a reason URN to its proven wire-unreachability cause.
-Every other one of the 15 reasons has at least one committed refusal case.
+`unreachable.json` maps a wholly unreachable reason URN to its proven cause. Its
+`partial` object records an unreachable half of a reason that remains reachable
+through another half. Every other reason has a committed refusal case.
