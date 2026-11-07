@@ -372,3 +372,66 @@ Useful existing test inputs to translate into fixture cases include every edge/g
 12. **Some boundary policies are underspecified and need explicit fixtures/rulings:** force to `uninitialized` is code-legal (`wp_state.py:164-187`); structured first-row actor is rejected by pinned client although `StatusEvent` permits it (`write_service_protocol.py:310-316`; `models.py:166-231`); naive/aware mixed session timestamps can throw outside the sanitizer’s catch (`sanitizer.py:94-116`); legacy duplicate ids make replay ambiguous. Pin these rather than making accidental “reasonable” choices.
 13. **Architecture/package constraints will fail if implementation is added opportunistically.** `ONLY_THE_THREE_PACKAGES` rejects any fourth event-log package, command-cli domain/application forbid file APIs, and the ledger rule forbids domain-model dependencies (`EventLogBoundaryTest.java:82-90`; `ArchitectureRulesTest.java:55-89`). Design writer-owned package/rules first, with pure domain logic and JDK-only file mechanics, then wire outbound adapters in config.
 14. **Performance may conflict with whole-log per-write reduction.** Core does one in-lock reduction per single/batch (`emit.py:995-1004,1165-1180`), which is simplest for parity but O(log size) per write. Choose and benchmark caching/incremental sequencing only after correctness; an unvalidated cache or reorder optimization would be a second authority.
+
+## 11. Planning decisions (2026-11-07)
+
+Each entry gives the decision, why it was chosen, and the alternatives considered.
+
+1. **Order of checks (FR-026), with replay before authority.**
+   - Why: a retry of an acknowledged unit carries a stale `from_lane`. Judging the authority first would refuse a legitimate replay (post-spec squad M2).
+   - Alternative rejected: authority first, which makes replays impossible.
+2. **An `operation` discriminator, an optional field in `1.0.1-SNAPSHOT`.**
+   - Why: core's claim conflicts and `start_rejected` come only from `start_implementation_status` and `start_review_status`. The emit pipeline accepts the very same rows (§1.5, squad M1).
+   - Alternatives rejected: inferring the operation from the batch shape (ambiguous); applying the claim rules to every unit (changes the codes of `move-task`).
+   - Default taken; flagged to the operator.
+3. **Torn tail and an unreducible log map to `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`.**
+   - Why: it is the only existing 500 code that fits. `COORDINATION_LEDGER_UNREADABLE` is bound to the branch tip (ADR-0007), and `BOOKKEEPING_COMMIT_FAILED` to the status commit. Its description is widened in the CHANGELOG.
+4. **Lock budget of 10 s, one in-process turn per repository, and `SERVICE_BUSY`.**
+   - Why: 10 s is core's bounded status-lock timeout. The contract says writes to one repository are serialized.
+   - Alternative rejected: an unbounded wait, which is core's default but blocks the launcher's client.
+5. **A stale `from_lane` answers `TRANSITION_REJECTED` with no `type`.**
+   - Why: `illegal_transition` is defined as an edge that is not in the machine, which this is not. `type` is optional in `WriteRefusal`. These cases are tagged `oracle: protocol`.
+6. **`coordination_ref_commit` answers `WRITE_LOCATION_UNVERIFIED` before the Mission lookup.**
+   - Why: ADR-0007 D-4. A coordination Mission need not exist in the root checkout, so a 404 first would be wrong.
+7. **A location mismatch on `checkout_append` answers `WRITE_LOCATION_UNVERIFIED`, not `OWNED_MISSION_PATH_REFUSED`.**
+   - Why: the contract makes `checkout_append` root-only, so an owned checkout is never a valid status surface. The service's own resolution differs, which is that code's definition.
+8. **A separate write fold that ports core's `read_events` and reducer at the pin.**
+   - Why: the read reducer discards the authority's inputs and lags core (§8.2, risk 3), and C-010 keeps the read side unchanged.
+   - Deviation from #161's wording "build on `StatusReducer`": the port builds on `Lane` and may share the ordering comparator only where parity cases prove it.
+9. **Non-finite numbers and mixed naive/aware session times are `REQUEST_MALFORMED`.**
+   - Why: core would write `Infinity`, or raise a `TypeError` it does not catch. Both are deliberate parity exceptions, each pinned by an invalid `status_append` fixture.
+10. **The service writes LF on every OS; reading tolerates a trailing CR.**
+    - Why: core on Windows writes CRLF through a text-mode file. The divergence is deliberate and recorded.
+11. **Replay equality is byte equality of the encoded, sanitized row.**
+    - Why: it avoids Python's `1 == 1.0` trap. The first occurrence of a duplicated id counts, as the reducer's first-wins rule does.
+12. **The checks core runs above its emit pipeline stay in the client as advisory pre-checks:** `move-task`'s agent-mismatch guard and the lane-specific for-review commit gate.
+    - Why: they are command-layer checks, not emit-pipeline guards, and they have no URN. Core #6195's client keeps them.
+13. **The parity oracle runs core's real entry points against materialized temporary Missions,** and maps each exception through core's own `REASON_CODE` and its refusal-parity source texts.
+    - Why: guard inputs and claim rules are derived in core's pipeline, so a pure-function oracle misses them. Reimplementing core's derivation in the generator would be a second authority that agrees with itself.
+14. **SnakeYAML 2.6 (already sha-pinned) for frontmatter.**
+    - Why: core's `dependencies` and `subtasks` come in several YAML forms. `SafeConstructor` only, on a bounded block.
+    - Supply chain: no new artifact (DIRECTIVE_051 controls: the version is pinned and verified, no install scripts, no new transitive dependency).
+
+## 12. Post-spec squad dispositions
+
+Lenses: scope fidelity (Opus) and contract and parity (Opus), 2026-11-07. Every finding was **folded** into spec `f8e5cd9c`; none was dropped.
+
+| Finding | Disposition |
+|---|---|
+| Undefined order of checks; replay vs stale `from_lane` (both lenses, MAJOR) | Folded: FR-026, FR-008, FR-017 |
+| No operation discriminator (both lenses, MAJOR) | Folded: FR-024 (`operation`), flagged to the operator |
+| Write failure and partial lines; NFR-006 unmeetable as worded (MAJOR) | Folded: FR-028 (rollback), NFR-006 reworded |
+| No row-kind validation lets a transition bypass the authority (MAJOR) | Folded: FR-027 |
+| C-003 vs the new protocol-only codes | Folded: C-003 narrowed, with the outcomes listed |
+| Torn-tail code, lock budget, coordination-surface code | Folded: decisions 3, 4, 6 |
+| FR-009 gaps (`destinationRef`, 404 vs 422, `OWNED_MISSION_PATH_REFUSED`) | Folded: FR-009, FR-018, FR-026, decision 7 |
+| Commit gate has no URN | Folded: C-004, decision 12 |
+| `StatusReducer` shared with the read service | Folded: C-010, decision 8 |
+| FR-010 too vague | Folded: the exact predicate, allowlist and planted violation |
+| NFR-001 flaky | Folded: benchmark, 1 s gate |
+| NFR-006 passable without fsync | Folded: fault-injecting channel |
+| Legacy duplicates, force to `uninitialized`, mixed timestamps, corpus location, public Python API, `SERVICE_BUSY`, FR-025 testability | Folded: decisions 9 and 11, FR-011, FR-015, FR-001, FR-020, FR-025 |
+| `fromisoformat` depends on the Python version | Folded: FR-003 pins the oracle's Python version |
+| Message echo conflicts with the no-echo rule | Folded: FR-025 |
+| Windows CRLF | Folded: decision 10 |
+| ADR-0007 "accepted" wording | Folded: ruling 2 reworded; the ADR status is untouched (C-002) |
