@@ -1,7 +1,7 @@
 {
-  "event_count": 2,
-  "last_event_id": "01M6TWXKX21TE9AJKVNKQYQ1Y5",
-  "materialized_at": "2026-11-07T11:39:52.098617+00:00",
+  "event_count": 3,
+  "last_event_id": "01M6TWXMETP2FPSYGQ1XFPGSMZ",
+  "materialized_at": "2026-11-07T11:39:52.666177+00:00",
   "mission_number": "",
   "mission_slug": "events-write-core-01M6TP6W",
   "mission_type": "software-dev",
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 2
+    "planned": 3
   },
   "work_packages": {
     "WP01": {
@@ -31,6 +31,13 @@
       "lane": "planned",
       "last_event_id": "01M6TWXKX21TE9AJKVNKQYQ1Y5",
       "last_transition_at": "2026-11-07T11:39:52.098617+00:00"
+    },
+    "WP03": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M6TWXMETP2FPSYGQ1XFPGSMZ",
+      "last_transition_at": "2026-11-07T11:39:52.666177+00:00"
     }
   }
 }
