@@ -17,15 +17,15 @@
     "message": "WP WP01 is already claimed for implementation by 'implementer-a'",
     "reason": "urn:spec-kitty:write-refusal:claim_held_by_other_actor",
     "result": "refusal",
-    "unit": null
+    "unit": 0
   },
   "id": "claim-incompatible-stale-from",
   "layer": "domain",
   "log": [
     {
       "actor": "implementer-a",
-      "at": "2026-01-11T04:26:42+00:00",
-      "event_id": "000000000000000000000D6D81",
+      "at": "2026-01-11T23:53:22+00:00",
+      "event_id": "000000000000000000000E7EF1",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -40,8 +40,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-11T04:26:44+00:00",
-      "event_id": "000000000000000000000D6D83",
+      "at": "2026-01-11T23:53:24+00:00",
+      "event_id": "000000000000000000000E7EF3",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -64,19 +64,41 @@
   "operation": "start_implementation",
   "oracle": "core",
   "request": {
-    "kind": "unit",
+    "kind": "batch",
     "units": [
       {
         "operation": "start_implementation",
         "rows": [
           {
             "actor": "implementer-b",
-            "at": "2026-01-11T04:26:46+00:00",
-            "event_id": "000000000000000000000D6D85",
+            "at": "2026-01-11T23:53:26+00:00",
+            "event_id": "000000000000000000000E7EF5",
             "evidence": null,
             "execution_mode": "worktree",
             "force": false,
             "from_lane": "planned",
+            "mission_id": "01J00000000000000000000000",
+            "mission_slug": "999-status-transition-parity",
+            "policy_metadata": null,
+            "reason": null,
+            "review_ref": null,
+            "to_lane": "claimed",
+            "wp_id": "WP01"
+          }
+        ],
+        "wpId": "WP01"
+      },
+      {
+        "operation": "start_implementation",
+        "rows": [
+          {
+            "actor": "implementer-b",
+            "at": "2026-01-11T23:53:28+00:00",
+            "event_id": "000000000000000000000E7EF7",
+            "evidence": null,
+            "execution_mode": "worktree",
+            "force": false,
+            "from_lane": "claimed",
             "mission_id": "01J00000000000000000000000",
             "mission_slug": "999-status-transition-parity",
             "policy_metadata": null,
@@ -91,8 +113,8 @@
     ]
   },
   "tasks": {
-    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP01\n",
-    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP02\n",
-    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP03\n"
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP03\n"
   }
 }

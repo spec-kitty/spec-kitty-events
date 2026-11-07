@@ -25,8 +25,8 @@
   "log": [
     {
       "actor": "implementer-a",
-      "at": "2026-01-07T22:40:02+00:00",
-      "event_id": "000000000000000000000927C1",
+      "at": "2026-01-08T12:33:22+00:00",
+      "event_id": "0000000000000000000009EB11",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -41,8 +41,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-07T22:40:04+00:00",
-      "event_id": "000000000000000000000927C3",
+      "at": "2026-01-08T12:33:24+00:00",
+      "event_id": "0000000000000000000009EB13",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -57,8 +57,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-07T22:40:06+00:00",
-      "event_id": "000000000000000000000927C5",
+      "at": "2026-01-08T12:33:26+00:00",
+      "event_id": "0000000000000000000009EB15",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -73,8 +73,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-07T22:40:08+00:00",
-      "event_id": "000000000000000000000927C7",
+      "at": "2026-01-08T12:33:28+00:00",
+      "event_id": "0000000000000000000009EB17",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -104,8 +104,8 @@
         "rows": [
           {
             "actor": "implementer-a",
-            "at": "2026-01-07T22:40:10+00:00",
-            "event_id": "000000000000000000000927C9",
+            "at": "2026-01-08T12:33:30+00:00",
+            "event_id": "0000000000000000000009EB19",
             "evidence": null,
             "execution_mode": "worktree",
             "force": false,
@@ -124,9 +124,9 @@
     ]
   },
   "tasks": {
-    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP01\n",
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP01\n",
     "WP02-renamed.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: [WP01]\nsubtasks: []\n---\n\n# WP02\n",
     "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: [WP01]\nsubtasks: []\n---\n\n# WP02\n",
-    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP03\n"
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP03\n"
   }
 }

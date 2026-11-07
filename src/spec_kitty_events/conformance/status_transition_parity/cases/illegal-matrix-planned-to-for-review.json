@@ -25,8 +25,8 @@
   "log": [
     {
       "actor": "implementer-a",
-      "at": "2026-01-14T07:26:42+00:00",
-      "event_id": "00000000000000000000118C31",
+      "at": "2026-01-15T00:06:42+00:00",
+      "event_id": "00000000000000000000127691",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -56,8 +56,8 @@
         "rows": [
           {
             "actor": "implementer-a",
-            "at": "2026-01-14T07:26:44+00:00",
-            "event_id": "00000000000000000000118C33",
+            "at": "2026-01-15T00:06:44+00:00",
+            "event_id": "00000000000000000000127693",
             "evidence": null,
             "execution_mode": "worktree",
             "force": false,
@@ -76,8 +76,8 @@
     ]
   },
   "tasks": {
-    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP01\n",
-    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP02\n",
-    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP03\n"
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP03\n"
   }
 }

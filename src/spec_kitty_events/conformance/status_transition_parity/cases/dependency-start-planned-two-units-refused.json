@@ -1,5 +1,5 @@
 {
-  "area": "start_rejected",
+  "area": "dependency",
   "core_call": {
     "entry_point": "specify_cli.status.work_package_lifecycle.start_implementation_status",
     "kwargs": {
@@ -7,26 +7,25 @@
       "execution_mode": "worktree",
       "feature_dir": "${MISSION_DIR}",
       "mission_slug": "999-status-transition-parity",
-      "operator_force_note": " ",
       "repo_root": "${REPO_ROOT}",
       "workspace_context": "worktree:/parity/WP01",
       "wp_id": "WP01"
     }
   },
   "expected": {
-    "code": "TRANSITION_REJECTED",
-    "message": "--force requires a non-blank --note explaining why the review lane is being left",
-    "reason": "urn:spec-kitty:write-refusal:start_rejected",
+    "code": "DEPENDENCIES_NOT_SATISFIED",
+    "message": "Transition planned -> claimed blocked: unsatisfied dependencies (force with reason to override)",
+    "reason": "urn:spec-kitty:write-refusal:dependencies_unsatisfied",
     "result": "refusal",
-    "unit": null
+    "unit": 0
   },
-  "id": "claim-start-blank-force-note",
+  "id": "dependency-start-planned-two-units-refused",
   "layer": "domain",
   "log": [
     {
       "actor": "implementer-a",
-      "at": "2026-01-11T21:06:42+00:00",
-      "event_id": "000000000000000000000E57E1",
+      "at": "2026-01-08T04:13:22+00:00",
+      "event_id": "000000000000000000000975E1",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -45,23 +44,45 @@
     "mission_id": "01J00000000000000000000000",
     "mission_slug": "999-status-transition-parity"
   },
-  "notes": "Core entry-point parity for claim start blank force note.",
+  "notes": "Core entry-point parity for dependency start planned two units refused.",
   "operation": "start_implementation",
   "oracle": "core",
   "request": {
-    "kind": "unit",
+    "kind": "batch",
     "units": [
       {
         "operation": "start_implementation",
         "rows": [
           {
             "actor": "implementer-a",
-            "at": "2026-01-11T21:06:44+00:00",
-            "event_id": "000000000000000000000E57E3",
+            "at": "2026-01-08T04:13:25+00:00",
+            "event_id": "000000000000000000000975E4",
             "evidence": null,
             "execution_mode": "worktree",
             "force": false,
             "from_lane": "planned",
+            "mission_id": "01J00000000000000000000000",
+            "mission_slug": "999-status-transition-parity",
+            "policy_metadata": null,
+            "reason": null,
+            "review_ref": null,
+            "to_lane": "claimed",
+            "wp_id": "WP01"
+          }
+        ],
+        "wpId": "WP01"
+      },
+      {
+        "operation": "start_implementation",
+        "rows": [
+          {
+            "actor": "implementer-a",
+            "at": "2026-01-08T04:13:27+00:00",
+            "event_id": "000000000000000000000975E6",
+            "evidence": null,
+            "execution_mode": "worktree",
+            "force": false,
+            "from_lane": "claimed",
             "mission_id": "01J00000000000000000000000",
             "mission_slug": "999-status-transition-parity",
             "policy_metadata": null,
@@ -76,8 +97,8 @@
     ]
   },
   "tasks": {
-    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP01\n",
-    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP02\n",
-    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP03\n"
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: [WP99]\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP03\n"
   }
 }

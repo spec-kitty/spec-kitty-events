@@ -26,8 +26,8 @@
   "log": [
     {
       "actor": "implementer-a",
-      "at": "2026-01-05T17:53:22+00:00",
-      "event_id": "00000000000000000000064191",
+      "at": "2026-01-05T15:06:42+00:00",
+      "event_id": "00000000000000000000061A81",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -42,8 +42,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-05T17:53:24+00:00",
-      "event_id": "00000000000000000000064193",
+      "at": "2026-01-05T15:06:44+00:00",
+      "event_id": "00000000000000000000061A83",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -58,8 +58,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-05T17:53:26+00:00",
-      "event_id": "00000000000000000000064195",
+      "at": "2026-01-05T15:06:46+00:00",
+      "event_id": "00000000000000000000061A85",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -74,8 +74,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-05T17:53:28+00:00",
-      "event_id": "00000000000000000000064197",
+      "at": "2026-01-05T15:06:48+00:00",
+      "event_id": "00000000000000000000061A87",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -90,8 +90,8 @@
     },
     {
       "actor": "reviewer-a",
-      "at": "2026-01-05T17:53:30+00:00",
-      "event_id": "00000000000000000000064199",
+      "at": "2026-01-05T15:06:50+00:00",
+      "event_id": "00000000000000000000061A89",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -106,8 +106,8 @@
     },
     {
       "actor": "reviewer-a",
-      "at": "2026-01-05T17:53:32+00:00",
-      "event_id": "0000000000000000000006419B",
+      "at": "2026-01-05T15:06:52+00:00",
+      "event_id": "00000000000000000000061A8B",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -142,8 +142,8 @@
         "rows": [
           {
             "actor": "implementer-a",
-            "at": "2026-01-05T17:53:34+00:00",
-            "event_id": "0000000000000000000006419D",
+            "at": "2026-01-05T15:06:54+00:00",
+            "event_id": "00000000000000000000061A8D",
             "evidence": null,
             "execution_mode": "worktree",
             "force": false,
@@ -162,8 +162,8 @@
     ]
   },
   "tasks": {
-    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP01\n",
-    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP02\n",
-    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP03\n"
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP03\n"
   }
 }
