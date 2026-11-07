@@ -8,7 +8,7 @@ public final class PersistenceFailedException extends IOException {
 
   private static final long serialVersionUID = 1L;
 
-  PersistenceFailedException(Path log, IOException cause) {
+  PersistenceFailedException(Path log, Exception cause) {
     super("status log " + log + " append was not durable; rollback was attempted", cause);
   }
 }

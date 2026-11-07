@@ -34,13 +34,16 @@ final class LockedStatusLogSession implements StatusLogSession {
       throw new IllegalArgumentException("a status append must contain non-empty, LF-terminated lines");
     }
     appendAttempted = true;
-    readAndCheckTail();
+    byte[] current = readAndCheckTail();
     boolean existed = files.exists(log);
     try (FileOps.AppendChannel channel = files.openForAppend(log)) {
       long sizeBefore = channel.size();
+      if (sizeBefore != current.length) {
+        throw new PersistenceFailedException(log, new IOException("the status log changed after its tail was verified"));
+      }
       try {
         writeAndSync(channel, bytes, existed);
-      } catch (IOException failure) {
+      } catch (IOException | RuntimeException failure) {
         throw rollback(channel, sizeBefore, failure);
       }
     }
@@ -69,12 +72,12 @@ final class LockedStatusLogSession implements StatusLogSession {
     }
   }
 
-  private PersistenceFailedException rollback(FileOps.AppendChannel channel, long sizeBefore, IOException cause) {
+  private PersistenceFailedException rollback(FileOps.AppendChannel channel, long sizeBefore, Exception cause) {
     PersistenceFailedException failure = new PersistenceFailedException(log, cause);
     try {
       channel.truncate(sizeBefore);
       channel.force();
-    } catch (IOException rollbackFailure) {
+    } catch (IOException | RuntimeException rollbackFailure) {
       failure.addSuppressed(rollbackFailure);
     }
     return failure;
