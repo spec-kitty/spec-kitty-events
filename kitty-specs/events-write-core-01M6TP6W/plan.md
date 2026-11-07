@@ -64,7 +64,7 @@ flowchart LR
 ### Placement decisions
 
 - **Encoder and sanitizer** live in `event-log`'s codec package (pure; no file I/O). They consume the value tree `PythonJson` already produces (ordered maps, `BigInteger`, `Double`, `Boolean`, `null`), so the wire value is the Python `json.loads` value (FR-001).
-- **Appender** lives in a new `event-log` package, `org.speckitty.missionstatus.adapter.out.statuslog`. It takes bytes, never rows. It depends only on the JDK and `adapter.out.ledger` (locks), and it is the only package that may open a status log for writing. It exposes a locked session: `withMissionLock(gcd, missionDirName, deadline, session -> …)`, where the session can read the current bytes and `appendAndSync(bytes)`. A `FileOps` seam (a package-private interface with the JDK implementation by default) lets the tests inject faults (NFR-006).
+- **Appender** lives in a new `event-log` package, `org.speckitty.missionstatus.adapter.out.statuslog`. It takes bytes, never rows. It depends only on the JDK and `adapter.out.ledger` (locks), and it is the only package that may open a status log for writing. It exposes a locked session: `withMissionLock(gcd, missionDirectory, deadline, session -> …)`, where `missionDirectory` is a `Path` and the lock is named by its basename, where the session can read the current bytes and `appendAndSync(bytes)`. A `FileOps` seam (a package-private interface with the JDK implementation by default) lets the tests inject faults (NFR-006).
 - **Authority** lives in `command-cli` `org.speckitty.commandcli.domain.authority`, pure. It takes the decoded rows (generic JSON values) and `MissionFacts` (each WP's declared dependencies and authored subtask roster), and returns a `Judgement`: the accepted units, or a `Refusal(code, reason?, message, unitIndex?)`. It does not use `StatusReducer`. Its fold ports core's `read_events` and reducer at the pin (research §8.2, risk 3; C-010). The ordering comparator may be shared only if its parity cases pass.
 - **Use case** `org.speckitty.commandcli.application.write.WriteService` runs FR-026 behind three ports: `MissionCatalog`, `StatusLog` and `RowCodec`.
 - **Adapters** `adapter.out.mission` (filesystem, SnakeYAML frontmatter) and `adapter.out.statuslog` (wraps the event-log appender and codec) implement the ports. `config.ServiceWiring` composes them, and the existing `WriteGate` is removed.
@@ -169,7 +169,15 @@ flowchart LR
   WP05 --> WP08
   WP07 --> WP08 --> WP09
   WP03 --> WP07
+  WP03 --> WP05
+  WP03 --> WP06
+  WP01 --> WP10
+  WP03 --> WP10
+  WP04 --> WP10
+  WP10 --> WP09
 ```
+
+WP10 (the `write-core-parity` CI drift job) was split out of WP04 after the post-tasks review.
 
 ## Complexity Tracking
 
