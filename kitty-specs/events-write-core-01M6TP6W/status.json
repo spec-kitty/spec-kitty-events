@@ -1,7 +1,7 @@
 {
-  "event_count": 52,
-  "last_event_id": "01M6VRA47PM1ZRGMSVH8MVJFQF",
-  "materialized_at": "2026-11-07T19:38:33.590751+00:00",
+  "event_count": 53,
+  "last_event_id": "01M6VRKDPXS7KBWMWJ1E7NEEKR",
+  "materialized_at": "2026-11-07T19:43:38.205401+00:00",
   "mission_number": "",
   "mission_slug": "events-write-core-01M6TP6W",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 1,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 3
   },
   "work_packages": {
@@ -145,17 +145,17 @@
       }
     },
     "WP05": {
-      "actor": "opencode",
+      "actor": "claude",
       "agent": "opencode",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "for_review",
-      "last_event_id": "01M6VRA47PM1ZRGMSVH8MVJFQF",
-      "last_transition_at": "2026-11-07T19:38:33.590751+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M6VRKDPXS7KBWMWJ1E7NEEKR",
+      "last_transition_at": "2026-11-07T19:43:38.205401+00:00",
       "model": "__resolved_model_absent__",
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
+      "role": "reviewer",
       "subtasks": {
         "T027": "done",
         "T028": "done",
