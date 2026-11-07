@@ -435,3 +435,13 @@ Lenses: scope fidelity (Opus) and contract and parity (Opus), 2026-11-07. Every 
 | Message echo conflicts with the no-echo rule | Folded: FR-025 |
 | Windows CRLF | Folded: decision 10 |
 | ADR-0007 "accepted" wording | Folded: ruling 2 reworded; the ADR status is untouched (C-002) |
+15. **The lifecycle operations judge the actual lane first (orchestrator ruling, tasks phase).**
+    - For `start_implementation` and `start_review`, core's lifecycle logic runs against the work package's current lane in the fold before the stale-`from_lane` check, as `start_implementation_status` and `start_review_status` do against their own reduction. It gives one of three outcomes:
+      - an incompatible holder → `WP_ALREADY_CLAIMED` / `claim_held_by_other_actor`;
+      - a lane the start does not accept → `TRANSITION_REJECTED` / `start_rejected`;
+      - a compatible holder in the target lane, which is core's zero-event no-op → a stale-`from_lane` refusal (`TRANSITION_REJECTED`, no URN; `oracle: protocol`). A conforming client sends nothing in that case.
+    - A start from `planned` is a batch of two units (`planned → claimed`, then `claimed → in_progress`), each with `operation: start_implementation`.
+    - A review re-claim is a `start_review` unit whose row is `for_review → in_review`. When the fold shows `in_review` held by a different actor with role `reviewer`, the answer is `WP_ALREADY_CLAIMED`.
+16. **FR-010's allowlist names three packages.**
+    - The three: event-log's existing `adapter.out.ledger` (lock files and the read ledger's torn-tail repair, never a status log), the new `adapter.out.statuslog`, and command-cli's `adapter.out.filesystem` (endpoint and service-lock files).
+    - The rule's intent is that no other code writes files, and above all that no other code writes a status log.
