@@ -1,0 +1,7 @@
+{
+  "input_json": "{\"nested\":{\"session_started_at\":\"2026-01-01T00:00:00+00:00\",\"session_ended_at\":\"2026-01-01T00:00:10+00:00\"}}",
+  "expected_line": "{\"nested\": {\"session_ended_at\": \"2026-01-01T00:00:10+00:00\", \"session_started_at\": \"2026-01-01T00:00:00+00:00\"}}\n",
+  "covers": [
+    "nested_session_keys_untouched"
+  ]
+}

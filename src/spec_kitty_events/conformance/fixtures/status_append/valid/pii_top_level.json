@@ -1,0 +1,7 @@
+{
+  "input_json": "{\"event_id\":\"pii\",\"machine_name\":\"build-host\",\"hostname\":\"host\",\"workspace_path\":\"/secret\",\"developer_name\":\"Dev\",\"developer_email\":\"dev@example.test\",\"keep\":true}",
+  "expected_line": "{\"event_id\": \"pii\", \"keep\": true}\n",
+  "covers": [
+    "pii_top_level"
+  ]
+}
