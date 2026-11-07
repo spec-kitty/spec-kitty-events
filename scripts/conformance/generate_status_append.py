@@ -12,6 +12,7 @@ import argparse
 import json
 import os
 import platform
+import subprocess
 import sys
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
@@ -290,6 +291,17 @@ def _print_summary(cases: Sequence[Case]) -> None:
         print(f"{coverage}: {counts[coverage]}")
 
 
+def _checkout_head(checkout: Path) -> str | None:
+    """Return the commit the core checkout is at, or None when it is not a git checkout."""
+    result = subprocess.run(  # noqa: S603 -- fixed argv, test-only oracle
+        ["git", "-C", str(checkout), "rev-parse", "HEAD"],  # noqa: S607
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Generate fixtures or check committed fixtures for oracle drift."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -303,6 +315,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         required = ".".join(str(part) for part in PINNED_PYTHON)
         print(
             f"status_append oracle requires Python {required}, found {platform.python_version()}",
+            file=sys.stderr,
+        )
+        return 2
+    head = _checkout_head(Path(checkout_value))
+    if head != PINNED_CORE_SHA:
+        print(
+            f"status_append oracle requires core at {PINNED_CORE_SHA}, found {head or 'no git checkout'}",
             file=sys.stderr,
         )
         return 2

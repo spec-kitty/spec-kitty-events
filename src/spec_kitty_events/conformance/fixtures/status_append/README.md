@@ -35,8 +35,12 @@ Every timestamp in a fixture is in the shared Python 3.10-compatible subset:
 this package parses it identically on Python 3.10 through
 `_iso8601.normalize_iso8601_shape` and on the oracle's Python 3.11, and WP03's
 Java `PyIsoDateTime` parses it identically as well. Forms outside that subset
-(ISO week dates, non-ASCII digits, exotic separators) belong only in WP03's
-`PyIsoDateTime` vectors, never in this family.
+belong only in WP03's `PyIsoDateTime` vectors, never in this family. On Python
+3.10 the reference encoder computes no `session_duration_s` for them, while core
+(Python 3.11) does: basic-format dates (`20260101`), ISO week dates (`2026-W01-1`,
+`2026-W01`), an hour-only offset (`+05`), an offset with seconds or a fraction
+(`+05:30:15.5`), non-ASCII digits and exotic separators. Python 3.11 and later
+agree with core on these forms.
 
 ## Coverage classes
 
