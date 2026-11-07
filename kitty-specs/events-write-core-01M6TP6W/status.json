@@ -146,7 +146,7 @@
     },
     "WP05": {
       "actor": "claude",
-      "agent": "opencode",
+      "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -154,6 +154,9 @@
       "last_event_id": "01M6VRKE8EP5DE3KAPQMV853MQ",
       "last_transition_at": "2026-11-07T19:43:38.766294+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Opus review: independent 2572-row differential; the one MAJOR (CPython total_seconds float rounding on >2^34 s spans) fixed by the orchestrator in the follow-up commit with a core-generated fixture; minor (4300-digit ints) filed as a follow-up"
+      ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
         "reference": "review-cycle://events-write-core-01M6TP6W/WP05-java-encoder/review-cycle-1.md",
