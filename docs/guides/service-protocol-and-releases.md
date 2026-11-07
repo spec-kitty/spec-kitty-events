@@ -2,7 +2,7 @@
 title: Service protocol and releases
 description: 'The CLI-to-write-service protocol in practice, the two release lines, the service-v* assets and tarball layouts, how core pins a release, and how to cut one.'
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-07T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -241,21 +241,21 @@ not move or re-push a tag.
 ### Release protection
 
 The workflow side is in `service-release.yml`: `publish` declares `environment: service-release`
-(#152). The protection itself is repository settings, which only an administrator can apply.
-**[operator]** Apply all three before the first non-rc `service-v*` tag, and create the environment
-before a release run needs it: a run that names a missing environment makes GitHub create it with
-no protection.
+(#152). The protection itself is repository settings, which only an administrator can change. All
+three were applied on 2026-11-07. Keep the environment in place: a run that names a missing
+environment makes GitHub create it with no protection.
 
 1. **The `service-release` environment** (Settings → Environments → New environment):
-   - *Required reviewers*: the maintainers who may approve a release; turn on *Prevent self-review*.
+   - *Required reviewers*: `stijn-dejongh` and the `admins` team, with *Prevent self-review* on,
+     so whoever starts a release cannot approve it. Administrators cannot bypass the rule.
    - *Deployment branches and tags*: *Selected branches and tags*, with one tag rule, `service-v*`.
      A run from any other ref cannot enter the environment, so it never gets the write token.
    - No environment secrets are needed: `publish` uses the job's `GITHUB_TOKEN` and OIDC.
-2. **A tag ruleset for `service-v*`** (Settings → Rules → Rulesets → New tag ruleset): target
-   `refs/tags/service-v*`, enforcement *Active*, with *Restrict creations*, *Restrict updates* and
-   *Restrict deletions*; bypass only for the maintainers who cut releases. A published tag can then
+2. **A tag ruleset for `service-v*`** (Settings → Rules → Rulesets → New tag ruleset): `service-release-tags`,
+   target `refs/tags/service-v*`, enforcement *Active*, with *Restrict creations*, *Restrict updates*,
+   *Restrict deletions* and *Block force pushes*; only `stijn-dejongh` and the `admins` team bypass it. A published tag can then
    be neither moved nor deleted, which the release notes and core's pins rely on.
-3. **The `main` ruleset** (`26558116`, at present disabled) set to *Active*, requiring
+3. **The `main` ruleset** (`26558116`), *Active* since 2026-11-05, requiring
    `service-gate`, `acceptance`, `cross-repo-harness-tests` and `docs-build`. The `gate` job's
    ancestor-of-`main` check is only as strong as what reaches `main` (#208, #111).
 
