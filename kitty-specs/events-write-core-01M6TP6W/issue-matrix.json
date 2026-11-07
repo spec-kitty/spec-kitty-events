@@ -85,7 +85,7 @@
       "wp": null
     },
     "#166": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "operator ruling 2026-11-07 (4): excluded, consumes the parity corpus this mission creates",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -93,7 +93,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#167": {
