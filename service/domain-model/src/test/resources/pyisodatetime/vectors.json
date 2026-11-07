@@ -266,6 +266,104 @@
     "naive_micros": 1609632000000000
   },
   {
+    "text": "2021-W01-1",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1609718400000000
+  },
+  {
+    "text": "2022-W01-1",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1641168000000000
+  },
+  {
+    "text": "2023-W01-1",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1672617600000000
+  },
+  {
+    "text": "2027-W01-1",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1799020800000000
+  },
+  {
+    "text": "2010-W52-7",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1293926400000000
+  },
+  {
+    "text": "2026-W53",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1798416000000000
+  },
+  {
+    "text": "2026-01-02T03.5",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767322800500000
+  },
+  {
+    "text": "2026-01-02T0304.5",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323040500000
+  },
+  {
+    "text": "2026-01-02T03:04:05+05.5",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767305044500000
+  },
+  {
+    "text": "2026-01-02T03:04:05+05:30.5",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767303244500000
+  },
+  {
+    "text": "2026-01-02T03:04:05:06",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045060000
+  },
+  {
+    "text": "2026-01-02T03:04:05\u0000",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045000000
+  },
+  {
+    "text": "2026W013 130Z",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767186000000000
+  },
+  {
+    "text": "2026-01-02T03:04:05+00:00:00.000001",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767323045000000
+  },
+  {
     "text": "",
     "branch": "date_length",
     "parses": false,
@@ -369,7 +467,7 @@
   },
   {
     "text": "2026W01-1",
-    "branch": "date_separator",
+    "branch": "time_short",
     "parses": false,
     "aware": false
   },
@@ -429,7 +527,7 @@
   },
   {
     "text": "2026-01-02T03:04:05.",
-    "branch": "fraction",
+    "branch": "trailing_text",
     "parses": false,
     "aware": false
   },
@@ -447,13 +545,19 @@
   },
   {
     "text": "2026-01-02T03:04:05junk",
-    "branch": "trailing_text",
+    "branch": "time_separator",
     "parses": false,
     "aware": false
   },
   {
     "text": "2026-01-02T03:04:05z",
     "branch": "trailing_text",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:04Z05",
+    "branch": "offset_z_position",
     "parses": false,
     "aware": false
   },
