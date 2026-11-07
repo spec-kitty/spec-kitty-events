@@ -132,12 +132,12 @@
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
-        "T020": "planned",
-        "T021": "planned",
-        "T022": "planned",
-        "T023": "planned",
-        "T024": "planned",
-        "T025": "planned"
+        "T020": "done",
+        "T021": "done",
+        "T022": "done",
+        "T023": "done",
+        "T024": "done",
+        "T025": "done"
       }
     },
     "WP05": {
