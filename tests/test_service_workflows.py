@@ -27,7 +27,14 @@ ADR = ROOT / "docs" / "adr" / "0003-gradle-build-and-service-release-line.md"
 
 SHA_PIN = re.compile(r"^[^@\s]+@[0-9a-f]{40}$")
 TARGETS = ["linux-x64", "linux-arm64", "macos-arm64", "windows-x64"]
-SERVICE_JOBS = ["contract-bundle", "native", "native-command-cli", "lock-interop", "nightly-corpus"]
+SERVICE_JOBS = [
+    "contract-bundle",
+    "native",
+    "native-command-cli",
+    "lock-interop",
+    "write-core-parity",
+    "nightly-corpus",
+]
 DEPLOYABLES = ["mission-status-api", "command-cli"]
 
 
@@ -143,10 +150,34 @@ def test_gradle_job_survives_the_skipped_contract_bundle() -> None:
 
 
 def test_release_runs_execute_no_core_code() -> None:
-    # lock-interop runs core's Python at the pinned SHA; a release run must not, so a compromised
+    # Both jobs run core's Python at the pinned SHA; a release run must not, so a compromised
     # peer cannot touch the artifacts the release attests.
-    condition = _load(SERVICE)["jobs"]["lock-interop"]["if"]
-    assert "inputs.release-version == ''" in condition
+    jobs = _load(SERVICE)["jobs"]
+    for name in ("lock-interop", "write-core-parity"):
+        assert "inputs.release-version == ''" in jobs[name]["if"]
+
+
+def test_write_core_parity_checks_oracles_with_core_python() -> None:
+    job = _load(SERVICE)["jobs"]["write-core-parity"]
+    assert job["runs-on"] == "ubuntu-24.04"
+    assert job["timeout-minutes"] == 30
+    assert "github.event_name != 'schedule'" in job["if"]
+    # pipefail keeps tee from hiding a generator's non-zero exit status.
+    assert job["defaults"]["run"]["shell"] == "bash"
+
+    checkouts = [s for s in job["steps"] if s.get("uses", "").startswith("actions/checkout@")]
+    assert len(checkouts) == 2
+    assert all(s["with"]["persist-credentials"] is False for s in checkouts)
+    runs = [s.get("run", "") for s in job["steps"]]
+    commands = [
+        'SPEC_KITTY_CORE_CHECKOUT="$GITHUB_WORKSPACE/core" core/.venv/bin/python '
+        "scripts/conformance/generate_status_append.py --check",
+        'SPEC_KITTY_CORE_CHECKOUT="$GITHUB_WORKSPACE/core" core/.venv/bin/python '
+        "scripts/conformance/generate_transition_parity.py --check",
+        "core/.venv/bin/python scripts/conformance/generate_fromisoformat_vectors.py --check",
+    ]
+    for command in commands:
+        assert any(command in run and 'tee -a "$GITHUB_STEP_SUMMARY"' in run for run in runs)
 
 
 def test_release_runs_restore_no_gradle_cache() -> None:
