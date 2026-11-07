@@ -1,7 +1,7 @@
 {
-  "event_count": 30,
-  "last_event_id": "01M6V76H276MKNE6KD8X0JR62T",
-  "materialized_at": "2026-11-07T14:39:29.863100+00:00",
+  "event_count": 31,
+  "last_event_id": "01M6V76KXC06FW7J76BED7RA6Z",
+  "materialized_at": "2026-11-07T14:39:32.780940+00:00",
   "mission_number": "",
   "mission_slug": "events-write-core-01M6TP6W",
   "mission_type": "software-dev",
@@ -10,12 +10,12 @@
     "approved": 2,
     "blocked": 0,
     "canceled": 0,
-    "claimed": 0,
+    "claimed": 1,
     "done": 0,
     "for_review": 0,
     "in_progress": 1,
     "in_review": 0,
-    "planned": 7
+    "planned": 6
   },
   "work_packages": {
     "WP01": {
@@ -81,14 +81,14 @@
       }
     },
     "WP03": {
-      "actor": "claude",
-      "agent": "claude",
+      "actor": "opencode",
+      "agent": "opencode",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
-      "lane": "planned",
-      "last_event_id": "01M6V76H276MKNE6KD8X0JR62T",
-      "last_transition_at": "2026-11-07T14:39:29.863100+00:00",
+      "lane": "claimed",
+      "last_event_id": "01M6V76KXC06FW7J76BED7RA6Z",
+      "last_transition_at": "2026-11-07T14:39:32.780940+00:00",
       "model": "__resolved_model_absent__",
       "provider": "__resolved_provider_absent__",
       "review": null,
