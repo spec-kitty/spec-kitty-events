@@ -3,6 +3,14 @@
 **Branch**: `kitty/mission-events-write-core-01M6TP6W` (pushed as `issue-160-write-core`) | **Date**: 2026-11-07 | **Spec**: [spec.md](./spec.md)
 **Input**: the mission specification, with the research in [research.md](./research.md) (the port inventory, §1–§10, plus the decisions in §11).
 
+> **Superseded details (post-tasks squad, 2026-11-07).** Where this plan and `tasks.md` differ, `tasks.md` and research.md §11–§13 govern:
+> - The parity corpus lives in `src/spec_kitty_events/conformance/status_transition_parity/`, outside `fixtures/` (R1).
+> - The `write-core-parity` CI job is WP10 (R2).
+> - The FFM `reachability-metadata.json` lives in command-cli's resources and is owned by WP08 (R10).
+> - There are 10 work packages.
+> - FR-010's allowlist has three packages (decision 16).
+> - The lifecycle operations judge the actual lane first (decision 15).
+
 ## Summary
 
 `command-cli` refuses every write today: `WriteGate.persist()` answers `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`. This plan replaces that refusal with a real write path that has three parts.

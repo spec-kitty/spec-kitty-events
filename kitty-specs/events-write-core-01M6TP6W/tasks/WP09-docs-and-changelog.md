@@ -38,10 +38,14 @@ owned_files:
 - docs/architecture/services/README.md
 - docs/guides/service-protocol-and-releases.md
 - docs/changelog/unreleased/160-write-core*.md
+- src/spec_kitty_events/conformance/README.md
+- contracts/mission-write/CHANGELOG.md
 role: implementer
 tags: []
 tracker_refs: []
 ---
+> **Analyze folds (A4, A5):** WP09 also owns the conformance README, where it documents the `status_append` family, the parity corpus and the public `spec_kitty_events.status_log` module. It owns the contract CHANGELOG's final pass too, which WP03 writes first.
+
 # Work Package Prompt: WP09 - Documentation, contract CHANGELOG pass and changelog fragment
 
 ## ⚡ Do This First: Load Agent Profile

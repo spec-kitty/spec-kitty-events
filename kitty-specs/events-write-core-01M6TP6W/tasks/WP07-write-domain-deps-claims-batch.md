@@ -48,6 +48,8 @@ role: implementer
 tags: []
 tracker_refs: []
 ---
+> **Declared out-of-map edit (analyze A3):** WP07 creates `domain/authority/Authority.java` and `domain/authority/AuthorityInput.java` (and their tests), at the top level of WP06's package. WP06 is approved before WP07 starts, so the edit cannot collide.
+
 # Work Package Prompt: WP07 - Write domain, part 2: dependencies, claims and batches
 
 ## ⚡ Do This First: Load Agent Profile
