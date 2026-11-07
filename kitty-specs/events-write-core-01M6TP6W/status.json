@@ -174,7 +174,7 @@
     },
     "WP06": {
       "actor": "claude",
-      "agent": "opencode",
+      "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -183,6 +183,7 @@
       "last_transition_at": "2026-11-07T21:52:22.593712+00:00",
       "model": "__resolved_model_absent__",
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/stijn/.t3/worktrees/spec-kitty-events/t3-104ffad0/kitty-specs/events-write-core-01M6TP6W/tasks/WP06-write-domain-fsm-guards/review-cycle-1.md",
         "reference": "review-cycle://events-write-core-01M6TP6W/WP06-write-domain-fsm-guards/review-cycle-1.md",
@@ -190,14 +191,16 @@
         "verdict": "changes_requested"
       },
       "role": "implementer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T032": "done",
-        "T033": "done",
-        "T034": "done",
-        "T035": "done",
-        "T036": "done",
-        "T037": "done",
-        "T038": "done"
+        "T032": "planned",
+        "T033": "planned",
+        "T034": "planned",
+        "T035": "planned",
+        "T036": "planned",
+        "T037": "planned",
+        "T038": "planned"
       }
     },
     "WP07": {
