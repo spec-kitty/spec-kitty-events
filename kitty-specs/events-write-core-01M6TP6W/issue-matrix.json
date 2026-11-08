@@ -251,6 +251,18 @@
       "title": null,
       "verdict": "deferred-with-followup",
       "wp": null
+    },
+    "#7445": {
+      "evidence_ref": "spec-kitty/spec-kitty#7445 core follow-up: meta.json BOM policy; service matches load_meta (decision 19, audit I7)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
     }
   },
   "schema_version": 1
