@@ -263,7 +263,8 @@
         "Cycle 8 (Sonnet 5.5 per maintainer): NaN keys, block-scalar indent, unhashable keys",
         "Cycle 8 (Sonnet 5.5): audit rulings R22-R29, YAML 1.2 schema, RootCheckout (4ea029aa); command-cli check 1116/133/11/1; drift 0 (196 core); 46757 static + 349 e2e probes 0 fail-open; p95 98.3 ms",
         "Cycle 9 (Sonnet 5.5): RootCheckout crash + fail-closed, R29 widened, R30",
-        "Cycle 9 (Sonnet 5.5): GitConfig port, R29 widened, R30 (214b8109); command-cli check 1132/133/11/1; drift 0; 98426 static + 265 e2e + 15000 config fuzz, 0 fail-open; p95 97.0 ms"
+        "Cycle 9 (Sonnet 5.5): GitConfig port, R29 widened, R30 (214b8109); command-cli check 1132/133/11/1; drift 0; 98426 static + 265 e2e + 15000 config fuzz, 0 fail-open; p95 97.0 ms",
+        "Cycle 10 (Sonnet 5.5): R31 RootCheckout asks git"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
