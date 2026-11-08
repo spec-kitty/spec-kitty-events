@@ -178,11 +178,11 @@
       "criterion_id": "FR-018",
       "description": "MISSION_NOT_FOUND and WP_NOT_FOUND answer before the lock, as core's lookup does (ambiguous mission ids refuse).",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP08 FilesystemMissionCatalog tests and US2-5 integration test"
+      "evidence": "FilesystemMissionCatalogTest 6 (duplicate mission ids -> NotFound; task lookup WP01.md and WP02-*.md only); WriteServiceTest missingMission...BeforeLaterPorts, locationAndWorkPackageRefusalsPrecedeTheTurn (log.calls 0); WriteIntegrationTest us2-5 (404 MISSION_NOT_FOUND and WP_NOT_FOUND), us5 (WP99 404).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:47.473352+00:00",
+      "notes": "Before-the-lock ordering asserted by the log port seeing zero calls."
     },
     {
       "criterion_id": "FR-019",
