@@ -23,7 +23,8 @@ final class StateProjections {
     List<Transition> unique = events.stream().filter(event -> seen.add(event.id())).toList();
     projectCancellation(states, unique);
     projectImplementer(states, unique);
-    projectLatestImplementer(states, unique);
+    // Core's implementer authority reads raw append order, without reducer de-duplication or sorting.
+    projectLatestImplementer(states, rawEvents);
   }
 
   private static void projectCancellation(Map<String, Map<String, Object>> states, List<Transition> events) {
@@ -59,7 +60,7 @@ final class StateProjections {
       Transition event = events.get(index);
       Map<String, Object> state = states.get(event.wpId());
       if (state != null && !state.containsKey("latest_implementer_actor") && latestImplementingClaim(event)) {
-        state.put("latest_implementer_actor", Actors.project(event.actor()));
+        state.put("latest_implementer_actor", event.actor());
       }
     }
   }

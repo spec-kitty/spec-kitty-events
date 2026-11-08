@@ -1,11 +1,15 @@
 package org.speckitty.commandcli.domain.authority;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.speckitty.missionstatus.domain.model.Lane;
 
 /** Judges one decoded unit in the binding unknown/claim/stale/pipeline/dependency/machine order. */
 public final class UnitJudge {
+  private static final Set<Lane> REVIEW_LANES = Set.of(Lane.FOR_REVIEW, Lane.IN_REVIEW, Lane.APPROVED);
+
   private final DependencyGate dependencyGate;
   private final ClaimGate claimGate;
 
@@ -33,8 +37,18 @@ public final class UnitJudge {
     refusal = PipelineGuards.doneEvidence(row.get("evidence"));
     if (refusal.isPresent()) return refusal;
     Boolean ready = dependencyGate.readiness(unit.wpId(), from, to, state, facts);
-    GuardContext context = Guards.context(row, state, facts::subtaskRoster, ready);
+    GuardContext context = Guards.context(transitionGuardRow(unit, row, actual), state, facts::subtaskRoster, ready);
     return LaneMachine.check(from, to, context);
+  }
+
+  private static Map<String, Object> transitionGuardRow(UnitInput unit, Map<String, Object> row, Lane actual) {
+    if (unit.operation() != Operation.START_IMPLEMENTATION || !Boolean.TRUE.equals(row.get("force"))
+        || REVIEW_LANES.contains(actual)) {
+      return row;
+    }
+    Map<String, Object> unforced = new LinkedHashMap<>(row);
+    unforced.put("force", false);
+    return unforced;
   }
 
   public Optional<Refusal> judge(UnitInput unit, Map<String, WpWriteState> state, MissionFacts facts) {

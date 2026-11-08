@@ -105,6 +105,18 @@ class UnitJudgeTest {
   }
 
   @Test
+  void implementationStartNeverForcesItsOrdinaryClaimEdges() {
+    UnitJudge judge = new UnitJudge((wpId, from, to, state, facts) -> false, ClaimGate.NONE);
+    for (String[] edge : new String[][] {{"planned", "claimed"}, {"claimed", "in_progress"}}) {
+      Map<String, Object> row = AuthorityFixtures.row(edge[0], edge[1]);
+      row.put("force", true);
+      Refusal refusal = judge.judge(unit(Operation.START_IMPLEMENTATION, row),
+          AuthorityFixtures.foldTo(Lane.fromWire(edge[0])), NO_FACTS).orElseThrow();
+      assertThat(refusal.reason()).as(edge[0]).isEqualTo(RefusalReason.DEPENDENCIES_UNSATISFIED);
+    }
+  }
+
+  @Test
   void dependencyVerdictFeedsMachineWhichRetainsActorBeforeDependencyPrecedence() {
     Map<String, Object> row = AuthorityFixtures.row("planned", "claimed");
     row.put("actor", "  ");

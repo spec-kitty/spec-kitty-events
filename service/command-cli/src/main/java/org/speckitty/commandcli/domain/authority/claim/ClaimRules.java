@@ -40,7 +40,7 @@ public final class ClaimRules implements ClaimGate {
     Map<String, Object> row = unit.transitionRow();
     Object requester = row.get("actor");
     boolean reviewExit = Boolean.TRUE.equals(row.get("force"));
-    String note = reviewExit && row.get("reason") != null ? String.valueOf(row.get("reason")) : null;
+    String note = row.get("reason") != null ? String.valueOf(row.get("reason")) : null;
     Optional<Refusal> force = rejectForce(unit.wpId(), lane, reviewExit, note);
     if (force.isPresent()) return force;
     return switch (lane) {
@@ -70,17 +70,18 @@ public final class ClaimRules implements ClaimGate {
     }
     Object implementer = current.slot("latest_implementer_actor");
     if (ActorCompatibility.sameRealActor(implementer, requester)) return Optional.empty();
-    String label = implementer == null ? "unknown" : String.valueOf(implementer);
+    String label = implementerLabel(implementer);
     return Optional.of(Refusal.of(RefusalReason.CLAIM_HELD_BY_OTHER_ACTOR,
         "WP " + unit.wpId() + " is in for_review; only its implementer of record (" + label + ") may withdraw it, "
             + "or an operator with " + FORCE_HINT));
   }
 
   private static Optional<Refusal> startReview(UnitInput unit, WpWriteState current) {
-    return switch (current.lane()) {
+    Lane lane = current.lane() == Lane.UNINITIALIZED ? Lane.GENESIS : current.lane();
+    return switch (lane) {
       case FOR_REVIEW -> Optional.empty();
       case IN_REVIEW -> reviewClaim(unit, current);
-      default -> startRejected("WP " + unit.wpId() + " is in '" + current.lane().wire() + "', cannot start review");
+      default -> startRejected("WP " + unit.wpId() + " is in '" + lane.wire() + "', cannot start review");
     };
   }
 
@@ -100,6 +101,23 @@ public final class ClaimRules implements ClaimGate {
       return startRejected("--force only applies to a WP in for_review, in_review or approved; " + wpId + " is in '" + lane.wire() + "'");
     }
     return Optional.empty();
+  }
+
+  private static String implementerLabel(Object implementer) {
+    String label = implementer instanceof Map<?, ?> structured ? compactIdentity(structured)
+        : implementer == null ? null : String.valueOf(implementer);
+    return label == null || label.isEmpty() || "unknown".equals(label) ? "none on record" : label;
+  }
+
+  private static String compactIdentity(Map<?, ?> actor) {
+    String profile = "wp_frontmatter".equals(actor.get("profile_source")) ? "" : identityPart(actor.get("profile"));
+    String identity = identityPart(actor.get("tool")) + ":" + identityPart(actor.get("model")) + ":" + profile;
+    while (identity.endsWith(":")) identity = identity.substring(0, identity.length() - 1);
+    return identity;
+  }
+
+  private static String identityPart(Object value) {
+    return value == null ? "" : String.valueOf(value).strip();
   }
 
   private static String holder(WpWriteState current) {
