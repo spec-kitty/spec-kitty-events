@@ -1,68 +1,80 @@
 package org.speckitty.commandcli.adapter.in.http.operations;
 
-import java.util.Optional;
+import java.util.function.Supplier;
 import org.speckitty.commandcli.adapter.in.http.edge.RefusalBody;
 import org.speckitty.commandcli.application.lifecycle.ServiceLifecycle;
-import org.speckitty.commandcli.application.lifecycle.WriteGate;
+import org.speckitty.commandcli.application.write.WriteOutcome;
+import org.speckitty.commandcli.application.write.WriteRequest;
+import org.speckitty.commandcli.application.write.WriteService;
 import org.speckitty.commandcli.domain.service.RefusalCode;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.databind.json.JsonMapper;
 
-/**
- * The WorkPackages operations of contracts/mission-write: one transition unit, a batch of units, one standalone annotation. After the edge
- * checks (guard, token, protocol, size) a write is refused 503 {@code SERVICE_DRAINING} while the service drains, then 400
- * {@code REQUEST_MALFORMED} when its body does not have the contract's shape, and otherwise goes to the {@link WriteGate}, which in this
- * release refuses every write fail-closed: nothing is ever acknowledged that was not durably persisted. The body is taken as bytes and
- * checked by hand ({@link WriteBodies}) rather than bound to generated models, so every shape fault is the contract's refusal.
- */
+/** The unchanged write edge, followed by typed shape validation and the authoritative write service. */
 @RestController
 class WriteController {
-
   private final ServiceLifecycle lifecycle;
-  private final WriteGate gate;
+  private final WriteService writes;
   private final WriteBodies bodies;
-  private final tools.jackson.databind.json.JsonMapper mapper;
+  private final JsonMapper mapper;
 
-  WriteController(ServiceLifecycle lifecycle, WriteGate gate, WriteBodies bodies, tools.jackson.databind.json.JsonMapper mapper) {
+  WriteController(ServiceLifecycle lifecycle, WriteService writes, WriteBodies bodies, JsonMapper mapper) {
     this.lifecycle = lifecycle;
-    this.gate = gate;
+    this.writes = writes;
     this.bodies = bodies;
     this.mapper = mapper;
   }
 
   @PostMapping(path = "/api/v1/missions/{missionId}/work-package-transitions")
-  ResponseEntity<byte[]> recordWorkPackageTransition(@PathVariable("missionId") String missionId, @RequestBody(required = false) byte[] body) {
-    return write(missionId, () -> bodies.transitionUnit(missionId, body));
+  ResponseEntity<byte[]> recordWorkPackageTransition(@PathVariable("missionId") String missionId,
+      @RequestBody(required = false) byte[] body) {
+    return write(missionId, () -> bodies.parseUnit(missionId, body));
   }
 
   @PostMapping(path = "/api/v1/missions/{missionId}/work-package-transitions/batch")
-  ResponseEntity<byte[]> recordWorkPackageTransitionBatch(@PathVariable("missionId") String missionId, @RequestBody(required = false) byte[] body) {
-    return write(missionId, () -> bodies.transitionBatch(missionId, body));
+  ResponseEntity<byte[]> recordWorkPackageTransitionBatch(@PathVariable("missionId") String missionId,
+      @RequestBody(required = false) byte[] body) {
+    return write(missionId, () -> bodies.parseBatch(missionId, body));
   }
 
   @PostMapping(path = "/api/v1/missions/{missionId}/inner-state-annotations")
-  ResponseEntity<byte[]> recordInnerStateAnnotation(@PathVariable("missionId") String missionId, @RequestBody(required = false) byte[] body) {
-    return write(missionId, () -> bodies.annotation(missionId, body));
+  ResponseEntity<byte[]> recordInnerStateAnnotation(@PathVariable("missionId") String missionId,
+      @RequestBody(required = false) byte[] body) {
+    return write(missionId, () -> bodies.parseAnnotation(missionId, body));
   }
 
-  private ResponseEntity<byte[]> write(String missionId, java.util.function.Supplier<Optional<WriteBodies.Malformed>> shape) {
-    if (lifecycle.draining()) {
-      return refuse(RefusalBody.of(RefusalCode.SERVICE_DRAINING));
+  private ResponseEntity<byte[]> write(String missionId, Supplier<WriteBodies.Parsed> shape) {
+    if (lifecycle.draining()) return refuse(RefusalBody.of(RefusalCode.SERVICE_DRAINING));
+    var invalidMission = bodies.missionId(missionId);
+    if (invalidMission.isPresent()) return malformed(invalidMission.orElseThrow());
+    WriteBodies.Parsed parsed = shape.get();
+    if (parsed instanceof WriteBodies.Parsed.Failure failure) return malformed(failure.malformed());
+    WriteRequest request = ((WriteBodies.Parsed.Success) parsed).request();
+    WriteOutcome outcome = writes.write(request);
+    if (outcome instanceof WriteOutcome.Acked ack) {
+      return ResponseEntity.status(201).contentType(MediaType.APPLICATION_JSON).body(AckBody.bytes(ack, mapper));
     }
-    Optional<WriteBodies.Malformed> malformed = bodies.missionId(missionId).or(shape);
-    if (malformed.isPresent()) {
-      RefusalBody refusal = RefusalBody.of(RefusalCode.REQUEST_MALFORMED, malformed.get().detail());
-      return refuse(malformed.get().instance() == null ? refusal : refusal.withInstance(malformed.get().instance()));
-    }
-    WriteGate.Refusal refused = gate.persist();
-    return refuse(RefusalBody.of(refused.code(), refused.detail()));
+    WriteOutcome.Refused refused = (WriteOutcome.Refused) outcome;
+    RefusalBody body = RefusalBody.of(refused.code(), refused.detail());
+    if (refused.reason() != null) body = body.withType(refused.reason().urn());
+    if (refused.unitIndex() != null) body = body.withInstance("#/units/" + refused.unitIndex());
+    return refuse(body);
+  }
+
+  private ResponseEntity<byte[]> malformed(WriteBodies.Malformed malformed) {
+    RefusalBody refusal = RefusalBody.of(RefusalCode.REQUEST_MALFORMED, malformed.detail());
+    return refuse(malformed.instance() == null ? refusal : refusal.withInstance(malformed.instance()));
   }
 
   private ResponseEntity<byte[]> refuse(RefusalBody refusal) {
-    return ResponseEntity.status(refusal.status()).contentType(MediaType.APPLICATION_PROBLEM_JSON).body(refusal.bytes(mapper));
+    ResponseEntity.BodyBuilder response = ResponseEntity.status(refusal.status()).contentType(MediaType.APPLICATION_PROBLEM_JSON);
+    if (RefusalCode.SERVICE_BUSY.name().equals(refusal.code())) response.header(HttpHeaders.RETRY_AFTER, "1");
+    return response.body(refusal.bytes(mapper));
   }
 }
