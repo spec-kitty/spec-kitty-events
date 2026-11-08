@@ -215,6 +215,18 @@
       "title": null,
       "verdict": "deferred-with-followup",
       "wp": null
+    },
+    "#7442": {
+      "evidence_ref": "spec-kitty/spec-kitty#7442 core follow-up: str() coercion of roster entries and phase; service rulings R25, R29 (decisions 19, 20, audit I4)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
     }
   },
   "schema_version": 1
