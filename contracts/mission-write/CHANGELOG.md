@@ -46,7 +46,7 @@ until it moves its pin.
 - Examples `WriteRefusal.coordination-ref-moved.yaml` and `DurabilityAck.ref-commit.yaml`.
 - `WriteRefusalReason.stale_from_lane` (`TRANSITION_REJECTED`): a unit's `from_lane` is not the
   work package's current lane. This is an events-side addition with no core equivalent
-  (spec-kitty/spec-kitty-events#160, #161 and #155; research §11 decision 17).
+  (spec-kitty/spec-kitty-events#160, #161 and #155).
 
 ### Changed
 
@@ -58,7 +58,7 @@ until it moves its pin.
   `destinationRef` and `missionDirectory` (spec-kitty/spec-kitty-events#160, #161 and #155).
 - `TRANSITION_REJECTED` carries `WriteRefusalReason.stale_from_lane` for a stale unit whose
   `from_lane` is not the work package's current lane (spec-kitty/spec-kitty-events#160, #161 and
-  #155; research §11 decision 17 supersedes decision 5).
+  #155).
 - `REQUEST_MALFORMED` also describes a row of the wrong kind for its position, a lane alias or
   non-canonical lane spelling, a non-finite number, and a session-time pair that cannot be
   subtracted (spec-kitty/spec-kitty-events#160, #161 and #155).

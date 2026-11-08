@@ -39,7 +39,7 @@ oneOf:
   - const: 'urn:spec-kitty:write-refusal:stale_from_lane'
     description: >-
       The unit's from_lane is not the work package's current lane. Provisional events-side
-      addition with no core equivalent (research §11 decision 17).
+      addition with no core equivalent (spec-kitty/spec-kitty-events#161).
 x-source:
   path: src/specify_cli/status/write_service_protocol.py
   symbol: WriteRefusalReason
