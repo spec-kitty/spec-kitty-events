@@ -65,9 +65,12 @@ operation's real core entry point. Caller-supplied core arguments are restricted
 to fields present in the request rows; all other guard inputs are core-derived.
 It stops batches at their first refusal. `--check` writes nothing, reports
 differing core ids (including deleted intents), and exits nonzero on drift.
-Generation rewrites only the protocol stale-from-lane refusal overlay, adding the events-side
-`stale_from_lane` expectation under research §11 decision 17; every other protocol case is
-left untouched.
+Generation also renders two families of protocol cases: the stale-from-lane refusal overlay,
+adding the events-side `stale_from_lane` expectation under research §11 decision 17, and the
+frontmatter-fact refusals (R15, R19-R29), which reuse a core case's request and log with the
+service's refusal as the expectation. Core's behaviour on those inputs is an accident of its
+stack (research §11 decision 19), so they are `oracle: protocol`, never core parity. Every other
+protocol case is left untouched.
 
 `unreachable.json` maps a wholly unreachable reason URN to its proven cause. Its
 `partial` object records an unreachable half of a reason that remains reachable
