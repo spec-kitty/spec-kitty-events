@@ -1,18 +1,5 @@
 {
   "area": "dependency",
-  "core_call": {
-    "entry_point": "specify_cli.status.emit.emit_status_transition",
-    "kwargs": {
-      "actor": "implementer-a",
-      "fan_out": false,
-      "feature_dir": "${MISSION_DIR}",
-      "mission_slug": "999-status-transition-parity",
-      "refresh_projection": false,
-      "repo_root": "${REPO_ROOT}",
-      "to_lane": "claimed",
-      "wp_id": "WP02"
-    }
-  },
   "expected": {
     "code": "DEPENDENCIES_NOT_SATISFIED",
     "message": "Transition planned -> claimed blocked: unsatisfied dependencies (force with reason to override)",
@@ -25,8 +12,8 @@
   "log": [
     {
       "actor": "implementer-a",
-      "at": "2026-01-24T03:33:22+00:00",
-      "event_id": "000000000000000000001E8481",
+      "at": "2026-01-08T18:06:42+00:00",
+      "event_id": "000000000000000000000A3931",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -41,8 +28,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-24T03:33:24+00:00",
-      "event_id": "000000000000000000001E8483",
+      "at": "2026-01-08T18:06:44+00:00",
+      "event_id": "000000000000000000000A3933",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -57,8 +44,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-24T03:33:26+00:00",
-      "event_id": "000000000000000000001E8485",
+      "at": "2026-01-08T18:06:46+00:00",
+      "event_id": "000000000000000000000A3935",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -73,83 +60,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-24T03:33:28+00:00",
-      "event_id": "000000000000000000001E8487",
-      "evidence": null,
-      "execution_mode": "worktree",
-      "force": false,
-      "from_lane": "in_progress",
-      "mission_id": "01J00000000000000000000000",
-      "mission_slug": "999-status-transition-parity",
-      "policy_metadata": null,
-      "reason": null,
-      "review_ref": null,
-      "to_lane": "for_review",
-      "wp_id": "WP01"
-    },
-    {
-      "actor": "reviewer-a",
-      "at": "2026-01-24T03:33:30+00:00",
-      "event_id": "000000000000000000001E8489",
-      "evidence": null,
-      "execution_mode": "worktree",
-      "force": false,
-      "from_lane": "for_review",
-      "mission_id": "01J00000000000000000000000",
-      "mission_slug": "999-status-transition-parity",
-      "policy_metadata": null,
-      "reason": null,
-      "review_ref": "review/WP01/claim",
-      "to_lane": "in_review",
-      "wp_id": "WP01"
-    },
-    {
-      "actor": "reviewer-a",
-      "at": "2026-01-24T03:33:32+00:00",
-      "event_id": "000000000000000000001E848B",
-      "evidence": null,
-      "execution_mode": "worktree",
-      "force": false,
-      "from_lane": "in_review",
-      "mission_id": "01J00000000000000000000000",
-      "mission_slug": "999-status-transition-parity",
-      "policy_metadata": null,
-      "reason": null,
-      "review_ref": null,
-      "review_result": {
-        "reference": "review/WP01/approved",
-        "reviewer": "reviewer-a",
-        "verdict": "approved"
-      },
-      "to_lane": "approved",
-      "wp_id": "WP01"
-    },
-    {
-      "actor": "reviewer-a",
-      "at": "2026-01-24T03:33:34+00:00",
-      "event_id": "000000000000000000001E848D",
-      "evidence": {
-        "review": {
-          "reference": "review/WP01/approved",
-          "reviewer": "reviewer-a",
-          "verdict": "approved"
-        }
-      },
-      "execution_mode": "worktree",
-      "force": false,
-      "from_lane": "approved",
-      "mission_id": "01J00000000000000000000000",
-      "mission_slug": "999-status-transition-parity",
-      "policy_metadata": null,
-      "reason": null,
-      "review_ref": null,
-      "to_lane": "done",
-      "wp_id": "WP01"
-    },
-    {
-      "actor": "implementer-a",
-      "at": "2026-01-24T03:33:36+00:00",
-      "event_id": "000000000000000000001E848F",
+      "at": "2026-01-08T18:06:48+00:00",
+      "event_id": "000000000000000000000A3937",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -168,9 +80,9 @@
     "mission_id": "01J00000000000000000000000",
     "mission_slug": "999-status-transition-parity"
   },
-  "notes": "Core entry-point parity for dependency anchored tagged declaration.",
+  "notes": "R20: the anchor token (and R19 explicit tag) makes WP02 unreadable; dependencies refuse dependencies_unsatisfied.",
   "operation": "transition",
-  "oracle": "core",
+  "oracle": "protocol",
   "request": {
     "kind": "unit",
     "units": [
@@ -179,8 +91,8 @@
         "rows": [
           {
             "actor": "implementer-a",
-            "at": "2026-01-24T03:33:38+00:00",
-            "event_id": "000000000000000000001E8491",
+            "at": "2026-01-08T18:06:50+00:00",
+            "event_id": "000000000000000000000A3939",
             "evidence": null,
             "execution_mode": "worktree",
             "force": false,

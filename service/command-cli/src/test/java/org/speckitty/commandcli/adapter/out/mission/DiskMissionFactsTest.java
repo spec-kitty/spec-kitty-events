@@ -83,12 +83,18 @@ class DiskMissionFactsTest {
   }
 
   @Test
-  void anchoredAndAliasedShorthandStringsRemainTaggedValues() throws Exception {
-    write("WP01.md", task("[]").replace("title: test", "title: &a !!str test"));
+  void anchorsAliasesDocumentEndsAndFurtherDocumentsAreUnresolvableUnderR20() throws Exception {
+    write("WP01.md", task("[]").replace("title: test", "title: &a test"));
     assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
-    write("WP01.md", task("[]").replace("title: test\n", "title: test\nagent: &a !!str x\ndescription: *a\n"));
+    write("WP01.md", task("[]").replace("title: test\n", "title: test\nagent: &a x\ndescription: *a\n"));
     assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
-    write("WP02.md", "---\nwork_package_id: WP02\ndependencies: [&a !!str WP01]\nsubtasks: []\n---\n");
+    write("WP01.md", task("[]").replace("title: test\n", "title: test\ndescription: &a: x\n"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    write("WP01.md", task("[]").replace("title: test\n", "title: test\n...\n"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    write("WP01.md", task("[]").replace("title: test\n", "title: test\n---\nother: document\n"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    write("WP02.md", "---\nwork_package_id: WP02\ndependencies: [&a WP01]\nsubtasks: []\n---\n");
     assertThat(facts().dependencies("WP02")).isInstanceOf(DependencyDeclaration.Unresolvable.class);
   }
 
@@ -133,18 +139,40 @@ class DiskMissionFactsTest {
   }
 
   @Test
-  void untaggedAnchorsAliasesCollectionsAndEqualsKeepTheirExistingRules() throws Exception {
-    write("WP01.md", task("[=, &a T001, *a]"));
+  void loneAndTrailingDirectivesAreUnresolvableUnderR20() throws Exception {
+    for (String directive : List.of("%YAML 1.2", "%TAG !e! tag:yaml.org,2002:")) {
+      write("WP02.md", "---\n" + directive + "\n---\n");
+      assertThat(facts().dependencies("WP02")).as(directive)
+          .isInstanceOf(DependencyDeclaration.Unresolvable.class);
+    }
+    write("WP01.md", task("[]").replace("title: test\n", "title: test\n...\n%YAML 1.2\n"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+  }
+
+  @Test
+  void yaml11WhitespaceIsUnresolvableUnderR20() throws Exception {
+    for (String declaration : List.of(
+        "description: line one\tcontinued\n",
+        "description\t: value\n",
+        "agent: x\u2028description: y\n",
+        "description: left\u2028right\n",
+        "description: left\u0085right\n",
+        "description: left\u2029right\n")) {
+      write("WP01.md", task("[]").replace("title: test\n", "title: test\n" + declaration));
+      assertThat(facts().subtaskRoster("WP01")).as(declaration)
+          .isInstanceOf(SubtaskRoster.Unresolvable.class);
+    }
+  }
+
+  @Test
+  void untaggedCollectionsAndEqualsKeepTheirExistingRules() throws Exception {
+    write("WP01.md", task("[=, T001]"));
     SubtaskRoster.Resolved roster = (SubtaskRoster.Resolved) facts().subtaskRoster("WP01");
     assertThat(roster.ids()).containsExactly("=", "T001");
-    write("WP01.md", task("[]").replace("title: test\n", "title: test\nagent: &a x\ndescription: *a\n"));
-    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Resolved.class);
     write("WP01.md", task("\n  - T001\n  - T002"));
     assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Resolved.class);
     write("WP02.md", "---\nwork_package_id: WP02\ndependencies: WP01\n---\n");
     assertThat(facts().dependencies("WP02")).isEqualTo(new DependencyDeclaration.Declared(List.of("WP01")));
-    write("WP01.md", "---\n--- # document\nwork_package_id: WP01\ntitle: test\nsubtasks: []\n...\n---\n");
-    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Resolved.class);
   }
 
   @Test

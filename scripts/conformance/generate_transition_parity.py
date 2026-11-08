@@ -203,7 +203,7 @@ def protocol_stale_from_lane_cases(case_dir: Path) -> dict[str, str]:
 
 
 def protocol_r15_cases(core_rendered: Mapping[str, str]) -> dict[str, str]:
-    """Render R15/R19 refusals from core-derived requests without treating them as core parity."""
+    """Render R15/R19/R20 refusals from core-derived requests, not as core parity."""
 
     def roster_case(case_id: str, template: str, task: str, notes: str) -> tuple[str, str]:
         document = json.loads(core_rendered[template])
@@ -212,6 +212,15 @@ def protocol_r15_cases(core_rendered: Mapping[str, str]) -> dict[str, str]:
         document.pop("core_call")
         document["tasks"] = {**default_tasks(), "WP01.md": task}
         document["expected"] = json.loads(core_rendered["guard-subtasks-incomplete"])["expected"]
+        document["notes"] = notes
+        return case_id, _render(document)
+
+    def dependency_case(case_id: str, task: str, notes: str) -> tuple[str, str]:
+        document = json.loads(core_rendered["dependency-unreadable-declaration"])
+        document["id"] = case_id
+        document["oracle"] = "protocol"
+        document.pop("core_call")
+        document["tasks"] = {**default_tasks(), "WP02.md": task}
         document["notes"] = notes
         return case_id, _render(document)
 
@@ -244,20 +253,35 @@ def protocol_r15_cases(core_rendered: Mapping[str, str]) -> dict[str, str]:
                 task_text().replace("subtasks: []", "shell_pid: !!int 12\nsubtasks: []"),
                 r15_note,
             ),
+            roster_case(
+                "guard-subtasks-roster-description-tab",
+                "guard-subtasks-incomplete",
+                task_text().replace(
+                    'dependencies: "[]"',
+                    "description: line one\tcontinued\ndependencies: []",
+                ),
+                "R15/R20: a tab makes the roster unresolvable; the service fails closed.",
+            ),
+            dependency_case(
+                "dependency-agent-tagged-bool",
+                task_text("WP02").replace("subtasks: []", "agent: !!bool maybe\nsubtasks: []"),
+                "R19: any explicit tag makes WP02 unreadable; dependencies refuse "
+                "dependencies_unsatisfied.",
+            ),
+            dependency_case(
+                "dependency-anchored-tagged-declaration",
+                task_text("WP02", dependencies="&a !!str WP01"),
+                "R20: the anchor token (and R19 explicit tag) makes WP02 unreadable; "
+                "dependencies refuse dependencies_unsatisfied.",
+            ),
+            dependency_case(
+                "dependency-lone-yaml-directive",
+                "---\n%YAML 1.2\n---\n\n# WP02\n",
+                "R20: a directive without a document makes WP02 unreadable; dependencies "
+                "refuse dependencies_unsatisfied.",
+            ),
         ]
     )
-    document = json.loads(core_rendered["dependency-unreadable-declaration"])
-    document["id"] = "dependency-agent-tagged-bool"
-    document["oracle"] = "protocol"
-    document.pop("core_call")
-    document["tasks"] = default_tasks()
-    document["tasks"]["WP02.md"] = task_text("WP02").replace(
-        "subtasks: []", "agent: !!bool maybe\nsubtasks: []"
-    )
-    document["notes"] = (
-        "R19: any explicit tag makes WP02 unreadable; dependencies refuse dependencies_unsatisfied."
-    )
-    rendered[document["id"]] = _render(document)
     return rendered
 
 
@@ -687,8 +711,6 @@ def _dependency_intents() -> list[Intent]:
     frontmatter_tasks["duplicate-key"]["WP02.md"] = (
         "---\nwork_package_id: WP02\ndependencies: [WP01]\ndependencies: []\nsubtasks: []\n---\n"
     )
-    anchored_tagged_tasks = dict(dep_tasks)
-    anchored_tagged_tasks["WP02.md"] = task_text("WP02", dependencies="&a !!str WP01")
     start_refused_tasks = default_tasks()
     start_refused_tasks["WP01.md"] = task_text("WP01", dependencies="[WP99]")
     synthetic_setup = (
@@ -793,13 +815,6 @@ def _dependency_intents() -> list[Intent]:
             path_to("planned", wp_id="WP02"),
             tr("claimed", wp_id="WP02"),
             tasks=frontmatter_tasks["duplicate-key"],
-        ),
-        _intent(
-            "dependency-anchored-tagged-declaration",
-            "dependency",
-            (*path_to("done"), *path_to("planned", wp_id="WP02")),
-            tr("claimed", wp_id="WP02"),
-            tasks=anchored_tagged_tasks,
         ),
     ]
     for satisfied in ("approved", "done"):
@@ -1333,13 +1348,11 @@ def build_intents() -> tuple[Intent, ...]:
         "guard-shell-pid-bigstr",
         "guard-shell-pid-underscore",
     }
-    cycle4_additions = {"dependency-anchored-tagged-declaration"}
-    additions = review_additions | cycle3_additions | cycle4_additions
+    additions = review_additions | cycle3_additions
     intents = (
         tuple(intent for intent in intents if intent.case_id not in additions)
         + tuple(intent for intent in intents if intent.case_id in review_additions)
         + tuple(intent for intent in intents if intent.case_id in cycle3_additions)
-        + tuple(intent for intent in intents if intent.case_id in cycle4_additions)
     )
     ids = [intent.case_id for intent in intents]
     if len(ids) != len(set(ids)):
