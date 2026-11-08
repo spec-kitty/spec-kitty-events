@@ -252,7 +252,8 @@
         "Cycle 2: all 15 review-cycle-1 findings fixed (154eead7), merged with stale_from_lane ruling; merged tree command-cli check 1025/133/11/1 green; p50 85.8 ms p95 110.5 ms",
         "Cycle 3: fix review-cycle-2 findings",
         "Cycle 3: review-cycle-2 findings 1-8 fixed (37b9c3a5); command-cli check 1052/133/11/1; generator drift 0 (199 core); p95 118.8 ms",
-        "Cycle 4: fix review-cycle-3 findings"
+        "Cycle 4: fix review-cycle-3 findings",
+        "Cycle 4: review-cycle-3 findings 1-6 fixed; command-cli check 1064/133/11/1; generator drift 0 (202 core); gen_cases 302->73 (out-of-scope groups only); p95 130.6 ms"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
