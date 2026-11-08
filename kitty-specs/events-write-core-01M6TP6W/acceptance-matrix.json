@@ -118,11 +118,11 @@
       "criterion_id": "FR-012",
       "description": "Every guard refusal carries the contract code and reason URN core raises; each of the 15 reasons is reached by a parity case or recorded unreachable with its cause.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP06/WP07 parity runners; WP07 ReasonLedgerTest; WP04 unreachable.json"
+      "evidence": "ProtocolCorpusTest 34 (everyGuardReasonOverHttp: 15 reasons reached; workspace_context_required recorded unreachable); ReasonLedgerTest 1 (all 16 RefusalReason entries have a corpus case or a non-blank unreachable cause); Python test_every_reason_is_reached_or_has_an_unreachable_cause and test_refusal_vocabulary_is_closed (16 URNs); ParityCorpusTest 239 compares code, reason and unit.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:36.234161+00:00",
+      "notes": "Decision 17: the vocabulary is 16 (stale_from_lane added), not FR-012's 15; judged against 16. unreachable.json holds the cause and a 'partial' cause for implementation_evidence_required."
     },
     {
       "criterion_id": "FR-013",
