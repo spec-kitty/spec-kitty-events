@@ -56,8 +56,15 @@ class RootCheckoutTest {
     return cases;
   }
 
+  /**
+   * R31's invariant is "the service agrees with the installed git", not "git behaves as git 2.43 did". The pinned verdicts document
+   * what git 2.43.0 answered; a newer git that answers differently prints a notice instead of failing, so a runner-image git upgrade
+   * cannot turn a correct build red. The run must still see git both accept and refuse, so the test never passes vacuously.
+   */
   @Test
   void aRepositoryIsVerifiedExactlyWhenGitAcceptsItAsANonBareCheckoutAtTheRoot() throws Exception {
+    int accepted = 0;
+    int refused = 0;
     for (Map.Entry<String, Object[]> entry : configCases().entrySet()) {
       Path repository = repository("root-checkout");
       try {
@@ -67,14 +74,24 @@ class RootCheckoutTest {
         Files.createDirectories(gcd.resolve("subdir"));
         Files.writeString(gcd.resolve("cycle.cfg"), "[include]\n\tpath = cycle.cfg\n");
         Files.writeString(gcd.resolve("config"), (String) entry.getValue()[0], StandardOpenOption.APPEND);
-        boolean accepted = (Boolean) entry.getValue()[1];
-        assertThat(gitAccepts(repository)).as("git's own verdict on %s", entry.getKey()).isEqualTo(accepted);
-        assertThat(RootCheckout.of(gcd).root().isPresent()).as(entry.getKey()).isEqualTo(accepted);
-        if (accepted) assertThat(RootCheckout.of(gcd).root()).contains(repository.toRealPath());
+        boolean pinned = (Boolean) entry.getValue()[1];
+        boolean git = gitAccepts(repository);
+        if (git != pinned) {
+          System.out.printf("RootCheckoutTest: the installed git answers %s for '%s' (git 2.43.0 answered %s)%n", git, entry.getKey(), pinned);
+        }
+        assertThat(RootCheckout.of(gcd).root().isPresent()).as("service agrees with git on %s", entry.getKey()).isEqualTo(git);
+        if (git) {
+          assertThat(RootCheckout.of(gcd).root()).contains(repository.toRealPath());
+          accepted++;
+        } else {
+          refused++;
+        }
       } finally {
         delete(repository);
       }
     }
+    assertThat(accepted).as("configs git accepted").isPositive();
+    assertThat(refused).as("configs git refused").isPositive();
   }
 
   @Test
