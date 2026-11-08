@@ -88,11 +88,11 @@
       "criterion_id": "FR-009",
       "description": "Write location verified against the service's own resolution; mismatches, bare repositories, lane worktrees and coordination_ref_commit answer 422 WRITE_LOCATION_UNVERIFIED.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP08 WriteService step tests and US4 integration tests"
+      "evidence": "RootCheckoutTest 10 (git rev-parse: bare, sparse-checkout bare, config.worktree, linked-worktree gitdir, missing/hung git fail closed; agrees with installed git); FilesystemMissionCatalogTest 6 (checkout 'lane', destinationRef, wrong dir, symlink escape); WriteIntegrationTest us4 x3 (422, tree hash unchanged; coordination_ref_commit detail names migration step 4).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:30.903001+00:00",
+      "notes": "Decision 21 (R31): root checkout verified by asking git; GitConfig port deleted. R16 coordination-routed Mission refused 422 before any lock. Decisions 18-21 are the deliberate divergences from core on this criterion."
     },
     {
       "criterion_id": "FR-010",
