@@ -227,11 +227,11 @@
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
-        "T039": "planned",
-        "T040": "planned",
-        "T041": "planned",
-        "T042": "planned",
-        "T043": "planned"
+        "T039": "done",
+        "T040": "done",
+        "T041": "done",
+        "T042": "done",
+        "T043": "done"
       }
     },
     "WP08": {
