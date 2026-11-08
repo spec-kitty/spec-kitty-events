@@ -2,27 +2,20 @@ package org.speckitty.commandcli.adapter.out.mission;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.composer.Composer;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.nodes.MappingNode;
 import org.yaml.snakeyaml.nodes.Node;
-import org.yaml.snakeyaml.nodes.NodeId;
 import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.ScalarNode;
 import org.yaml.snakeyaml.nodes.SequenceNode;
@@ -30,7 +23,6 @@ import org.yaml.snakeyaml.nodes.Tag;
 import org.yaml.snakeyaml.parser.Parser;
 import org.yaml.snakeyaml.parser.ParserImpl;
 import org.yaml.snakeyaml.reader.StreamReader;
-import org.yaml.snakeyaml.resolver.Resolver;
 import org.yaml.snakeyaml.scanner.Scanner;
 import org.yaml.snakeyaml.scanner.ScannerImpl;
 import org.yaml.snakeyaml.tokens.AliasToken;
@@ -78,7 +70,6 @@ public final class Frontmatter {
       options.setAllowDuplicateKeys(false);
       String block = String.join("\n", java.util.Arrays.copyOfRange(lines, 1, closing));
       Object loaded = load(block, options);
-      rejectPythonEqualDuplicateKeys(loaded);
       if (loaded == null) loaded = new LinkedHashMap<String, Object>();
       if (!(loaded instanceof Map<?, ?> map)) return Optional.empty();
       @SuppressWarnings("unchecked")
@@ -96,8 +87,8 @@ public final class Frontmatter {
     rejectNonPlainYaml(block, options);
     StreamReader reader = new StreamReader(block);
     Parser parser = new ParserImpl(new ScannerImpl(reader, options));
-    Composer composer = new Composer(parser, new Yaml12Resolver(), options);
-    RoundTripSafeConstructor constructor = new RoundTripSafeConstructor(options);
+    Composer composer = new Composer(parser, Yaml12Schema.resolver(), options);
+    Yaml12Schema.Constructor constructor = Yaml12Schema.constructor(options);
     constructor.setAllowDuplicateKeys(options.isAllowDuplicateKeys());
     constructor.setComposer(composer);
     Node root = composer.getSingleNode();
@@ -147,18 +138,14 @@ public final class Frontmatter {
     return next == ' ' || next == '\t' || next == '\n';
   }
 
+  /** R23: a spaces-only first line without an indentation indicator; ruamel refuses a subset, we refuse the shape. */
   private static void validateBlockScalar(String[] lines, Token token) {
     if (!(token instanceof ScalarToken scalar) || !isBlockScalar(scalar)) return;
     int header = scalar.getStartMark().getLine();
     if (hasIndentationIndicator(lines[header], scalar) || header + 1 >= lines.length) return;
     String first = lines[header + 1];
-    if (first.isEmpty() || !spacesOnly(first)) return;
-    for (int index = header + 2; index < lines.length; index++) {
-      if (lines[index].isEmpty() || spacesOnly(lines[index])) continue;
-      if (leadingSpaces(lines[index]) > first.length()) {
-        throw new IllegalArgumentException("more indented follow up line than first in a block scalar");
-      }
-      return;
+    if (!first.isEmpty() && spacesOnly(first)) {
+      throw new IllegalArgumentException("R23: a block scalar whose first line is only spaces");
     }
   }
 
@@ -179,117 +166,36 @@ public final class Frontmatter {
     return line.chars().allMatch(character -> character == ' ');
   }
 
-  private static int leadingSpaces(String line) {
-    int count = 0;
-    while (count < line.length() && line.charAt(count) == ' ') count++;
-    return count;
-  }
-
   private static void validateNodeTree(Node node) {
     if (node instanceof MappingNode mapping) {
-      validateMergeKeys(mapping);
+      validateKeys(mapping);
       for (NodeTuple tuple : mapping.getValue()) {
         validateNodeTree(tuple.getKeyNode());
         validateNodeTree(tuple.getValueNode());
       }
     } else if (node instanceof SequenceNode sequence) {
       sequence.getValue().forEach(Frontmatter::validateNodeTree);
+    } else if (node instanceof ScalarNode scalar && scalar.isPlain() && scalar.getValue().equals("=")) {
+      throw new IllegalArgumentException("R27: a plain equals sign is unresolvable");
     }
   }
 
-  private static void validateMergeKeys(MappingNode mapping) {
-    long mergeKeys = mapping.getValue().stream()
-        .map(NodeTuple::getKeyNode)
-        .filter(Frontmatter::isPlainMergeKey)
-        .count();
-    if (mergeKeys > 1) throw new IllegalArgumentException("duplicate YAML merge keys are unresolvable");
+  /** R22: every key is a string under the 1.2 core schema (or the one plain merge key), so Java equality is exact. */
+  private static void validateKeys(MappingNode mapping) {
+    int mergeKeys = 0;
+    for (NodeTuple tuple : mapping.getValue()) {
+      Node key = tuple.getKeyNode();
+      if (isPlainMergeKey(key)) {
+        if (++mergeKeys > 1) throw new IllegalArgumentException("duplicate YAML merge keys are unresolvable");
+      } else if (!(key instanceof ScalarNode scalar) || !Tag.STR.equals(scalar.getTag())) {
+        throw new IllegalArgumentException("R22: a mapping key that is not a string");
+      }
+    }
   }
 
   private static boolean isPlainMergeKey(Node node) {
     return node instanceof ScalarNode scalar && scalar.isPlain() && Tag.MERGE.equals(scalar.getTag());
   }
-
-  private static void rejectPythonEqualDuplicateKeys(Object value) {
-    if (value instanceof Map<?, ?> mapping) {
-      List<Object> keys = new ArrayList<>();
-      for (Map.Entry<?, ?> entry : mapping.entrySet()) {
-        Object key = pythonKey(entry.getKey());
-        if (keys.stream().anyMatch(other -> pythonKeysEqual(other, key))) {
-          throw new IllegalArgumentException("duplicate YAML key under Python equality");
-        }
-        keys.add(key);
-        rejectPythonEqualDuplicateKeys(entry.getKey());
-        rejectPythonEqualDuplicateKeys(entry.getValue());
-      }
-    } else if (value instanceof List<?> sequence) {
-      sequence.forEach(Frontmatter::rejectPythonEqualDuplicateKeys);
-    }
-  }
-
-  private static Object pythonKey(Object key) {
-    if (key instanceof Boolean bool) return bool ? BigInteger.ONE : BigInteger.ZERO;
-    if (key instanceof BigInteger integer) return integer;
-    if (key instanceof Integer || key instanceof Long) return BigInteger.valueOf(((Number) key).longValue());
-    if (key instanceof Double number && Double.isFinite(number) && number == Math.rint(number)) {
-      return new BigDecimal(number).toBigIntegerExact();
-    }
-    if (key instanceof List<?> sequence) return sequence.stream().map(Frontmatter::pythonKey).toList();
-    if (key instanceof TaggedScalar scalar) return scalar.value();
-    return key;
-  }
-
-  private static boolean pythonKeysEqual(Object left, Object right) {
-    if (left instanceof Double leftNumber && leftNumber.isNaN()
-        || right instanceof Double rightNumber && rightNumber.isNaN()) {
-      return false;
-    }
-    if (left instanceof List<?> leftList && right instanceof List<?> rightList) {
-      if (leftList.size() != rightList.size()) return false;
-      for (int index = 0; index < leftList.size(); index++) {
-        if (!pythonKeysEqual(leftList.get(index), rightList.get(index))) return false;
-      }
-      return true;
-    }
-    if (left instanceof Map<?, ?> leftMap && right instanceof Map<?, ?> rightMap) {
-      return pythonMapsEqual(leftMap, rightMap);
-    }
-    return Objects.equals(left, right);
-  }
-
-  private static boolean pythonMapsEqual(Map<?, ?> left, Map<?, ?> right) {
-    if (left.size() != right.size()) return false;
-    for (Map.Entry<?, ?> leftEntry : left.entrySet()) {
-      Object leftKey = pythonKey(leftEntry.getKey());
-      Object leftValue = pythonKey(leftEntry.getValue());
-      boolean matched = right.entrySet().stream().anyMatch(rightEntry ->
-          pythonKeysEqual(leftKey, pythonKey(rightEntry.getKey()))
-              && pythonKeysEqual(leftValue, pythonKey(rightEntry.getValue())));
-      if (!matched) return false;
-    }
-    return true;
-  }
-
-  /** Preserves ruamel's non-String TaggedScalar distinction for an untagged plain equals sign. */
-  private static final class RoundTripSafeConstructor extends SafeConstructor {
-    private RoundTripSafeConstructor(LoaderOptions options) {
-      super(options);
-    }
-
-    private Object constructSingle(Node node) {
-      return constructDocument(node);
-    }
-
-    @Override
-    protected Object constructObject(Node node) {
-      if (node instanceof ScalarNode scalar && Tag.STR.equals(scalar.getTag())
-          && scalar.isPlain() && scalar.getValue().equals("=")) {
-        return new TaggedScalar(scalar.getValue());
-      }
-      return super.constructObject(node);
-    }
-  }
-
-  record TaggedScalar(String value) {}
 
   private static int closingFence(String[] lines) {
     for (int index = 1; index < lines.length; index++) {
@@ -322,17 +228,5 @@ public final class Frontmatter {
         .onUnmappableCharacter(CodingErrorAction.REPORT)
         .decode(ByteBuffer.wrap(bytes))
         .toString();
-  }
-
-  /** SnakeYAML defaults to YAML 1.1; core's ruamel reader resolves these words as YAML 1.2 strings. */
-  private static final class Yaml12Resolver extends Resolver {
-    private static final java.util.regex.Pattern YAML11_ONLY_BOOL =
-        java.util.regex.Pattern.compile("^(?:yes|Yes|YES|no|No|NO|on|On|ON|off|Off|OFF)$");
-
-    @Override
-    public Tag resolve(NodeId kind, String value, boolean implicit) {
-      if (kind == NodeId.scalar && implicit && YAML11_ONLY_BOOL.matcher(value).matches()) return Tag.STR;
-      return super.resolve(kind, value, implicit);
-    }
   }
 }

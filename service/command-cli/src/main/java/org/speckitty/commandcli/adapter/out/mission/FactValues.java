@@ -15,13 +15,8 @@ import org.speckitty.missionstatus.domain.model.PyText;
 public final class FactValues {
   private static final Pattern WP_ID = Pattern.compile("^WP\\d{2,}$");
   private static final Pattern COMMIT = Pattern.compile("^[0-9a-f]{7,40}$");
-  private static final Pattern PYTHON_INT = Pattern.compile("^[+-]?\\d+(?:_\\d+)*$", Pattern.UNICODE_CHARACTER_CLASS);
-  // Python 3.11 uses Unicode 14. Newer JDKs recognize these later decimal ranges; int() does not.
-  private static final int[][] POST_PYTHON_311_DECIMAL_RANGES = {
-    {0x10D40, 0x10D49}, {0x116D0, 0x116E3}, {0x11BF0, 0x11BF9}, {0x11DE0, 0x11DE9},
-    {0x11F50, 0x11F59}, {0x16130, 0x16139}, {0x16D70, 0x16D79}, {0x1CCF0, 0x1CCF9},
-    {0x1E4F0, 0x1E4F9}, {0x1E5F1, 0x1E5FA}
-  };
+  // R28: a quoted pid is 1-4300 ASCII digits, an optional sign and ASCII whitespace; the cap is CPython's int limit.
+  private static final Pattern SHELL_PID = Pattern.compile("^[ \\t\\n\\x0B\\f\\r]*[+-]?[0-9]{1,4300}[ \\t\\n\\x0B\\f\\r]*$");
   private static final Set<String> OPTIONAL_STRINGS = Set.of(
       "base_branch", "created_at", "planning_base_branch", "merge_target_branch", "branch_strategy",
       "priority", "execution_mode", "authoritative_surface", "scope", "task_type", "phases", "assignee",
@@ -57,13 +52,19 @@ public final class FactValues {
   }
 
   public static SubtaskRoster roster(Map<String, Object> frontmatter) {
-    List<?> list = pydanticList(frontmatter.get("subtasks"));
-    if (!frontmatter.containsKey("subtasks") || !validMetadata(frontmatter) || list == null) {
+    if (!frontmatter.containsKey("subtasks") || !validMetadata(frontmatter)
+        || !(frontmatter.get("subtasks") instanceof List<?> list)) {
       return new SubtaskRoster.Unresolvable();
     }
     Set<String> seen = new LinkedHashSet<>();
     for (Object item : list) {
-      String id = PyText.strip(pythonString(item));
+      // R25: core str()-renders other entries into ids no event can match.
+      if (!(item instanceof String) && !(item instanceof BigInteger)) return new SubtaskRoster.Unresolvable();
+      // Parsing a 0x/0o integer is unlimited in CPython, but str() of one past 4300 decimal digits raises.
+      if (item instanceof BigInteger number && number.abs().toString().length() > Yaml12Schema.MAX_DECIMAL_DIGITS) {
+        return new SubtaskRoster.Unresolvable();
+      }
+      String id = PyText.strip(item.toString());
       if (!id.isEmpty()) seen.add(id);
     }
     return new SubtaskRoster.Resolved(List.copyOf(seen));
@@ -105,8 +106,8 @@ public final class FactValues {
       if (!(value instanceof String) && !stringList(value)) return false;
     }
     return (!frontmatter.containsKey("dependencies") || validDependencyMetadata(frontmatter.get("dependencies")))
-        && (!frontmatter.containsKey("subtasks") || pydanticList(frontmatter.get("subtasks")) != null)
-        && (!frontmatter.containsKey("history") || pydanticList(frontmatter.get("history")) != null);
+        && (!frontmatter.containsKey("subtasks") || frontmatter.get("subtasks") instanceof List<?>)
+        && (!frontmatter.containsKey("history") || frontmatter.get("history") instanceof List<?>);
   }
 
   private static boolean validSpecialFields(Map<String, Object> frontmatter) {
@@ -124,62 +125,15 @@ public final class FactValues {
   }
 
   private static boolean stringList(Object value) {
-    return value instanceof Frontmatter.TaggedScalar
-        || value instanceof List<?> list && list.stream().allMatch(String.class::isInstance);
-  }
-
-  private static List<?> pydanticList(Object value) {
-    if (value instanceof List<?> list) return list;
-    if (value instanceof Frontmatter.TaggedScalar tagged) {
-      return tagged.value().codePoints().mapToObj(codePoint -> new String(Character.toChars(codePoint))).toList();
-    }
-    return null;
+    return value instanceof List<?> list && list.stream().allMatch(String.class::isInstance);
   }
 
   private static boolean validPid(Object value) {
     return switch (value) {
       case null -> true;
-      case Boolean ignored -> true;
       case BigInteger ignored -> true;
-      case Number number -> Double.isFinite(number.doubleValue());
-      case String text -> text.isEmpty() || validPythonInteger(text);
+      case String text -> text.isEmpty() || SHELL_PID.matcher(text).matches();
       default -> false;
-    };
-  }
-
-  private static boolean validPythonInteger(String value) {
-    String text = PyText.strip(value);
-    if (!PYTHON_INT.matcher(text).matches()) {
-      return false;
-    }
-    StringBuilder ascii = new StringBuilder();
-    for (int codePoint : text.replace("_", "").codePoints().toArray()) {
-      if (codePoint == '+' || codePoint == '-') ascii.appendCodePoint(codePoint);
-      else if (!isPython311DecimalDigit(codePoint)) return false;
-      else ascii.append((char) ('0' + Character.digit(codePoint, 10)));
-    }
-    try {
-      new BigInteger(ascii.toString());
-      return true;
-    } catch (NumberFormatException invalid) {
-      return false;
-    }
-  }
-
-  static boolean isPython311DecimalDigit(int codePoint) {
-    if (!Character.isDigit(codePoint)) return false;
-    for (int[] range : POST_PYTHON_311_DECIMAL_RANGES) {
-      if (codePoint >= range[0] && codePoint <= range[1]) return false;
-    }
-    return true;
-  }
-
-  private static String pythonString(Object value) {
-    return switch (value) {
-      case null -> "None";
-      case Boolean flag -> flag ? "True" : "False";
-      case Frontmatter.TaggedScalar tagged -> tagged.value();
-      default -> String.valueOf(value);
     };
   }
 }

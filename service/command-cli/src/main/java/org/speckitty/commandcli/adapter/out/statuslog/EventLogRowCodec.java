@@ -19,7 +19,8 @@ import tools.jackson.core.StreamReadConstraints;
 
 /** command-cli's application port over the event-log module's canonical codec. */
 public final class EventLogRowCodec implements RowCodec {
-  private static final java.util.Set<Integer> SINGLE_BYTE_SEPARATORS = java.util.Set.of(0x0a, 0x0b, 0x0c, 0x1c, 0x1d, 0x1e);
+  /** A fixed resource bound below any depth core's stack accepts; core's own limit depends on the caller's stack. */
+  private static final int MAX_NESTING_DEPTH = 256;
 
   static {
     StreamReadConstraints.overrideDefaultStreamReadConstraints(
@@ -43,19 +44,13 @@ public final class EventLogRowCodec implements RowCodec {
 
   @Override
   public DecodedLog decode(byte[] log) {
-    if (!validUtf8(log)) return new DecodedLog(List.of(new Line(new LogLine.Unparseable(), log)));
+    if (!validUtf8(log) || hasRawSeparator(log)) return new DecodedLog(List.of(new Line(new LogLine.Unparseable(), log)));
     List<Line> lines = new ArrayList<>();
     int start = 0;
-    int index = 0;
-    while (index < log.length) {
-      int separator = separatorLength(log, index);
-      if (separator == 0) {
-        index++;
-        continue;
-      }
-      lines.add(line(Arrays.copyOfRange(log, start, index)));
-      index += separator;
-      start = index;
+    for (int index = 0; index < log.length; index++) {
+      if (log[index] != '\n') continue;
+      lines.add(line(Arrays.copyOfRange(log, start, index > start && log[index - 1] == '\r' ? index - 1 : index)));
+      start = index + 1;
     }
     if (start < log.length) lines.add(line(Arrays.copyOfRange(log, start, log.length)));
     return new DecodedLog(lines);
@@ -66,7 +61,7 @@ public final class EventLogRowCodec implements RowCodec {
     private static final long serialVersionUID = 1L;
 
     private PythonNumberConstraints(StreamReadConstraints defaults) {
-      super(1000, defaults.getMaxDocumentLength(), defaults.getMaxTokenCount(), 4300,
+      super(MAX_NESTING_DEPTH, defaults.getMaxDocumentLength(), defaults.getMaxTokenCount(), 4300,
           defaults.getMaxStringLength(), defaults.getMaxNameLength());
     }
 
@@ -76,21 +71,26 @@ public final class EventLogRowCodec implements RowCodec {
     }
   }
 
-  private static int separatorLength(byte[] log, int index) {
-    int value = log[index] & 0xff;
-    if (value == '\r') return index + 1 < log.length && log[index + 1] == '\n' ? 2 : 1;
-    if (SINGLE_BYTE_SEPARATORS.contains(value)) return 1;
-    if (matches(log, index, 0xc2, 0x85)) return 2;
-    if (matches(log, index, 0xe2, 0x80, 0xa8) || matches(log, index, 0xe2, 0x80, 0xa9)) return 3;
-    return 0;
+  /**
+   * R24: U+0085, U+2028, U+2029, VT, FF, FS, GS and RS are never written raw, and core's Python {@code splitlines()}
+   * would split a row on them. The bytes are already valid UTF-8, so a byte scan is exact.
+   */
+  private static boolean hasRawSeparator(byte[] log) {
+    for (int index = 0; index < log.length; index++) {
+      if (separatorAt(log, index)) return true;
+    }
+    return false;
   }
 
-  private static boolean matches(byte[] bytes, int start, int... expected) {
-    if (start + expected.length > bytes.length) return false;
-    for (int offset = 0; offset < expected.length; offset++) {
-      if ((bytes[start + offset] & 0xff) != expected[offset]) return false;
-    }
-    return true;
+  private static boolean separatorAt(byte[] log, int index) {
+    int value = log[index] & 0xff;
+    if (value == 0x0b || value == 0x0c || value >= 0x1c && value <= 0x1e) return true;
+    if (value == 0xc2) return next(log, index, 1) == 0x85;
+    return value == 0xe2 && next(log, index, 1) == 0x80 && (next(log, index, 2) == 0xa8 || next(log, index, 2) == 0xa9);
+  }
+
+  private static int next(byte[] log, int index, int offset) {
+    return index + offset < log.length ? log[index + offset] & 0xff : -1;
   }
 
   private static Line line(byte[] raw) {

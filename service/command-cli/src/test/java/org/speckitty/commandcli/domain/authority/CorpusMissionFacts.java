@@ -19,7 +19,7 @@ final class CorpusMissionFacts implements MissionFacts {
 
   @Override
   public DependencyDeclaration dependencies(String wpId) {
-    List<String> matches = TasksFiles.dependencyNames(documents.keySet(), wpId);
+    List<String> matches = TasksFiles.names(documents.keySet(), wpId);
     if (matches.isEmpty()) return new DependencyDeclaration.None();
     if (matches.size() != 1) return new DependencyDeclaration.Unresolvable("cannot resolve declared dependencies");
     try {
@@ -32,7 +32,7 @@ final class CorpusMissionFacts implements MissionFacts {
 
   @Override
   public SubtaskRoster subtaskRoster(String wpId) {
-    List<String> matches = TasksFiles.rosterNames(documents.keySet(), wpId);
+    List<String> matches = TasksFiles.names(documents.keySet(), wpId);
     if (matches.size() != 1) return new SubtaskRoster.Unresolvable();
     try {
       return documents.get(matches.getFirst()).map(FactValues::roster).orElseGet(SubtaskRoster.Unresolvable::new);

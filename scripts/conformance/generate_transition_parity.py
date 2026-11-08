@@ -215,12 +215,21 @@ def protocol_r15_cases(core_rendered: Mapping[str, str]) -> dict[str, str]:
         document["notes"] = notes
         return case_id, _render(document)
 
-    def dependency_case(case_id: str, task: str, notes: str) -> tuple[str, str]:
-        document = json.loads(core_rendered["dependency-unreadable-declaration"])
+    def dependency_case(
+        case_id: str,
+        task: str,
+        notes: str,
+        *,
+        template: str = "dependency-unreadable-declaration",
+        filename: str = "WP02.md",
+    ) -> tuple[str, str]:
+        document = json.loads(core_rendered[template])
         document["id"] = case_id
         document["oracle"] = "protocol"
         document.pop("core_call")
-        document["tasks"] = {**default_tasks(), "WP02.md": task}
+        tasks = default_tasks()
+        tasks.pop("WP02.md")
+        document["tasks"] = {**tasks, filename: task}
         document["notes"] = notes
         return case_id, _render(document)
 
@@ -281,12 +290,47 @@ def protocol_r15_cases(core_rendered: Mapping[str, str]) -> dict[str, str]:
                 "refuse dependencies_unsatisfied.",
             ),
             dependency_case(
-                "dependency-frontmatter-python-equal-duplicate-key",
+                "dependency-frontmatter-non-string-key",
                 task_text("WP02", dependencies="[WP01]").replace(
                     "subtasks: []", "history: [{1: x, 1.0: y}]\nsubtasks: []"
                 ),
-                "Python-equal mapping keys make WP02 unreadable; dependencies refuse "
-                "dependencies_unsatisfied.",
+                "R22: a mapping key that is not a string under the YAML 1.2 core schema makes WP02 "
+                "unreadable; dependencies refuse dependencies_unsatisfied. Core refuses this "
+                "only through Python key equality (ruamel, spec-kitty/spec-kitty#7444).",
+            ),
+            dependency_case(
+                "dependency-frontmatter-plain-equals",
+                task_text("WP02", dependencies="[WP01]").replace(
+                    "subtasks: []", "agent: =\nsubtasks: []"
+                ),
+                "R27: a plain equals sign anywhere makes WP02 unreadable; dependencies refuse "
+                "dependencies_unsatisfied. Core reads it as ruamel's YAML 1.1 value type "
+                "(spec-kitty/spec-kitty#7444).",
+            ),
+            dependency_case(
+                "dependency-frontmatter-int-4301-digits",
+                task_text("WP02", dependencies="[WP01]").replace(
+                    "subtasks: []", f"agent: {'9' * 4301}\nsubtasks: []"
+                ),
+                "R29: a decimal integer of more than 4300 digits makes WP02 unreadable; "
+                "dependencies refuse dependencies_unsatisfied (core's Python refuses to build it).",
+            ),
+            dependency_case(
+                "dependency-frontmatter-block-scalar-spaces-first-line",
+                task_text("WP02", dependencies="[WP01]").replace(
+                    "subtasks: []", "description: |\n \n  x\nsubtasks: []"
+                ),
+                "R23: a block scalar whose first line is only spaces makes WP02 unreadable; "
+                "dependencies refuse dependencies_unsatisfied.",
+            ),
+            dependency_case(
+                "dependency-lowercase-task-file",
+                task_text("WP02", dependencies="[WP01]"),
+                "R26: the dependency locator matches the work-package id case-insensitively, so "
+                "wp02-lower.md declares WP02's dependencies; core's case-sensitive locator "
+                "would find none (spec-kitty/spec-kitty#7443).",
+                template="dependency-planned-claim-unsatisfied",
+                filename="wp02-lower.md",
             ),
             roster_case(
                 "guard-subtasks-roster-description-short-leading-blank",
@@ -295,11 +339,51 @@ def protocol_r15_cases(core_rendered: Mapping[str, str]) -> dict[str, str]:
                     'dependencies: "[]"',
                     "description: |\n \n  x\ndependencies: []",
                 ),
-                "R15: a block scalar with a short spaces-only first line is unresolvable; "
-                "the roster fails closed.",
+                "R23: a block scalar whose first line is only spaces is unresolvable; the roster "
+                "fails closed (ruamel refuses only a subset of these, spec-kitty/spec-kitty#7444).",
+            ),
+            roster_case(
+                "guard-subtasks-roster-float-id",
+                "guard-subtasks-incomplete",
+                task_text(subtasks="[1, 1.10]"),
+                "R25: a roster entry that is neither a string nor an integer is unresolvable. Core "
+                "str()-renders 1.10 as '1.1' (spec-kitty/spec-kitty#7442).",
+            ),
+            roster_case(
+                "guard-subtasks-roster-float-id-complete",
+                "guard-subtasks-roster-nonstring-ids-complete",
+                task_text(subtasks="[1, 1.10]"),
+                "R25: a float roster entry is unresolvable even when its Python rendering is "
+                "marked done (spec-kitty/spec-kitty#7442).",
+            ),
+            roster_case(
+                "guard-subtasks-roster-map-id",
+                "guard-subtasks-incomplete",
+                task_text(subtasks="[{id: T001, title: x}]"),
+                "R25: a map roster entry is unresolvable; core renders a Python dict repr no "
+                "event can match (spec-kitty/spec-kitty#7442).",
             ),
         ]
     )
+    shell_pid_note = (
+        "R28: shell_pid is absent, null, empty, an integer, or 1-4300 ASCII digits with an "
+        "optional sign and surrounding whitespace; core's Python int() also reads other forms, "
+        "a stack accident no real file uses, and the service refuses them."
+    )
+    for suffix, declaration in (
+        ("float", "12.5"),
+        ("bool", "true"),
+        ("underscore", "'1_000'"),
+        ("unicode-digit", "'𝟙'"),
+        ("4301-digits", f"'{'1' * 4301}'"),
+    ):
+        case_id, text = roster_case(
+            f"guard-shell-pid-{suffix}",
+            "guard-shell-pid-str-padded",
+            task_text().replace("subtasks: []", f"shell_pid: {declaration}\nsubtasks: []"),
+            shell_pid_note,
+        )
+        rendered[case_id] = text
     return rendered
 
 
@@ -483,7 +567,7 @@ def _guard_intents() -> list[Intent]:
     incomplete_tasks = default_tasks()
     incomplete_tasks["WP01.md"] = task_text(subtasks="[T001]")
     nonstring_tasks = default_tasks()
-    nonstring_tasks["WP01.md"] = task_text(subtasks="[1, 1.10]")
+    nonstring_tasks["WP01.md"] = task_text(subtasks="[1, 2]")
     padded_tasks = default_tasks()
     padded_tasks["WP01.md"] = task_text(subtasks='[" T001 "]')
     nonmd_tasks = default_tasks()
@@ -577,7 +661,7 @@ def _guard_intents() -> list[Intent]:
         _intent(
             "guard-subtasks-roster-nonstring-ids-complete",
             "guard",
-            (*path_to("in_progress"), ann({"subtasks": {"1": "done", "1.1": "done"}})),
+            (*path_to("in_progress"), ann({"subtasks": {"1": "done", "2": "done"}})),
             tr("for_review"),
             tasks=nonstring_tasks,
         ),
@@ -681,12 +765,11 @@ def _guard_intents() -> list[Intent]:
                 tr(target, **kwargs),
             )
         )
+    # R28: only the quoted-ASCII-digit forms are core-oracle cases; core's other int() forms
+    # (floats, booleans, underscores, Unicode digits) are protocol cases below.
     for suffix, declaration in (
         ("str-padded", "' 12 '"),
-        ("float", "12.5"),
-        ("bool", "true"),
         ("bigstr", "'99999999999'"),
-        ("underscore", "'1_000'"),
     ):
         pid_tasks = default_tasks()
         pid_tasks["WP01.md"] = task_text().replace(
@@ -1361,10 +1444,7 @@ def build_intents() -> tuple[Intent, ...]:
     cycle3_additions = {
         "guard-subtasks-roster-nonstring-ids-complete",
         "guard-shell-pid-str-padded",
-        "guard-shell-pid-float",
-        "guard-shell-pid-bool",
         "guard-shell-pid-bigstr",
-        "guard-shell-pid-underscore",
     }
     additions = review_additions | cycle3_additions
     intents = (

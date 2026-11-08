@@ -37,13 +37,30 @@ class DiskMissionFactsTest {
   }
 
   @Test
-  void rosterCoercesTrimsAndDeduplicatesIdsLikePython() throws Exception {
-    write("WP01.md", task("[1, 1.10, ' T001 ', T001, on, true, null]"));
+  void rosterTrimsAndDeduplicatesStringAndIntegerIds() throws Exception {
+    write("WP01.md", task("[1, ' T001 ', T001, on, '', '  ']"));
     SubtaskRoster.Resolved roster = (SubtaskRoster.Resolved) facts().subtaskRoster("WP01");
-    assertThat(roster.ids()).containsExactly("1", "1.1", "T001", "on", "True", "None");
-    Files.delete(mission.resolve("tasks/WP01.md"));
+    assertThat(roster.ids()).containsExactly("1", "T001", "on");
+  }
+
+  @Test
+  void aRosterEntryThatIsNotAStringOrIntegerIsUnresolvableUnderR25() throws Exception {
+    for (String entry : List.of("1.1", "1.10", "true", "null", "~", "{id: T001}", "[T001]", "2001-12-14",
+        "2001-12-14 21:59:43", ".inf", "1e3")) {
+      write("WP01.md", task("[T001, " + entry + "]"));
+      assertThat(facts().subtaskRoster("WP01")).as(entry).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    }
+  }
+
+  @Test
+  void bothLocatorsMatchTheWorkPackageIdCaseInsensitivelyUnderR26() throws Exception {
     write("wp01-lowercase.md", task("[]"));
     assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Resolved.class);
+    write("wp02-lowercase.md", "---\nwork_package_id: WP02\ndependencies: [WP01]\n---\n");
+    assertThat(facts().dependencies("WP02")).isEqualTo(new DependencyDeclaration.Declared(List.of("WP01")));
+    write("WP02-other.md", "---\ndependencies: []\n---\n");
+    assertThat(facts().dependencies("WP02")).as("a second spelling is ambiguous, never hidden")
+        .isInstanceOf(DependencyDeclaration.Unresolvable.class);
   }
 
   @Test
@@ -165,10 +182,17 @@ class DiskMissionFactsTest {
   }
 
   @Test
-  void untaggedCollectionsAndEqualsKeepTheirExistingRules() throws Exception {
-    write("WP01.md", task("[=, T001]"));
-    SubtaskRoster.Resolved roster = (SubtaskRoster.Resolved) facts().subtaskRoster("WP01");
-    assertThat(roster.ids()).containsExactly("=", "T001");
+  void aPlainEqualsSignIsUnresolvableEverywhereUnderR27() throws Exception {
+    for (String declaration : List.of("[=, T001]", "[T001, =]", "\n  - T001\n  - =")) {
+      write("WP01.md", task(declaration));
+      assertThat(facts().subtaskRoster("WP01")).as(declaration).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    }
+    for (String extra : List.of("description: =\n", "agent: =\n", "history: [=]\n", "history: [{a: =}]\n")) {
+      assertThat(Frontmatter.readText("WP01.md", taskWith(extra))).as(extra).isEmpty();
+    }
+    for (String extra : List.of("description: '='\n", "description: \"=\"\n", "description: a=b\n", "description: ==\n")) {
+      assertThat(Frontmatter.readText("WP01.md", taskWith(extra))).as(extra).isPresent();
+    }
     write("WP01.md", task("\n  - T001\n  - T002"));
     assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Resolved.class);
     write("WP02.md", "---\nwork_package_id: WP02\ndependencies: WP01\n---\n");
@@ -176,23 +200,46 @@ class DiskMissionFactsTest {
   }
 
   @Test
-  void pythonEqualMappingKeysAreDuplicatesIncludingInsideComplexKeys() {
+  void everyMappingKeyMustBeAStringUnderR22() {
     for (String extra : List.of(
         "history: [{1: x, 1.0: y}]\n",
         "history: [{true: x, 1: y}]\n",
-        "history: [{0: x, false: y}]\n",
+        "history: [{1: x, 2.0: y}]\n",
+        "history: [{true: x, false: y}]\n",
         "history: [{0: x, -0.0: y}]\n",
-        "history: [{9223372036854775808: x, 9223372036854775808.0: y}]\n",
-        "history:\n  - ? [1]\n    : x\n    ? [1.0]\n    : y\n",
-        "history:\n  - ? {a: 1}\n    : x\n    ? {a: 1.0}\n    : y\n")) {
+        "history: [{.nan: x}]\n",
+        "history: [{.inf: x}]\n",
+        "history: [{~: x}]\n",
+        "history: [{null: x}]\n",
+        "history: [{0o10: x}]\n",
+        "history: [{0x10: x}]\n",
+        "history: [{2001-12-14: x}]\n",
+        "history: [{=: x}]\n",
+        "history:\n  - ? [1]\n    : x\n",
+        "history:\n  - ? {a: 1}\n    : x\n",
+        "history:\n  - ? {a: 1, b: 2}\n    : x\n    ? {b: 2, a: 1}\n    : y\n",
+        "history:\n  - ? .nan\n    : x\n    ? .nan\n    : y\n",
+        "history:\n  - ? [.nan]\n    : x\n",
+        "history:\n  - ? 2001-12-14t21:59:43.10-05:00\n    : x\n    ? 2001-12-15 2:59:43.10\n    : y\n",
+        "history:\n  - ? =\n    : x\n    ? '='\n    : y\n",
+        "? 1\n: x\n",
+        "? [a]\n: x\n")) {
       assertThat(Frontmatter.readText("WP01.md", taskWith(extra))).as(extra).isEmpty();
     }
     for (String extra : List.of(
-        "history: [{1: x, 2.0: y}]\n",
-        "history: [{true: x, false: y}]\n",
-        "history:\n  - ? [1]\n    : x\n    ? [2.0]\n    : y\n",
-        "history:\n  - ? {a: 1}\n    : x\n    ? {a: 2.0}\n    : y\n")) {
+        "history: [{a: 1, b: 2.0}]\n",
+        "history: [{'1': x, \"2.0\": y, 'true': z, '=': w}]\n",
+        "history:\n  - 1:20: x\n  - 010a: y\n  - yes: z\n  - on: w\n",
+        "history: [{'.nan': x, '~': y, 'null': z, '<<': w}]\n")) {
       assertThat(Frontmatter.readText("WP01.md", taskWith(extra))).as(extra).isPresent();
+    }
+  }
+
+  @Test
+  void duplicateStringKeysAreRefusedWhateverTheirQuoting() {
+    for (String extra : List.of("agent: a\nagent: b\n", "agent: a\n\"agent\": b\n", "agent: a\n'agent': b\n",
+        "history: [{a: 1, 'a': 2}]\n", "history: [{\"\\x61\": 1, a: 2}]\n")) {
+      assertThat(Frontmatter.readText("WP01.md", taskWith(extra))).as(extra).isEmpty();
     }
   }
 
@@ -229,27 +276,101 @@ class DiskMissionFactsTest {
   }
 
   @Test
-  void onlyAShortSpacesOnlyFirstLineMakesABlockScalarUnresolvable() {
+  void aSpacesOnlyFirstBlockScalarLineMakesItUnresolvableUnderR23() {
     for (String extra : List.of(
         "description: |\n \n  x\n",
-        "description: >-\n \n  x\n")) {
+        "description: >-\n \n  x\n",
+        "description: |\n \n x\n",
+        "description: |\n   \n  x\n",
+        "description: |\n \n \nagent: x\n")) {
       assertThat(Frontmatter.readText("WP01.md", taskWith(extra))).as(extra).isEmpty();
     }
     for (String extra : List.of(
         "description: |\n\n \n  x\n",
-        "description: |\n \n x\n",
+        "description: |\n\n\n  x\n",
         "description: |2\n \n  x\n",
+        "description: |\n  x\n \n  y\n",
         "description: >-\n  first\n  second\n")) {
       assertThat(Frontmatter.readText("WP01.md", taskWith(extra))).as(extra).isPresent();
     }
   }
 
   @Test
-  void shellPidUsesPythonIntCoercion() throws Exception {
-    for (String declaration : List.of("' 12 '", "12.5", "true", "'99999999999'", "'1_000'", "'𝟙'")) {
+  void shellPidIsAnIntegerOrAnAsciiDigitStringUnderR28() throws Exception {
+    for (String declaration : List.of("' 12 '", "12", "~", "null", "''", "'99999999999'", "'+7'", "'-7'", "\"\\t12\\n\"",
+        "'" + "9".repeat(4300) + "'", "0x1f", "-3")) {
       write("WP01.md", task("[]").replace("title: test\n", "title: test\nshell_pid: " + declaration + "\n"));
       assertThat(facts().subtaskRoster("WP01")).as(declaration).isInstanceOf(SubtaskRoster.Resolved.class);
     }
+    for (String declaration : List.of("12.5", "1e3", "true", "false", "'1_000'", "'𝟙'", "'１２'", "'٣'", "' '",
+        "'1.0'", "'0x10'", "'12abc'", "'1\u00a0'", "'++1'", "'+'", "[12]", "{a: 1}", "2001-12-14",
+        "'" + "9".repeat(4301) + "'")) {
+      write("WP01.md", task("[]").replace("title: test\n", "title: test\nshell_pid: " + declaration + "\n"));
+      assertThat(facts().subtaskRoster("WP01")).as(declaration).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    }
+  }
+
+  @Test
+  void aDecimalIntegerOfMoreThan4300DigitsMakesTheFileUnreadableUnderR29() throws Exception {
+    for (String number : List.of("9".repeat(4301), "-" + "9".repeat(4301), "0".repeat(4300) + "1", "+" + "1".repeat(4301))) {
+      write("WP01.md", task("[]").replace("title: test\n", "title: test\nagent: " + number + "\n"));
+      assertThat(facts().subtaskRoster("WP01")).as(number.length() + " digits").isInstanceOf(SubtaskRoster.Unresolvable.class);
+      write("WP02.md", "---\nwork_package_id: WP02\ndependencies: [WP01]\nagent: " + number + "\n---\n");
+      assertThat(facts().dependencies("WP02")).as(number.length() + " digits")
+          .isInstanceOf(DependencyDeclaration.Unresolvable.class);
+    }
+    for (String number : List.of("9".repeat(4300), "-" + "9".repeat(4300), "0x" + "f".repeat(5000), "0o" + "7".repeat(5000),
+        "1." + "9".repeat(5000))) {
+      write("WP01.md", task("[]").replace("title: test\n", "title: test\nagent: " + number + "\n"));
+      assertThat(facts().subtaskRoster("WP01")).as(number.length() + " chars").isInstanceOf(SubtaskRoster.Resolved.class);
+    }
+    assertThat(Frontmatter.readText("WP01.md", taskWith("agent: '" + "9".repeat(5000) + "'\n"))).as("quoted").isPresent();
+  }
+
+  @Test
+  void aHexOrOctalRosterIdWhoseDecimalRenderingExceeds4300DigitsIsUnresolvable() throws Exception {
+    // Core builds the id with str(int), which raises past 4300 digits although parsing the literal does not.
+    for (String entry : List.of("0x" + "f".repeat(4000), "0o" + "7".repeat(4800), "0x" + "f".repeat(3000))) {
+      write("WP01.md", task("[" + entry + "]"));
+      boolean resolved = entry.length() < 4000;
+      assertThat(facts().subtaskRoster("WP01")).as(entry.length() + " chars")
+          .isInstanceOf(resolved ? SubtaskRoster.Resolved.class : SubtaskRoster.Unresolvable.class);
+    }
+  }
+
+  @Test
+  void plainScalarsResolveByTheYaml12CoreSchemaNotSnakeYamls11Rules() throws Exception {
+    write("WP01.md", task("[1:20, 010, 0o10, 0x1F, yes, No, on, y, 190:20:30, 'true', 007]"));
+    SubtaskRoster.Resolved roster = (SubtaskRoster.Resolved) facts().subtaskRoster("WP01");
+    assertThat(roster.ids()).containsExactly("1:20", "10", "8", "31", "yes", "No", "on", "y", "190:20:30", "true", "7");
+    write("WP02.md", "---\nwork_package_id: WP02\ndependencies: [1:20, yes]\n---\n");
+    assertThat(facts().dependencies("WP02")).isEqualTo(new DependencyDeclaration.Declared(List.of("1:20", "yes")));
+    for (String declaration : List.of("[010]", "[0o10]", "[true]", "[.5]", "[2001-12-14]")) {
+      write("WP02.md", "---\nwork_package_id: WP02\ndependencies: " + declaration + "\n---\n");
+      assertThat(facts().dependencies("WP02")).as(declaration).isInstanceOf(DependencyDeclaration.Unresolvable.class);
+    }
+  }
+
+  @Test
+  void numericSpellingsOnlyRuamelReadsAsNumbersAreUnresolvable() {
+    for (String scalar : List.of("1_000", "1_", "0_7", "+0x1", "-0o7", "0b1", "-0b1", "1.5_5", "+_1", "0x_f", "1__0")) {
+      assertThat(Frontmatter.readText("WP01.md", taskWith("agent: " + scalar + "\n"))).as(scalar).isEmpty();
+      assertThat(Frontmatter.readText("WP01.md", taskWith("agent: '" + scalar + "'\n"))).as("quoted " + scalar).isPresent();
+    }
+  }
+
+  @Test
+  void invalidTimestampsMakeTheFileUnreadableAsInCore() throws Exception {
+    for (String scalar : List.of("2001-13-45", "2001-02-30", "0000-01-01", "2001-12-14T24:00:00", "2001-12-14T23:60:00",
+        "2001-12-14T23:59:60", "2001-12-14T23:59:59+25:00", "1999-02-29")) {
+      assertThat(Frontmatter.readText("WP01.md", taskWith("created_at: " + scalar + "\n"))).as(scalar).isEmpty();
+    }
+    for (String scalar : List.of("2001-12-14", "2001-12-14t21:59:43.10-05:00", "2001-12-15 2:59:43.10", "2000-02-29",
+        "2001-12-14T23:59:59.9999995Z", "2001-12-14T23:59:59+23:59")) {
+      assertThat(Frontmatter.readText("WP01.md", taskWith("created_at: " + scalar + "\n"))).as(scalar).isPresent();
+    }
+    write("WP01.md", taskWith("created_at: 2001-12-14\n"));
+    assertThat(facts().subtaskRoster("WP01")).as("a date where core wants a string").isInstanceOf(SubtaskRoster.Unresolvable.class);
   }
 
   @Test

@@ -64,7 +64,7 @@
     "mission_id": "01J00000000000000000000000",
     "mission_slug": "999-status-transition-parity"
   },
-  "notes": "R15: core raises while validating WPMetadata; the service fails closed with implementation_evidence_required.",
+  "notes": "R15/R27: a plain equals sign anywhere makes the roster unresolvable. Core reads it as ruamel's YAML 1.1 value type and its WPMetadata then refuses it (spec-kitty/spec-kitty#7444); the service refuses it in every position.",
   "operation": "transition",
   "oracle": "protocol",
   "request": {

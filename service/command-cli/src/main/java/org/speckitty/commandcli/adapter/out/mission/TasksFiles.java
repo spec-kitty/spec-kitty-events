@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-/** Core's work-package task-file lookup, with its distinct dependency and roster matching rules. */
+/** Core's work-package task-file lookup, with one case-insensitive locator for both guards (R26). */
 public final class TasksFiles {
   private TasksFiles() {}
 
@@ -29,36 +29,19 @@ public final class TasksFiles {
     return Files.isRegularFile(path) || Files.isSymbolicLink(path) && !Files.exists(path);
   }
 
-  public static List<Path> dependencies(Path mission, String wpId) {
-    return paths(mission, wpId, false);
-  }
-
-  public static List<Path> rosters(Path mission, String wpId) {
-    return paths(mission, wpId, true);
-  }
-
-  public static List<String> dependencyNames(Collection<String> filenames, String wpId) {
-    return matching(filenames, wpId, false);
-  }
-
-  public static List<String> rosterNames(Collection<String> filenames, String wpId) {
-    return matching(filenames, wpId, true);
-  }
-
-  private static List<Path> paths(Path mission, String wpId, boolean roster) {
+  /** R26: one case-insensitive rule for both guards' locators (core's dependency locator is case-sensitive). */
+  public static List<Path> paths(Path mission, String wpId) {
     Path tasks = mission.resolve("tasks");
     try (Stream<Path> paths = Files.list(tasks)) {
       List<String> names = paths.map(path -> path.getFileName().toString()).toList();
-      List<String> matches = roster ? rosterNames(names, wpId) : dependencyNames(names, wpId);
-      return matches.stream().map(tasks::resolve).toList();
+      return names(names, wpId).stream().map(tasks::resolve).toList();
     } catch (IOException exception) {
       return List.of();
     }
   }
 
-  private static List<String> matching(Collection<String> filenames, String wpId, boolean ignoreCase) {
-    int flags = ignoreCase ? Pattern.CASE_INSENSITIVE : 0;
-    Pattern pattern = Pattern.compile("^" + Pattern.quote(wpId) + "(?:[-_.]|\\.md$)", flags);
+  public static List<String> names(Collection<String> filenames, String wpId) {
+    Pattern pattern = Pattern.compile("^" + Pattern.quote(wpId) + "(?:[-_.]|\\.md$)", Pattern.CASE_INSENSITIVE);
     return filenames.stream()
         .filter(filename -> filename.endsWith(".md"))
         .filter(filename -> !filename.equalsIgnoreCase("readme.md"))

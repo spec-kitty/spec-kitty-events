@@ -19,7 +19,7 @@ public final class DiskMissionFacts implements MissionFacts {
   @Override
   public DependencyDeclaration dependencies(String wpId) {
     try {
-      List<Path> matches = TasksFiles.dependencies(mission, wpId);
+      List<Path> matches = TasksFiles.paths(mission, wpId);
       if (matches.isEmpty()) return new DependencyDeclaration.None();
       if (matches.size() != 1 || !Files.isRegularFile(matches.getFirst())) {
         return new DependencyDeclaration.Unresolvable("cannot resolve declared dependencies");
@@ -34,7 +34,7 @@ public final class DiskMissionFacts implements MissionFacts {
   @Override
   public SubtaskRoster subtaskRoster(String wpId) {
     try {
-      List<Path> matches = TasksFiles.rosters(mission, wpId);
+      List<Path> matches = TasksFiles.paths(mission, wpId);
       if (matches.size() != 1 || !Files.isRegularFile(matches.getFirst())) {
         return new SubtaskRoster.Unresolvable();
       }

@@ -64,7 +64,7 @@
     "mission_id": "01J00000000000000000000000",
     "mission_slug": "999-status-transition-parity"
   },
-  "notes": "R15: a block scalar with a short spaces-only first line is unresolvable; the roster fails closed.",
+  "notes": "R23: a block scalar whose first line is only spaces is unresolvable; the roster fails closed (ruamel refuses only a subset of these, spec-kitty/spec-kitty#7444).",
   "operation": "transition",
   "oracle": "protocol",
   "request": {

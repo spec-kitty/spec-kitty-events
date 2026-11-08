@@ -372,15 +372,33 @@ Separately, `json.loads` can raise `ValueError` (Python's 4300-digit integer lim
 ```python
 import json, pathlib, tempfile
 from specify_cli.status import store
-row = {"actor": "a", "at": "2026-01-01T00:00:00+00:00", "event_id": "01J0000000000000000000000A",
-       "evidence": None, "execution_mode": "worktree", "force": False, "from_lane": "planned",
-       "mission_slug": "m", "reason": "x y", "to_lane": "claimed", "wp_id": "WP01"}
+
+row = {
+    "actor": "a",
+    "at": "2026-01-01T00:00:00+00:00",
+    "event_id": "01J0000000000000000000000A",
+    "evidence": None,
+    "execution_mode": "worktree",
+    "force": False,
+    "from_lane": "planned",
+    "mission_slug": "m",
+    "reason": "x y",
+    "to_lane": "claimed",
+    "wp_id": "WP01",
+}
 d = pathlib.Path(tempfile.mkdtemp())
-(d / "status.events.jsonl").write_text(json.dumps(row, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
-print(len(store.read_events_raw(d)))   # 1
-store.read_events(d)                   # StoreError: Invalid JSON on line 1: Unterminated string ...
-(d / "status.events.jsonl").write_text(json.dumps(dict(row, reason="x"), sort_keys=True).replace('"evidence": null', '"evidence": ' + "1" * 4301) + "\n")
-store.read_events(d)                   # ValueError: Exceeds the limit (4300 digits) ... (not StoreError)
+(d / "status.events.jsonl").write_text(
+    json.dumps(row, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8"
+)
+print(len(store.read_events_raw(d)))  # 1
+store.read_events(d)  # StoreError: Invalid JSON on line 1: Unterminated string ...
+(d / "status.events.jsonl").write_text(
+    json.dumps(dict(row, reason="x"), sort_keys=True).replace(
+        '"evidence": null', '"evidence": ' + "1" * 4301
+    )
+    + "\n"
+)
+store.read_events(d)  # ValueError: Exceeds the limit (4300 digits) ... (not StoreError)
 ```
 
 **Expected:** split rows on `\n` (tolerating `\r\n`/`\r`) as `read_events_raw` does, and wrap `ValueError`/`RecursionError` from `json.loads` in `StoreError`.
@@ -395,7 +413,10 @@ store.read_events(d)                   # ValueError: Exceeds the limit (4300 dig
 
 ```python
 from specify_cli.events.sanitizer import sanitize_event_for_log
-sanitize_event_for_log({"session_started_at": "2026-01-01T00:00:00", "session_ended_at": "2026-01-01T00:01:00+00:00"})
+
+sanitize_event_for_log(
+    {"session_started_at": "2026-01-01T00:00:00", "session_ended_at": "2026-01-01T00:01:00+00:00"}
+)
 # TypeError: can't subtract offset-naive and offset-aware datetimes
 ```
 
@@ -411,6 +432,7 @@ sanitize_event_for_log({"session_started_at": "2026-01-01T00:00:00", "session_en
 
 ```python
 from specify_cli.status.store import serialize_event_line
+
 print(serialize_event_line({"evidence": {"x": float("inf")}, "wp_id": "WP01"}))
 # {"evidence": {"x": Infinity}, "wp_id": "WP01"}   (verified at 512567ee)
 ```
@@ -426,9 +448,13 @@ print(serialize_event_line({"evidence": {"x": float("inf")}, "wp_id": "WP01"}))
 ```python
 import pathlib, tempfile
 from specify_cli.core.subtask_rows import authored_subtask_roster
-d = pathlib.Path(tempfile.mkdtemp()); (d / "tasks").mkdir()
-(d / "tasks" / "WP01.md").write_text("---\nwork_package_id: WP01\nsubtasks:\n- id: T001\n  title: x\n---\n")
-print(authored_subtask_roster(d, "WP01"))   # ["{'id': 'T001', 'title': 'x'}"]
+
+d = pathlib.Path(tempfile.mkdtemp())
+(d / "tasks").mkdir()
+(d / "tasks" / "WP01.md").write_text(
+    "---\nwork_package_id: WP01\nsubtasks:\n- id: T001\n  title: x\n---\n"
+)
+print(authored_subtask_roster(d, "WP01"))  # ["{'id': 'T001', 'title': 'x'}"]
 ```
 
 **Expected:** read `id` from map entries (if that shape is supported), or raise `SubtaskRosterResolutionError` for any entry that is not `str`/`int`, so the failure is legible instead of silent.
@@ -445,10 +471,14 @@ print(authored_subtask_roster(d, "WP01"))   # ["{'id': 'T001', 'title': 'x'}"]
 import pathlib, tempfile
 from specify_cli.core.subtask_rows import _locate_wp_file
 from specify_cli.status.emit import _match_wp_files
-d = pathlib.Path(tempfile.mkdtemp()); (d / "tasks").mkdir()
-(d / "tasks" / "wp02-x.md").write_text("---\nwork_package_id: WP02\ndependencies: [WP01]\nsubtasks: []\n---\n")
-print(_locate_wp_file(d, "WP02"))   # .../tasks/wp02-x.md
-print(_match_wp_files(d, "WP02"))   # []  -> dependencies treated as none declared
+
+d = pathlib.Path(tempfile.mkdtemp())
+(d / "tasks").mkdir()
+(d / "tasks" / "wp02-x.md").write_text(
+    "---\nwork_package_id: WP02\ndependencies: [WP01]\nsubtasks: []\n---\n"
+)
+print(_locate_wp_file(d, "WP02"))  # .../tasks/wp02-x.md
+print(_match_wp_files(d, "WP02"))  # []  -> dependencies treated as none declared
 ```
 
 **Expected:** one shared locator, one case rule. Only regular files count; a non-file match is "ambiguous/unreadable", never silently skipped.
@@ -477,14 +507,21 @@ print(_match_wp_files(d, "WP02"))   # []  -> dependencies treated as none declar
 ```python
 import pathlib, tempfile
 from specify_cli.frontmatter import read_frontmatter
+
+
 def rd(fm):
-    p = pathlib.Path(tempfile.mkdtemp()) / "WP01.md"; p.write_text("---\n" + fm + "---\n")
-    try: return read_frontmatter(p)[0]
-    except Exception as e: return f"ERR {e}"[:120]
-print(rd("description: |\n \n  x\n"))                       # ERR … more indented follow up line …
-print(rd("history: ['a':b]\n"))                             # ERR … while parsing a flow sequence
-print(rd("history:\n- {? {a: 1, b: 2}: x, ? {b: 2, a: 1}: y}\n"))   # reads: duplicate not detected
-print(rd("description: =\n"))                               # TaggedScalar(value='=', tag=…:value)
+    p = pathlib.Path(tempfile.mkdtemp()) / "WP01.md"
+    p.write_text("---\n" + fm + "---\n")
+    try:
+        return read_frontmatter(p)[0]
+    except Exception as e:
+        return f"ERR {e}"[:120]
+
+
+print(rd("description: |\n \n  x\n"))  # ERR … more indented follow up line …
+print(rd("history: ['a':b]\n"))  # ERR … while parsing a flow sequence
+print(rd("history:\n- {? {a: 1, b: 2}: x, ? {b: 2, a: 1}: y}\n"))  # reads: duplicate not detected
+print(rd("description: =\n"))  # TaggedScalar(value='=', tag=…:value)
 ```
 
 **Proposal:** none of 4,665 real WP frontmatters uses these constructs. Rather than chase ruamel, document a WP-frontmatter profile and refuse everything outside it at this boundary:
