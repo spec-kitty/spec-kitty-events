@@ -78,11 +78,11 @@
       "criterion_id": "FR-008",
       "description": "event_id idempotency: identical retry is replayed (appendedLines 0), partial or differing ids are EVENT_ID_CONFLICT, a repeated id in a request is BOOKKEEPING_DOUBLE_EVENT_ID, first occurrence wins.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP08 ReplayClassifierTest, ProtocolCorpusTest replay cases, WriteIntegrationTest"
+      "evidence": "ReplayClassifierTest 3 (first duplicate wins; partial and replay-after-new are conflicts); WriteIntegrationTest us1-2 (replayed true, appendedLines 0, bytes unchanged), us1-3 (EVENT_ID_CONFLICT), us1-4 (BOOKKEEPING_DOUBLE_EVENT_ID), aCrLfLogReplays...; ProtocolCorpusTest 34 incl. 6 replay-* cases over HTTP.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:29.130897+00:00",
+      "notes": "Byte-equality replay incl. trailing CR in log. Replay classification precedes authority (decision 1), pinned by replay-stale-from-is-still-replay."
     },
     {
       "criterion_id": "FR-009",
