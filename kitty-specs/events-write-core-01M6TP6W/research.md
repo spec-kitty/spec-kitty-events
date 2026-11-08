@@ -455,6 +455,7 @@ Lenses: scope fidelity (Opus) and contract and parity (Opus), 2026-11-07. Every 
     - R15: an unresolvable subtask roster on an unforced `in_progress -> for_review` (core raises `SubtaskRosterMissingError` / `SubtaskRosterResolutionError` and writes nothing) refuses `409 TRANSITION_REJECTED` / `implementation_evidence_required`, fail closed like an unresolvable dependency declaration.
     - R16: a `checkout_append` to a Mission whose primary `meta.json` records a non-blank `coordination_branch` answers `422 WRITE_LOCATION_UNVERIFIED` before any lock; core keys that Mission's lock with its mid8 and forbids a primary append, and `coordination_ref_commit` serves it from migration step 4 (decision 6).
     - R17: `--separate-git-dir` and submodule repositories refuse every write with `422` (FR-009's root-checkout rule); a deliberate divergence, since core writes status there.
+    - R18: a work-package file larger than 16 MiB makes its facts unresolvable (fail closed: dependencies refuse `dependencies_unsatisfied`, the roster refuses under R15). Core reads files of any size; the bound keeps the read inside the Mission lock bounded.
 
 ## 13. Post-tasks squad dispositions
 
