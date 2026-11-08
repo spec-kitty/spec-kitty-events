@@ -31,16 +31,19 @@ both parseable timestamps otherwise become an integer `session_duration_s`.
 
 ## Timestamp subset (R12)
 
-Every timestamp in a fixture is in the shared Python 3.10-compatible subset:
-this package parses it identically on Python 3.10 through
-`_iso8601.normalize_iso8601_shape` and on the oracle's Python 3.11, and WP03's
-Java `PyIsoDateTime` parses it identically as well. Forms outside that subset
-belong only in WP03's `PyIsoDateTime` vectors, never in this family. On Python
-3.10 the reference encoder computes no `session_duration_s` for them, while core
-(Python 3.11) does: basic-format dates (`20260101`), ISO week dates (`2026-W01-1`,
-`2026-W01`), an hour-only offset (`+05`), an offset with seconds or a fraction
-(`+05:30:15.5`), non-ASCII digits and exotic separators. Python 3.11 and later
-agree with core on these forms.
+Every timestamp in a fixture is in the shared subset that the package parses
+identically on Python 3.10 and 3.11, and WP03's Java `PyIsoDateTime` parses
+identically as well. On Python 3.10 the package uses
+`_iso8601._parse_isoformat_311`, a port of CPython 3.11's `fromisoformat`, so the
+encoder accepts exactly what core (Python 3.11) accepts and rejects exactly what
+it rejects. That closes the forms 3.10's own parser could not handle: basic-format
+dates (`20260101`), ISO week dates (`2026-W01-1`, `2026-W01`), an hour-only offset
+(`+05`), an offset with seconds or a fraction (`+05:30:15.5`), reduced precision
+and exotic separators now produce core's `session_duration_s`; non-ASCII digits
+and the other malformed forms core rejects stay unparseable. The fixture family
+nevertheless stays inside the conservative shared subset so every binding
+consumes the same documents; forms outside that subset belong only in WP03's
+`PyIsoDateTime` vectors, never in this family.
 
 ## Coverage classes
 

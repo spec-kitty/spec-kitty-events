@@ -44,6 +44,18 @@ What is new:
   `NaN`/`Infinity`, and mixed naive/aware session times are refused with a named error
   instead of leaking core's `TypeError`. The refusals are `StatusRowRefused`,
   `NonFiniteNumber` and `SessionTimesNotSubtractable`.
+- **Interpreter-independent session-timestamp parsing.** `status_log` parses
+  session timestamps with CPython 3.11's exact `datetime.fromisoformat` grammar on
+  every supported interpreter. Python 3.11+ calls `fromisoformat` after the shared
+  shape normaliser, exactly as before; Python 3.10 (the declared floor) uses an
+  internal port of that grammar whose oracle is the same CPython 3.11 vector set as
+  the Java `PyIsoDateTime` binding
+  (`service/domain-model/src/test/resources/pyisodatetime/vectors.json`). On 3.10,
+  basic-format dates (`20260101`), ISO week dates (`2026-W01-1`), hour-only (`+05`)
+  and second/fraction offsets, reduced precision, comma fractions and any
+  single-character date/time separator now yield the same `session_duration_s` that
+  core's 3.11 interpreter writes, so the encoded bytes no longer depend on the
+  interpreter version.
 - **The `status_append` conformance family**
   (`conformance/fixtures/status_append/`, 20 valid and 5 invalid cases): each document pairs
   an input row with the exact line the writer must produce, or with the refusal it must
@@ -71,7 +83,9 @@ of the existing event contracts needs a code change.
   keeps writing `status.events.jsonl` itself until then.
 - **The write service and other writers of `status.events.jsonl`:** produce rows with
   `encode_status_row()` (or an equivalent port), and check them against the `status_append`
-  family; the Java encoder in `service/command-cli` is held to the same bytes. The
+  family; the Java encoder in `service/command-cli` is held to the same bytes. On Python
+  3.10 the encoder accepts core's 3.11 session-timestamp grammar, so rows written there
+  carry the same `session_duration_s` as rows written on 3.11 and later. The
   status-transition parity corpus is the language-neutral acceptance set for the lane
   authority and its edge and service layers.
 - **Java binding consumers:** the package version tracks the binding through
