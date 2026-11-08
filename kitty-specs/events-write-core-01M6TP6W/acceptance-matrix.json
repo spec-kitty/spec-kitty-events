@@ -238,11 +238,11 @@
       "criterion_id": "FR-024",
       "description": "TransitionUnit.operation selects core's door; the lifecycle claim rules (actor compatibility, placeholders, implementer of record, role-aware review re-claim, start_rejected) apply per research decision 15.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP03 contract tools; WP07 ClaimRules tests and FullParityCorpusTest"
+      "evidence": "WriteBodiesTest.theLifecycleOperationIsTypedAndAbsentMeansTransition; contracts TransitionUnit.yaml operation, WriteOperation.yaml, CHANGELOG 1.0.1-SNAPSHOT; ClaimRulesTest 12, ActorCompatibilityTest 3, UnitJudgeTest 10; ParityCorpusTest 239 (claim-*, claim-start-*, 3 decision15-* cases); WriteIntegrationTest us2-3 (WP_ALREADY_CLAIMED).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:58.449046+00:00",
+      "notes": "Per research decision 15 and the maintainer ruling keeping the optional operation field. A start from planned is two batch units (batch-start-planned)."
     },
     {
       "criterion_id": "FR-025",
