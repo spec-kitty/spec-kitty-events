@@ -152,11 +152,11 @@ class WriteBodiesTest {
     assertThat(limits.getMaxNumberLength()).isEqualTo(4300);
     String deep = "[".repeat(300) + "1" + "]".repeat(300);
     assertThat(failure(bodies.parseUnit(MISSION, bytes(unit(ROW.replace("\"policy_metadata\":null", "\"policy_metadata\":" + deep))))).detail()).contains("not one JSON object");
-    String digits = "9".repeat(4300);
+    String digits = "{\"n\":" + "9".repeat(4300) + "}";
     success(bodies.parseUnit(MISSION, bytes(unit(ROW.replace("\"policy_metadata\":null", "\"policy_metadata\":" + digits)))));
-    assertThat(failure(bodies.parseUnit(MISSION, bytes(unit(ROW.replace("\"policy_metadata\":null", "\"policy_metadata\":" + digits + "9"))))).detail())
+    assertThat(failure(bodies.parseUnit(MISSION, bytes(unit(ROW.replace("\"policy_metadata\":null", "\"policy_metadata\":" + digits.replace("}", "9}")))))).detail())
         .contains("not one JSON object");
-    String floating = "1." + "9".repeat(5000);
+    String floating = "{\"x\":1." + "9".repeat(5000) + "}";
     success(bodies.parseUnit(MISSION, bytes(unit(ROW.replace("\"policy_metadata\":null", "\"policy_metadata\":" + floating)))));
   }
 

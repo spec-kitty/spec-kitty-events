@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.speckitty.commandcli.domain.authority.Actors;
+import org.speckitty.commandcli.domain.authority.StatusRowShape;
 import org.speckitty.missionstatus.domain.model.Lane;
 import org.speckitty.missionstatus.domain.model.PyIsoDateTime;
 import org.speckitty.missionstatus.domain.model.PyText;
@@ -18,6 +19,9 @@ final class RowRules {
 
   private static final Set<String> LANES = Arrays.stream(Lane.values()).map(Lane::wire).collect(Collectors.toUnmodifiableSet());
   private static final Pattern ANNOTATION_WP_ID = Pattern.compile("^WP[0-9]+$");
+
+  private static final String UNREADABLE_PREFIX = "A row's field ";
+  private static final String UNREADABLE_SUFFIX = " has a shape the status event log reader cannot read.";
 
   private RowRules() {}
 
@@ -32,7 +36,7 @@ final class RowRules {
     if (!canonical(row.get("from_lane")) || !canonical(row.get("to_lane"))) {
       return bad("A transition row's lanes must use canonical persisted spellings without aliases.");
     }
-    return common(row);
+    return common(row, StatusRowShape.transition(WriteBodies.rowValue(row), StatusRowShape.Scope.EDGE));
   }
 
   static Optional<WriteBodies.Malformed> annotation(JsonNode row) {
@@ -45,17 +49,21 @@ final class RowRules {
     if (!nonEmptyDelta(row.get("delta"))) {
       return bad("An annotation row's delta must hold at least one non-empty value.");
     }
-    return common(row);
+    return common(row, StatusRowShape.annotation(WriteBodies.rowValue(row), StatusRowShape.Scope.EDGE));
   }
 
-  private static Optional<WriteBodies.Malformed> common(JsonNode row) {
+  /**
+   * The checks every row passes: no non-finite number, session times that can be subtracted, and, last, the shared rule for the
+   * shapes core's reader refuses ({@code unreadable} names the first such field). The detail holds that field's name, never its value.
+   */
+  private static Optional<WriteBodies.Malformed> common(JsonNode row, Optional<String> unreadable) {
     if (containsNonFinite(row)) {
       return bad("A row must not contain a non-finite number.");
     }
     if (sessionTimesCannotBeSubtracted(row)) {
       return bad("A row's session timestamps must both be naive or both be aware.");
     }
-    return Optional.empty();
+    return unreadable.map(field -> new WriteBodies.Malformed(UNREADABLE_PREFIX + field + UNREADABLE_SUFFIX, null));
   }
 
   private static boolean validActor(JsonNode actor) {
