@@ -191,6 +191,18 @@
       "title": null,
       "verdict": "deferred-with-followup",
       "wp": null
+    },
+    "#7440": {
+      "evidence_ref": "spec-kitty/spec-kitty#7440 core follow-up: naive/aware session times; service refuses (decision 9, audit I2)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
     }
   },
   "schema_version": 1
