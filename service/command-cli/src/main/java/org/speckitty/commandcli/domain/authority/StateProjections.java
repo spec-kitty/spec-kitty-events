@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.speckitty.commandcli.domain.authority.WriteFold.Transition;
+import org.speckitty.commandcli.domain.authority.claim.ActorCompatibility;
 import org.speckitty.missionstatus.domain.model.CodePoints;
 import org.speckitty.missionstatus.domain.model.Lane;
 import org.speckitty.missionstatus.domain.model.PyText;
@@ -22,6 +23,7 @@ final class StateProjections {
     List<Transition> unique = events.stream().filter(event -> seen.add(event.id())).toList();
     projectCancellation(states, unique);
     projectImplementer(states, unique);
+    projectLatestImplementer(states, unique);
   }
 
   private static void projectCancellation(Map<String, Map<String, Object>> states, List<Transition> events) {
@@ -49,6 +51,25 @@ final class StateProjections {
       Map<String, Object> state = states.get(claim.wpId());
       if (state != null) state.put("implementer_of_record", String.valueOf(agent(claim)));
     }
+  }
+
+  /** Core review_roles' latest real implementing actor, distinct from the reducer's claim-provenance slot. */
+  private static void projectLatestImplementer(Map<String, Map<String, Object>> states, List<Transition> events) {
+    for (int index = events.size() - 1; index >= 0; index--) {
+      Transition event = events.get(index);
+      Map<String, Object> state = states.get(event.wpId());
+      if (state != null && !state.containsKey("latest_implementer_actor") && latestImplementingClaim(event)) {
+        state.put("latest_implementer_actor", Actors.project(event.actor()));
+      }
+    }
+  }
+
+  private static boolean latestImplementingClaim(Transition event) {
+    if (event.seed() || (event.to() != Lane.CLAIMED && event.to() != Lane.IN_PROGRESS)) return false;
+    boolean reviewerLane = event.from() == Lane.FOR_REVIEW || event.from() == Lane.IN_REVIEW || event.from() == Lane.APPROVED;
+    if (reviewerLane && WriteFold.truthy(event.reviewRef())) return false;
+    String key = ActorCompatibility.key(event.actor());
+    return key != null && !Set.of("implement-command", "unknown", "user").contains(key);
   }
 
   private static boolean claimantBearer(Transition event) {

@@ -5,77 +5,47 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
-/**
- * Runs WP06 domain cases. dependency, claim, review_claim, start_rejected and batch areas are owned by WP07; multi-unit
- * requests in any other area are also WP07 batch sequencing, not hidden by another skip mechanism. This test is deliberately
- * untagged: native tests cannot read this repository corpus.
- */
+/** Runs every domain corpus case through the complete authority; no WP07 exclusions remain. */
 class ParityCorpusTest {
-  static final Set<String> WP07_AREAS = Set.of("dependency", "claim", "review_claim", "start_rejected", "batch");
-  private static final Set<String> WP07_MULTI_UNIT_CASES = Set.of(
-      "annotation-subtasks-complete-unlocks-review",
-      "batch-clock-ahead-approved-departure",
-      "stale-batch-after-earlier-unit");
-  private static final List<CorpusCases.CorpusCase> ALL = CorpusCases.load();
-  private static final List<CorpusCases.CorpusCase> SELECTED = ALL.stream().filter(ParityCorpusTest::owned).toList();
+  private static final List<CorpusAuthorityCases.Case> ALL = CorpusAuthorityCases.load();
   private static final Set<String> PASSED = ConcurrentHashMap.newKeySet();
 
-  private static boolean owned(CorpusCases.CorpusCase testCase) {
-    return testCase.domain() && !WP07_AREAS.contains(testCase.area()) && !WP07_MULTI_UNIT_CASES.contains(testCase.id());
-  }
-
-  @Test
-  void multiUnitExclusionsAreExplicit() {
-    assertThat(WP07_MULTI_UNIT_CASES).hasSize(3).containsExactlyInAnyOrder(
-        "annotation-subtasks-complete-unlocks-review",
-        "batch-clock-ahead-approved-departure",
-        "stale-batch-after-earlier-unit");
-    assertThat(ALL.stream().filter(testCase -> WP07_MULTI_UNIT_CASES.contains(testCase.id())))
-        .allSatisfy(testCase -> assertThat(testCase.units()).hasSizeGreaterThan(1));
-  }
-
   @TestFactory
-  Stream<DynamicTest> wp06Corpus() {
-    return SELECTED.stream().map(testCase -> DynamicTest.dynamicTest(testCase.id(), () -> run(testCase)));
+  Stream<DynamicTest> corpus() {
+    return ALL.stream().map(testCase -> DynamicTest.dynamicTest(testCase.id(), () -> run(testCase)));
   }
 
-  private static void run(CorpusCases.CorpusCase testCase) {
-    Optional<Refusal> actual = judge(testCase);
+  private static void run(CorpusAuthorityCases.Case testCase) {
+    Judgement judgement = testCase.judge();
     Map<String, Object> expected = testCase.expected();
     if ("ack".equals(expected.get("result"))) {
-      assertThat(actual).as(testCase.id()).isEmpty();
+      assertThat(judgement).as(testCase.id()).isInstanceOf(Judgement.Accepted.class);
     } else {
-      assertThat(actual).as(testCase.id()).isPresent();
-      Refusal refusal = actual.orElseThrow();
+      assertThat(judgement).as(testCase.id()).isInstanceOf(Judgement.Refused.class);
+      Refusal refusal = ((Judgement.Refused) judgement).refusal();
       assertThat(refusal.code().name()).as(testCase.id() + " code").isEqualTo(expected.get("code"));
       String expectedReason = (String) expected.get("reason");
       assertThat(refusal.reason() == null ? null : refusal.reason().urn()).as(testCase.id() + " reason").isEqualTo(expectedReason);
       if ("core".equals(testCase.oracle())) {
         assertThat(refusal.message()).as(testCase.id() + " message").isEqualTo(expected.get("message"));
       }
-      assertThat(refusal.unitIndex()).as(testCase.id() + " unit").isEqualTo(expected.get("unit"));
+      Object expectedUnit = expected.get("unit");
+      assertThat(refusal.unitIndex()).as(testCase.id() + " unit")
+          .isEqualTo(expectedUnit instanceof Number number ? number.intValue() : null);
     }
     PASSED.add(testCase.id());
   }
 
-  private static Optional<Refusal> judge(CorpusCases.CorpusCase testCase) {
-    UnitInput unit = testCase.unit();
-    UnitJudge judge = new UnitJudge(DependencyGate.NO_VERDICT, ClaimGate.NONE);
-    return judge.judge(unit, testCase.fold(), testCase.facts());
-  }
-
   @AfterAll
   static void floorsAndReport() {
-    long legalEdges = SELECTED.stream()
+    long legalEdges = ALL.stream()
         .filter(testCase -> testCase.area().equals("lane_machine") && testCase.expected().get("result").equals("ack"))
         .count();
     assertThat(legalEdges).isGreaterThanOrEqualTo(29);
@@ -87,19 +57,17 @@ class ParityCorpusTest {
     required.forEach(reason -> reasons.put(reason, countReason(reason)));
     assertThat(reasons).allSatisfy((reason, count) -> assertThat(count).as(reason).isPositive());
     assertThat(countArea("stale")).isPositive();
-    assertThat(PASSED).containsExactlyInAnyOrderElementsOf(SELECTED.stream().map(CorpusCases.CorpusCase::id).toList());
-    long excluded = ALL.stream().filter(testCase -> testCase.domain() && !owned(testCase)).count();
+    assertThat(PASSED).containsExactlyInAnyOrderElementsOf(ALL.stream().map(CorpusAuthorityCases.Case::id).toList());
     Map<String, Long> areas = new LinkedHashMap<>();
-    SELECTED.forEach(testCase -> areas.merge(testCase.area(), 1L, Long::sum));
-    System.out.printf("WP06 parity corpus: %d/%d passed; areas=%s; excluded as WP07-owned=%d%n",
-        PASSED.size(), SELECTED.size(), areas, excluded);
+    ALL.forEach(testCase -> areas.merge(testCase.area(), 1L, Long::sum));
+    System.out.printf("Full parity corpus: %d/%d passed; areas=%s; excluded=0%n", PASSED.size(), ALL.size(), areas);
   }
 
   private static long countReason(String suffix) {
-    return SELECTED.stream().filter(testCase -> ("urn:spec-kitty:write-refusal:" + suffix).equals(testCase.expected().get("reason"))).count();
+    return ALL.stream().filter(testCase -> ("urn:spec-kitty:write-refusal:" + suffix).equals(testCase.expected().get("reason"))).count();
   }
 
   private static long countArea(String area) {
-    return SELECTED.stream().filter(testCase -> testCase.area().equals(area)).count();
+    return ALL.stream().filter(testCase -> testCase.area().equals(area)).count();
   }
 }
