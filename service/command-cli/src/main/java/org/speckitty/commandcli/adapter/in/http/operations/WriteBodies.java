@@ -58,21 +58,6 @@ public final class WriteBodies {
     return missionId != null && ULID.matcher(missionId).matches() ? Optional.empty() : bad("The missionId is not a ULID.");
   }
 
-  /** Compatibility delegate for the fail-closed controller; WP08 consumes {@link #parseUnit(String, byte[])} directly. */
-  public Optional<Malformed> transitionUnit(String missionId, byte[] body) {
-    return malformed(parseUnit(missionId, body));
-  }
-
-  /** Compatibility delegate for the fail-closed controller; WP08 consumes {@link #parseBatch(String, byte[])} directly. */
-  public Optional<Malformed> transitionBatch(String missionId, byte[] body) {
-    return malformed(parseBatch(missionId, body));
-  }
-
-  /** Compatibility delegate for the fail-closed controller; WP08 consumes {@link #parseAnnotation(String, byte[])} directly. */
-  public Optional<Malformed> annotation(String missionId, byte[] body) {
-    return malformed(parseAnnotation(missionId, body));
-  }
-
   public Parsed parseUnit(String missionId, byte[] body) {
     Optional<JsonNode> root = parse(body);
     return root.isEmpty() ? failure("The body is not one JSON object.") : parseTypedUnit(missionId, root.get());
@@ -333,10 +318,6 @@ public final class WriteBodies {
     } catch (JacksonException e) {
       return Optional.empty();
     }
-  }
-
-  private static Optional<Malformed> malformed(Parsed parsed) {
-    return parsed instanceof Parsed.Failure failure ? Optional.of(failure.malformed()) : Optional.empty();
   }
 
   private static Parsed failure(String detail) {

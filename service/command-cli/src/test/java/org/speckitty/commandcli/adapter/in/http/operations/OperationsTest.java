@@ -97,17 +97,18 @@ class OperationsTest {
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("validWrites")
-  void everyWellFormedWriteIsRefusedFailClosedAndWritesNothing(String name, String path, Path example) {
+  void aWellFormedCheckoutWriteToAnUnknownMissionWritesNothing(String name, String path, Path example) {
     String body = body(example);
     List<String> before = server.tree();
 
     RawClient.Reply reply = post(path, body);
 
-    assertThat(reply.status()).as(reply.text()).isEqualTo(500);
+    boolean refCommit = body.contains("coordination_ref_commit");
+    assertThat(reply.status()).as(reply.text()).isEqualTo(refCommit ? 422 : 404);
     assertThat(ContractSchemas.violations("WriteRefusal", reply.body())).isEmpty();
     JsonNode refusal = JSON.readTree(reply.body());
-    assertThat(refusal.get("code").asString()).isEqualTo("STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED");
-    assertThat(refusal.get("detail").asString()).isEqualTo("The write core is not built yet; nothing was written.");
+    assertThat(refusal.get("code").asString()).isEqualTo(refCommit ? "WRITE_LOCATION_UNVERIFIED" : "MISSION_NOT_FOUND");
+    if (refCommit) assertThat(refusal.get("detail").asString()).contains("migration step 4");
     assertThat(server.tree()).as("nothing written").isEqualTo(before);
     assertThat(reply.text()).doesNotContain(server.token.reveal()).doesNotContain(server.gitCommonDir.toString());
   }
@@ -185,11 +186,11 @@ class OperationsTest {
 
     RawClient.Reply reply = post("/api/v1/missions/" + MISSION + "/work-package-transitions", unit);
 
-    assertThat(reply.status()).as("well-formed, so it reaches the fail-closed gate").isEqualTo(500);
+    assertThat(reply.status()).as("well-formed, so it reaches Mission resolution").isEqualTo(404);
   }
 
   @Test
-  void aCoordinationRefCommitIsWellFormedAndReachesTheGate() {
+  void aCoordinationRefCommitIsRefusedBeforeMissionResolution() {
     String context = "{\"actor\":\"claude\",\"checkout\":\".\",\"missionDirectory\":\"kitty-specs/m\",\"writeSurface\":\"coordination_ref_commit\",\"destinationRef\":\"kitty/mission-m\"}";
     String unit = "{\"wpId\":\"WP01\",\"rows\":[{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\","
         + "\"from_lane\":\"planned\",\"to_lane\":\"claimed\",\"at\":\"2026-10-27T18:00:00+00:00\",\"actor\":\"claude\","
@@ -198,7 +199,9 @@ class OperationsTest {
 
     RawClient.Reply reply = post("/api/v1/missions/" + MISSION + "/work-package-transitions", unit);
 
-    assertThat(reply.status()).as("well-formed, so it reaches the fail-closed gate").isEqualTo(500);
+    assertThat(reply.status()).as("refused at the surface check").isEqualTo(422);
+    assertThat(JSON.readTree(reply.body()).get("code").asString()).isEqualTo("WRITE_LOCATION_UNVERIFIED");
+    assertThat(JSON.readTree(reply.body()).get("detail").asString()).contains("migration step 4");
     assertThat(server.tree()).as("nothing written").isEqualTo(before);
   }
 

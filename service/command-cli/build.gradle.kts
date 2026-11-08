@@ -35,11 +35,13 @@ val serviceVersion: String = providers.gradleProperty("releaseVersion").orElse("
 
 dependencies {
     implementation(project(":domain-model"))
+    implementation(project(":event-log"))
     implementation(libs.spring.boot.starter.web)
+    implementation(libs.snakeyaml)
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.archunit.junit5)
     testImplementation(libs.json.schema.validator)
-    testImplementation(libs.snakeyaml)
+    testImplementation(testFixtures(project(":event-log")))
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 

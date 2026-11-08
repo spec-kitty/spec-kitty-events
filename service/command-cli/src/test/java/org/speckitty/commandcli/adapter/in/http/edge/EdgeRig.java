@@ -28,13 +28,22 @@ import org.springframework.context.ConfigurableApplicationContext;
 public final class EdgeRig implements AutoCloseable {
 
   public final Path gitCommonDir;
+  private final Path repository;
   public final ServeRuntime runtime;
   public final WriteToken token;
   public final List<Integer> exits = new CopyOnWriteArrayList<>();
   private final ConfigurableApplicationContext context;
 
   private EdgeRig(Duration idleTimeout, String... args) throws IOException {
-    gitCommonDir = Files.createTempDirectory("command-cli-gcd");
+    repository = Files.createTempDirectory("command-cli-repository");
+    try {
+      Process git = new ProcessBuilder("git", "init", "--quiet").directory(repository.toFile()).redirectErrorStream(true).start();
+      if (git.waitFor() != 0) throw new IOException("git init failed");
+    } catch (InterruptedException interrupted) {
+      Thread.currentThread().interrupt();
+      throw new IOException("git init interrupted", interrupted);
+    }
+    gitCommonDir = repository.resolve(".git");
     StateDirectory directory;
     try {
       directory = StateDirectory.prepare(gitCommonDir);
@@ -119,7 +128,7 @@ public final class EdgeRig implements AutoCloseable {
     } catch (IOException ignored) {
       // the temporary directory is removed next
     }
-    try (Stream<Path> files = Files.walk(gitCommonDir)) {
+    try (Stream<Path> files = Files.walk(repository)) {
       files.sorted(Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
     } catch (IOException ignored) {
       // best effort
