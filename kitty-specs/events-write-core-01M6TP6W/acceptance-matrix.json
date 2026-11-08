@@ -98,11 +98,11 @@
       "criterion_id": "FR-010",
       "description": "No class outside the three allowlisted packages calls a JDK open-for-write API, enforced by ArchUnit with one shared predicate list and planted violations.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP02 EventLogBoundaryTest + read-service rule 7; WP08 WriteOwnershipRulesTest"
+      "evidence": "command-cli WriteOwnershipRulesTest 2 (planted RogueWriter fires, ConformingReader holds); event-log EventLogBoundaryTest 15 (WRITE_OWNERSHIP, ONLY_THE_FOUR_PACKAGES, planted FilesWriteOutsideStatusLog and ChannelOpenOutsideStatusLog); shared predicate testFixtures FileWriteApis; root ArchitectureRulesTest 17 (rule 7 incl. statuslog package).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:32.682530+00:00",
+      "notes": "Root :mission-status-api:test (1980 tests, 0 failures) ran inside scripts/verify_all.sh."
     },
     {
       "criterion_id": "FR-011",
