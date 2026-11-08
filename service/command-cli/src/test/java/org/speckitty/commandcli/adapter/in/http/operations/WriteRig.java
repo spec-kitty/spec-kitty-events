@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.speckitty.commandcli.adapter.in.http.edge.OwnPortSource;
@@ -30,9 +31,10 @@ final class WriteRig implements AutoCloseable {
 
   final Path repository;
   final Path gitCommonDir;
+  final ServeRuntime runtime;
+  final WriteToken token;
   Path missionDirectory;
   private String missionId = MISSION;
-  private final WriteToken token;
   private final ServiceLock serviceLock;
   private final ConfigurableApplicationContext context;
 
@@ -50,10 +52,11 @@ final class WriteRig implements AutoCloseable {
     serviceLock = ServiceLock.tryAcquire(directory).orElseThrow();
     SecureRandom random = new SecureRandom();
     token = WriteToken.mint(random);
-    ServeRuntime.install(new ServeRuntime(
+    runtime = new ServeRuntime(
         new ServeOptions(gitCommonDir, Duration.ofMinutes(5)), directory, serviceLock,
         InstanceId.mint(System.currentTimeMillis(), random), token, RepositoryIdentity.of(gitCommonDir),
-        "0.0.0-dev", ignored -> { }));
+        "0.0.0-dev", ignored -> { });
+    ServeRuntime.install(runtime);
     context = new SpringApplicationBuilder(CommandCliApplication.class).run();
   }
 
@@ -63,6 +66,18 @@ final class WriteRig implements AutoCloseable {
     } catch (Exception exception) {
       throw new IllegalStateException("Cannot start write test rig", exception);
     }
+  }
+
+  String host() {
+    return "Host: 127.0.0.1:" + port();
+  }
+
+  String bearer() {
+    return "Authorization: Bearer " + token.reveal();
+  }
+
+  RawClient.Reply request(String requestLine, String body, String... headers) {
+    return RawClient.request(port(), requestLine, body, headers);
   }
 
   RawClient.Reply post(String operation, String body) {
@@ -77,8 +92,27 @@ final class WriteRig implements AutoCloseable {
       default -> throw new IllegalArgumentException(operation);
     };
     return RawClient.request(port(), "POST /api/v1/missions/" + targetMission + path + " HTTP/1.1", body,
-        "Host: 127.0.0.1:" + port(), "Authorization: Bearer " + token.reveal(),
-        "Spec-Kitty-Write-Protocol: 1", "Content-Type: application/json");
+        host(), bearer(), "Spec-Kitty-Write-Protocol: 1", "Content-Type: application/json");
+  }
+
+  void removeMission() throws IOException {
+    try (Stream<Path> paths = Files.walk(missionDirectory)) {
+      paths.sorted(Comparator.reverseOrder()).forEach(path -> path.toFile().delete());
+    }
+  }
+
+  List<String> tree() {
+    try (Stream<Path> files = Files.walk(gitCommonDir)) {
+      return files.filter(Files::isRegularFile).sorted().map(path -> {
+        try {
+          return gitCommonDir.relativize(path) + " " + Files.size(path) + " " + Files.getLastModifiedTime(path).toMillis();
+        } catch (IOException exception) {
+          return gitCommonDir.relativize(path) + " ?";
+        }
+      }).toList();
+    } catch (IOException exception) {
+      throw new java.io.UncheckedIOException(exception);
+    }
   }
 
   Path log() {

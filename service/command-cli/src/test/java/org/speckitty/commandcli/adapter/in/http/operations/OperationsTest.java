@@ -18,7 +18,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.speckitty.commandcli.adapter.in.http.edge.EdgeRig;
 import org.speckitty.commandcli.adapter.in.http.edge.RawClient;
 import org.speckitty.commandcli.adapter.out.filesystem.RepositoryIdentity;
 import org.speckitty.commandcli.application.lifecycle.ServiceLifecycle;
@@ -41,15 +40,16 @@ class OperationsTest {
   private static final JsonMapper JSON = JsonMapper.builder().build();
   private static final String MISSION = "01J6XW9KQT7M0YB3N4R5CQZ2EX";
 
-  private EdgeRig server;
+  private WriteRig server;
 
   @BeforeAll
-  void start() {
-    server = EdgeRig.start();
+  void start() throws Exception {
+    server = WriteRig.start();
+    server.removeMission();
   }
 
   @AfterAll
-  void stop() {
+  void stop() throws Exception {
     server.close();
   }
 
