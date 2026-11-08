@@ -34,7 +34,7 @@ ROW_CALL_KWARGS = {
             "policy_metadata",
         }
     ),
-    "start_implementation": frozenset({"policy_metadata"}),
+    "start_implementation": frozenset({"force", "reason", "policy_metadata"}),
     "start_review": frozenset({"review_ref", "policy_metadata"}),
     "annotation": frozenset({"delta"}),
 }
@@ -814,6 +814,65 @@ def _claim_intents() -> list[Intent]:
     return cases
 
 
+def _lifecycle_force_intents() -> list[Intent]:
+    """Append-only lifecycle force scenarios, keeping established case ids stable."""
+    return [
+        _intent(
+            "claim-start-force-review-accepted",
+            "claim",
+            path_to("in_review"),
+            start_impl(force=True, reason="operator override"),
+        ),
+        _intent(
+            "claim-start-force-blank-note",
+            "start_rejected",
+            path_to("for_review"),
+            start_impl(force=True, reason=" "),
+        ),
+        _intent(
+            "claim-start-force-outside-review-lanes",
+            "start_rejected",
+            path_to("claimed"),
+            start_impl(force=True, reason="operator override"),
+        ),
+        _intent(
+            "claim-start-force-in-review-requires-note",
+            "claim",
+            path_to("in_review"),
+            start_impl(force=True),
+        ),
+        _intent(
+            "claim-start-force-approved-requires-note",
+            "start_rejected",
+            path_to("approved"),
+            start_impl(force=True),
+        ),
+        _intent(
+            "claim-start-for-review-other-actor-conflict",
+            "claim",
+            path_to("for_review"),
+            start_impl(actor="implementer-b", force=True),
+        ),
+        _intent(
+            "claim-latest-implementer-of-record-conflict",
+            "claim",
+            (
+                *path_to("claimed", actor="implementer-a"),
+                tr("in_progress", actor="implementer-b"),
+                tr("for_review", actor="implementer-b"),
+                tr("in_review", actor="reviewer-a"),
+                tr(
+                    "in_progress",
+                    actor="reviewer-a",
+                    review_result=REWORK,
+                    review_ref=REWORK["reference"],
+                ),
+            ),
+            start_impl(actor="implementer-a"),
+        ),
+    ]
+
+
 def _batch_intents() -> list[Intent]:
     planned_pair = (*path_to("planned"), *path_to("planned", wp_id="WP02"))
     return [
@@ -1038,6 +1097,7 @@ def build_intents() -> tuple[Intent, ...]:
         + _illegal_matrix_intents()
         + _done_evidence_scope_intents()
         + _retrospective_fold_intents()
+        + _lifecycle_force_intents()
     )
     ids = [intent.case_id for intent in intents]
     if len(ids) != len(set(ids)):
@@ -1182,8 +1242,16 @@ class CoreOracle:
                 "workspace_context": f"worktree:/parity/{call.wp_id}",
                 "execution_mode": "worktree",
                 "repo_root": repo,
-                **call.kwargs,
+                **{
+                    key: value
+                    for key, value in call.kwargs.items()
+                    if key not in {"force", "reason"}
+                },
             }
+            if "force" in call.kwargs:
+                kwargs["review_lane_exit"] = call.kwargs["force"]
+            if "reason" in call.kwargs:
+                kwargs["operator_force_note"] = call.kwargs["reason"]
         else:
             kwargs = {
                 "feature_dir": mission_dir,
@@ -1293,6 +1361,10 @@ class CoreOracle:
             "policy_metadata",
         )
         build_kwargs = {key: kwargs[key] for key in build_keys if key in kwargs}
+        if call.operation == "start_implementation":
+            build_kwargs.update(
+                {key: call.kwargs[key] for key in ("force", "reason") if key in call.kwargs}
+            )
         raw_evidence = build_kwargs.get("evidence")
         evidence_is_model_compatible = True
         if isinstance(raw_evidence, dict):
