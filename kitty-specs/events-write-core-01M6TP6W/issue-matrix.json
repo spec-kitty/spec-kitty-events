@@ -239,6 +239,18 @@
       "title": null,
       "verdict": "deferred-with-followup",
       "wp": null
+    },
+    "#7444": {
+      "evidence_ref": "spec-kitty/spec-kitty#7444 core follow-up: ruamel YAML 1.2 deviations and a WP-frontmatter profile; service rulings R19-R23, R27, R30 (decisions 18-20, audit I6)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
     }
   },
   "schema_version": 1
