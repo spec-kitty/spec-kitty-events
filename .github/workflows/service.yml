@@ -624,13 +624,15 @@ jobs:
         with:
           version: "0.13.6"
           python-version: "3.12"
+      # The oracles refuse any Python but core's own (its .python-version, 3.11 at the pin), so the
+      # job-wide UV_PYTHON (3.12) set by setup-uv is overridden with core's pin for its venv.
       - name: Install core's locked Python environment
         working-directory: core
-        run: uv sync --frozen
+        run: UV_PYTHON="$(cat .python-version)" uv sync --frozen
       # The generators import core's charter, which needs the built-in pack tree.
       - name: Sync core's packs from its pinned open-packs commits
         working-directory: core
-        run: PYTHONPATH="$GITHUB_WORKSPACE/core/src" uv run --frozen --no-sync python scripts/sync_packs.py --pack all
+        run: PYTHONPATH="$GITHUB_WORKSPACE/core/src" UV_PYTHON="$(cat .python-version)" uv run --frozen --no-sync python scripts/sync_packs.py --pack all
       - name: Check the status_append oracle
         run: SPEC_KITTY_CORE_CHECKOUT="$GITHUB_WORKSPACE/core" core/.venv/bin/python scripts/conformance/generate_status_append.py --check | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Check the status-transition parity oracle
