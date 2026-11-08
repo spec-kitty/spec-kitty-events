@@ -157,7 +157,7 @@
     "mission_id": "01J00000000000000000000000",
     "mission_slug": "999-status-transition-parity"
   },
-  "notes": "The test rig adds a malformed sibling meta.json; the healthy Mission still accepts its legal write.",
+  "notes": "Protocol case, not core parity: the malformed sibling is a second Mission directory the test rig creates under kitty-specs/, which the corpus inputs (tasks, log) cannot express, and core's emit call takes a single feature_dir. It pins the service catalog's rule that a sibling meta.json in the malformed set (JSON syntax error, invalid UTF-8, non-object top level; kernel/meta_decode.py) hides only that sibling, so the healthy Mission still accepts its legal write.",
   "operation": "transition",
   "oracle": "protocol",
   "request": {

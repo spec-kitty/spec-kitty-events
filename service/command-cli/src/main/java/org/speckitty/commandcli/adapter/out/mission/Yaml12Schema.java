@@ -27,8 +27,11 @@ import org.yaml.snakeyaml.resolver.Resolver;
  * floats) the scalar is refused rather than copied (WP08 audit).
  */
 final class Yaml12Schema {
-  /** The most decimal digits CPython converts to an int (R29). */
+  /** The most decimal digits CPython converts to or from an int (R29). */
   static final int MAX_DECIMAL_DIGITS = 4300;
+  private static final BigInteger DECIMAL_LIMIT = BigInteger.TEN.pow(MAX_DECIMAL_DIGITS);
+  /** R30: ruamel rounds a seventh fractional digit into the seconds, which can overflow {@code datetime}. */
+  private static final Pattern LONG_FRACTION = Pattern.compile("\\.[0-9]{7}");
 
   // The numeric spellings ruamel's 1.2 resolver accepts: the text allows none of the extra forms.
   private static final Pattern RUAMEL_NUMBER = Pattern.compile(
@@ -46,6 +49,26 @@ final class Yaml12Schema {
 
   static Constructor constructor(LoaderOptions options) {
     return new Constructor(options);
+  }
+
+  /**
+   * R29, the one shared check over the constructed tree: an integer of any base whose decimal form exceeds 4300 digits,
+   * anywhere (any field, nested in lists and maps, keys included), makes the document unresolvable. CPython refuses to
+   * {@code str()} such an int (a decimal one cannot even be built, see {@link Constructor}), and core renders
+   * {@code phase}, roster ids and more with {@code str()}. Hex and octal are unlimited when parsed, so they pass the
+   * constructor and are caught here.
+   */
+  static void requireRenderableIntegers(Object value) {
+    if (value instanceof BigInteger number) {
+      if (number.abs().compareTo(DECIMAL_LIMIT) >= 0) throw new IllegalArgumentException("R29: an integer over 4300 decimal digits");
+    } else if (value instanceof Map<?, ?> map) {
+      for (Map.Entry<?, ?> entry : map.entrySet()) {
+        requireRenderableIntegers(entry.getKey());
+        requireRenderableIntegers(entry.getValue());
+      }
+    } else if (value instanceof Iterable<?> items) {
+      for (Object item : items) requireRenderableIntegers(item);
+    }
   }
 
   /** Ordered like the spec's table: an integer is tried before a float, which also matches one. */
@@ -94,6 +117,7 @@ final class Yaml12Schema {
         if (text.startsWith("0o")) return new BigInteger(text.substring(2), 8);
         if (text.startsWith("0x")) return new BigInteger(text.substring(2), 16);
         int digits = text.length() - (text.charAt(0) == '+' || text.charAt(0) == '-' ? 1 : 0);
+        // CPython counts the digits of the text, leading zeros included, so this is a load failure of its own.
         if (digits > MAX_DECIMAL_DIGITS) throw new IllegalArgumentException("R29: more than 4300 decimal digits");
         return new BigInteger(text);
       }
@@ -110,12 +134,18 @@ final class Yaml12Schema {
       }
     }
 
-    /** A timestamp only needs to be as valid as Python's {@code datetime}: an invalid one makes core's file unreadable. */
+    /**
+     * A timestamp must be one Python's {@code datetime} can build, or core's file is unreadable. Beyond the date and time
+     * fields that includes R30: a fraction of more than 6 digits is refused, because ruamel rounds the seventh digit into
+     * the seconds and can overflow ({@code 9999-12-31 23:59:59.9999995}).
+     */
     private final class ConstructTimestamp extends AbstractConstruct {
       @Override
       public Object construct(Node node) {
-        Matcher parts = TIMESTAMP_PARTS.matcher(constructScalar((ScalarNode) node));
+        String text = constructScalar((ScalarNode) node);
+        Matcher parts = TIMESTAMP_PARTS.matcher(text);
         if (!parts.matches()) throw new IllegalArgumentException("not a timestamp");
+        if (LONG_FRACTION.matcher(text).find()) throw new IllegalArgumentException("R30: more than 6 fractional digits");
         int year = Integer.parseInt(parts.group(1));
         if (year < 1) throw new IllegalArgumentException("year out of range");
         int month = Integer.parseInt(parts.group(2));

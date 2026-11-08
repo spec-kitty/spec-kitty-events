@@ -93,7 +93,10 @@ public final class Frontmatter {
     constructor.setComposer(composer);
     Node root = composer.getSingleNode();
     validateNodeTree(root);
-    return root == null ? null : constructor.constructSingle(root);
+    if (root == null) return null;
+    Object constructed = constructor.constructSingle(root);
+    Yaml12Schema.requireRenderableIntegers(constructed);
+    return constructed;
   }
 
   /** R19/R20/R21: only the plain YAML subset shared by SnakeYAML and ruamel is readable. */
