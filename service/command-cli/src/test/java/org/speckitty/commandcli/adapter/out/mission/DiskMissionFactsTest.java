@@ -176,6 +176,75 @@ class DiskMissionFactsTest {
   }
 
   @Test
+  void pythonEqualMappingKeysAreDuplicatesIncludingInsideComplexKeys() {
+    for (String extra : List.of(
+        "history: [{1: x, 1.0: y}]\n",
+        "history: [{true: x, 1: y}]\n",
+        "history: [{0: x, false: y}]\n",
+        "history: [{0: x, -0.0: y}]\n",
+        "history: [{9223372036854775808: x, 9223372036854775808.0: y}]\n",
+        "history:\n  - ? [1]\n    : x\n    ? [1.0]\n    : y\n",
+        "history:\n  - ? {a: 1}\n    : x\n    ? {a: 1.0}\n    : y\n")) {
+      assertThat(Frontmatter.readText("WP01.md", taskWith(extra))).as(extra).isEmpty();
+    }
+    for (String extra : List.of(
+        "history: [{1: x, 2.0: y}]\n",
+        "history: [{true: x, false: y}]\n",
+        "history:\n  - ? [1]\n    : x\n    ? [2.0]\n    : y\n",
+        "history:\n  - ? {a: 1}\n    : x\n    ? {a: 2.0}\n    : y\n")) {
+      assertThat(Frontmatter.readText("WP01.md", taskWith(extra))).as(extra).isPresent();
+    }
+  }
+
+  @Test
+  void duplicatePlainMergeKeysAreUnresolvableButOneMergeStillReads() {
+    for (String extra : List.of(
+        "<<: {agent: x}\n<<: {description: y}\n",
+        "<<: {agent: x}\n? <<\n: {description: y}\n",
+        "history: [{<<: {a: b}, <<: {c: d}}]\n")) {
+      assertThat(Frontmatter.readText("WP01.md", taskWith(extra))).as(extra).isEmpty();
+    }
+    assertThat(Frontmatter.readText("WP01.md", taskWith("<<: {agent: x}\n"))).isPresent();
+    assertThat(Frontmatter.readText("WP01.md", taskWith("'<<': {agent: x}\n'<<': {description: y}\n")))
+        .as("quoted duplicates remain ordinary duplicate keys and are also refused")
+        .isEmpty();
+  }
+
+  @Test
+  void flowValueColonsRequireWhitespaceUnderR21() {
+    for (String extra : List.of(
+        "history: ['a':b]\n",
+        "history: [\"a\":b]\n",
+        "history: [{a:[b]}]\n",
+        "history: [{a:{b: c}}]\n",
+        "history: [a:]\n")) {
+      assertThat(Frontmatter.readText("WP01.md", taskWith(extra))).as(extra).isEmpty();
+    }
+    for (String extra : List.of(
+        "history: ['a': b]\n",
+        "history: [{a: [b]}]\n",
+        "history: [{a:\n  b}]\n")) {
+      assertThat(Frontmatter.readText("WP01.md", taskWith(extra))).as(extra).isPresent();
+    }
+  }
+
+  @Test
+  void onlyAShortSpacesOnlyFirstLineMakesABlockScalarUnresolvable() {
+    for (String extra : List.of(
+        "description: |\n \n  x\n",
+        "description: >-\n \n  x\n")) {
+      assertThat(Frontmatter.readText("WP01.md", taskWith(extra))).as(extra).isEmpty();
+    }
+    for (String extra : List.of(
+        "description: |\n\n \n  x\n",
+        "description: |\n \n x\n",
+        "description: |2\n \n  x\n",
+        "description: >-\n  first\n  second\n")) {
+      assertThat(Frontmatter.readText("WP01.md", taskWith(extra))).as(extra).isPresent();
+    }
+  }
+
+  @Test
   void shellPidUsesPythonIntCoercion() throws Exception {
     for (String declaration : List.of("' 12 '", "12.5", "true", "'99999999999'", "'1_000'", "'𝟙'")) {
       write("WP01.md", task("[]").replace("title: test\n", "title: test\nshell_pid: " + declaration + "\n"));
@@ -251,6 +320,10 @@ class DiskMissionFactsTest {
 
   private String task(String subtasks) {
     return "---\nwork_package_id: WP01\ntitle: test\nsubtasks: " + subtasks + "\n---\n";
+  }
+
+  private String taskWith(String extra) {
+    return task("[]").replace("title: test\n", "title: test\n" + extra);
   }
 
   private void write(String name, String text) throws Exception {

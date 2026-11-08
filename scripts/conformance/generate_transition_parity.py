@@ -203,7 +203,7 @@ def protocol_stale_from_lane_cases(case_dir: Path) -> dict[str, str]:
 
 
 def protocol_r15_cases(core_rendered: Mapping[str, str]) -> dict[str, str]:
-    """Render R15/R19/R20 refusals from core-derived requests, not as core parity."""
+    """Render R15/R19/R20/R21 refusals from core-derived requests, not as core parity."""
 
     def roster_case(case_id: str, template: str, task: str, notes: str) -> tuple[str, str]:
         document = json.loads(core_rendered[template])
@@ -279,6 +279,24 @@ def protocol_r15_cases(core_rendered: Mapping[str, str]) -> dict[str, str]:
                 "---\n%YAML 1.2\n---\n\n# WP02\n",
                 "R20: a directive without a document makes WP02 unreadable; dependencies "
                 "refuse dependencies_unsatisfied.",
+            ),
+            dependency_case(
+                "dependency-frontmatter-python-equal-duplicate-key",
+                task_text("WP02", dependencies="[WP01]").replace(
+                    "subtasks: []", "history: [{1: x, 1.0: y}]\nsubtasks: []"
+                ),
+                "Python-equal mapping keys make WP02 unreadable; dependencies refuse "
+                "dependencies_unsatisfied.",
+            ),
+            roster_case(
+                "guard-subtasks-roster-description-short-leading-blank",
+                "guard-subtasks-incomplete",
+                task_text().replace(
+                    'dependencies: "[]"',
+                    "description: |\n \n  x\ndependencies: []",
+                ),
+                "R15: a block scalar with a short spaces-only first line is unresolvable; "
+                "the roster fails closed.",
             ),
         ]
     )
