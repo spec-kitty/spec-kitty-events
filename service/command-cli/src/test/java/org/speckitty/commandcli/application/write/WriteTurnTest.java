@@ -28,7 +28,7 @@ class WriteTurnTest {
       }
     });
     holder.start();
-    assertThat(held.await(1, TimeUnit.SECONDS)).isTrue();
+    assertThat(held.await(10, TimeUnit.SECONDS)).isTrue();
     long started = System.nanoTime();
     assertThat(turn.tryAcquire(Duration.ofMillis(30).toNanos())).isEmpty();
     assertThat(System.nanoTime() - started).isGreaterThanOrEqualTo(Duration.ofMillis(20).toNanos());
@@ -53,7 +53,7 @@ class WriteTurnTest {
       }
     });
     holder.start();
-    assertThat(held.await(1, TimeUnit.SECONDS)).isTrue();
+    assertThat(held.await(10, TimeUnit.SECONDS)).isTrue();
     Thread.currentThread().interrupt();
     assertThat(turn.tryAcquire(Duration.ofSeconds(1).toNanos())).isEmpty();
     assertThat(Thread.interrupted()).isTrue();

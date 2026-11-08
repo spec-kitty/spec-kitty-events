@@ -1,13 +1,18 @@
 package org.speckitty.commandcli.adapter.out.mission;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.speckitty.commandcli.domain.authority.DependencyDeclaration;
@@ -71,7 +76,11 @@ class DiskMissionFactsTest {
     write("WP02.md", text);
     assertThat(facts().dependencies("WP02")).isEqualTo(new DependencyDeclaration.Declared(List.of("WP01")));
     write("WP02.md.orig", "---\ndependencies: []\n---\n");
-    write("WP02.MD", "---\ndependencies: []\n---\n");
+    if (caseSensitiveFilesystem()) {
+      // Core's glob("*.md") is case-sensitive on such a filesystem, so a second file with an upper-case extension is not a match. On a
+      // case-insensitive one (default APFS, NTFS) "WP02.MD" is the same file as "WP02.md", and writing it replaces it.
+      write("WP02.MD", "---\ndependencies: []\n---\n");
+    }
     assertThat(facts().dependencies("WP02")).isEqualTo(new DependencyDeclaration.Declared(List.of("WP01")));
     write("WP02.md", "---\ndependencies: [WP01]\ndependencies: []\n---\n");
     assertThat(facts().dependencies("WP02")).isInstanceOf(DependencyDeclaration.Unresolvable.class);
@@ -446,8 +455,22 @@ class DiskMissionFactsTest {
   void aSingleNonRegularMatchFailsClosedWithoutOpeningIt() throws Exception {
     Files.createDirectories(mission.resolve("tasks"));
     Path fifo = mission.resolve("tasks/WP01.md");
-    Process mkfifo = new ProcessBuilder("mkfifo", fifo.toString()).start();
-    assertThat(mkfifo.waitFor()).isZero();
+    boolean posix = FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
+    boolean created;
+    try {
+      created = new ProcessBuilder("mkfifo", fifo.toString()).start().waitFor() == 0
+          && Files.exists(fifo, LinkOption.NOFOLLOW_LINKS) && !Files.isRegularFile(fifo, LinkOption.NOFOLLOW_LINKS);
+    } catch (IOException noMkfifo) {
+      created = false;
+    }
+    // Where mkfifo is the platform's (Linux, macOS) the fixture must exist, or the test fails rather than skips. On Windows a FIFO
+    // cannot be a directory entry the JVM sees (the MSYS mkfifo leaves no non-regular file under tasks/), so there is nothing to
+    // classify: production correctly finds no match (None / Unresolvable roster).
+    if (posix) {
+      assertThat(created).as("mkfifo must create a non-regular entry").isTrue();
+    } else {
+      assumeTrue(created, "a FIFO cannot exist as a non-regular directory entry on this platform");
+    }
     assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
     assertThat(facts().dependencies("WP01")).isInstanceOf(DependencyDeclaration.Unresolvable.class);
   }
@@ -484,6 +507,17 @@ class DiskMissionFactsTest {
 
   private String taskWith(String extra) {
     return task("[]").replace("title: test\n", "title: test\n" + extra);
+  }
+
+  /** Probes the filesystem under the temp directory: is the upper-case alias of a freshly created file a different file? */
+  private boolean caseSensitiveFilesystem() throws Exception {
+    Path probe = Files.createTempFile(mission, "case-probe-", ".tmp");
+    try {
+      Path alias = probe.resolveSibling(probe.getFileName().toString().toUpperCase(Locale.ROOT));
+      return !Files.exists(alias);
+    } finally {
+      Files.delete(probe);
+    }
   }
 
   private void write(String name, String text) throws Exception {

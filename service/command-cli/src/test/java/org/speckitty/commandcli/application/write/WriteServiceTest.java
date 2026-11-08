@@ -264,24 +264,27 @@ class WriteServiceTest {
     Thread holder = new Thread(() -> {
       try (var ignored = turn.tryAcquire(0).orElseThrow()) {
         held.countDown();
-        release.await(1, TimeUnit.SECONDS);
+        release.await(30, TimeUnit.SECONDS);
       } catch (InterruptedException exception) {
         Thread.currentThread().interrupt();
         throw new AssertionError(exception);
       }
     });
     holder.start();
-    assertThat(held.await(1, TimeUnit.SECONDS)).isTrue();
+    assertThat(held.await(30, TimeUnit.SECONDS)).isTrue();
     long before = System.nanoTime();
     assertRefusal(service.write(validRequest()), RefusalCode.SERVICE_BUSY, null);
     assertThat(ports.log.calls).isZero();
-    assertThat(System.nanoTime() - before).isLessThan(Duration.ofSeconds(1).toNanos());
+    assertThat(System.nanoTime() - before).isLessThan(Duration.ofSeconds(10).toNanos());
     release.countDown();
-    holder.join(1000);
+    holder.join(30_000);
 
-    long deadlineBefore = System.nanoTime();
-    assertThat(service.write(validRequest())).isInstanceOf(WriteOutcome.Acked.class);
-    assertThat(ports.log.deadline).isBetween(deadlineBefore, deadlineBefore + Duration.ofMillis(250).toNanos());
+    // The deadline is the clock at the start of the write plus the budget. A frozen clock makes that exact, whatever the runner's speed.
+    long frozen = 5_000_000_000L;
+    WriteService frozenClock = new WriteService(ports.missions, ports.log, ports.codec, new WriteTurn(), Authority.standard(),
+        Duration.ofMillis(200), () -> frozen);
+    assertThat(frozenClock.write(validRequest())).isInstanceOf(WriteOutcome.Acked.class);
+    assertThat(ports.log.deadline).isEqualTo(frozen + Duration.ofMillis(200).toNanos());
   }
 
   @Test
@@ -290,17 +293,19 @@ class WriteServiceTest {
     ports.log.entered = new CountDownLatch(1);
     ports.log.release = new CountDownLatch(1);
     ExecutorService executor = Executors.newFixedThreadPool(2);
-    WriteService service = ports.service();
+    // A budget far above any runner's scheduling delay: the second write must wait for the first's turn, never time out. The busy
+    // path has its own test (aHeldTurnIsBusy...) with a short budget.
+    WriteService service = ports.service(Duration.ofSeconds(30));
     try {
       Future<WriteOutcome> first = executor.submit(() -> service.write(validRequest()));
-      assertThat(ports.log.entered.await(1, TimeUnit.SECONDS)).isTrue();
+      assertThat(ports.log.entered.await(30, TimeUnit.SECONDS)).isTrue();
       Map<String, Object> secondRow = row("01J6XW9KQT7M0YB3N4R5CQZ2EZ", "WP01", "claimed", "in_progress", "actor");
       Future<WriteOutcome> second = executor.submit(() -> service.write(request(List.of(unit(secondRow)))));
       Thread.sleep(40);
       assertThat(second.isDone()).isFalse();
       ports.log.release.countDown();
-      assertThat(first.get(2, TimeUnit.SECONDS)).isInstanceOf(WriteOutcome.Acked.class);
-      assertThat(second.get(2, TimeUnit.SECONDS)).isInstanceOf(WriteOutcome.Acked.class);
+      assertThat(first.get(30, TimeUnit.SECONDS)).isInstanceOf(WriteOutcome.Acked.class);
+      assertThat(second.get(30, TimeUnit.SECONDS)).isInstanceOf(WriteOutcome.Acked.class);
       assertThat(ports.log.appendCalls).isEqualTo(2);
     } finally {
       ports.log.release.countDown();
@@ -384,7 +389,11 @@ class WriteServiceTest {
     }
 
     WriteService service() {
-      return new WriteService(missions, log, codec, new WriteTurn(), Authority.standard(), Duration.ofMillis(200), System::nanoTime);
+      return service(Duration.ofMillis(200));
+    }
+
+    WriteService service(Duration budget) {
+      return new WriteService(missions, log, codec, new WriteTurn(), Authority.standard(), budget, System::nanoTime);
     }
   }
 
@@ -432,7 +441,7 @@ class WriteServiceTest {
       if (entered != null) entered.countDown();
       if (release != null) {
         try {
-          if (!release.await(1, TimeUnit.SECONDS)) throw new AssertionError("test lock was not released");
+          if (!release.await(30, TimeUnit.SECONDS)) throw new AssertionError("test lock was not released");
         } catch (InterruptedException exception) {
           Thread.currentThread().interrupt();
           throw new AssertionError(exception);

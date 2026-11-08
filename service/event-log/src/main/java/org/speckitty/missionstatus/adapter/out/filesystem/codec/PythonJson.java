@@ -40,7 +40,13 @@ final class PythonJson {
   static final int MAX_INTEGER_DIGITS = 4300;
 
   private static final StreamReadConstraints CONSTRAINTS = new PythonConstraints();
-  private static final JsonFactory FACTORY =
+  /**
+   * The ledger reader's factory, exactly as it was before the write path existed: Jackson's default limits (nesting 1000, number length
+   * 1000). The read side is unchanged (mission constraint C-010), so nothing here may set limits on it.
+   */
+  private static final JsonFactory FACTORY = JsonFactory.builder().enable(JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS).build();
+  /** The write path's factory: the same grammar with Python's limits. Used only through {@link #parseWithPythonLimits}. */
+  private static final JsonFactory PYTHON_LIMITS_FACTORY =
       JsonFactory.builder().streamReadConstraints(CONSTRAINTS).enable(JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS).build();
   private static final Set<String> NON_NUMERIC_SPELLINGS = Set.of("NaN", "Infinity", "-Infinity");
 
@@ -66,9 +72,23 @@ final class PythonJson {
     }
   }
 
-  /** Parses one document. Whitespace around it is the caller's business (Python strips the line first). */
+  /** The limits of the ledger reader's factory, for the test that pins them. */
+  static StreamReadConstraints ledgerConstraints() {
+    return FACTORY.streamReadConstraints();
+  }
+
+  /** Parses one ledger document with Jackson's default limits. Whitespace around it is the caller's business (Python strips first). */
   static Object parse(String text) {
-    try (JsonParser parser = FACTORY.createParser(text)) {
+    return parse(FACTORY, text);
+  }
+
+  /** Parses one document with {@link #constraints()}: the write path's decoding of status rows. */
+  static Object parseWithPythonLimits(String text) {
+    return parse(PYTHON_LIMITS_FACTORY, text);
+  }
+
+  private static Object parse(JsonFactory factory, String text) {
+    try (JsonParser parser = factory.createParser(text)) {
       JsonToken first = parser.nextToken();
       if (first == null) {
         throw new Invalid();

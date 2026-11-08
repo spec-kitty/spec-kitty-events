@@ -12,8 +12,11 @@ public final class StatusRowDecoder {
 
   private StatusRowDecoder() {}
 
-  /** Parses exactly one JSON value, throwing an unchecked exception for invalid text. */
+  /**
+   * Parses exactly one JSON value with {@link #readConstraints()}, throwing an unchecked exception for invalid text. The ledger reader
+   * ({@code LedgerLineDecoder}) does not use this: it keeps Jackson's default limits.
+   */
   public static Object parse(String line) {
-    return PythonJson.parse(line);
+    return PythonJson.parseWithPythonLimits(line);
   }
 }
