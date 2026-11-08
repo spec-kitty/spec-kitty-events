@@ -179,6 +179,18 @@
       "title": "<fill at WP-implementation time>",
       "verdict": "not-applicable",
       "wp": null
+    },
+    "#7439": {
+      "evidence_ref": "spec-kitty/spec-kitty#7439 core follow-up: read_events splitlines; service ruling R24 (research \u00a711 decision 19, research/wp08-divergence-audit.md I1)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
     }
   },
   "schema_version": 1
