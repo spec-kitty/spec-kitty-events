@@ -74,6 +74,7 @@ class DiskMissionFactsTest {
         "work_package_title: 5\n",
         "description: =\n",
         "description: !!str 5\n",
+        "description: &a !!str 5\n",
         "~: x\n",
         "null: x\n")) {
       write("WP01.md", task("[]").replace("title: test\n", "title: test\n" + extra));
@@ -82,8 +83,36 @@ class DiskMissionFactsTest {
   }
 
   @Test
+  void anchoredAndAliasedShorthandStringsRemainTaggedValues() throws Exception {
+    write("WP01.md", task("[]").replace("title: test", "title: &a !!str test"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    write("WP01.md", task("[]").replace("title: test\n", "title: test\nagent: &a !!str x\ndescription: *a\n"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    write("WP02.md", "---\nwork_package_id: WP02\ndependencies: [&a !!str WP01]\nsubtasks: []\n---\n");
+    assertThat(facts().dependencies("WP02")).isInstanceOf(DependencyDeclaration.Unresolvable.class);
+  }
+
+  @Test
+  void nativeExplicitTagsAndTaggedSubtaskIdsMatchCore() throws Exception {
+    for (String declaration : List.of("! foo", "!<tag:yaml.org,2002:str> foo", "!!null ''")) {
+      write("WP01.md", task("[]").replace("title: test\n", "title: test\ndescription: " + declaration + "\n"));
+      assertThat(facts().subtaskRoster("WP01")).as(declaration).isInstanceOf(SubtaskRoster.Resolved.class);
+    }
+    write("WP01.md", task("[!!str T001, !!int 5, =, !foo T002]"));
+    SubtaskRoster.Resolved roster = (SubtaskRoster.Resolved) facts().subtaskRoster("WP01");
+    assertThat(roster.ids()).containsExactly("T001", "5", "=", "T002");
+    write("WP01.md", task("!!str abc"));
+    roster = (SubtaskRoster.Resolved) facts().subtaskRoster("WP01");
+    assertThat(roster.ids()).containsExactly("a", "b", "c");
+    write("WP01.md", task("[]").replace("title: test\n", "title: test\ndependencies: &a !!str WP02\n"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Resolved.class);
+    write("WP02.md", "---\nwork_package_id: WP02\ndependencies: ! WP01\n---\n");
+    assertThat(facts().dependencies("WP02")).isEqualTo(new DependencyDeclaration.Declared(List.of("WP01")));
+  }
+
+  @Test
   void shellPidUsesPythonIntCoercion() throws Exception {
-    for (String declaration : List.of("' 12 '", "12.5", "true", "'99999999999'", "'1_000'")) {
+    for (String declaration : List.of("' 12 '", "12.5", "true", "'99999999999'", "'1_000'", "!!int 12", "'𝟙'")) {
       write("WP01.md", task("[]").replace("title: test\n", "title: test\nshell_pid: " + declaration + "\n"));
       assertThat(facts().subtaskRoster("WP01")).as(declaration).isInstanceOf(SubtaskRoster.Resolved.class);
     }
@@ -103,6 +132,30 @@ class DiskMissionFactsTest {
     Files.createSymbolicLink(mission.resolve("tasks/WP02-old.md"), Path.of("/nonexistent/wp02"));
     assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
     assertThat(facts().dependencies("WP02")).isInstanceOf(DependencyDeclaration.Unresolvable.class);
+  }
+
+  @Test
+  void existenceUsesCoreGlobSemanticsIncludingDanglingSymlinks() throws Exception {
+    Files.createDirectories(mission.resolve("tasks"));
+    Path dangling = Path.of("/nonexistent/wp04");
+    Files.createSymbolicLink(mission.resolve("tasks/WP04-slug.md"), dangling);
+    assertThat(TasksFiles.exists(mission, "WP04")).isTrue();
+    Files.delete(mission.resolve("tasks/WP04-slug.md"));
+    Files.createSymbolicLink(mission.resolve("tasks/WP04.md"), dangling);
+    assertThat(TasksFiles.exists(mission, "WP04")).isFalse();
+    Files.delete(mission.resolve("tasks/WP04.md"));
+    Files.createDirectory(mission.resolve("tasks/WP04-slug.md"));
+    assertThat(TasksFiles.exists(mission, "WP04")).as("fail closed where core crashes on a directory").isFalse();
+  }
+
+  @Test
+  void aSingleNonRegularMatchFailsClosedWithoutOpeningIt() throws Exception {
+    Files.createDirectories(mission.resolve("tasks"));
+    Path fifo = mission.resolve("tasks/WP01.md");
+    Process mkfifo = new ProcessBuilder("mkfifo", fifo.toString()).start();
+    assertThat(mkfifo.waitFor()).isZero();
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    assertThat(facts().dependencies("WP01")).isInstanceOf(DependencyDeclaration.Unresolvable.class);
   }
 
   @Test

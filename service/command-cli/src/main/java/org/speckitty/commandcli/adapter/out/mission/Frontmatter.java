@@ -8,19 +8,31 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
-import org.yaml.snakeyaml.DumperOptions;
+import java.util.Set;
 import org.yaml.snakeyaml.LoaderOptions;
-import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.composer.Composer;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
+import org.yaml.snakeyaml.events.CollectionStartEvent;
+import org.yaml.snakeyaml.events.Event;
+import org.yaml.snakeyaml.events.ScalarEvent;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.NodeId;
 import org.yaml.snakeyaml.nodes.ScalarNode;
 import org.yaml.snakeyaml.nodes.Tag;
-import org.yaml.snakeyaml.representer.Representer;
+import org.yaml.snakeyaml.parser.Parser;
+import org.yaml.snakeyaml.parser.ParserImpl;
+import org.yaml.snakeyaml.reader.StreamReader;
 import org.yaml.snakeyaml.resolver.Resolver;
+import org.yaml.snakeyaml.scanner.Scanner;
+import org.yaml.snakeyaml.scanner.ScannerImpl;
+import org.yaml.snakeyaml.tokens.TagToken;
+import org.yaml.snakeyaml.tokens.TagTuple;
+import org.yaml.snakeyaml.tokens.Token;
 
 /** Bounded, tag-free YAML frontmatter parsing with core's fence, BOM and newline rules. */
 public final class Frontmatter {
@@ -51,7 +63,8 @@ public final class Frontmatter {
       if (closing < 0 || frontmatterBytes(lines, closing) > MAX_BLOCK_BYTES) return Optional.empty();
       LoaderOptions options = new LoaderOptions();
       options.setAllowDuplicateKeys(false);
-      Object loaded = yaml(options).load(String.join("\n", java.util.Arrays.copyOfRange(lines, 1, closing)));
+      String block = String.join("\n", java.util.Arrays.copyOfRange(lines, 1, closing));
+      Object loaded = load(block, options);
       if (loaded == null) loaded = new LinkedHashMap<String, Object>();
       if (!(loaded instanceof Map<?, ?> map)) return Optional.empty();
       @SuppressWarnings("unchecked")
@@ -65,13 +78,22 @@ public final class Frontmatter {
     }
   }
 
-  private static Yaml yaml(LoaderOptions options) {
-    DumperOptions dumping = new DumperOptions();
-    return new Yaml(new RoundTripSafeConstructor(options), new Representer(dumping), dumping, options, new Yaml12Resolver());
+  private static Object load(String block, LoaderOptions options) {
+    StreamReader reader = new StreamReader(block);
+    FormTrackingScanner scanner = new FormTrackingScanner(new ScannerImpl(reader, options));
+    FormTrackingParser parser = new FormTrackingParser(new ParserImpl(scanner), scanner);
+    FormTrackingComposer composer = new FormTrackingComposer(parser, new Yaml12Resolver(), options);
+    RoundTripSafeConstructor constructor = new RoundTripSafeConstructor(options);
+    constructor.setAllowDuplicateKeys(options.isAllowDuplicateKeys());
+    constructor.setComposer(composer);
+    return constructor.getSingleData(Object.class);
   }
 
   /** Preserves ruamel's non-String TaggedScalar distinction where WPMetadata is type-sensitive. */
   private static final class RoundTripSafeConstructor extends SafeConstructor {
+    private static final Set<Tag> NATIVE_SCALAR_TAGS =
+        Set.of(Tag.NULL, Tag.BOOL, Tag.INT, Tag.FLOAT, Tag.BINARY, Tag.TIMESTAMP, Tag.STR);
+
     private RoundTripSafeConstructor(LoaderOptions options) {
       super(options);
     }
@@ -82,15 +104,122 @@ public final class Frontmatter {
       return super.constructObject(node);
     }
 
-    private static boolean isTaggedScalar(ScalarNode scalar) {
-      if (scalar.isPlain() && scalar.getValue().equals("=")) return true;
-      int[] buffer = scalar.getStartMark().getBuffer();
-      int pointer = scalar.getStartMark().getPointer();
-      return pointer >= 0 && pointer < buffer.length && buffer[pointer] == '!';
+    private boolean isTaggedScalar(ScalarNode scalar) {
+      if (!NATIVE_SCALAR_TAGS.contains(scalar.getTag())) return true;
+      if (!Tag.STR.equals(scalar.getTag())) return false;
+      TagTuple explicitTag = ((FormTrackingComposer) composer).explicitTag(scalar);
+      if (explicitTag != null) return explicitTag.getHandle() != null;
+      return scalar.isPlain() && scalar.getValue().equals("=");
     }
   }
 
-  private record TaggedScalar(String value) {}
+  /** Associates composed nodes with the scanner's tag token, including shorthand versus verbatim form. */
+  private static final class FormTrackingComposer extends Composer {
+    private final FormTrackingParser parser;
+    private final Map<Node, TagTuple> explicitTags = new IdentityHashMap<>();
+
+    private FormTrackingComposer(FormTrackingParser parser, Resolver resolver, LoaderOptions options) {
+      super(parser, resolver, options);
+      this.parser = parser;
+    }
+
+    @Override
+    protected Node composeScalarNode(String anchor, java.util.List<org.yaml.snakeyaml.comments.CommentLine> comments) {
+      Node node = super.composeScalarNode(anchor, comments);
+      TagTuple tag = parser.explicitTagOfLastEvent();
+      if (tag != null) explicitTags.put(node, tag);
+      return node;
+    }
+
+    private TagTuple explicitTag(Node node) {
+      return explicitTags.get(node);
+    }
+  }
+
+  /** Pairs each tagged parser event with the tag token consumed while producing that event. */
+  private static final class FormTrackingParser implements Parser {
+    private final Parser delegate;
+    private final FormTrackingScanner scanner;
+    private final Map<Event, TagTuple> eventTags = new IdentityHashMap<>();
+    private TagTuple lastEventTag;
+
+    private FormTrackingParser(Parser delegate, FormTrackingScanner scanner) {
+      this.delegate = delegate;
+      this.scanner = scanner;
+    }
+
+    @Override
+    public boolean checkEvent(Event.ID id) {
+      return peekEvent().is(id);
+    }
+
+    @Override
+    public Event peekEvent() {
+      Event event = delegate.peekEvent();
+      associateTag(event);
+      return event;
+    }
+
+    @Override
+    public Event getEvent() {
+      Event event = delegate.getEvent();
+      associateTag(event);
+      lastEventTag = eventTags.get(event);
+      return event;
+    }
+
+    private TagTuple explicitTagOfLastEvent() {
+      return lastEventTag;
+    }
+
+    private void associateTag(Event event) {
+      if (eventTags.containsKey(event)) return;
+      String tag = event instanceof ScalarEvent scalar ? scalar.getTag()
+          : event instanceof CollectionStartEvent collection ? collection.getTag() : null;
+      eventTags.put(event, tag == null ? null : scanner.nextTag());
+    }
+  }
+
+  /** Records only consumed tag tokens, so scanner look-ahead cannot disturb event association. */
+  private static final class FormTrackingScanner implements Scanner {
+    private final Scanner delegate;
+    private final ArrayDeque<TagTuple> tags = new ArrayDeque<>();
+
+    private FormTrackingScanner(Scanner delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public boolean checkToken(Token.ID... choices) {
+      return delegate.checkToken(choices);
+    }
+
+    @Override
+    public Token peekToken() {
+      return delegate.peekToken();
+    }
+
+    @Override
+    public Token getToken() {
+      Token token = delegate.getToken();
+      if (token instanceof TagToken tagged) tags.addLast(tagged.getValue());
+      return token;
+    }
+
+    @Override
+    public void resetDocumentIndex() {
+      tags.clear();
+      delegate.resetDocumentIndex();
+    }
+
+    private TagTuple nextTag() {
+      TagTuple tag = tags.pollFirst();
+      if (tag == null) throw new IllegalStateException("tagged parser event without a tag token");
+      return tag;
+    }
+  }
+
+  record TaggedScalar(String value) {}
 
   private static int closingFence(String[] lines) {
     for (int index = 1; index < lines.length; index++) {

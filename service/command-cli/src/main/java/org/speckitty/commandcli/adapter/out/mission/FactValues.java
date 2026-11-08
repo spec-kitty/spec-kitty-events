@@ -51,8 +51,8 @@ public final class FactValues {
   }
 
   public static SubtaskRoster roster(Map<String, Object> frontmatter) {
-    if (!frontmatter.containsKey("subtasks") || !validMetadata(frontmatter)
-        || !(frontmatter.get("subtasks") instanceof List<?> list)) {
+    List<?> list = pydanticList(frontmatter.get("subtasks"));
+    if (!frontmatter.containsKey("subtasks") || !validMetadata(frontmatter) || list == null) {
       return new SubtaskRoster.Unresolvable();
     }
     Set<String> seen = new LinkedHashSet<>();
@@ -99,8 +99,8 @@ public final class FactValues {
       if (!(value instanceof String) && !stringList(value)) return false;
     }
     return (!frontmatter.containsKey("dependencies") || validDependencyMetadata(frontmatter.get("dependencies")))
-        && (!frontmatter.containsKey("subtasks") || frontmatter.get("subtasks") instanceof List<?>)
-        && (!frontmatter.containsKey("history") || frontmatter.get("history") instanceof List<?>);
+        && (!frontmatter.containsKey("subtasks") || pydanticList(frontmatter.get("subtasks")) != null)
+        && (!frontmatter.containsKey("history") || pydanticList(frontmatter.get("history")) != null);
   }
 
   private static boolean validSpecialFields(Map<String, Object> frontmatter) {
@@ -118,7 +118,16 @@ public final class FactValues {
   }
 
   private static boolean stringList(Object value) {
-    return value instanceof List<?> list && list.stream().allMatch(String.class::isInstance);
+    return value instanceof Frontmatter.TaggedScalar
+        || value instanceof List<?> list && list.stream().allMatch(String.class::isInstance);
+  }
+
+  private static List<?> pydanticList(Object value) {
+    if (value instanceof List<?> list) return list;
+    if (value instanceof Frontmatter.TaggedScalar tagged) {
+      return tagged.value().codePoints().mapToObj(codePoint -> new String(Character.toChars(codePoint))).toList();
+    }
+    return null;
   }
 
   private static boolean validPid(Object value) {
@@ -137,8 +146,13 @@ public final class FactValues {
     if (!PYTHON_INT.matcher(text).matches()) {
       return false;
     }
+    StringBuilder ascii = new StringBuilder();
+    for (int codePoint : text.replace("_", "").codePoints().toArray()) {
+      if (codePoint == '+' || codePoint == '-') ascii.appendCodePoint(codePoint);
+      else ascii.append((char) ('0' + Character.digit(codePoint, 10)));
+    }
     try {
-      new BigInteger(text.replace("_", ""));
+      new BigInteger(ascii.toString());
       return true;
     } catch (NumberFormatException invalid) {
       return false;
@@ -149,6 +163,7 @@ public final class FactValues {
     return switch (value) {
       case null -> "None";
       case Boolean flag -> flag ? "True" : "False";
+      case Frontmatter.TaggedScalar tagged -> tagged.value();
       default -> String.valueOf(value);
     };
   }
