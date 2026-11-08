@@ -887,6 +887,63 @@ def _batch_intents() -> list[Intent]:
     ]
 
 
+def _done_evidence_scope_intents() -> list[Intent]:
+    return [
+        _intent(
+            "done-evidence-empty-review-planned-claim",
+            "done_evidence",
+            path_to("planned"),
+            tr("claimed", evidence={"review": {}}),
+        ),
+        _intent(
+            "done-evidence-malformed-in-progress-planned",
+            "done_evidence",
+            path_to("in_progress"),
+            tr("planned", reason="r", evidence={"review": {"reviewer": "a"}}),
+        ),
+        _intent(
+            "done-evidence-nondict-to-approved",
+            "done_evidence",
+            path_to("in_progress"),
+            tr("approved", evidence={"review": "x"}),
+        ),
+        _intent(
+            "done-evidence-ws-reviewer-in-review-done",
+            "guard",
+            path_to("in_review"),
+            tr(
+                "done",
+                actor="reviewer-a",
+                review_result=APPROVAL,
+                evidence={"review": {"reviewer": "  ", "verdict": "approved", "reference": "r"}},
+            ),
+        ),
+        _intent(
+            "done-evidence-ws-verdict-approved-done",
+            "guard",
+            path_to("approved"),
+            tr(
+                "done",
+                actor="reviewer-a",
+                evidence={"review": {"reviewer": "rv", "verdict": "  ", "reference": "r"}},
+            ),
+        ),
+    ]
+
+
+def _retrospective_fold_intents() -> list[Intent]:
+    scenarios = (
+        ("fold-retrospective-event-name", "retrospective-event-name"),
+        ("fold-retrospective-captured", "retrospective-captured"),
+        ("fold-retrospective-capture-failed", "retrospective-capture-failed"),
+        ("fold-retrospective-skipped", "retrospective-skipped"),
+    )
+    return [
+        _intent(case_id, "fold", path_to("planned"), tr("claimed"), log_edit=edit)
+        for case_id, edit in scenarios
+    ]
+
+
 def _annotation_intents() -> list[Intent]:
     subtask_tasks = default_tasks()
     subtask_tasks["WP01.md"] = task_text(subtasks="[T001]")
@@ -979,6 +1036,8 @@ def build_intents() -> tuple[Intent, ...]:
         + _batch_intents()
         + _annotation_intents()
         + _illegal_matrix_intents()
+        + _done_evidence_scope_intents()
+        + _retrospective_fold_intents()
     )
     ids = [intent.case_id for intent in intents]
     if len(ids) != len(set(ids)):
@@ -1311,6 +1370,14 @@ class CoreOracle:
                 if row.get("to_lane") == "approved":
                     row["at"] = approval_at.isoformat()
             return edited
+        retrospective_rows = {
+            "retrospective-event-name": {"event_name": "retrospective.captured"},
+            "retrospective-captured": {"type": "RetrospectiveCaptured"},
+            "retrospective-capture-failed": {"type": "RetrospectiveCaptureFailed"},
+            "retrospective-skipped": {"type": "RetrospectiveSkipped"},
+        }
+        if edit in retrospective_rows:
+            return [retrospective_rows[edit], *edited]
         raise GenerationError(f"Unknown log edit: {edit}")
 
     def generate(self, intent: Intent, case_number: int) -> dict[str, Any]:

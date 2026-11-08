@@ -2,6 +2,8 @@ package org.speckitty.commandcli.domain.authority;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.speckitty.commandcli.domain.service.RefusalCode;
@@ -51,18 +53,32 @@ class PipelineGuardsTest {
   }
 
   @Test
-  void doneEvidenceRequiresReviewTriple() {
-    for (Object evidence : new Object[] {Map.of(), Map.of("review", "bad"),
-        Map.of("review", Map.of("reviewer", "a", "verdict", "approved", "reference", " ")),
-        Map.of("review", Map.of("reviewer", "", "verdict", "approved", "reference", "ref")),
-        Map.of("review", Map.of("reviewer", "a", "verdict", "", "reference", "ref"))}) {
-      Refusal refusal = PipelineGuards.doneEvidence(Lane.DONE, evidence).orElseThrow();
-      assertThat(refusal.reason()).isEqualTo(RefusalReason.DONE_EVIDENCE_INCOMPLETE);
-      assertThat(refusal.message()).isEqualTo(
-          "Moving to done requires evidence with review.reviewer review.verdict, and review.reference");
+  void doneEvidenceRunsForEveryTargetAndUsesPythonTruthiness() {
+    for (Object evidence : new Object[] {Map.of(), Map.of("review", "bad")}) {
+      assertDoneEvidenceRefused(evidence);
     }
-    assertThat(PipelineGuards.doneEvidence(Lane.DONE, null)).isEmpty();
-    assertThat(PipelineGuards.doneEvidence(Lane.APPROVED, Map.of())).isEmpty();
-    assertThat(PipelineGuards.doneEvidence(Lane.DONE, AuthorityFixtures.approvalEvidence("approved", "ref"))).isEmpty();
+    for (String field : List.of("reviewer", "verdict", "reference")) {
+      for (Object falsy : new Object[] {null, "", false, BigInteger.ZERO, List.of(), Map.of()}) {
+        Map<String, Object> review = AuthorityFixtures.reviewResult("approved", "ref");
+        review.put(field, falsy);
+        assertDoneEvidenceRefused(Map.of("review", review));
+      }
+      Map<String, Object> blankReference = AuthorityFixtures.reviewResult("approved", "ref");
+      blankReference.put(field, field.equals("reference") ? " \t\n" : "  ");
+      if (field.equals("reference")) {
+        assertDoneEvidenceRefused(Map.of("review", blankReference));
+      } else {
+        assertThat(PipelineGuards.doneEvidence(Map.of("review", blankReference))).isEmpty();
+      }
+    }
+    assertThat(PipelineGuards.doneEvidence(null)).isEmpty();
+    assertThat(PipelineGuards.doneEvidence(AuthorityFixtures.approvalEvidence("approved", "ref"))).isEmpty();
+  }
+
+  private static void assertDoneEvidenceRefused(Object evidence) {
+    Refusal refusal = PipelineGuards.doneEvidence(evidence).orElseThrow();
+    assertThat(refusal.reason()).isEqualTo(RefusalReason.DONE_EVIDENCE_INCOMPLETE);
+    assertThat(refusal.message()).isEqualTo(
+        "Moving to done requires evidence with review.reviewer review.verdict, and review.reference");
   }
 }

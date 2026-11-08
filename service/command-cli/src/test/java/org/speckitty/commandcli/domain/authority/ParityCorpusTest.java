@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
 /**
@@ -20,12 +21,26 @@ import org.junit.jupiter.api.TestFactory;
  */
 class ParityCorpusTest {
   static final Set<String> WP07_AREAS = Set.of("dependency", "claim", "review_claim", "start_rejected", "batch");
+  private static final Set<String> WP07_MULTI_UNIT_CASES = Set.of(
+      "annotation-subtasks-complete-unlocks-review",
+      "batch-clock-ahead-approved-departure",
+      "stale-batch-after-earlier-unit");
   private static final List<CorpusCases.CorpusCase> ALL = CorpusCases.load();
   private static final List<CorpusCases.CorpusCase> SELECTED = ALL.stream().filter(ParityCorpusTest::owned).toList();
   private static final Set<String> PASSED = ConcurrentHashMap.newKeySet();
 
   private static boolean owned(CorpusCases.CorpusCase testCase) {
-    return testCase.domain() && !WP07_AREAS.contains(testCase.area()) && testCase.units().size() == 1;
+    return testCase.domain() && !WP07_AREAS.contains(testCase.area()) && !WP07_MULTI_UNIT_CASES.contains(testCase.id());
+  }
+
+  @Test
+  void multiUnitExclusionsAreExplicit() {
+    assertThat(WP07_MULTI_UNIT_CASES).hasSize(3).containsExactlyInAnyOrder(
+        "annotation-subtasks-complete-unlocks-review",
+        "batch-clock-ahead-approved-departure",
+        "stale-batch-after-earlier-unit");
+    assertThat(ALL.stream().filter(testCase -> WP07_MULTI_UNIT_CASES.contains(testCase.id())))
+        .allSatisfy(testCase -> assertThat(testCase.units()).hasSizeGreaterThan(1));
   }
 
   @TestFactory

@@ -20,7 +20,7 @@ public record WpWriteState(
     Map<String, Object> slots) {
   public WpWriteState {
     subtaskState = Map.copyOf(subtaskState);
-    review = review == null ? null : Map.copyOf(review);
+    review = review == null ? null : Collections.unmodifiableMap(new LinkedHashMap<>(review));
     slots = Collections.unmodifiableMap(new LinkedHashMap<>(slots));
   }
 
