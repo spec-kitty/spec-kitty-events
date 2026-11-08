@@ -2,8 +2,8 @@
   "area": "stale",
   "expected": {
     "code": "TRANSITION_REJECTED",
-    "message": null,
-    "reason": null,
+    "message": "The unit's from_lane is not the work package's current lane.",
+    "reason": "urn:spec-kitty:write-refusal:stale_from_lane",
     "result": "refusal",
     "unit": 1
   },

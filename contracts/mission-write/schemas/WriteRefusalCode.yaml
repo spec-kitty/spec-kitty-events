@@ -9,7 +9,7 @@ description: >-
 type: string
 oneOf:
   - const: TRANSITION_REJECTED
-    description: '409. The lane state machine or one of its guards refused the transition. The type names the reason, except that a stale unit whose from_lane is not the work package''s current lane carries no reason URN. The CLI''s orchestrator-api code for a TransitionError.'
+    description: '409. The lane state machine or one of its guards refused the transition. The type names the reason, including stale_from_lane for a stale unit whose from_lane is not the work package''s current lane. The CLI''s orchestrator-api code for a TransitionError.'
   - const: WP_ALREADY_CLAIMED
     description: '409. Another actor holds the claim on the work package. The CLI''s orchestrator-api code for a WorkPackageClaimConflict.'
   - const: DEPENDENCIES_NOT_SATISFIED

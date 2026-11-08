@@ -118,7 +118,8 @@
         "urn:spec-kitty:write-refusal:force_note_required",
         "urn:spec-kitty:write-refusal:done_evidence_incomplete",
         "urn:spec-kitty:write-refusal:claim_held_by_other_actor",
-        "urn:spec-kitty:write-refusal:start_rejected"
+        "urn:spec-kitty:write-refusal:start_rejected",
+        "urn:spec-kitty:write-refusal:stale_from_lane"
       ]
     },
     "refusalCode": {

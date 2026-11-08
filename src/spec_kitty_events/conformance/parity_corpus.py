@@ -26,6 +26,7 @@ REASON_URNS = frozenset(
         "done_evidence_incomplete",
         "claim_held_by_other_actor",
         "start_rejected",
+        "stale_from_lane",
     )
 )
 WRITE_REFUSAL_CODES = frozenset(

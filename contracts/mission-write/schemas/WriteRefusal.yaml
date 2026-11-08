@@ -483,6 +483,16 @@ allOf:
       properties:
         code:
           const: TRANSITION_REJECTED
+  - if:
+      required:
+        - type
+      properties:
+        type:
+          const: 'urn:spec-kitty:write-refusal:stale_from_lane'
+    then:
+      properties:
+        code:
+          const: TRANSITION_REJECTED
   - type: object
     required:
       - code

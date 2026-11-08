@@ -27,9 +27,9 @@ class RefusalVocabularyTest {
   }
 
   @Test
-  void everyReasonIsOneOfTheFifteenContractUrnsWithItsBoundCode() {
+  void everyReasonIsOneOfTheSixteenContractUrnsWithItsBoundCode() {
     List<String> contractReasons = ContractSchemas.constants("WriteRefusalReason");
-    assertThat(contractReasons).hasSize(15);
+    assertThat(contractReasons).hasSize(16);
     assertThat(Arrays.stream(RefusalReason.values()).map(RefusalReason::urn))
         .containsExactlyInAnyOrderElementsOf(contractReasons);
     for (RefusalReason reason : RefusalReason.values()) {

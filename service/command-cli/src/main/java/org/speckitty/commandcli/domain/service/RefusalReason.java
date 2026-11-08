@@ -1,6 +1,6 @@
 package org.speckitty.commandcli.domain.service;
 
-/** The 15 guard reasons of WriteRefusalReason, with the WriteRefusalCode each one binds to. */
+/** The 16 guard reasons of WriteRefusalReason, with the WriteRefusalCode each one binds to. */
 public enum RefusalReason {
   UNKNOWN_LANE("unknown_lane", RefusalCode.TRANSITION_REJECTED),
   ILLEGAL_TRANSITION("illegal_transition", RefusalCode.TRANSITION_REJECTED),
@@ -16,7 +16,8 @@ public enum RefusalReason {
   FORCE_NOTE_REQUIRED("force_note_required", RefusalCode.TRANSITION_REJECTED),
   DONE_EVIDENCE_INCOMPLETE("done_evidence_incomplete", RefusalCode.TRANSITION_REJECTED),
   CLAIM_HELD_BY_OTHER_ACTOR("claim_held_by_other_actor", RefusalCode.WP_ALREADY_CLAIMED),
-  START_REJECTED("start_rejected", RefusalCode.TRANSITION_REJECTED);
+  START_REJECTED("start_rejected", RefusalCode.TRANSITION_REJECTED),
+  STALE_FROM_LANE("stale_from_lane", RefusalCode.TRANSITION_REJECTED);
 
   private static final String URN_PREFIX = "urn:spec-kitty:write-refusal:";
 

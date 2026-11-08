@@ -31,7 +31,7 @@ class UnitJudgeTest {
     consulted.set(false);
     UnitInput transition = unit(Operation.TRANSITION, AuthorityFixtures.row("planned", "in_progress"));
     Refusal stale = judge.judge(transition, inProgress, NO_FACTS).orElseThrow();
-    assertThat(stale.reason()).isNull();
+    assertThat(stale.reason()).isEqualTo(RefusalReason.STALE_FROM_LANE);
     assertThat(consulted).isFalse();
   }
 
@@ -40,7 +40,7 @@ class UnitJudgeTest {
     UnitJudge judge = new UnitJudge(DependencyGate.NO_VERDICT, ClaimGate.NONE);
     UnitInput start = unit(Operation.START_IMPLEMENTATION, AuthorityFixtures.row("claimed", "in_progress"));
     Refusal refusal = judge.judge(start, AuthorityFixtures.foldTo(Lane.IN_PROGRESS), NO_FACTS).orElseThrow();
-    assertThat(refusal.reason()).isNull();
+    assertThat(refusal.reason()).isEqualTo(RefusalReason.STALE_FROM_LANE);
     assertThat(refusal.code().name()).isEqualTo("TRANSITION_REJECTED");
   }
 
@@ -73,7 +73,7 @@ class UnitJudgeTest {
     row.put("evidence", Map.of());
     UnitJudge judge = new UnitJudge(DependencyGate.NO_VERDICT, ClaimGate.NONE);
     Refusal refusal = judge.judge(unit(Operation.TRANSITION, row), AuthorityFixtures.foldTo(Lane.IN_REVIEW), NO_FACTS).orElseThrow();
-    assertThat(refusal.reason()).isNull();
+    assertThat(refusal.reason()).isEqualTo(RefusalReason.STALE_FROM_LANE);
     assertThat(refusal.message()).contains("from_lane");
   }
 

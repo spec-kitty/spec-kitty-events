@@ -2,8 +2,8 @@
   "area": "stale",
   "expected": {
     "code": "TRANSITION_REJECTED",
-    "message": null,
-    "reason": null,
+    "message": "The unit's from_lane is not the work package's current lane.",
+    "reason": "urn:spec-kitty:write-refusal:stale_from_lane",
     "result": "refusal",
     "unit": null
   },
@@ -32,7 +32,7 @@
     "mission_id": "01J00000000000000000000000",
     "mission_slug": "999-status-transition-parity"
   },
-  "notes": "FR-023 / research \u00a711 decision 5: a stale from_lane is refused without a reason URN.",
+  "notes": "FR-023 / research §11 decision 17: a stale from_lane is refused with the events-side stale_from_lane reason URN.",
   "operation": "transition",
   "oracle": "protocol",
   "request": {

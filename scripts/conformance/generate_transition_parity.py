@@ -22,6 +22,8 @@ from typing import Any, Iterable, Mapping, Sequence
 
 CORE_SHA = "512567eee71e31bb39f580c4f7acf8b865e9d1b2"
 REASON_PREFIX = "urn:spec-kitty:write-refusal:"
+STALE_FROM_LANE_REASON = REASON_PREFIX + "stale_from_lane"
+STALE_FROM_LANE_MESSAGE = "The unit's from_lane is not the work package's current lane."
 ROW_CALL_KWARGS = {
     "transition": frozenset(
         {
@@ -160,13 +162,34 @@ def diff_case_files(rendered: Mapping[str, str], case_dir: Path) -> list[str]:
 
 
 def write_case_files(rendered: Mapping[str, str], case_dir: Path) -> None:
-    """Write generated core files, removing stale core files but never protocols."""
+    """Write rendered files, removing stale core files but never unrendered protocols."""
 
     case_dir.mkdir(parents=True, exist_ok=True)
     for case_id in _existing_core_ids(case_dir) - set(rendered):
         (case_dir / f"{case_id}.json").unlink()
     for case_id, text in rendered.items():
         (case_dir / f"{case_id}.json").write_text(text, encoding="utf-8", newline="\n")
+
+
+def protocol_stale_from_lane_cases(case_dir: Path) -> dict[str, str]:
+    """Render the events-only reason overlay for protocol stale-from-lane refusals."""
+
+    rendered: dict[str, str] = {}
+    for path in sorted(case_dir.glob("*.json")):
+        document = json.loads(path.read_text(encoding="utf-8"))
+        expected = document.get("expected", {})
+        if (
+            document.get("oracle") != "protocol"
+            or expected.get("result") != "refusal"
+            or expected.get("code") != "TRANSITION_REJECTED"
+            or "stale" not in document.get("notes", "")
+        ):
+            continue
+        # Core has no equivalent reason (research §11 decision 17).
+        expected["reason"] = STALE_FROM_LANE_REASON
+        expected["message"] = STALE_FROM_LANE_MESSAGE
+        rendered[document["id"]] = _render(document)
+    return rendered
 
 
 def task_text(wp_id: str = "WP01", *, dependencies: str = '"[]"', subtasks: str = "[]") -> str:
@@ -1618,13 +1641,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         if sys.version_info[:2] != required_python:
             parser.error(f"core's locked Python {'.'.join(map(str, required_python))} is required")
         oracle = CoreOracle(checkout)
-        rendered: dict[str, str] = {}
+        core_rendered: dict[str, str] = {}
         for number, intent in enumerate(build_intents(), 1):
             try:
-                rendered[intent.case_id] = _render(oracle.generate(intent, number))
+                core_rendered[intent.case_id] = _render(oracle.generate(intent, number))
             except Exception as error:
                 raise GenerationError(f"{intent.case_id}: {error}") from error
         case_dir = CORPUS_DIR / "cases"
+        rendered = {**core_rendered, **protocol_stale_from_lane_cases(case_dir)}
         differences = diff_case_files(rendered, case_dir)
         if args.check:
             if differences:
@@ -1634,7 +1658,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             write_case_files(rendered, case_dir)
         _print_area_counts(case_dir)
         print(f"Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
-        print(f"core cases: {len(rendered)}; drift: {len(differences) if args.check else 0}")
+        print(f"core cases: {len(core_rendered)}; drift: {len(differences) if args.check else 0}")
         return 0
     except GenerationError as error:
         print(f"generation failed: {error}", file=sys.stderr)

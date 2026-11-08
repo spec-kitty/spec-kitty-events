@@ -37,7 +37,7 @@ class ReasonLedgerTest {
         ledger.put(reason.name(), (String) cause);
       }
     }
-    assertThat(ledger).hasSize(15);
+    assertThat(ledger).hasSize(16);
     ledger.forEach((reason, explanation) -> System.out.printf("reason %s -> %s%n", reason, explanation));
   }
 

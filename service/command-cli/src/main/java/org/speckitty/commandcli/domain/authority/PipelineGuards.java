@@ -3,7 +3,6 @@ package org.speckitty.commandcli.domain.authority;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.speckitty.commandcli.domain.service.RefusalCode;
 import org.speckitty.commandcli.domain.service.RefusalReason;
 import org.speckitty.missionstatus.domain.model.Lane;
 import org.speckitty.missionstatus.domain.model.PyText;
@@ -27,7 +26,7 @@ public final class PipelineGuards {
 
   public static Optional<Refusal> staleFromLane(Lane actual, Lane rowFrom) {
     if (actual != rowFrom && !(actual == Lane.UNINITIALIZED && rowFrom == Lane.GENESIS)) {
-      return Optional.of(Refusal.protocol(RefusalCode.TRANSITION_REJECTED, STALE_MESSAGE));
+      return Optional.of(Refusal.of(RefusalReason.STALE_FROM_LANE, STALE_MESSAGE));
     }
     return Optional.empty();
   }

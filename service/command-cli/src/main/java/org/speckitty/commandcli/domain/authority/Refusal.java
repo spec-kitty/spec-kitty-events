@@ -8,8 +8,4 @@ public record Refusal(RefusalCode code, RefusalReason reason, String message, St
   public static Refusal of(RefusalReason reason, String message) {
     return new Refusal(reason.code(), reason, message, DetailPolicy.detail(reason, message), null);
   }
-
-  public static Refusal protocol(RefusalCode code, String message) {
-    return new Refusal(code, null, message, message, null);
-  }
 }
