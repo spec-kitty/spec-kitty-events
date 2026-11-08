@@ -161,7 +161,11 @@ them in this order:
 - Writes are LF-only on every OS; a CR before the LF is tolerated on read. A log holding a raw U+0085,
   U+2028, U+2029, VT, FF, FS, GS or RS is unreducible (`500`), because core's row splitter
   would break on it. JSON nesting is capped at 256 and integers at 4300 digits; floats are
-  unbounded, as in Python.
+  unbounded, as in Python. The request parser takes the same limits, set on its own token factory
+  (not a JVM-wide default), so the edge and the log reader agree. Before any append the service decodes
+  the encoded rows with the log's codec and folds the log plus the new rows with the fold the next
+  write uses; a row that fails either is `400 REQUEST_MALFORMED` (naming the unit of a batch) and
+  nothing is written, so an acknowledged row can always be read back.
 
 ### Idempotency
 
@@ -259,6 +263,7 @@ described above; this table is the compact list (R15–R31).
 | Log | torn tail refused, never repaired; LF-only writes, a CR before the LF tolerated on read | C-006, decision 10, [#222](https://github.com/spec-kitty/spec-kitty-events/issues/222) |
 | Log | a raw U+0085/U+2028/U+2029/VT/FF/FS/GS/RS makes the log unreducible (`500`) | R24, [core #7439](https://github.com/spec-kitty/spec-kitty/issues/7439) |
 | Log | JSON nesting capped at 256, integers at 4300 digits, floats unbounded | decision 16, [core #7439](https://github.com/spec-kitty/spec-kitty/issues/7439) |
+| Request | a row the log reader or fold cannot read back (nesting over 256, a structured actor core's `decode_actor` refuses) is `REQUEST_MALFORMED`; an unexpected failure is `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`, never a Problem without a code | PR #230 squad |
 | Request | a non-finite number, or a mixed naive/aware session pair, is `REQUEST_MALFORMED` | decision 9, [core #7440](https://github.com/spec-kitty/spec-kitty/issues/7440), [#7441](https://github.com/spec-kitty/spec-kitty/issues/7441) |
 | Request | a stale `from_lane` is `TRANSITION_REJECTED` + `stale_from_lane` | decision 17 |
 | Location | a coordination-routed Mission answers `422` | R16 |

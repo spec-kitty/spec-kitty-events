@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.speckitty.commandcli.domain.authority.Actors;
 import org.speckitty.missionstatus.domain.model.Lane;
 import org.speckitty.missionstatus.domain.model.PyIsoDateTime;
 import org.speckitty.missionstatus.domain.model.PyText;
@@ -26,7 +27,7 @@ final class RowRules {
    */
   static Optional<WriteBodies.Malformed> transition(JsonNode row) {
     if (row.has("kind") || !row.path("from_lane").isString() || !row.path("to_lane").isString() || !validActor(row.get("actor"))) {
-      return bad("A unit's first row must be a transition with no kind, string from_lane and to_lane, and a non-empty string or object actor.");
+      return bad("A unit's first row must be a transition with no kind, string from_lane and to_lane, and a non-empty string actor or a structured actor the status log can read back.");
     }
     if (!canonical(row.get("from_lane")) || !canonical(row.get("to_lane"))) {
       return bad("A transition row's lanes must use canonical persisted spellings without aliases.");
@@ -58,7 +59,8 @@ final class RowRules {
   }
 
   private static boolean validActor(JsonNode actor) {
-    return actor != null && (actor.isObject() || (actor.isString() && !actor.asString().isEmpty()));
+    if (actor == null) return false;
+    return actor.isObject() ? Actors.decodable(WriteBodies.jsonValue(actor)) : actor.isString() && !actor.asString().isEmpty();
   }
 
   private static boolean canonical(JsonNode lane) {

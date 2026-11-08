@@ -25,6 +25,7 @@ import org.speckitty.commandcli.domain.service.RefusalReason;
 /** The complete FR-026 write check order behind Mission, log and codec ports. */
 public final class WriteService {
   private static final String REF_COMMIT_DETAIL = "coordination_ref_commit is unavailable until migration step 4.";
+  private static final String UNREADABLE_DETAIL = "A row cannot be read back from the status event log, so it is refused and nothing was written.";
   private static final String PERSISTENCE_DETAIL = "The status event log could not be verified or persisted; nothing was acknowledged.";
 
   private final MissionCatalog missions;
@@ -50,7 +51,20 @@ public final class WriteService {
     return budget;
   }
 
+  /**
+   * Never answers with anything but a coded outcome: an unexpected failure anywhere on the write path is a persistence-verification
+   * refusal with a fixed detail. The turn and the Mission lock are released by their try-with-resources before it is mapped, and a
+   * row is appended only by the last step, so nothing a failed request did is left behind.
+   */
   public WriteOutcome write(WriteRequest request) {
+    try {
+      return checkedWrite(request);
+    } catch (RuntimeException unexpected) {
+      return refused(RefusalCode.STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED, PERSISTENCE_DETAIL, null);
+    }
+  }
+
+  private WriteOutcome checkedWrite(WriteRequest request) {
     WriteOutcome refusal = validateRows(request);
     if (refusal != null) return refusal;
     if ("coordination_ref_commit".equals(request.context().writeSurface())) {
@@ -142,19 +156,40 @@ public final class WriteService {
     }
     List<ReplayClassifier.Unit> units = ((ReplayClassifier.Classified) replay).units();
     List<ReplayClassifier.Unit> newUnits = units.stream().filter(unit -> !unit.replayed()).toList();
-    Judgement judgement = authority.judge(log.values(), newUnits.stream().map(unit -> input(unit.request())).toList(),
-        request.kind() == WriteRequest.Kind.BATCH, facts);
+    Judgement judgement;
+    try {
+      judgement = authority.judge(log.values(), newUnits.stream().map(unit -> input(unit.request())).toList(),
+          request.kind() == WriteRequest.Kind.BATCH, facts);
+    } catch (UnreducibleLog exception) {
+      return unjudgeable(request, log, newUnits);
+    }
     if (judgement instanceof Judgement.Refused refused) return authorityRefusal(request, newUnits, refused.refusal());
+    int unreadable = AppendVerifier.firstUnreadable(codec, log, newUnits);
+    if (unreadable >= 0) return unreadableRefusal(request, newUnits, unreadable);
     appendNewUnits(session, newUnits);
     return acknowledged(request, units);
   }
 
+  /** The authority re-folded the log with the new units and could not: a new unit is to blame, else the log itself. */
+  private WriteOutcome unjudgeable(WriteRequest request, RowCodec.DecodedLog log, List<ReplayClassifier.Unit> newUnits) {
+    int unreadable = AppendVerifier.firstUnreadable(codec, log, newUnits);
+    if (unreadable >= 0) return unreadableRefusal(request, newUnits, unreadable);
+    return refused(RefusalCode.STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED, PERSISTENCE_DETAIL, null);
+  }
+
+  /** The client's row is one the service cannot accept: it would not read back from the log, so nothing is written. */
+  private static WriteOutcome unreadableRefusal(WriteRequest request, List<ReplayClassifier.Unit> newUnits, int position) {
+    return refused(RefusalCode.REQUEST_MALFORMED, UNREADABLE_DETAIL, unitIndex(request, newUnits, position));
+  }
+
   private WriteOutcome authorityRefusal(WriteRequest request, List<ReplayClassifier.Unit> newUnits, Refusal refusal) {
-    Integer index = null;
-    if (request.kind() == WriteRequest.Kind.BATCH && refusal.unitIndex() != null) {
-      index = newUnits.get(refusal.unitIndex()).index();
-    }
+    Integer index = refusal.unitIndex() == null ? null : unitIndex(request, newUnits, refusal.unitIndex());
     return new WriteOutcome.Refused(refusal.code(), refusal.reason(), refusal.detail(), index);
+  }
+
+  /** The request position of a new unit, which only a batch names. */
+  private static Integer unitIndex(WriteRequest request, List<ReplayClassifier.Unit> newUnits, int position) {
+    return request.kind() == WriteRequest.Kind.BATCH ? newUnits.get(position).index() : null;
   }
 
   private static void appendNewUnits(StatusLog.Session session, List<ReplayClassifier.Unit> newUnits) {

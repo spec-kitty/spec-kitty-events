@@ -8,6 +8,7 @@ import java.util.Set;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
+import tools.jackson.core.StreamReadConstraints;
 import tools.jackson.core.json.JsonFactory;
 import tools.jackson.core.json.JsonReadFeature;
 
@@ -33,10 +34,37 @@ final class PythonJson {
     }
   }
 
-  private static final JsonFactory FACTORY = JsonFactory.builder().enable(JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS).build();
+  /** A fixed resource bound below any depth core's stack accepts; core's own limit depends on the caller's stack. */
+  static final int MAX_NESTING_DEPTH = 256;
+  /** CPython's integer-conversion limit; it does not apply to floats. */
+  static final int MAX_INTEGER_DIGITS = 4300;
+
+  private static final StreamReadConstraints CONSTRAINTS = new PythonConstraints();
+  private static final JsonFactory FACTORY =
+      JsonFactory.builder().streamReadConstraints(CONSTRAINTS).enable(JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS).build();
   private static final Set<String> NON_NUMERIC_SPELLINGS = Set.of("NaN", "Infinity", "-Infinity");
 
   private PythonJson() {}
+
+  /** The parse limits of this reader, for any other parser that must accept and refuse exactly what it does. */
+  static StreamReadConstraints constraints() {
+    return CONSTRAINTS;
+  }
+
+  /** Nesting capped at {@link #MAX_NESTING_DEPTH}, integers at {@link #MAX_INTEGER_DIGITS} digits, floats unbounded as in Python. */
+  private static final class PythonConstraints extends StreamReadConstraints {
+    private static final long serialVersionUID = 1L;
+
+    private PythonConstraints() {
+      super(MAX_NESTING_DEPTH, defaults().getMaxDocumentLength(), defaults().getMaxTokenCount(), MAX_INTEGER_DIGITS,
+          defaults().getMaxStringLength(), defaults().getMaxNameLength());
+    }
+
+    @Override
+    public void validateFPLength(int length) {
+      // Deliberately unbounded, like Python's float parser.
+    }
+  }
 
   /** Parses one document. Whitespace around it is the caller's business (Python strips the line first). */
   static Object parse(String text) {

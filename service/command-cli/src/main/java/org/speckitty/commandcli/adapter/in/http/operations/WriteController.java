@@ -19,6 +19,9 @@ import tools.jackson.databind.json.JsonMapper;
 /** The unchanged write edge, followed by typed shape validation and the authoritative write service. */
 @RestController
 class WriteController {
+  /** Fixed, and never the message of the failure: no write answers a Problem without a contract code, or with a value of the request. */
+  private static final String UNEXPECTED_DETAIL = "The write failed unexpectedly; nothing was acknowledged.";
+
   private final ServiceLifecycle lifecycle;
   private final WriteService writes;
   private final WriteBodies bodies;
@@ -50,6 +53,14 @@ class WriteController {
   }
 
   private ResponseEntity<byte[]> write(String missionId, Supplier<WriteBodies.Parsed> shape) {
+    try {
+      return checkedWrite(missionId, shape);
+    } catch (RuntimeException unexpected) {
+      return refuse(RefusalBody.of(RefusalCode.STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED, UNEXPECTED_DETAIL));
+    }
+  }
+
+  private ResponseEntity<byte[]> checkedWrite(String missionId, Supplier<WriteBodies.Parsed> shape) {
     if (lifecycle.draining()) return refuse(RefusalBody.of(RefusalCode.SERVICE_DRAINING));
     var invalidMission = bodies.missionId(missionId);
     if (invalidMission.isPresent()) return malformed(invalidMission.orElseThrow());
