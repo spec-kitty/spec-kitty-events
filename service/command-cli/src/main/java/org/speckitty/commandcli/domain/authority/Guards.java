@@ -28,14 +28,17 @@ public final class Guards {
   }
 
   public static GuardContext context(Map<String, Object> row, FoldView state,
-      Function<String, List<String>> roster, Boolean dependencyReady) {
+      Function<String, SubtaskRoster> roster, Boolean dependencyReady) {
     WpWriteState wp = state.of(String.valueOf(row.get("wp_id")));
     Lane from = Lane.fromWire(String.valueOf(row.get("from_lane")));
     Lane to = Lane.fromWire(String.valueOf(row.get("to_lane")));
     boolean force = Boolean.TRUE.equals(row.get("force"));
     Boolean subtasks = null;
     if (!force && from == Lane.IN_PROGRESS && to == Lane.FOR_REVIEW) {
-      subtasks = complete(roster.apply(String.valueOf(row.get("wp_id"))), wp.subtaskState());
+      subtasks = switch (roster.apply(String.valueOf(row.get("wp_id")))) {
+        case SubtaskRoster.Resolved resolved -> complete(resolved.ids(), wp.subtaskState());
+        case SubtaskRoster.Unresolvable unresolvable -> false;
+      };
     }
     Boolean evidence = from == Lane.IN_PROGRESS && to == Lane.FOR_REVIEW ? wp.hasTransitions() : null;
     String executionMode = String.valueOf(row.getOrDefault("execution_mode", "worktree"));

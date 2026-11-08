@@ -28,22 +28,6 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-12T13:46:44+00:00",
-      "event_id": "01JFFFFFFFFFFFFFFFFFFFFFF1",
-      "evidence": null,
-      "execution_mode": "worktree",
-      "force": false,
-      "from_lane": "planned",
-      "mission_id": "01J00000000000000000000000",
-      "mission_slug": "999-status-transition-parity",
-      "policy_metadata": null,
-      "reason": null,
-      "review_ref": null,
-      "to_lane": "claimed",
-      "wp_id": "WP01"
-    },
-    {
-      "actor": "implementer-a",
       "at": "2026-01-12T13:46:46+00:00",
       "event_id": "000000000000000000000F4245",
       "evidence": null,

@@ -197,7 +197,7 @@ tasks.named<NativeRunTask>("nativeTest") {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------
-// JaCoCo: the read service's three rules over this module's domain.* and application.*, with the scope guard
+// JaCoCo: four coverage rules over this module's domain.* and application.*, plus complexity and the scope guard
 // ---------------------------------------------------------------------------------------------------------------------------
 
 val coverageClassDirectories = files(sourceSets.main.get().output.classesDirs)
@@ -232,14 +232,22 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
             }
         }
         rule {
+            element = "CLASS"
+            includes = listOf("org.speckitty.commandcli.domain.*")
+            limit {
+                counter = "BRANCH"
+                minimum = "0.80".toBigDecimal()
+            }
+        }
+        rule {
             element = "METHOD"
             includes = listOf(
                 "org.speckitty.commandcli.domain.authority.*",
                 "org.speckitty.commandcli.application.write.*",
                 "org.speckitty.commandcli.adapter.out.mission.*",
                 "org.speckitty.commandcli.adapter.out.statuslog.*",
-                "org.speckitty.commandcli.adapter.in.http.operations.WriteBodies",
-                "org.speckitty.commandcli.adapter.in.http.operations.AckBody",
+                "org.speckitty.commandcli.adapter.in.http.operations.WriteBodies*",
+                "org.speckitty.commandcli.adapter.in.http.operations.AckBody*",
             )
             limit {
                 counter = "COMPLEXITY"

@@ -53,6 +53,19 @@ class WriteServiceTest {
     assertRefusal(outcome, RefusalCode.WRITE_LOCATION_UNVERIFIED, null);
     assertThat(((WriteOutcome.Refused) outcome).detail()).contains("migration step 4");
     assertThat(ports.missions.findCalls).isZero();
+    assertThat(ports.missions.locationCalls).isZero();
+  }
+
+  @Test
+  void malformedRowStillPrecedesCoordinationSurface() {
+    Ports ports = new Ports();
+    Map<String, Object> row = row("01J6XW9KQT7M0YB3N4R5CQZ2EY", "WP01", "planned", "claimed", "actor");
+    row.put("n", Double.NaN);
+    WriteOutcome outcome = ports.service().write(new WriteRequest(MISSION, WriteRequest.Kind.UNIT, List.of(unit(row)),
+        context("coordination_ref_commit")));
+    assertRefusal(outcome, RefusalCode.REQUEST_MALFORMED, null);
+    assertThat(ports.missions.findCalls).isZero();
+    assertThat(ports.missions.locationCalls).isZero();
   }
 
   @Test
@@ -77,6 +90,28 @@ class WriteServiceTest {
     wp.missions.wpExists = false;
     assertRefusal(wp.service().write(validRequest()), RefusalCode.WP_NOT_FOUND, null);
     assertThat(wp.log.calls).isZero();
+  }
+
+  @Test
+  void locationMismatchPrecedesUnknownWorkPackageAndCountsOneLocationCheck() {
+    Ports ports = new Ports();
+    ports.missions.location = false;
+    ports.missions.wpExists = false;
+    assertRefusal(ports.service().write(validRequest()), RefusalCode.WRITE_LOCATION_UNVERIFIED, null);
+    assertThat(ports.missions.locationCalls).isOne();
+    assertThat(ports.missions.wpCalls).isZero();
+  }
+
+  @Test
+  void unknownWorkPackagePrecedesDuplicateRequestIds() {
+    Ports ports = new Ports();
+    ports.missions.wpExists = false;
+    Map<String, Object> repeated = row("01J6XW9KQT7M0YB3N4R5CQZ2EY", "WP01", "planned", "claimed", "actor");
+    WriteRequest request = new WriteRequest(MISSION, WriteRequest.Kind.BATCH, List.of(unit(repeated), unit(repeated)),
+        context("checkout_append"));
+    assertRefusal(ports.service().write(request), RefusalCode.WP_NOT_FOUND, 0);
+    assertThat(ports.missions.locationCalls).isOne();
+    assertThat(ports.log.calls).isZero();
   }
 
   @Test
@@ -275,15 +310,21 @@ class WriteServiceTest {
     boolean location = true;
     boolean wpExists = true;
     int findCalls;
+    int locationCalls;
     int wpCalls;
 
     @Override public FindResult find(String missionId) { findCalls++; return found; }
-    @Override public boolean locationMatches(MissionRef mission, String checkout, String directory, String destination) { return location; }
+    @Override public boolean locationMatches(MissionRef mission, String checkout, String directory, String destination) {
+      locationCalls++;
+      return location;
+    }
     @Override public boolean wpExists(MissionRef mission, String wpId) { wpCalls++; return wpExists; }
     @Override public MissionFacts facts(MissionRef mission) {
       return new MissionFacts() {
         @Override public DependencyDeclaration dependencies(String wpId) { return new DependencyDeclaration.None(); }
-        @Override public List<String> subtaskRoster(String wpId) { return List.of(); }
+        @Override public org.speckitty.commandcli.domain.authority.SubtaskRoster subtaskRoster(String wpId) {
+          return new org.speckitty.commandcli.domain.authority.SubtaskRoster.Resolved(List.of());
+        }
       };
     }
   }

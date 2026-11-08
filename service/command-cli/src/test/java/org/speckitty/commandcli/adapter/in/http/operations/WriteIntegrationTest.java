@@ -265,6 +265,18 @@ class WriteIntegrationTest {
   }
 
   @Test
+  void us4CoordinationRoutedMissionRefusesCheckoutAppendBeforeAnyLock() throws Exception {
+    try (WriteRig rig = WriteRig.start()) {
+      Files.writeString(rig.missionDirectory.resolve("meta.json"),
+          "{\"mission_id\":\"" + WriteRig.MISSION + "\",\"coordination_branch\":\"kitty/mission-status\"}\n");
+      String before = treeHash(rig.repository);
+      RawClient.Reply reply = rig.post("unit", WriteRig.unit(WriteRig.claimRow(ID1)));
+      assertRefusal(reply, 422, "WRITE_LOCATION_UNVERIFIED", null);
+      assertThat(treeHash(rig.repository)).isEqualTo(before);
+    }
+  }
+
+  @Test
   void us5AnnotationsAreByteExactReplayAndUnknownWpIs404() throws Exception {
     try (WriteRig rig = WriteRig.start()) {
       String body = WriteRig.annotation("WP01", WriteRig.annotationRow(ID1, "WP01", "note"));

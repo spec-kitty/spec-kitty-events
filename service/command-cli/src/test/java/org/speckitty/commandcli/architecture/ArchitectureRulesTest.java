@@ -44,7 +44,9 @@ class ArchitectureRulesTest {
             .domainModels(ROOT + ".domain..")
             .applicationServices(ROOT + ".application..")
             .adapter("http", ROOT + ".adapter.in.http..")
-            .adapter("filesystem", ROOT + ".adapter.out..")
+            .adapter("filesystem", ROOT + ".adapter.out.filesystem..")
+            .adapter("mission", ROOT + ".adapter.out.mission..")
+            .adapter("statuslog", ROOT + ".adapter.out.statuslog..")
             .ignoreDependency(
                 com.tngtech.archunit.base.DescribedPredicate.describe("configuration", c -> c.getPackageName().startsWith(ROOT + ".config")),
                 com.tngtech.archunit.base.DescribedPredicate.alwaysTrue())
@@ -72,6 +74,18 @@ class ArchitectureRulesTest {
         .should()
         .dependOnClassesThat()
         .resideInAnyPackage("org.springframework.web..", "jakarta.servlet..", "tools.jackson..", "java.nio.file..", "java.nio.channels..")
+        .allowEmptyShould(true)
+        .check(main);
+  }
+
+  @Test
+  void theApplicationDoesNotDependOnTheReadServiceOrSharedEventImplementation() {
+    noClasses()
+        .that()
+        .resideInAPackage(ROOT + ".application..")
+        .should()
+        .dependOnClassesThat()
+        .resideInAPackage("org.speckitty.missionstatus..")
         .allowEmptyShould(true)
         .check(main);
   }

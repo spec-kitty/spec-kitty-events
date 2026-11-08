@@ -13,6 +13,7 @@ import org.speckitty.commandcli.domain.authority.Judgement;
 import org.speckitty.commandcli.domain.authority.LogLine;
 import org.speckitty.commandcli.domain.authority.MissionFacts;
 import org.speckitty.commandcli.domain.authority.Refusal;
+import org.speckitty.commandcli.domain.authority.SubtaskRoster;
 import org.speckitty.commandcli.domain.authority.UnitInput;
 import org.speckitty.commandcli.domain.authority.Operation;
 import org.speckitty.commandcli.domain.service.RefusalReason;
@@ -64,7 +65,7 @@ class BatchJudgeTest {
     List<LogLine> claimed = log(seed("WP01"), row("WP01", "planned", "claimed", 2));
     MissionFacts roster = new MissionFacts() {
       public DependencyDeclaration dependencies(String wpId) { return new DependencyDeclaration.None(); }
-      public List<String> subtaskRoster(String wpId) { return List.of("T001"); }
+      public SubtaskRoster subtaskRoster(String wpId) { return new SubtaskRoster.Resolved(List.of("T001")); }
     };
     Map<String, Object> annotation = annotation(4, Map.of("subtasks", Map.of("T001", "done")));
     UnitInput withAnnotation = new UnitInput("WP01", Operation.TRANSITION, List.of(implement.transitionRow(), annotation));
@@ -90,7 +91,7 @@ class BatchJudgeTest {
   private static MissionFacts facts(Map<String, DependencyDeclaration> declarations) {
     return new MissionFacts() {
       public DependencyDeclaration dependencies(String wpId) { return declarations.getOrDefault(wpId, new DependencyDeclaration.None()); }
-      public List<String> subtaskRoster(String wpId) { return List.of(); }
+      public SubtaskRoster subtaskRoster(String wpId) { return new SubtaskRoster.Resolved(List.of()); }
     };
   }
 

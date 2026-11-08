@@ -348,6 +348,13 @@ def _legal_edge_intents() -> list[Intent]:
 def _guard_intents() -> list[Intent]:
     incomplete_tasks = default_tasks()
     incomplete_tasks["WP01.md"] = task_text(subtasks="[T001]")
+    nonstring_tasks = default_tasks()
+    nonstring_tasks["WP01.md"] = task_text(subtasks="[1, 1.10]")
+    padded_tasks = default_tasks()
+    padded_tasks["WP01.md"] = task_text(subtasks='[" T001 "]')
+    nonmd_tasks = default_tasks()
+    nonmd_tasks["WP01.md"] = task_text(subtasks="[T001]")
+    nonmd_tasks["WP01.md.orig"] = task_text(subtasks="[]")
     malformed_done = [
         ("missing-review", "in_progress", "done", {}),
         (
@@ -425,6 +432,27 @@ def _guard_intents() -> list[Intent]:
             path_to("in_progress"),
             tr("for_review"),
             tasks=incomplete_tasks,
+        ),
+        _intent(
+            "guard-subtasks-roster-nonstring-ids",
+            "guard",
+            path_to("in_progress"),
+            tr("for_review"),
+            tasks=nonstring_tasks,
+        ),
+        _intent(
+            "guard-subtasks-roster-padded-id-complete",
+            "guard",
+            (*path_to("in_progress"), ann({"subtasks": {"T001": "done"}})),
+            tr("for_review"),
+            tasks=padded_tasks,
+        ),
+        _intent(
+            "guard-subtasks-roster-nonmd-sibling",
+            "guard",
+            path_to("in_progress"),
+            tr("for_review"),
+            tasks=nonmd_tasks,
         ),
         _intent(
             "guard-reason-required", "guard", path_to("in_progress"), tr("planned", reason="  ")
@@ -527,6 +555,19 @@ def _dependency_intents() -> list[Intent]:
     malformed_tasks["WP02.md"] = task_text("WP02", dependencies="{bad: WP01}")
     unreadable_tasks = dict(dep_tasks)
     unreadable_tasks["WP02.md"] = "---\nwork_package_id: WP02\ndependencies: [WP01]\n"
+    frontmatter_tasks = {
+        name: dict(dep_tasks)
+        for name in ("bom", "cr-only", "fence-trailing-space", "empty", "duplicate-key")
+    }
+    frontmatter_tasks["bom"]["WP02.md"] = "\ufeff" + dep_tasks["WP02.md"]
+    frontmatter_tasks["cr-only"]["WP02.md"] = dep_tasks["WP02.md"].replace("\n", "\r")
+    frontmatter_tasks["fence-trailing-space"]["WP02.md"] = dep_tasks["WP02.md"].replace(
+        "\n---\n", "\n---  \n"
+    )
+    frontmatter_tasks["empty"]["WP02.md"] = "---\n---\n# empty frontmatter\n"
+    frontmatter_tasks["duplicate-key"]["WP02.md"] = (
+        "---\nwork_package_id: WP02\ndependencies: [WP01]\ndependencies: []\nsubtasks: []\n---\n"
+    )
     start_refused_tasks = default_tasks()
     start_refused_tasks["WP01.md"] = task_text("WP01", dependencies="[WP99]")
     synthetic_setup = (
@@ -614,6 +655,23 @@ def _dependency_intents() -> list[Intent]:
             setup,
             tr("blocked", wp_id="WP02"),
             tasks=dep_tasks,
+        ),
+        *[
+            _intent(
+                f"dependency-frontmatter-{name}",
+                "dependency",
+                (*path_to("done"), *path_to("planned", wp_id="WP02")),
+                tr("claimed", wp_id="WP02"),
+                tasks=frontmatter_tasks[name],
+            )
+            for name in ("bom", "cr-only", "fence-trailing-space", "empty")
+        ],
+        _intent(
+            "dependency-frontmatter-duplicate-key",
+            "dependency",
+            path_to("planned", wp_id="WP02"),
+            tr("claimed", wp_id="WP02"),
+            tasks=frontmatter_tasks["duplicate-key"],
         ),
     ]
     for satisfied in ("approved", "done"):
@@ -1127,6 +1185,20 @@ def build_intents() -> tuple[Intent, ...]:
         + _retrospective_fold_intents()
         + _lifecycle_force_intents()
         + _review_fix_intents()
+    )
+    review_additions = {
+        "guard-subtasks-roster-nonstring-ids",
+        "guard-subtasks-roster-padded-id-complete",
+        "guard-subtasks-roster-nonmd-sibling",
+        "dependency-frontmatter-bom",
+        "dependency-frontmatter-cr-only",
+        "dependency-frontmatter-fence-trailing-space",
+        "dependency-frontmatter-empty",
+        "dependency-frontmatter-duplicate-key",
+    }
+    # Keep the deterministic case numbers of every pre-existing core case stable.
+    intents = tuple(intent for intent in intents if intent.case_id not in review_additions) + tuple(
+        intent for intent in intents if intent.case_id in review_additions
     )
     ids = [intent.case_id for intent in intents]
     if len(ids) != len(set(ids)):

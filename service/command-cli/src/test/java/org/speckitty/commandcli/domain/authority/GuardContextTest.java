@@ -33,9 +33,10 @@ class GuardContextTest {
   void rosterMustAllBeDoneOrSkipped() {
     var row = AuthorityFixtures.row("in_progress", "for_review");
     var state = AuthorityFixtures.foldTo(org.speckitty.missionstatus.domain.model.Lane.IN_PROGRESS);
-    assertThat(Guards.context(row, state, wp -> List.of(), null).subtasksComplete()).isTrue();
-    assertThat(Guards.context(row, state, wp -> List.of("T001"), null).subtasksComplete()).isFalse();
-    assertThat(Guards.context(row, state, wp -> List.of("T001"), null).implementationEvidencePresent()).isTrue();
-    assertThat(Guards.context(row, state, wp -> List.of("T001"), null).dependencyReady()).isNull();
+    assertThat(Guards.context(row, state, wp -> new SubtaskRoster.Resolved(List.of()), null).subtasksComplete()).isTrue();
+    assertThat(Guards.context(row, state, wp -> new SubtaskRoster.Resolved(List.of("T001")), null).subtasksComplete()).isFalse();
+    assertThat(Guards.context(row, state, wp -> new SubtaskRoster.Resolved(List.of("T001")), null).implementationEvidencePresent()).isTrue();
+    assertThat(Guards.context(row, state, wp -> new SubtaskRoster.Resolved(List.of("T001")), null).dependencyReady()).isNull();
+    assertThat(Guards.context(row, state, wp -> new SubtaskRoster.Unresolvable(), null).subtasksComplete()).isFalse();
   }
 }

@@ -14,7 +14,7 @@ import org.speckitty.missionstatus.domain.model.Lane;
 class UnitJudgeTest {
   private static final MissionFacts NO_FACTS = new MissionFacts() {
     public DependencyDeclaration dependencies(String wpId) { return new DependencyDeclaration.None(); }
-    public List<String> subtaskRoster(String wpId) { return List.of(); }
+    public SubtaskRoster subtaskRoster(String wpId) { return new SubtaskRoster.Resolved(List.of()); }
   };
 
   @Test
@@ -92,7 +92,7 @@ class UnitJudgeTest {
   void dependenciesFeedTriStateContextAndSubtasksComeFromRoster() {
     MissionFacts roster = new MissionFacts() {
       public DependencyDeclaration dependencies(String wpId) { return new DependencyDeclaration.None(); }
-      public List<String> subtaskRoster(String wpId) { return List.of("T001"); }
+      public SubtaskRoster subtaskRoster(String wpId) { return new SubtaskRoster.Resolved(List.of("T001")); }
     };
     Map<String, Object> row = AuthorityFixtures.row("in_progress", "for_review");
     UnitJudge judge = new UnitJudge((wpId, from, to, state, facts) -> false, ClaimGate.NONE);
