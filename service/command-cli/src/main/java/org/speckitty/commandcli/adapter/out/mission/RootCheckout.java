@@ -1,6 +1,7 @@
 package org.speckitty.commandcli.adapter.out.mission;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
@@ -44,7 +45,8 @@ public final class RootCheckout {
     boolean sawCore = false;
     boolean inCore = false;
     boolean bare = false;
-    for (String line : Files.readAllLines(config)) {
+    // Latin-1 maps every byte, so a config in any encoding reads; only ASCII keys and values are interpreted.
+    for (String line : Files.readAllLines(config, StandardCharsets.ISO_8859_1)) {
       String text = line.strip();
       Matcher section = SECTION.matcher(text);
       if (section.matches()) {

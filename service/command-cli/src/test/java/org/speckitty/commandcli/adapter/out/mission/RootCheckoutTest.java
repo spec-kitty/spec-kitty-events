@@ -42,6 +42,7 @@ class RootCheckoutTest {
     cases.put("[core.sub]\n\tbare = true\n[core]\n\tbare = false\n", true);
     cases.put("[core]\n\tbare = false\n[other]\n\tbare = true\n", true);
     cases.put("[core]\n\tbare = maybe\n", false);
+    cases.put("[user]\n\tname = Jos\u00e9\n[core]\n\tbare = false\n", true); // written as Latin-1: not UTF-8
     for (String spelling : new String[] {"true", "yes", "on", "1", "2", "-1", "1k", "TRUE", "Yes", "ON"}) {
       cases.put("[core]\n\tbare = " + spelling + "\n", false);
     }
@@ -58,7 +59,7 @@ class RootCheckoutTest {
       try {
         Path gcd = host.resolve(".git");
         Files.createDirectories(gcd);
-        Files.writeString(gcd.resolve("config"), expected.getKey(), StandardCharsets.UTF_8);
+        Files.write(gcd.resolve("config"), expected.getKey().getBytes(StandardCharsets.ISO_8859_1));
         assertThat(RootCheckout.of(gcd).root().isPresent()).as(expected.getKey()).isEqualTo(expected.getValue());
         String git = gitBoolean(gcd.resolve("config"));
         if (git != null) {
