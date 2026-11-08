@@ -339,7 +339,7 @@ def protocol_r15_cases(core_rendered: Mapping[str, str]) -> dict[str, str]:
                     'dependencies: "[]"',
                     "description: |\n \n  x\ndependencies: []",
                 ),
-                                "R23: a block scalar whose first line is only spaces is unresolvable; the roster "
+                "R23: a block scalar whose first line is only spaces is unresolvable; the roster "
                 "fails closed (ruamel refuses only a subset of these, spec-kitty/spec-kitty#7444).",
             ),
             roster_case(
