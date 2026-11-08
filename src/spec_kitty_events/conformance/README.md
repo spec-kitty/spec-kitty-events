@@ -7,8 +7,8 @@ fixture's outcome matches its declared expectation.
 
 ## Eight-class taxonomy
 
-The conformance suite is organized into **eight named classes**, defined in
-[contracts/conformance-fixture-classes.md](../../../../kitty-specs/teamspace-event-contract-foundation-01KQHDE4/contracts/conformance-fixture-classes.md).
+The conformance suite is organized into **eight named classes**, defined by
+the eight-class table below.
 Every class must have at least one fixture; the conformance class assertion
 test fails CI if any class has zero fixtures.
 

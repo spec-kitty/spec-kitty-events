@@ -11,7 +11,7 @@ section: Breaking
     `COORDINATION_WORKTREE_UNMATERIALIZED`; added `COORDINATION_REF_MOVED`,
     `COORDINATION_REF_CHECKED_OUT` and `COORDINATION_LEDGER_UNREADABLE`.
   - `command-cli` accepts `coordination_ref_commit` as a well-formed surface and refuses the
-    retired value as malformed; writes stay fail-closed until migration step 4.
+    retired value as malformed; `coordination_ref_commit` stays refused until migration step 4.
   - Core follows when it moves its pin past `service-v0.1.0-rc.2`.
   - `contracts/README.md` records the pre-final-release line `1.0.Z`, and
     `contracts/tools/breaking_check.py` accepts `1.0.Z[-SNAPSHOT]` with its CHANGELOG heading

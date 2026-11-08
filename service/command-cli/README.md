@@ -119,8 +119,8 @@ them in this order:
 2. **Surface.** `coordination_ref_commit` answers `422 WRITE_LOCATION_UNVERIFIED` here, before
    any Mission lookup (ADR-0007 D-4; migration step 4 serves it).
 3. **Mission.** A root checkout the service cannot verify answers `422
-   WRITE_LOCATION_UNVERIFIED`; no `meta.json` with this `mission_id` answers `404
-   MISSION_NOT_FOUND`.
+   WRITE_LOCATION_UNVERIFIED`; no `meta.json` with this `mission_id`, or more than one, answers
+   `404 MISSION_NOT_FOUND`.
 4. **Location.** `422 WRITE_LOCATION_UNVERIFIED` unless `checkout` is `.`, `destinationRef` is
    null, `missionDirectory` resolves to the Mission's own directory under the verified root, and
    the Mission is not coordination-routed. A separate-git-dir or submodule repository has no
@@ -154,9 +154,10 @@ them in this order:
   [#222](https://github.com/spec-kitty/spec-kitty-events/issues/222).
 - All new rows — one unit or a whole batch — go out in one `O_APPEND` write of complete JSON
   lines, then `force()`. When the log did not exist, its parent directory is synced too.
-- If the write, the sync or the size re-check fails, the log is truncated back to the size it
+- If the write or the sync fails (a short write included), the log is truncated back to the size it
   had before the write and forced, then the answer is `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`.
-  One session permits one append.
+  If the log's size is not the one read under the lock, nothing is written and the answer is `500`
+  as well. One session permits one append.
 - Writes are LF-only on every OS; a CR before the LF is tolerated on read. A log holding a raw U+0085,
   U+2028, U+2029, VT, FF, FS, GS or RS is unreducible (`500`), because core's row splitter
   would break on it. JSON nesting is capped at 256 and integers at 4300 digits; floats are

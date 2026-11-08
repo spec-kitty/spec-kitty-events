@@ -45,8 +45,9 @@ until it moves its pin.
   `command-cli` refuses a mixed batch as `REQUEST_MALFORMED`.
 - Examples `WriteRefusal.coordination-ref-moved.yaml` and `DurabilityAck.ref-commit.yaml`.
 - `WriteRefusalReason.stale_from_lane` (`TRANSITION_REJECTED`): a unit's `from_lane` is not the
-  work package's current lane. This is an events-side addition with no core equivalent
-  (spec-kitty/spec-kitty-events#160, #161 and #155).
+  work package's current lane, and `WriteRefusal` binds its `type` to `TRANSITION_REJECTED`. This
+  is an events-side addition with no core equivalent (spec-kitty/spec-kitty-events#160, #161 and
+  #155).
 
 ### Changed
 
@@ -116,8 +117,9 @@ until it moves its pin.
 
 - The protocol major stays 1: a client of the `rc.1`/`rc.2` bundle sending
   `coordination_transaction_append` gets `REQUEST_MALFORMED`, not
-  `PROTOCOL_VERSION_UNSUPPORTED`. Accepted because no client transport exists yet and every write
-  still fails closed (ADR-0007 D-7).
+  `PROTOCOL_VERSION_UNSUPPORTED`. Accepted because no client transport exists yet, and
+  `coordination_ref_commit`, the surface that changes, is refused until migration step 4
+  (ADR-0007 D-7).
 - Core is unaffected until it moves its pin (`service-v0.1.0-rc.1` today). That one tag also
   carries the read-service build, so a read-service pin bump takes this contract change too.
   Core then changes:

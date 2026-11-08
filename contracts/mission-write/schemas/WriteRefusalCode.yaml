@@ -23,9 +23,9 @@ oneOf:
   - const: BOOKKEEPING_DOUBLE_EVENT_ID
     description: '409. The request repeats an event_id inside one unit or batch.'
   - const: COORDINATION_REF_MOVED
-    description: '409. Protocol-only. The coordination branch moved between the read of its tip and the compare-and-swap update of the ref, so another writer committed to it; nothing is written and the service does not retry (ADR-0007). Provisional: ADR-0007 is Proposed.'
+    description: '409. Protocol-only. The coordination branch moved between the read of its tip and the compare-and-swap update of the ref, so another writer committed to it; nothing is written and the service does not retry (ADR-0007). Provisional until migration step 4 serves the surface.'
   - const: COORDINATION_REF_CHECKED_OUT
-    description: '409. Protocol-only. The coordination branch is checked out in a worktree of the repository, so a commit to its ref would leave that checkout behind; nothing is written (ADR-0007). Provisional: ADR-0007 is Proposed.'
+    description: '409. Protocol-only. The coordination branch is checked out in a worktree of the repository, so a commit to its ref would leave that checkout behind; nothing is written (ADR-0007). Provisional until migration step 4 serves the surface.'
   - const: PROTECTED_BRANCH_REFUSED
     description: '422. The write would commit to a protected branch.'
   - const: DESTINATION_REF_NOT_FOUND
@@ -39,7 +39,7 @@ oneOf:
   - const: OWNED_MISSION_PATH_REFUSED
     description: '422. The caller''s owned checkout does not hold the Mission of the request.'
   - const: COORDINATION_LEDGER_UNREADABLE
-    description: '500. Protocol-only. The Mission''s event log in the tree of the coordination branch tip cannot be read or parsed, so the append cannot be judged against it; nothing is written (ADR-0007). Provisional: ADR-0007 is Proposed.'
+    description: '500. Protocol-only. The Mission''s event log in the tree of the coordination branch tip cannot be read or parsed, so the append cannot be judged against it; nothing is written (ADR-0007). Provisional until migration step 4 serves the surface.'
   - const: STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED
     description: '500. The append, or its read-back verification, failed; the unit is not acknowledged. Also answers a torn tail (refused, not repaired), a log the write fold cannot reduce, and a failed write or sync after which the append was cut back.'
   - const: BOOKKEEPING_COMMIT_FAILED
