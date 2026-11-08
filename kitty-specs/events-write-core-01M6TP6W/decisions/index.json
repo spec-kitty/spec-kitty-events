@@ -59,6 +59,26 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-08T07:57:20.729529Z",
+      "decision_id": "01M6X2JWES41Y6PGF4EZ8M174K",
+      "final_answer": "Yes. Maintainer ruling 2026-11-08: keep the optional operation field in the mission-write 1.0.1-SNAPSHOT contract (research \u00a711 decision 2, FR-024).",
+      "input_key": "operation_discriminator",
+      "mission_id": "01M6TP6WAF3H5PGQMQT9HCPNQ0",
+      "mission_slug": "events-write-core-01M6TP6W",
+      "opened_by": "claude",
+      "options": [],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Does the mission-write 1.0.1-SNAPSHOT contract keep the optional operation field (WriteOperation, TransitionUnit.operation)?",
+      "rationale": "Core's claim conflicts and start_rejected come only from start_implementation_status and start_review_status; the emit pipeline accepts the same rows, so the service needs the client to name the operation. The field is optional and additive.",
+      "resolved_at": "2026-11-08T07:57:29.984167Z",
+      "resolved_by": "maintainer",
+      "slot_key": "plan.contract.operation-discriminator",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M6TP6WAF3H5PGQMQT9HCPNQ0",

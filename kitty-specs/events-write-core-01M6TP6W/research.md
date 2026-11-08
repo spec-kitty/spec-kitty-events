@@ -383,7 +383,7 @@ Each entry gives the decision, why it was chosen, and the alternatives considere
 2. **An `operation` discriminator, an optional field in `1.0.1-SNAPSHOT`.**
    - Why: core's claim conflicts and `start_rejected` come only from `start_implementation_status` and `start_review_status`. The emit pipeline accepts the very same rows (§1.5, squad M1).
    - Alternatives rejected: inferring the operation from the batch shape (ambiguous); applying the claim rules to every unit (changes the codes of `move-task`).
-   - Default taken; flagged to the operator.
+   - Default taken; flagged to the operator. **Ruled 2026-11-08 (maintainer): keep the optional `operation` field in `1.0.1-SNAPSHOT`** (Decision Moment `01M6X2JWES41Y6PGF4EZ8M174K`).
 3. **Torn tail and an unreducible log map to `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`.**
    - Why: it is the only existing 500 code that fits. `COORDINATION_LEDGER_UNREADABLE` is bound to the branch tip (ADR-0007), and `BOOKKEEPING_COMMIT_FAILED` to the status commit. Its description is widened in the CHANGELOG.
 4. **Lock budget of 10 s, one in-process turn per repository, and `SERVICE_BUSY`.**
@@ -391,6 +391,7 @@ Each entry gives the decision, why it was chosen, and the alternatives considere
    - Alternative rejected: an unbounded wait, which is core's default but blocks the launcher's client.
 5. **A stale `from_lane` answers `TRANSITION_REJECTED` with no `type`.**
    - Why: `illegal_transition` is defined as an edge that is not in the machine, which this is not. `type` is optional in `WriteRefusal`. These cases are tagged `oracle: protocol`.
+   - Open (2026-11-08): the maintainer has not ruled; current behaviour kept, listed as an open question in the PR.
 6. **`coordination_ref_commit` answers `WRITE_LOCATION_UNVERIFIED` before the Mission lookup.**
    - Why: ADR-0007 D-4. A coordination Mission need not exist in the root checkout, so a 404 first would be wrong.
 7. **A location mismatch on `checkout_append` answers `WRITE_LOCATION_UNVERIFIED`, not `OWNED_MISSION_PATH_REFUSED`.**
