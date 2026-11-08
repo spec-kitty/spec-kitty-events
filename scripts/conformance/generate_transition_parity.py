@@ -203,20 +203,62 @@ def protocol_stale_from_lane_cases(case_dir: Path) -> dict[str, str]:
 
 
 def protocol_r15_cases(core_rendered: Mapping[str, str]) -> dict[str, str]:
-    """Render R15 from a core-derived request when core raises outside its refusal family."""
-    document = json.loads(core_rendered["guard-subtasks-incomplete"])
-    document["id"] = "guard-subtasks-roster-description-anchor-tagged-value"
+    """Render R15/R19 refusals from core-derived requests without treating them as core parity."""
+
+    def roster_case(case_id: str, template: str, task: str, notes: str) -> tuple[str, str]:
+        document = json.loads(core_rendered[template])
+        document["id"] = case_id
+        document["oracle"] = "protocol"
+        document.pop("core_call")
+        document["tasks"] = {**default_tasks(), "WP01.md": task}
+        document["expected"] = json.loads(core_rendered["guard-subtasks-incomplete"])["expected"]
+        document["notes"] = notes
+        return case_id, _render(document)
+
+    r15_note = "R15/R19: an explicit tag makes the roster unresolvable; the service fails closed."
+    rendered = dict(
+        [
+            roster_case(
+                "guard-subtasks-roster-description-anchor-tagged-value",
+                "guard-subtasks-incomplete",
+                task_text().replace(
+                    'dependencies: "[]"', "description: &a !!str 5\ndependencies: []"
+                ),
+                r15_note,
+            ),
+            roster_case(
+                "guard-subtasks-roster-description-non-specific-equals",
+                "guard-subtasks-incomplete",
+                task_text().replace('dependencies: "[]"', "description: ! '='\ndependencies: []"),
+                r15_note,
+            ),
+            roster_case(
+                "guard-subtasks-roster-tagged-id-complete",
+                "guard-subtasks-roster-padded-id-complete",
+                task_text(subtasks="[!!str T001]"),
+                r15_note,
+            ),
+            roster_case(
+                "guard-shell-pid-tagged-int",
+                "guard-shell-pid-str-padded",
+                task_text().replace("subtasks: []", "shell_pid: !!int 12\nsubtasks: []"),
+                r15_note,
+            ),
+        ]
+    )
+    document = json.loads(core_rendered["dependency-unreadable-declaration"])
+    document["id"] = "dependency-agent-tagged-bool"
     document["oracle"] = "protocol"
     document.pop("core_call")
-    document["tasks"] = dict(document["tasks"])
-    document["tasks"]["WP01.md"] = task_text().replace(
-        'dependencies: "[]"', "description: &a !!str 5\ndependencies: []"
+    document["tasks"] = default_tasks()
+    document["tasks"]["WP02.md"] = task_text("WP02").replace(
+        "subtasks: []", "agent: !!bool maybe\nsubtasks: []"
     )
     document["notes"] = (
-        "R15: core raises while validating the anchored TaggedScalar; "
-        "the service fails closed with implementation_evidence_required."
+        "R19: any explicit tag makes WP02 unreadable; dependencies refuse dependencies_unsatisfied."
     )
-    return {document["id"]: _render(document)}
+    rendered[document["id"]] = _render(document)
+    return rendered
 
 
 def task_text(wp_id: str = "WP01", *, dependencies: str = '"[]"', subtasks: str = "[]") -> str:
@@ -498,16 +540,6 @@ def _guard_intents() -> list[Intent]:
             tasks=nonstring_tasks,
         ),
         _intent(
-            "guard-subtasks-roster-tagged-id-complete",
-            "guard",
-            (*path_to("in_progress"), ann({"subtasks": {"T001": "done"}})),
-            tr("for_review"),
-            tasks={
-                **default_tasks(),
-                "WP01.md": task_text(subtasks="[!!str T001]"),
-            },
-        ),
-        _intent(
             "guard-subtasks-roster-padded-id-complete",
             "guard",
             (*path_to("in_progress"), ann({"subtasks": {"T001": "done"}})),
@@ -613,7 +645,6 @@ def _guard_intents() -> list[Intent]:
         ("bool", "true"),
         ("bigstr", "'99999999999'"),
         ("underscore", "'1_000'"),
-        ("tagged-int", "!!int 12"),
     ):
         pid_tasks = default_tasks()
         pid_tasks["WP01.md"] = task_text().replace(
@@ -1302,11 +1333,7 @@ def build_intents() -> tuple[Intent, ...]:
         "guard-shell-pid-bigstr",
         "guard-shell-pid-underscore",
     }
-    cycle4_additions = {
-        "dependency-anchored-tagged-declaration",
-        "guard-shell-pid-tagged-int",
-        "guard-subtasks-roster-tagged-id-complete",
-    }
+    cycle4_additions = {"dependency-anchored-tagged-declaration"}
     additions = review_additions | cycle3_additions | cycle4_additions
     intents = (
         tuple(intent for intent in intents if intent.case_id not in additions)

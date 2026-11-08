@@ -93,26 +93,63 @@ class DiskMissionFactsTest {
   }
 
   @Test
-  void nativeExplicitTagsAndTaggedSubtaskIdsMatchCore() throws Exception {
-    for (String declaration : List.of("! foo", "!<tag:yaml.org,2002:str> foo", "!!null ''")) {
+  void explicitScalarAndFlowCollectionTagsAreUnresolvableUnderR19() throws Exception {
+    for (String declaration : List.of(
+        "!!str foo", "!!null ''", "!!bool maybe", "! foo", "! '='", "!custom foo",
+        "!<tag:yaml.org,2002:str> foo")) {
       write("WP01.md", task("[]").replace("title: test\n", "title: test\ndescription: " + declaration + "\n"));
-      assertThat(facts().subtaskRoster("WP01")).as(declaration).isInstanceOf(SubtaskRoster.Resolved.class);
+      assertThat(facts().subtaskRoster("WP01")).as(declaration).isInstanceOf(SubtaskRoster.Unresolvable.class);
     }
-    write("WP01.md", task("[!!str T001, !!int 5, =, !foo T002]"));
-    SubtaskRoster.Resolved roster = (SubtaskRoster.Resolved) facts().subtaskRoster("WP01");
-    assertThat(roster.ids()).containsExactly("T001", "5", "=", "T002");
-    write("WP01.md", task("!!str abc"));
-    roster = (SubtaskRoster.Resolved) facts().subtaskRoster("WP01");
-    assertThat(roster.ids()).containsExactly("a", "b", "c");
-    write("WP01.md", task("[]").replace("title: test\n", "title: test\ndependencies: &a !!str WP02\n"));
-    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Resolved.class);
+    for (String declaration : List.of("!!seq [T001]", "!custom [T001]", "!!map {id: T001}")) {
+      write("WP01.md", task(declaration));
+      assertThat(facts().subtaskRoster("WP01")).as(declaration).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    }
     write("WP02.md", "---\nwork_package_id: WP02\ndependencies: ! WP01\n---\n");
+    assertThat(facts().dependencies("WP02")).isInstanceOf(DependencyDeclaration.Unresolvable.class);
+  }
+
+  @Test
+  void explicitBlockCollectionTagsAnchorsAndAliasesAreUnresolvableUnderR19() throws Exception {
+    write("WP01.md", task("!!seq\n  - T001"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    write("WP01.md", task("\n  - !!str T001\n  - !<tag:yaml.org,2002:str> T002"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    write("WP01.md", task("[]").replace("title: test\n", "title: test\ndescription: &a !!str 5\n"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    write("WP01.md", task("[]").replace("title: test\n", "title: test\nagent: &a !!str x\ndescription: *a\n"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+  }
+
+  @Test
+  void yamlAndTagDirectivesAreUnresolvableUnderR19() throws Exception {
+    String header = "---\nwork_package_id: WP01\ntitle: test\nsubtasks: []\n";
+    for (String directive : List.of("%YAML 1.2\n--- # document\n", "%TAG !e! tag:yaml.org,2002:\n--- # document\n")) {
+      write("WP01.md", "---\n" + directive + header.substring(4) + "---\n");
+      assertThat(facts().subtaskRoster("WP01")).as(directive).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    }
+    write("WP01.md", "---\n%TAG !e! tag:yaml.org,2002:\n--- # document\n"
+        + header.substring(4) + "description: !e!str 5\n---\n");
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+  }
+
+  @Test
+  void untaggedAnchorsAliasesCollectionsAndEqualsKeepTheirExistingRules() throws Exception {
+    write("WP01.md", task("[=, &a T001, *a]"));
+    SubtaskRoster.Resolved roster = (SubtaskRoster.Resolved) facts().subtaskRoster("WP01");
+    assertThat(roster.ids()).containsExactly("=", "T001");
+    write("WP01.md", task("[]").replace("title: test\n", "title: test\nagent: &a x\ndescription: *a\n"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Resolved.class);
+    write("WP01.md", task("\n  - T001\n  - T002"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Resolved.class);
+    write("WP02.md", "---\nwork_package_id: WP02\ndependencies: WP01\n---\n");
     assertThat(facts().dependencies("WP02")).isEqualTo(new DependencyDeclaration.Declared(List.of("WP01")));
+    write("WP01.md", "---\n--- # document\nwork_package_id: WP01\ntitle: test\nsubtasks: []\n...\n---\n");
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Resolved.class);
   }
 
   @Test
   void shellPidUsesPythonIntCoercion() throws Exception {
-    for (String declaration : List.of("' 12 '", "12.5", "true", "'99999999999'", "'1_000'", "!!int 12", "'𝟙'")) {
+    for (String declaration : List.of("' 12 '", "12.5", "true", "'99999999999'", "'1_000'", "'𝟙'")) {
       write("WP01.md", task("[]").replace("title: test\n", "title: test\nshell_pid: " + declaration + "\n"));
       assertThat(facts().subtaskRoster("WP01")).as(declaration).isInstanceOf(SubtaskRoster.Resolved.class);
     }
