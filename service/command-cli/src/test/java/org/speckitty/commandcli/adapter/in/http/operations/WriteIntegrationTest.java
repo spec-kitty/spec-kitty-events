@@ -217,10 +217,12 @@ class WriteIntegrationTest {
       for (int index = 0; index < 65; index++) {
         String wp = String.format("WP%02d", index + 1);
         String id = String.format("%026d", index + 100);
-        Files.writeString(rig.missionDirectory.resolve("tasks/" + wp + ".md"),
-            "---\nwork_package_id: " + wp + "\ndependencies: []\nsubtasks: []\n---\n");
+        if (index != 1) {
+          Files.writeString(rig.missionDirectory.resolve("tasks/" + wp + ".md"),
+              "---\nwork_package_id: " + wp + "\ndependencies: []\nsubtasks: []\n---\n");
+        }
         String previousId = String.format("%026d", index + 1000);
-        if (index >= 2) prior.append(WriteRig.encodedRow(WriteRig.transitionRow(previousId, wp, "genesis", "planned", "java-jenny")));
+        if (index >= 1) prior.append(WriteRig.encodedRow(WriteRig.transitionRow(previousId, wp, "genesis", "planned", "java-jenny")));
         units.add(WriteRig.unit(wp, null, WriteRig.transitionRow(id, wp, "planned", "claimed", "java-jenny")));
       }
       Files.writeString(rig.log(), prior.toString());
