@@ -305,7 +305,14 @@
         "WP09 docs and changelog, opencode tokenfactory/kimi-k3"
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer"
+      "role": "implementer",
+      "subtasks": {
+        "T052": "done",
+        "T053": "done",
+        "T054": "done",
+        "T055": "done",
+        "T056": "done"
+      }
     },
     "WP10": {
       "actor": "claude",
