@@ -228,11 +228,11 @@
       "criterion_id": "FR-023",
       "description": "A stale from_lane is refused 409 TRANSITION_REJECTED without a URN; lane aliases and non-canonical spellings are 400 REQUEST_MALFORMED.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP03 WriteBodiesTest; WP06 stale tests; WP04 protocol cases"
+      "evidence": "WriteBodiesTest 17 ('doing', 'Planned', ' planned', 'IN_PROGRESS' -> REQUEST_MALFORMED; canonical lanes pass); corpus stale-single-from-lane (TRANSITION_REJECTED + urn:...:stale_from_lane, oracle protocol), stale-batch-after-earlier-unit, alias-noncanonical-row (400) via ProtocolCorpusTest 34; UnitJudgeTest stalePrecedes... (10).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:56.594629+00:00",
+      "notes": "Decision 17 (maintainer ruling 2026-11-08) supersedes FR-023's 'without a URN': the stale refusal carries stale_from_lane. Judged against the amended criterion."
     },
     {
       "criterion_id": "FR-024",
