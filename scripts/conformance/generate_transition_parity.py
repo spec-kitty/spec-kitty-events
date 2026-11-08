@@ -202,6 +202,23 @@ def protocol_stale_from_lane_cases(case_dir: Path) -> dict[str, str]:
     return rendered
 
 
+def protocol_r15_cases(core_rendered: Mapping[str, str]) -> dict[str, str]:
+    """Render R15 from a core-derived request when core raises outside its refusal family."""
+    document = json.loads(core_rendered["guard-subtasks-incomplete"])
+    document["id"] = "guard-subtasks-roster-description-anchor-tagged-value"
+    document["oracle"] = "protocol"
+    document.pop("core_call")
+    document["tasks"] = dict(document["tasks"])
+    document["tasks"]["WP01.md"] = task_text().replace(
+        'dependencies: "[]"', "description: &a !!str 5\ndependencies: []"
+    )
+    document["notes"] = (
+        "R15: core raises while validating the anchored TaggedScalar; "
+        "the service fails closed with implementation_evidence_required."
+    )
+    return {document["id"]: _render(document)}
+
+
 def task_text(wp_id: str = "WP01", *, dependencies: str = '"[]"', subtasks: str = "[]") -> str:
     return (
         "---\n"
@@ -481,6 +498,16 @@ def _guard_intents() -> list[Intent]:
             tasks=nonstring_tasks,
         ),
         _intent(
+            "guard-subtasks-roster-tagged-id-complete",
+            "guard",
+            (*path_to("in_progress"), ann({"subtasks": {"T001": "done"}})),
+            tr("for_review"),
+            tasks={
+                **default_tasks(),
+                "WP01.md": task_text(subtasks="[!!str T001]"),
+            },
+        ),
+        _intent(
             "guard-subtasks-roster-padded-id-complete",
             "guard",
             (*path_to("in_progress"), ann({"subtasks": {"T001": "done"}})),
@@ -586,6 +613,7 @@ def _guard_intents() -> list[Intent]:
         ("bool", "true"),
         ("bigstr", "'99999999999'"),
         ("underscore", "'1_000'"),
+        ("tagged-int", "!!int 12"),
     ):
         pid_tasks = default_tasks()
         pid_tasks["WP01.md"] = task_text().replace(
@@ -628,6 +656,8 @@ def _dependency_intents() -> list[Intent]:
     frontmatter_tasks["duplicate-key"]["WP02.md"] = (
         "---\nwork_package_id: WP02\ndependencies: [WP01]\ndependencies: []\nsubtasks: []\n---\n"
     )
+    anchored_tagged_tasks = dict(dep_tasks)
+    anchored_tagged_tasks["WP02.md"] = task_text("WP02", dependencies="&a !!str WP01")
     start_refused_tasks = default_tasks()
     start_refused_tasks["WP01.md"] = task_text("WP01", dependencies="[WP99]")
     synthetic_setup = (
@@ -732,6 +762,13 @@ def _dependency_intents() -> list[Intent]:
             path_to("planned", wp_id="WP02"),
             tr("claimed", wp_id="WP02"),
             tasks=frontmatter_tasks["duplicate-key"],
+        ),
+        _intent(
+            "dependency-anchored-tagged-declaration",
+            "dependency",
+            (*path_to("done"), *path_to("planned", wp_id="WP02")),
+            tr("claimed", wp_id="WP02"),
+            tasks=anchored_tagged_tasks,
         ),
     ]
     for satisfied in ("approved", "done"):
@@ -1265,11 +1302,17 @@ def build_intents() -> tuple[Intent, ...]:
         "guard-shell-pid-bigstr",
         "guard-shell-pid-underscore",
     }
-    additions = review_additions | cycle3_additions
+    cycle4_additions = {
+        "dependency-anchored-tagged-declaration",
+        "guard-shell-pid-tagged-int",
+        "guard-subtasks-roster-tagged-id-complete",
+    }
+    additions = review_additions | cycle3_additions | cycle4_additions
     intents = (
         tuple(intent for intent in intents if intent.case_id not in additions)
         + tuple(intent for intent in intents if intent.case_id in review_additions)
         + tuple(intent for intent in intents if intent.case_id in cycle3_additions)
+        + tuple(intent for intent in intents if intent.case_id in cycle4_additions)
     )
     ids = [intent.case_id for intent in intents]
     if len(ids) != len(set(ids)):
@@ -1768,7 +1811,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             except Exception as error:
                 raise GenerationError(f"{intent.case_id}: {error}") from error
         case_dir = CORPUS_DIR / "cases"
-        rendered = {**core_rendered, **protocol_stale_from_lane_cases(case_dir)}
+        rendered = {
+            **core_rendered,
+            **protocol_stale_from_lane_cases(case_dir),
+            **protocol_r15_cases(core_rendered),
+        }
         differences = diff_case_files(rendered, case_dir)
         if args.check:
             if differences:
