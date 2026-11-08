@@ -11,7 +11,7 @@ plugins {
 group = "ai.spec-kitty"
 // Must equal [project].version in pyproject.toml: one version line for both artifacts (ADR 0004).
 // checkVersionMatchesPyproject below fails the check when the two drift.
-version = "11.3.0"
+version = "11.4.0"
 
 base.archivesName = "spec-kitty-events-java"
 

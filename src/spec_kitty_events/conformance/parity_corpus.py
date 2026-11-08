@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from importlib import resources
 from typing import Any, cast
 
+from spec_kitty_events.status import Lane
+
 _REASON_PREFIX = "urn:spec-kitty:write-refusal:"
 REASON_URNS = frozenset(
     _REASON_PREFIX + suffix
@@ -62,37 +64,39 @@ WRITE_REFUSAL_CODES = frozenset(
 )
 
 # Research §1.2 at core 512567ee. This is a coverage target, not an authority.
+# Lane values come from the canonical ``Lane`` enum in ``status.py`` so this
+# set cannot drift into a second lane vocabulary.
 LEGAL_EDGES = frozenset(
     {
-        ("genesis", "planned"),
-        ("genesis", "canceled"),
-        ("planned", "claimed"),
-        ("planned", "blocked"),
-        ("planned", "canceled"),
-        ("claimed", "in_progress"),
-        ("claimed", "blocked"),
-        ("claimed", "canceled"),
-        ("in_progress", "for_review"),
-        ("in_progress", "approved"),
-        ("in_progress", "planned"),
-        ("in_progress", "blocked"),
-        ("in_progress", "canceled"),
-        ("for_review", "in_review"),
-        ("for_review", "blocked"),
-        ("for_review", "canceled"),
-        ("in_review", "approved"),
-        ("in_review", "done"),
-        ("in_review", "in_progress"),
-        ("in_review", "planned"),
-        ("in_review", "blocked"),
-        ("in_review", "canceled"),
-        ("approved", "done"),
-        ("approved", "in_progress"),
-        ("approved", "planned"),
-        ("approved", "blocked"),
-        ("approved", "canceled"),
-        ("blocked", "in_progress"),
-        ("blocked", "canceled"),
+        (Lane.GENESIS, Lane.PLANNED),
+        (Lane.GENESIS, Lane.CANCELED),
+        (Lane.PLANNED, Lane.CLAIMED),
+        (Lane.PLANNED, Lane.BLOCKED),
+        (Lane.PLANNED, Lane.CANCELED),
+        (Lane.CLAIMED, Lane.IN_PROGRESS),
+        (Lane.CLAIMED, Lane.BLOCKED),
+        (Lane.CLAIMED, Lane.CANCELED),
+        (Lane.IN_PROGRESS, Lane.FOR_REVIEW),
+        (Lane.IN_PROGRESS, Lane.APPROVED),
+        (Lane.IN_PROGRESS, Lane.PLANNED),
+        (Lane.IN_PROGRESS, Lane.BLOCKED),
+        (Lane.IN_PROGRESS, Lane.CANCELED),
+        (Lane.FOR_REVIEW, Lane.IN_REVIEW),
+        (Lane.FOR_REVIEW, Lane.BLOCKED),
+        (Lane.FOR_REVIEW, Lane.CANCELED),
+        (Lane.IN_REVIEW, Lane.APPROVED),
+        (Lane.IN_REVIEW, Lane.DONE),
+        (Lane.IN_REVIEW, Lane.IN_PROGRESS),
+        (Lane.IN_REVIEW, Lane.PLANNED),
+        (Lane.IN_REVIEW, Lane.BLOCKED),
+        (Lane.IN_REVIEW, Lane.CANCELED),
+        (Lane.APPROVED, Lane.DONE),
+        (Lane.APPROVED, Lane.IN_PROGRESS),
+        (Lane.APPROVED, Lane.PLANNED),
+        (Lane.APPROVED, Lane.BLOCKED),
+        (Lane.APPROVED, Lane.CANCELED),
+        (Lane.BLOCKED, Lane.IN_PROGRESS),
+        (Lane.BLOCKED, Lane.CANCELED),
     }
 )
 
