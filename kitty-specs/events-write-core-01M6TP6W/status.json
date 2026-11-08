@@ -301,6 +301,9 @@
       "last_event_id": "01M6YDBBN4WF76TETRXSKHMWKJ",
       "last_transition_at": "2026-11-08T20:24:42.916190+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP09 docs and changelog, opencode tokenfactory/kimi-k3"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer"
     },
