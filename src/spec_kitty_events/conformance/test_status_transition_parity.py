@@ -58,7 +58,7 @@ def test_every_case_validates_against_the_json_schema() -> None:
 
 
 def test_refusal_vocabulary_is_closed() -> None:
-    assert len(REASON_URNS) == 15
+    assert len(REASON_URNS) == 16
     for case in _CASES:
         expected = case["expected"]
         if expected["result"] == "refusal":

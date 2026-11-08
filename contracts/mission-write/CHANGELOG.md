@@ -44,6 +44,9 @@ until it moves its pin.
   `destinationRef`, since a batch is one write (one commit for `coordination_ref_commit`);
   `command-cli` refuses a mixed batch as `REQUEST_MALFORMED`.
 - Examples `WriteRefusal.coordination-ref-moved.yaml` and `DurabilityAck.ref-commit.yaml`.
+- `WriteRefusalReason.stale_from_lane` (`TRANSITION_REJECTED`): a unit's `from_lane` is not the
+  work package's current lane. This is an events-side addition with no core equivalent
+  (spec-kitty/spec-kitty-events#160, #161 and #155).
 
 ### Changed
 
@@ -53,8 +56,9 @@ until it moves its pin.
 - `WRITE_LOCATION_UNVERIFIED` also describes a `coordination_ref_commit` refusal before migration
   step 4, ahead of any Mission lookup, and the `checkout_append` mismatches of `checkout`,
   `destinationRef` and `missionDirectory` (spec-kitty/spec-kitty-events#160, #161 and #155).
-- `TRANSITION_REJECTED` may carry no reason URN for a stale unit whose `from_lane` is not the work
-  package's current lane (spec-kitty/spec-kitty-events#160, #161 and #155).
+- `TRANSITION_REJECTED` carries `WriteRefusalReason.stale_from_lane` for a stale unit whose
+  `from_lane` is not the work package's current lane (spec-kitty/spec-kitty-events#160, #161 and
+  #155).
 - `REQUEST_MALFORMED` also describes a row of the wrong kind for its position, a lane alias or
   non-canonical lane spelling, a non-finite number, and a session-time pair that cannot be
   subtracted (spec-kitty/spec-kitty-events#160, #161 and #155).
@@ -99,6 +103,9 @@ until it moves its pin.
   `COORDINATION_LEDGER_UNREADABLE` are provisional while ADR-0007 is Proposed. As with the
   provisional codes of `1.0.0-SNAPSHOT`, an enum value cannot carry `x-provisional`, so they are
   marked in their descriptions only and `provisional_check.py` does not see them.
+- `WriteRefusalReason.stale_from_lane` is a provisional events-side addition with no core
+  equivalent. As with the provisional codes above, an enum value cannot carry `x-provisional`, so
+  it is marked in its description only and `provisional_check.py` does not see it.
 - `statusCommit` of `DurabilityAck` stays provisional until migration step 4 lands.
 
 ### Compatibility

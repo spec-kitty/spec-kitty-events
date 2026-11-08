@@ -2,8 +2,8 @@
   "area": "review_claim",
   "expected": {
     "code": "TRANSITION_REJECTED",
-    "message": null,
-    "reason": null,
+    "message": "The unit's from_lane is not the work package's current lane.",
+    "reason": "urn:spec-kitty:write-refusal:stale_from_lane",
     "result": "refusal",
     "unit": null
   },
@@ -106,7 +106,7 @@
     "mission_id": "01J00000000000000000000000",
     "mission_slug": "999-status-transition-parity"
   },
-  "notes": "Research \u00a711 decision 15: a non-reviewer in_review holder makes core no-op, so the for_review -> in_review row is a stale protocol refusal.",
+  "notes": "Research §11 decision 15: a non-reviewer in_review holder makes core no-op, so the for_review -> in_review row is a stale protocol refusal.",
   "operation": "start_review",
   "oracle": "protocol",
   "request": {

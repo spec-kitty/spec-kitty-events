@@ -225,10 +225,10 @@ class ProtocolCorpusTest {
   @AfterAll
   static void report() throws Exception {
     rig.close();
-    assertThat(GUARD_REASONS).hasSize(14); // workspace_context_required is recorded unreachable over the wire.
+    assertThat(GUARD_REASONS).hasSize(15); // workspace_context_required is recorded unreachable over the wire.
     JsonNode unreachable = read(CASES.resolveSibling("unreachable.json"));
     assertThat(unreachable.has("urn:spec-kitty:write-refusal:workspace_context_required")).isTrue();
-    assertThat(PASSED).hasSize(30);
-    System.out.printf("Protocol/service corpus 11/11; guard reasons 14/14 (+1 recorded unreachable); invalid status rows 5/5 passed%n");
+    assertThat(PASSED).hasSize(31);
+    System.out.printf("Protocol/service corpus 11/11; guard reasons 15/15 (+1 recorded unreachable); invalid status rows 5/5 passed%n");
   }
 }

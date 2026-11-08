@@ -28,7 +28,8 @@ request) -> expected outcome` case. The file stem equals its kebab-case `id`.
 - `expected` is an acknowledgement with per-unit replay/append counts and
   optional `fsyncs`, or a refusal with its contract code, nullable reason URN,
   nullable message, and nullable zero-based unit index. Core refusal messages
-  are verbatim exception strings.
+  are verbatim exception strings. The events-side `stale_from_lane` reason has
+  no core equivalent and appears on protocol stale-from-lane refusals.
 - `core_call` records the core entry point and keyword arguments used for a
   generated case. `notes` explains the scenario or names the protocol spec row.
 
@@ -64,7 +65,9 @@ operation's real core entry point. Caller-supplied core arguments are restricted
 to fields present in the request rows; all other guard inputs are core-derived.
 It stops batches at their first refusal. `--check` writes nothing, reports
 differing core ids (including deleted intents), and exits nonzero on drift.
-Generation never rewrites protocol cases.
+Generation rewrites only the protocol stale-from-lane refusal overlay, adding the events-side
+`stale_from_lane` expectation under research §11 decision 17; every other protocol case is
+left untouched.
 
 `unreachable.json` maps a wholly unreachable reason URN to its proven cause. Its
 `partial` object records an unreachable half of a reason that remains reachable

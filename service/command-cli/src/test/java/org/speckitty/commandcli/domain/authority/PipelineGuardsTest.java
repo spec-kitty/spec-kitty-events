@@ -23,10 +23,10 @@ class PipelineGuardsTest {
   }
 
   @Test
-  void staleFromLaneIsProtocolRefusalWithoutUrn() {
+  void staleFromLaneIsProtocolRefusalWithReasonUrn() {
     Refusal refusal = PipelineGuards.staleFromLane(Lane.PLANNED, Lane.CLAIMED).orElseThrow();
     assertThat(refusal.code()).isEqualTo(RefusalCode.TRANSITION_REJECTED);
-    assertThat(refusal.reason()).isNull();
+    assertThat(refusal.reason()).isEqualTo(RefusalReason.STALE_FROM_LANE);
     assertThat(refusal.message()).isEqualTo("The unit's from_lane is not the work package's current lane.");
     assertThat(PipelineGuards.staleFromLane(Lane.PLANNED, Lane.PLANNED)).isEmpty();
   }
