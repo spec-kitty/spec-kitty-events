@@ -19,6 +19,8 @@ import tools.jackson.core.StreamReadConstraints;
 
 /** command-cli's application port over the event-log module's canonical codec. */
 public final class EventLogRowCodec implements RowCodec {
+  private static final java.util.Set<Integer> SINGLE_BYTE_SEPARATORS = java.util.Set.of(0x0a, 0x0b, 0x0c, 0x1c, 0x1d, 0x1e);
+
   static {
     StreamReadConstraints.overrideDefaultStreamReadConstraints(StreamReadConstraints.defaults().rebuild()
         .maxNestingDepth(1000)
@@ -64,11 +66,18 @@ public final class EventLogRowCodec implements RowCodec {
   private static int separatorLength(byte[] log, int index) {
     int value = log[index] & 0xff;
     if (value == '\r') return index + 1 < log.length && log[index + 1] == '\n' ? 2 : 1;
-    if (value == '\n' || value == 0x0b || value == 0x0c || value >= 0x1c && value <= 0x1e) return 1;
-    if (value == 0xc2 && index + 1 < log.length && (log[index + 1] & 0xff) == 0x85) return 2;
-    if (value == 0xe2 && index + 2 < log.length && (log[index + 1] & 0xff) == 0x80
-        && ((log[index + 2] & 0xff) == 0xa8 || (log[index + 2] & 0xff) == 0xa9)) return 3;
+    if (SINGLE_BYTE_SEPARATORS.contains(value)) return 1;
+    if (matches(log, index, 0xc2, 0x85)) return 2;
+    if (matches(log, index, 0xe2, 0x80, 0xa8) || matches(log, index, 0xe2, 0x80, 0xa9)) return 3;
     return 0;
+  }
+
+  private static boolean matches(byte[] bytes, int start, int... expected) {
+    if (start + expected.length > bytes.length) return false;
+    for (int offset = 0; offset < expected.length; offset++) {
+      if ((bytes[start + offset] & 0xff) != expected[offset]) return false;
+    }
+    return true;
   }
 
   private static Line line(byte[] raw) {
