@@ -293,7 +293,7 @@
     },
     "WP09": {
       "actor": "claude",
-      "agent": "opencode:tokenfactory/deepseek-v4.1-flash-1017:scribe-sally",
+      "agent": "claude:claude-sonnet-5-5:reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -306,6 +306,7 @@
         "WP09 by opencode tokenfactory/deepseek-v4.1-flash-1017 (kimi-k3 unavailable): f248890a merged as 810eab66; validate, changelog check/guard, docs tests 74, contract tests 379, ruff green"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/stijn/.t3/worktrees/spec-kitty-events/t3-104ffad0/kitty-specs/events-write-core-01M6TP6W/tasks/WP09-docs-and-changelog/review-cycle-1.md",
         "reference": "review-cycle://events-write-core-01M6TP6W/WP09-docs-and-changelog/review-cycle-1.md",
@@ -313,12 +314,14 @@
         "verdict": "changes_requested"
       },
       "role": "implementer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T052": "done",
-        "T053": "done",
-        "T054": "done",
-        "T055": "done",
-        "T056": "done"
+        "T052": "planned",
+        "T053": "planned",
+        "T054": "planned",
+        "T055": "planned",
+        "T056": "planned"
       }
     },
     "WP10": {
