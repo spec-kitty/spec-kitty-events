@@ -328,6 +328,17 @@ class DiskMissionFactsTest {
   }
 
   @Test
+  void aHexOrOctalRosterIdWhoseDecimalRenderingExceeds4300DigitsIsUnresolvable() throws Exception {
+    // Core builds the id with str(int), which raises past 4300 digits although parsing the literal does not.
+    for (String entry : List.of("0x" + "f".repeat(4000), "0o" + "7".repeat(4800), "0x" + "f".repeat(3000))) {
+      write("WP01.md", task("[" + entry + "]"));
+      boolean resolved = entry.length() < 4000;
+      assertThat(facts().subtaskRoster("WP01")).as(entry.length() + " chars")
+          .isInstanceOf(resolved ? SubtaskRoster.Resolved.class : SubtaskRoster.Unresolvable.class);
+    }
+  }
+
+  @Test
   void plainScalarsResolveByTheYaml12CoreSchemaNotSnakeYamls11Rules() throws Exception {
     write("WP01.md", task("[1:20, 010, 0o10, 0x1F, yes, No, on, y, 190:20:30, 'true', 007]"));
     SubtaskRoster.Resolved roster = (SubtaskRoster.Resolved) facts().subtaskRoster("WP01");
