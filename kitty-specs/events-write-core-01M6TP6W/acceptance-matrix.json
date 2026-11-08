@@ -158,11 +158,11 @@
       "criterion_id": "FR-016",
       "description": "The write domain is framework-free, I/O-free and concurrency-free, enforced by an ArchUnit rule with planted violations.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP06 AuthorityPurityTest"
+      "evidence": "AuthorityPurityTest 7 pass: real domain.authority holds (non-vacuous: UnitJudge, WriteFold present); planted violations rejected: FileAuthority, NioAuthority, ConcurrentAuthority, FrameworkAuthority, ClockAuthority; ConformingAuthority holds.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:43.731284+00:00",
+      "notes": "Rule also bans clocks, stricter than the spec."
     },
     {
       "criterion_id": "FR-017",
