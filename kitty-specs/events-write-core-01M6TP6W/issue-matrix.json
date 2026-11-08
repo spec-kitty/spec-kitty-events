@@ -133,7 +133,7 @@
       "wp": null
     },
     "#223": {
-      "evidence_ref": "maintainer ruling 2026-11-08 (5): unreachable.json kept; follow-up issue for workspace_context_required (research \u00a711 decision 17)",
+      "evidence_ref": "Follow-up: #223 (workspace_context_required is unreachable over the wire; unreachable.json kept per maintainer ruling 2026-11-08 (5), research \u00a711 decision 17)",
       "fr": null,
       "nfr": null,
       "repo": null,
