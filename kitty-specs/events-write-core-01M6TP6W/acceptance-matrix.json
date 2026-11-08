@@ -188,11 +188,11 @@
       "criterion_id": "FR-019",
       "description": "The edge order and every existing edge refusal are unchanged; existing edge and operations tests stay green except the declared fail-closed and row-shape exceptions.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP03 and WP08 runs of the existing edge and operations tests"
+      "evidence": "EdgeOrderTest 35, BearerAndProtocolFilterTest, BodySizeFilterTest, HostOriginFilterTest 42, DrainTest 4 all pass. Diff vs base touches only RefusalBodyTest (+1 additive test; optional withType on one call) and OperationsTest (fail-closed -> 404/422 assertions; well-formed rows now carry transition fields). Other edge tests unmodified.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:49.342768+00:00",
+      "notes": "The changes are the declared fail-closed and row-shape exceptions; RefusalBodyTest only adds the optional reason type member."
     },
     {
       "criterion_id": "FR-020",
