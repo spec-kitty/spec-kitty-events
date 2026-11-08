@@ -138,11 +138,11 @@
       "criterion_id": "FR-014",
       "description": "A batch judges each unit against the state earlier units leave, may span work packages, and a refusal names #/units/<i> and writes nothing.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP07 BatchJudge tests; WP08 US3 integration tests"
+      "evidence": "BatchJudgeTest 5 (second unit judged after first; first refusal at original index; earlier unit satisfies another WP's dependency; annotations join the fold; 64 units); WriteIntegrationTest us3-1 (one fsync, replay 0), us3-2 (illegal fourth unit names unit three, writes nothing); batch-cross-wp-* corpus cases; ProtocolCorpusTest asserts instance '#/units/<i>'.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:39.979500+00:00",
+      "notes": "Cross-WP batches: batch-cross-wp-claims and batch-cross-wp-three-units."
     },
     {
       "criterion_id": "FR-015",
