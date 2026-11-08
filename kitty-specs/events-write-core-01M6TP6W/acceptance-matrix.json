@@ -128,11 +128,11 @@
       "criterion_id": "FR-013",
       "description": "Dependency gating on planned->claimed and claimed->in_progress follows core's verdict (approved, done, operator-canceled; unresolvable is unsatisfied; force bypasses).",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP07 DependencyVerdict tests and FullParityCorpusTest; WP08 DiskMissionFactsParityTest"
+      "evidence": "DependencyVerdictTest 4; ParityCorpusTest 239 incl. dependency-* cases (approved/done/operator-canceled accepted; synthetic-cancel, missing, ambiguous, malformed, unreadable unsatisfied; dependency-force-bypass); DiskMissionFactsTest 31; DiskMissionFactsParityTest 239; WriteIntegrationTest us2-2.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:38.022911+00:00",
+      "notes": "Decisions 18-21 (R19 tags, R20 anchors/directives, R25-R30) fail closed where core's ruamel accepts exotic forms; frontmatter reading judged under those rulings."
     },
     {
       "criterion_id": "FR-014",
