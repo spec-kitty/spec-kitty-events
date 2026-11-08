@@ -11,6 +11,9 @@ import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -278,6 +281,87 @@ class WriteIntegrationTest {
   }
 
   @Test
+  void escapingSessionTimesNumbersAndNestedIdentityFieldsAreByteExact() throws Exception {
+    try (WriteRig rig = WriteRig.start()) {
+      String extras = ",\"text\":\"é—😀\\n\\u0001\",\"session_started_at\":\"2026-01-01T00:00:00.250000+00:00\","
+          + "\"session_ended_at\":\"2026-01-01T00:00:02.750000+00:00\",\"machine_name\":\"top\","
+          + "\"hostname\":\"top\",\"workspace_path\":\"/secret\",\"developer_name\":\"top\","
+          + "\"developer_email\":\"top@example.invalid\",\"nested\":{\"hostname\":\"nested\",\"keep\":1},"
+          + "\"objects\":[{\"workspace_path\":\"/secret\",\"keep\":2}],\"number\":1.0,\"integer\":9007199254740993,"
+          + "\"nothing\":null,\"enabled\":true}";
+      String row = WriteRig.claimRow(ID1).substring(0, WriteRig.claimRow(ID1).length() - 1) + extras;
+
+      RawClient.Reply reply = rig.post("unit", WriteRig.unit(row));
+
+      assertThat(reply.status()).as(reply.text()).isEqualTo(201);
+      String encoded = WriteRig.encodedRow(row);
+      assertThat(Files.readString(rig.log())).isEqualTo(WriteRig.priorPlannedLine() + encoded);
+      assertThat(encoded).contains("\"session_duration_s\": 2").contains("\\ud83d\\ude00")
+          .doesNotContain("/secret").doesNotContain("developer_email").doesNotContain("session_started_at");
+    }
+  }
+
+  @Test
+  void aCrLfLogReplaysWithoutChangingItsBytes() throws Exception {
+    try (WriteRig rig = WriteRig.start()) {
+      String body = WriteRig.unit(WriteRig.claimRow(ID1));
+      String crlf = (WriteRig.priorPlannedLine() + WriteRig.expectedClaimLine(ID1)).replace("\n", "\r\n");
+      Files.writeString(rig.log(), crlf);
+      byte[] before = Files.readAllBytes(rig.log());
+
+      RawClient.Reply reply = rig.post("unit", body);
+
+      assertThat(reply.status()).as(reply.text()).isEqualTo(201);
+      assertThat(JSON.readTree(reply.body()).get("replayed").asBoolean()).isTrue();
+      assertThat(Files.readAllBytes(rig.log())).isEqualTo(before);
+    }
+  }
+
+  @Test
+  void interiorLogLinesFollowTheFoldAndUnreducibleLinesStayUntouched() throws Exception {
+    try (WriteRig rig = WriteRig.start()) {
+      String skippable = WriteRig.priorPlannedLine() + "\n"
+          + "{\"event_id\":\"00000000000000000000000002\",\"event_type\":\"non_lane\"}\n";
+      Files.writeString(rig.log(), skippable);
+      RawClient.Reply accepted = rig.post("unit", WriteRig.unit(WriteRig.claimRow(ID1)));
+      assertThat(accepted.status()).as(accepted.text()).isEqualTo(201);
+      assertThat(Files.readString(rig.log())).isEqualTo(skippable + WriteRig.expectedClaimLine(ID1));
+
+      for (String malformed : List.of("{bad\n", "{\"event_id\":\"00000000000000000000000002\",\"kind\":\"unknown\"}\n")) {
+        Files.writeString(rig.log(), WriteRig.priorPlannedLine() + malformed);
+        byte[] before = Files.readAllBytes(rig.log());
+        assertRefusal(rig.post("unit", WriteRig.unit(WriteRig.claimRow(ID1))), 500,
+            "STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED", null);
+        assertThat(Files.readAllBytes(rig.log())).isEqualTo(before);
+      }
+    }
+  }
+
+  @Test
+  void aWriteAlreadyInFlightFinishesWhileLaterWritesSeeServiceDraining() throws Exception {
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    try (WriteRig rig = WriteRig.start()) {
+      Path lock = rig.gitCommonDir.resolve("spec-kitty-locks/mission.status.lock");
+      Files.createDirectories(lock.getParent());
+      var peer = LedgerLocks.forThisOs().acquire(lock, Duration.ofSeconds(2));
+      try {
+        Future<RawClient.Reply> started = executor.submit(() -> rig.post("unit", WriteRig.unit(WriteRig.claimRow(ID1))));
+        awaitInFlight(rig, 1);
+        Thread.sleep(100); // let the started request pass the drain check and reach the held Mission lock
+        rig.beginDrain();
+        RawClient.Reply later = rig.post("unit", WriteRig.unit(WriteRig.claimRow(ID2)));
+        assertRefusal(later, 503, "SERVICE_DRAINING", null);
+        peer.close();
+        assertThat(started.get(5, TimeUnit.SECONDS).status()).isEqualTo(201);
+        assertThat(Files.readString(rig.log())).isEqualTo(WriteRig.priorPlannedLine() + WriteRig.expectedClaimLine(ID1));
+      } finally {
+        peer.close();
+        executor.shutdownNow();
+      }
+    }
+  }
+
+  @Test
   void firstAndEmptyLogsAcceptAGenesisTransition() throws Exception {
     for (boolean empty : new boolean[] {false, true}) {
       try (WriteRig rig = WriteRig.start()) {
@@ -293,6 +377,12 @@ class WriteIntegrationTest {
 
   private static java.nio.file.StandardOpenOption StandardOpenOptionsAppend() {
     return java.nio.file.StandardOpenOption.APPEND;
+  }
+
+  private static void awaitInFlight(WriteRig rig, int count) throws InterruptedException {
+    long deadline = System.nanoTime() + Duration.ofSeconds(2).toNanos();
+    while (rig.inFlight() < count && System.nanoTime() < deadline) Thread.sleep(10);
+    assertThat(rig.inFlight()).isGreaterThanOrEqualTo(count);
   }
 
   private static void assertRefusal(RawClient.Reply reply, int status, String code, String type) throws Exception {

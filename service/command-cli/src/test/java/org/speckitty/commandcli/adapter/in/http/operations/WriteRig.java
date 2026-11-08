@@ -13,6 +13,7 @@ import org.speckitty.commandcli.adapter.in.http.edge.RawClient;
 import org.speckitty.commandcli.adapter.out.filesystem.RepositoryIdentity;
 import org.speckitty.commandcli.adapter.out.filesystem.ServiceLock;
 import org.speckitty.commandcli.adapter.out.filesystem.StateDirectory;
+import org.speckitty.commandcli.application.lifecycle.ServiceLifecycle;
 import org.speckitty.commandcli.config.CommandCliApplication;
 import org.speckitty.commandcli.config.ServeOptions;
 import org.speckitty.commandcli.config.ServeRuntime;
@@ -159,6 +160,14 @@ final class WriteRig implements AutoCloseable {
     return "{\"actor\": \"java-jenny\", \"at\": \"2026-11-07T09:00:00+00:00\", \"event_id\": \"" + PRIOR_ID
         + "\", \"evidence\": null, \"execution_mode\": \"direct_repo\", \"force\": false, \"from_lane\": \"genesis\", "
         + "\"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"planned\", \"wp_id\": \"WP01\"}\n";
+  }
+
+  int inFlight() {
+    return context.getBean(ServiceLifecycle.class).inFlight();
+  }
+
+  void beginDrain() {
+    context.getBean(ServiceLifecycle.class).beginDrain();
   }
 
   private int port() {

@@ -1,9 +1,13 @@
 package org.speckitty.commandcli.adapter.in.http.operations;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -17,12 +21,18 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.speckitty.commandcli.adapter.in.http.edge.EdgeRig;
 import org.speckitty.commandcli.adapter.in.http.edge.RawClient;
 import org.speckitty.commandcli.adapter.out.filesystem.RepositoryIdentity;
+import org.speckitty.commandcli.application.lifecycle.ServiceLifecycle;
+import org.speckitty.commandcli.application.write.WriteOutcome;
+import org.speckitty.commandcli.application.write.WriteService;
+import org.speckitty.commandcli.domain.service.RefusalCode;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The six operations of contracts/mission-write on a running service (spec FR-008 to FR-011, FR-015, SC-003): the handshake and the
- * health answer what the service is, every well-formed write is refused fail-closed with nothing written, a malformed write is
+ * health answer what the service is, a well-formed write to an unknown Mission is refused with nothing written, a malformed write is
  * REQUEST_MALFORMED, and every body validates against the contract's schemas.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -220,6 +230,21 @@ class OperationsTest {
       String wrongStatus = "{\"code\":\"" + code.name() + "\",\"status\":" + (code.status() == 500 ? 501 : 500) + ",\"title\":\"x\"}";
       assertThat(ContractSchemas.violations("WriteRefusal", wrongStatus)).as(code.name() + " with another status").isNotEmpty();
     }
+  }
+
+  @Test
+  void aBusyWriteCarriesRetryAfterOneSecond() {
+    WriteService writes = mock(WriteService.class);
+    when(writes.write(any())).thenReturn(new WriteOutcome.Refused(
+        RefusalCode.SERVICE_BUSY, null, "Another write is still in progress.", null));
+    WriteController controller = new WriteController(new ServiceLifecycle(Clock.systemUTC(), () -> { }), writes,
+        new WriteBodies(JSON), JSON);
+
+    ResponseEntity<byte[]> response = controller.recordWorkPackageTransition(
+        MISSION, WriteRig.unit(WriteRig.claimRow("01J6XW9KQT7M0YB3N4R5CQZ2EY")).getBytes());
+
+    assertThat(response.getStatusCode().value()).isEqualTo(503);
+    assertThat(response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("1");
   }
 
   @Test

@@ -61,6 +61,10 @@ class FilesystemMissionCatalogTest {
       Files.writeString(mission.resolve("tasks/WP02-slice.md"), "---\nsubtasks: []\n---\n");
       Files.createSymbolicLink(root.resolve("kitty-specs/escape"), outside);
       FilesystemMissionCatalog catalog = new FilesystemMissionCatalog(root.resolve(".git"));
+      String escapedId = "01J6XW9KQT7M0YB3N4R5CQZ2EZ";
+      Files.writeString(outside.resolve("meta.json"), "{\"mission_id\":\"" + escapedId + "\"}");
+      MissionRef escaped = ((MissionCatalog.Found) catalog.find(escapedId)).mission();
+      assertThat(catalog.locationMatches(escaped, ".", "kitty-specs/escape", null)).isFalse();
       MissionRef ref = ((MissionCatalog.Found) catalog.find(ID)).mission();
       assertThat(catalog.locationMatches(ref, ".", "kitty-specs/mission", null)).isTrue();
       assertThat(catalog.locationMatches(ref, "lane", "kitty-specs/mission", null)).isFalse();

@@ -50,9 +50,10 @@ public final class FilesystemMissionCatalog implements MissionCatalog {
   public boolean locationMatches(MissionRef mission, String requestedCheckout, String requestedDirectory, String destinationRef) {
     if (!".".equals(requestedCheckout) || destinationRef != null || checkout.root().isEmpty()) return false;
     try {
-      Path actual = checkout.root().orElseThrow().resolve(requestedDirectory).toRealPath();
-      Path expected = checkout.root().orElseThrow().resolve(mission.directory()).toRealPath();
-      return actual.equals(expected);
+      Path root = checkout.root().orElseThrow();
+      Path actual = root.resolve(requestedDirectory).toRealPath();
+      Path expected = root.resolve(mission.directory()).toRealPath();
+      return actual.startsWith(root) && expected.startsWith(root) && actual.equals(expected);
     } catch (IOException | RuntimeException exception) {
       return false;
     }

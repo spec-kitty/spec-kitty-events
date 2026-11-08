@@ -12,7 +12,7 @@ import javax.xml.parsers.DocumentBuilderFactory
 //           native-binary needs a built binary (NativeSmokeTest): only nativeSmoke runs it
 //           process       starts the boot jar as a child process (processTest); never part of `test`
 //   `check` depends on nativeTagJvmTest, processTest and the JaCoCo rules; it never runs the binary tests.
-// Writes refuse fail-closed until the canonical writer (#160) and the lane authority (#161) land.
+// Writes run through the canonical writer (#160), lane authority (#161) and the write service cut-over (#155).
 
 plugins {
     id("events.service")
