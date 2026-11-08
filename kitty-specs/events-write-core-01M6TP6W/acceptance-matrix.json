@@ -268,11 +268,11 @@
       "criterion_id": "FR-027",
       "description": "Row kinds are checked at the edge: a transition row first, then annotation rows with wp_id and a non-empty delta; anything else is 400.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP03 WriteBodiesTest and the examples test"
+      "evidence": "WriteBodiesTest (17): rowZeroMustBeATransitionEvenIfKindIsNull, laterAndStandaloneRowsMustBeUsefulAnnotations (wp_id pattern, non-empty delta), aRowRequiresAnObjectValue, aBatchRuleFailureNamesItsUnit, everyContractExampleWithRowsPassesTheNewRules; ProtocolCorpusTest 34; WriteIntegrationTest us5.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:37:03.911953+00:00",
+      "notes": "All contract examples pass the new row rules; OperationsTest rows updated accordingly."
     },
     {
       "criterion_id": "FR-028",
