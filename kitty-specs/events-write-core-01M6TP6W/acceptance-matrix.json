@@ -18,11 +18,11 @@
       "criterion_id": "FR-002",
       "description": "The sanitizer matches core's sanitize_event_for_log: PII keys stripped at every depth, top-level session pair folded into a truncated session_duration_s.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP01 tests/test_status_log.py; WP05 StatusRowSanitizerTest"
+      "evidence": "StatusRowSanitizerTest (7 pass): stripsEveryPiiKeyAtEveryDepth, bothParseableTimesReplaceAndOverwriteDuration (negative truncation), missingMalformedOrNonStringTimesLeaveAnExistingDurationUntouched, nestedSessionKeysAreNotSessionFields; Python tests/test_status_log.py (47 pass); session_* status_append fixtures.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:18.486364+00:00",
+      "notes": "Covers PII at every depth incl. lists, session pair fold, nested keys untouched. Core-generated oracle drift check exit 0."
     },
     {
       "criterion_id": "FR-003",
