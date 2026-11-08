@@ -208,11 +208,11 @@
       "criterion_id": "FR-021",
       "description": "Service README, architecture pages, contract CHANGELOG and a changelog fragment describe the write core as built; docs and changelog gates pass.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP09: npm run validate, changelog.py check/guard"
+      "evidence": "cd site && npm run validate: exit 0 (235 files valid, 216 links resolve; warnings only); scripts/changelog.py check exit 0 and guard exit 0; fragments docs/changelog/unreleased/160-write-core.md and 160-write-core-contract.md; contracts/mission-write/CHANGELOG.md 1.0.1-SNAPSHOT; service/README.md and docs/architecture/services/* diffs.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:52.978051+00:00",
+      "notes": "npm run validate regenerated two index blocks in tracked docs README files as a side effect; I restored them with git checkout, so the tree is clean."
     },
     {
       "criterion_id": "FR-022",
