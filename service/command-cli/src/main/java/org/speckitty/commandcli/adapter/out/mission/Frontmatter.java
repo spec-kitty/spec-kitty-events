@@ -14,10 +14,6 @@ import java.util.Optional;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.composer.Composer;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
-import org.yaml.snakeyaml.events.CollectionStartEvent;
-import org.yaml.snakeyaml.events.DocumentStartEvent;
-import org.yaml.snakeyaml.events.Event;
-import org.yaml.snakeyaml.events.ScalarEvent;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.NodeId;
 import org.yaml.snakeyaml.nodes.ScalarNode;
@@ -28,8 +24,15 @@ import org.yaml.snakeyaml.reader.StreamReader;
 import org.yaml.snakeyaml.resolver.Resolver;
 import org.yaml.snakeyaml.scanner.Scanner;
 import org.yaml.snakeyaml.scanner.ScannerImpl;
+import org.yaml.snakeyaml.tokens.AliasToken;
+import org.yaml.snakeyaml.tokens.AnchorToken;
+import org.yaml.snakeyaml.tokens.DirectiveToken;
+import org.yaml.snakeyaml.tokens.DocumentEndToken;
+import org.yaml.snakeyaml.tokens.DocumentStartToken;
+import org.yaml.snakeyaml.tokens.TagToken;
+import org.yaml.snakeyaml.tokens.Token;
 
-/** Bounded, tag-free YAML frontmatter parsing with core's fence, BOM and newline rules. */
+/** Bounded, plain-subset YAML frontmatter parsing with core's fence, BOM and newline rules. */
 public final class Frontmatter {
   private static final int MAX_BLOCK_BYTES = 64 * 1024;
   // A task file is documentation, not a status log. Sixteen MiB is ample for authored WPs while
@@ -74,7 +77,7 @@ public final class Frontmatter {
   }
 
   private static Object load(String block, LoaderOptions options) {
-    rejectExplicitTagsAndDirectives(block, options);
+    rejectNonPlainYaml(block, options);
     StreamReader reader = new StreamReader(block);
     Parser parser = new ParserImpl(new ScannerImpl(reader, options));
     Composer composer = new Composer(parser, new Yaml12Resolver(), options);
@@ -84,17 +87,20 @@ public final class Frontmatter {
     return constructor.getSingleData(Object.class);
   }
 
-  /** R19: authored tags and directives make the complete declaration unreadable. */
-  private static void rejectExplicitTagsAndDirectives(String block, LoaderOptions options) {
-    Parser parser = new ParserImpl(new ScannerImpl(new StreamReader(block), options));
-    while (!parser.checkEvent(Event.ID.StreamEnd)) {
-      Event event = parser.getEvent();
-      if (event instanceof ScalarEvent scalar && scalar.getTag() != null
-          || event instanceof CollectionStartEvent collection && collection.getTag() != null
-          || event instanceof DocumentStartEvent document
-              && (document.getVersion() != null
-                  || document.getTags() != null && !document.getTags().isEmpty())) {
-        throw new IllegalArgumentException("explicit YAML tags and directives are not accepted");
+  /** R19/R20: only the plain YAML subset shared by SnakeYAML and ruamel is readable. */
+  private static void rejectNonPlainYaml(String block, LoaderOptions options) {
+    if (block.codePoints().anyMatch(codePoint ->
+        codePoint == '\t' || codePoint == 0x85 || codePoint == 0x2028 || codePoint == 0x2029)) {
+      throw new IllegalArgumentException("YAML 1.1 whitespace is not accepted in frontmatter");
+    }
+    Scanner scanner = new ScannerImpl(new StreamReader(block), options);
+    int documentStarts = 0;
+    while (!scanner.checkToken(Token.ID.StreamEnd)) {
+      Token token = scanner.getToken();
+      if (token instanceof DocumentStartToken) documentStarts++;
+      if (token instanceof DirectiveToken || token instanceof AnchorToken || token instanceof AliasToken
+          || token instanceof TagToken || token instanceof DocumentEndToken || documentStarts > 1) {
+        throw new IllegalArgumentException("frontmatter is outside the plain YAML subset");
       }
     }
   }

@@ -2,36 +2,29 @@ package org.speckitty.commandcli.adapter.out.mission;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.ArrayList;
+import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 class FactValuesTest {
-  /** Character.isDigit minus Python 3.11 str.isdecimal for the Gradle JDK 25 test toolchain. */
-  private static final int[][] JDK25_DECIMAL_DIGITS_ADDED_AFTER_UNICODE_14 = {
-    {0x10D40, 0x10D49}, {0x116D0, 0x116E3}, {0x11BF0, 0x11BF9},
-    {0x11F50, 0x11F59}, {0x16130, 0x16139}, {0x16D70, 0x16D79}, {0x1CCF0, 0x1CCF9},
-    {0x1E4F0, 0x1E4F9}, {0x1E5F1, 0x1E5FA}
-  };
-
   @Test
-  void shellPidDecimalDigitsExactlyMatchPython311Unicode14() {
-    List<Integer> jdkAdditions = IntStream.range(0, Character.MAX_CODE_POINT + 1)
-        .filter(Character::isDigit)
-        .filter(codePoint -> !FactValues.isPython311DecimalDigit(codePoint))
+  void shellPidDecimalDigitsExactlyMatchPython311Unicode14() throws Exception {
+    List<Integer> actual = IntStream.range(0, Character.MAX_CODE_POINT + 1)
+        .filter(FactValues::isPython311DecimalDigit)
         .boxed()
         .toList();
-    assertThat(jdkAdditions).containsExactlyElementsOf(expectedJdk25Additions());
-    assertThat(FactValues.isPython311DecimalDigit(0x11F51)).isFalse();
-    assertThat(FactValues.isPython311DecimalDigit(0x1D7D9)).isTrue();
-  }
+    ByteBuffer sortedCodePoints = ByteBuffer.allocate(actual.size() * Integer.BYTES);
+    actual.forEach(sortedCodePoints::putInt);
 
-  private static List<Integer> expectedJdk25Additions() {
-    List<Integer> codePoints = new ArrayList<>();
-    for (int[] range : JDK25_DECIMAL_DIGITS_ADDED_AFTER_UNICODE_14) {
-      codePoints.addAll(IntStream.rangeClosed(range[0], range[1]).boxed().toList());
-    }
-    return codePoints;
+    // Generated once with core 512567ee's Python 3.11.15 (Unicode 14.0.0):
+    // points = [cp for cp in range(sys.maxunicode + 1) if chr(cp).isdecimal()]
+    // digest = sha256(b"".join(cp.to_bytes(4, "big") for cp in points)).hexdigest()
+    assertThat(actual).hasSize(660);
+    assertThat(HexFormat.of().formatHex(
+        MessageDigest.getInstance("SHA-256").digest(sortedCodePoints.array())))
+        .isEqualTo("6a3d60c3fba3543c006ac150be6fe964a320bf8d2e9ca061ba194acfa25df5fb");
   }
 }
