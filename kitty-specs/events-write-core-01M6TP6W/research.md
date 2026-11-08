@@ -391,7 +391,7 @@ Each entry gives the decision, why it was chosen, and the alternatives considere
    - Alternative rejected: an unbounded wait, which is core's default but blocks the launcher's client.
 5. **A stale `from_lane` answers `TRANSITION_REJECTED` with no `type`.**
    - Why: `illegal_transition` is defined as an edge that is not in the machine, which this is not. `type` is optional in `WriteRefusal`. These cases are tagged `oracle: protocol`.
-   - Open (2026-11-08): the maintainer has not ruled; current behaviour kept, listed as an open question in the PR.
+   - **Superseded 2026-11-08 (maintainer ruling, decision 17):** the refusal carries `urn:spec-kitty:write-refusal:stale_from_lane`.
 6. **`coordination_ref_commit` answers `WRITE_LOCATION_UNVERIFIED` before the Mission lookup.**
    - Why: ADR-0007 D-4. A coordination Mission need not exist in the root checkout, so a 404 first would be wrong.
 7. **A location mismatch on `checkout_append` answers `WRITE_LOCATION_UNVERIFIED`, not `OWNED_MISSION_PATH_REFUSED`.**
@@ -412,6 +412,12 @@ Each entry gives the decision, why it was chosen, and the alternatives considere
 14. **SnakeYAML 2.6 (already sha-pinned) for frontmatter.**
     - Why: core's `dependencies` and `subtasks` come in several YAML forms. `SafeConstructor` only, on a bounded block.
     - Supply chain: no new artifact (DIRECTIVE_051 controls: the version is pinned and verified, no install scripts, no new transitive dependency).
+17. **Maintainer rulings, 2026-11-08.** Each is a resolved Decision Moment under `decisions/`.
+    - `operation` field kept in `1.0.1-SNAPSHOT` (decision 2; DM `01M6X2JWES41Y6PGF4EZ8M174K`).
+    - A stale `from_lane` answers `TRANSITION_REJECTED` with the reason `urn:spec-kitty:write-refusal:stale_from_lane`, added to the contract's provisional codes as an events-side addition with no core equivalent; if a code proves impossible, a clear human-readable detail. A test covers the outcome (supersedes decision 5; DM `01M6X2Q4YK41J0Q03F55NAPS8Y`).
+    - Torn-tail recovery after core #6195: an explicit repair command, spec-kitty/spec-kitty-events#222; the write path keeps refusing (C-006; DM `01M6X2Q7S8K2NET8XCE11KM7BA`).
+    - ADR-0007 and ADR-0008 become Accepted in this mission's PR (accepted by the maintainer 2026-11-07; supersedes C-002's "status untouched"; DM `01M6X2QAWDFC27AREE1HJ1C4RH`).
+    - `unreachable.json` stays as is; one issue per wire-unreachable reason: `workspace_context_required` #223, the evidence half of `implementation_evidence_required` #224 (DM `01M6X2QDYNTGZNG3A1HG4NJGMY`).
 
 ## 12. Post-spec squad dispositions
 
