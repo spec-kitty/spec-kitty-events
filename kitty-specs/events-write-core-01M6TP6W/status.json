@@ -238,7 +238,7 @@
     },
     "WP08": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": "claude:claude-sonnet-5-5:java-jenny",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 10,
@@ -265,7 +265,8 @@
         "Cycle 9 (Sonnet 5.5): RootCheckout crash + fail-closed, R29 widened, R30",
         "Cycle 9 (Sonnet 5.5): GitConfig port, R29 widened, R30 (214b8109); command-cli check 1132/133/11/1; drift 0; 98426 static + 265 e2e + 15000 config fuzz, 0 fail-open; p95 97.0 ms",
         "Cycle 10 (Sonnet 5.5): R31 RootCheckout asks git",
-        "Cycle 10 (Sonnet 5.5): R31 RootCheckout asks git, GitConfig deleted (282825f8); command-cli check 1139/133/11/1; drift 0; config diffs match git; p95 111.7 ms"
+        "Cycle 10 (Sonnet 5.5): R31 RootCheckout asks git, GitConfig deleted (282825f8); command-cli check 1139/133/11/1; drift 0; config diffs match git; p95 111.7 ms",
+        "Re-record the cycle-10 hand-off with the implementer's full identity (Claude Sonnet 5.5) so review independence is provable"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
