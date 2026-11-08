@@ -873,6 +873,34 @@ def _lifecycle_force_intents() -> list[Intent]:
     ]
 
 
+def _review_fix_intents() -> list[Intent]:
+    """Append-only lifecycle parity cases from the WP07 review."""
+    tasks = default_tasks()
+    tasks["WP01.md"] = task_text("WP01", dependencies="[WP99]")
+    return [
+        _intent(
+            "dependency-start-planned-force-does-not-bypass",
+            "dependency",
+            path_to("planned"),
+            start_impl(force=True),
+            tasks=tasks,
+        ),
+        _intent(
+            "dependency-start-claimed-force-does-not-bypass",
+            "dependency",
+            (*path_to("planned"), tr("claimed", force=True, reason="operator seed")),
+            start_impl(force=True),
+            tasks=tasks,
+        ),
+        _intent(
+            "claim-start-reason-without-force",
+            "start_rejected",
+            path_to("claimed"),
+            start_impl(reason="note without force"),
+        ),
+    ]
+
+
 def _batch_intents() -> list[Intent]:
     planned_pair = (*path_to("planned"), *path_to("planned", wp_id="WP02"))
     return [
@@ -1098,6 +1126,7 @@ def build_intents() -> tuple[Intent, ...]:
         + _done_evidence_scope_intents()
         + _retrospective_fold_intents()
         + _lifecycle_force_intents()
+        + _review_fix_intents()
     )
     ids = [intent.case_id for intent in intents]
     if len(ids) != len(set(ids)):

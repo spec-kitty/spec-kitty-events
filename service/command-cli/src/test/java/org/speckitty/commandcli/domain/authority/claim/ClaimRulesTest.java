@@ -83,6 +83,18 @@ class ClaimRulesTest {
     Refusal refusal = RULES.check(review("for_review", "reviewer-b", false, null), fold(Lane.DONE, "implementer-a", null, null)).orElseThrow();
     assertThat(refusal.reason()).isEqualTo(RefusalReason.START_REJECTED);
     assertThat(refusal.message()).isEqualTo("WP WP01 is in 'done', cannot start review");
+    Refusal genesis = RULES.check(review("for_review", "reviewer-b", false, null),
+        fold(Lane.UNINITIALIZED, null, null, null)).orElseThrow();
+    assertThat(genesis.message()).isEqualTo("WP WP01 is in 'genesis', cannot start review");
+  }
+
+  @Test
+  void reasonWithoutForceIsAnOperatorNoteUnderTheGeneratorMapping() {
+    Refusal refusal = RULES.check(start("claimed", "in_progress", "codex", false, "note without force"),
+        fold(Lane.CLAIMED, "codex", null, null)).orElseThrow();
+    assertThat(refusal.reason()).isEqualTo(RefusalReason.START_REJECTED);
+    assertThat(refusal.message()).isEqualTo(
+        "--force only applies to a WP in for_review, in_review or approved; WP01 is in 'claimed'");
   }
 
   @Test
@@ -118,6 +130,19 @@ class ClaimRulesTest {
         + "or an operator with `--force --note <why>`");
   }
 
+  @Test
+  void forReviewWithdrawalLabelsAbsentAndStructuredImplementersAsCoreDoes() {
+    Refusal absent = RULES.check(start("for_review", "in_progress", "implementer-b", true, null),
+        fold(Lane.FOR_REVIEW, "reviewer-a", null, null)).orElseThrow();
+    assertThat(absent.message()).isEqualTo("WP WP01 is in for_review; only its implementer of record (none on record) "
+        + "may withdraw it, or an operator with `--force --note <why>`");
+
+    Object structured = Map.of("role", "implementer", "profile", "python-pedro", "tool", "codex", "model", "kimi-k3");
+    Refusal structuredRefusal = RULES.check(start("for_review", "in_progress", "implementer-b", true, null),
+        fold(Lane.FOR_REVIEW, "reviewer-a", null, structured)).orElseThrow();
+    assertThat(structuredRefusal.message()).contains("implementer of record (codex:kimi-k3:python-pedro)");
+  }
+
   private static UnitInput start(String from, String to, Object actor, boolean force, String reason) {
     return start(Operation.START_IMPLEMENTATION, from, to, actor, force, reason);
   }
@@ -137,7 +162,7 @@ class ClaimRulesTest {
     return new UnitInput("WP01", operation, List.of(row));
   }
 
-  private static FoldView fold(Lane lane, String actor, String role, String implementer) {
+  private static FoldView fold(Lane lane, String actor, String role, Object implementer) {
     Map<String, Object> slots = implementer == null ? Map.of() : Map.of("latest_implementer_actor", implementer);
     return new FoldView(Map.of("WP01", new WpWriteState(lane, actor, actor, role, null, null, true, Map.of(), null, null, slots)));
   }
