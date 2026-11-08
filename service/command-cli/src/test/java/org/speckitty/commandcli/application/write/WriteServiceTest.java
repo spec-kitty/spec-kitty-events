@@ -153,6 +153,9 @@ class WriteServiceTest {
       try (var ignored = turn.tryAcquire(0).orElseThrow()) {
         held.countDown();
         release.await(1, TimeUnit.SECONDS);
+      } catch (InterruptedException exception) {
+        Thread.currentThread().interrupt();
+        throw new AssertionError(exception);
       }
     });
     holder.start();

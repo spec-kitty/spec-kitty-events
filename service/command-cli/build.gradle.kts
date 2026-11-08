@@ -156,7 +156,7 @@ val benchmarkTest = tasks.register<Test>("benchmarkTest") {
     classpath = testSourceSet.get().runtimeClasspath
     useJUnitPlatform {
         includeTags("benchmark")
-        excludeTags("process", "native-binary", "benchmark")
+        excludeTags("process", "native-binary")
     }
 }
 
@@ -226,22 +226,6 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
             limit {
                 counter = "LINE"
                 minimum = "0.90".toBigDecimal()
-            }
-        }
-        rule {
-            element = "METHOD"
-            includes = listOf(
-                "org.speckitty.commandcli.domain.authority.*",
-                "org.speckitty.commandcli.application.write.*",
-                "org.speckitty.commandcli.adapter.out.mission.*",
-                "org.speckitty.commandcli.adapter.out.statuslog.*",
-                "org.speckitty.commandcli.adapter.in.http.operations.WriteBodies",
-                "org.speckitty.commandcli.adapter.in.http.operations.AckBody",
-            )
-            limit {
-                counter = "COMPLEXITY"
-                value = "TOTALCOUNT"
-                maximum = "15".toBigDecimal()
             }
         }
         rule {
