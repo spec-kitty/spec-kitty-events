@@ -451,6 +451,10 @@ Lenses: scope fidelity (Opus) and contract and parity (Opus), 2026-11-07. Every 
     - Torn-tail recovery after core #6195: an explicit repair command, spec-kitty/spec-kitty-events#222; the write path keeps refusing (C-006; DM `01M6X2Q7S8K2NET8XCE11KM7BA`).
     - ADR-0007 and ADR-0008 become Accepted in this mission's PR (accepted by the maintainer 2026-11-07; supersedes C-002's "status untouched"; DM `01M6X2QAWDFC27AREE1HJ1C4RH`).
     - `unreachable.json` stays as is; one issue per wire-unreachable reason: `workspace_context_required` #223, the evidence half of `implementation_evidence_required` #224 (DM `01M6X2QDYNTGZNG3A1HG4NJGMY`).
+18. **WP08 review rulings (orchestrator, 2026-11-08; protocol-only outcomes found by the differential against core).**
+    - R15: an unresolvable subtask roster on an unforced `in_progress -> for_review` (core raises `SubtaskRosterMissingError` / `SubtaskRosterResolutionError` and writes nothing) refuses `409 TRANSITION_REJECTED` / `implementation_evidence_required`, fail closed like an unresolvable dependency declaration.
+    - R16: a `checkout_append` to a Mission whose primary `meta.json` records a non-blank `coordination_branch` answers `422 WRITE_LOCATION_UNVERIFIED` before any lock; core keys that Mission's lock with its mid8 and forbids a primary append, and `coordination_ref_commit` serves it from migration step 4 (decision 6).
+    - R17: `--separate-git-dir` and submodule repositories refuse every write with `422` (FR-009's root-checkout rule); a deliberate divergence, since core writes status there.
 
 ## 13. Post-tasks squad dispositions
 
