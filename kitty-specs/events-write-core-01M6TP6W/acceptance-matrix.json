@@ -148,11 +148,11 @@
       "criterion_id": "FR-015",
       "description": "The parity corpus (>= 150 cases, NFR-002 coverage) ships at conformance/status_transition_parity/, is validated by the packaged test, regenerated from core locally and checked by the CI drift job.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP04 test_status_transition_parity.py + local --check; WP10 write-core-parity job"
+      "evidence": "253 cases (196 core + 57 protocol) in conformance/status_transition_parity/cases. Python test_status_transition_parity.py 5 pass (schema, all 29 edges, >=5 batches, >=2 cross-WP, >=150). Java ParityCorpusTest 239 + ProtocolCorpusTest 34 = 253 (FullParityCorpusTest 1 pins the 14 later-layer cases). generate_transition_parity.py --check at pin: exit 0, drift 0.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:41.857586+00:00",
+      "notes": "CI drift job is write-core-parity (service.yml). Local --check against the core pin: 196 core cases, drift 0."
     },
     {
       "criterion_id": "FR-016",
