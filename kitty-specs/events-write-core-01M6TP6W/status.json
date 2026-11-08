@@ -304,7 +304,8 @@
       "notes": [
         "WP09 docs and changelog, opencode tokenfactory/kimi-k3",
         "WP09 by opencode tokenfactory/deepseek-v4.1-flash-1017 (kimi-k3 unavailable): f248890a merged as 810eab66; validate, changelog check/guard, docs tests 74, contract tests 379, ruff green",
-        "Cycle 2: fix review-cycle-1 findings"
+        "Cycle 2: fix review-cycle-1 findings",
+        "Cycle 2: all review-cycle-1 findings fixed (4befdaec)"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
