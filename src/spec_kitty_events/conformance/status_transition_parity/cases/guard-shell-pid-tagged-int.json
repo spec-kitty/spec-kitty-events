@@ -1,34 +1,19 @@
 {
   "area": "guard",
-  "core_call": {
-    "entry_point": "specify_cli.status.emit.emit_status_transition",
-    "kwargs": {
-      "actor": "implementer-a",
-      "fan_out": false,
-      "feature_dir": "${MISSION_DIR}",
-      "mission_slug": "999-status-transition-parity",
-      "refresh_projection": false,
-      "repo_root": "${REPO_ROOT}",
-      "to_lane": "for_review",
-      "wp_id": "WP01"
-    }
-  },
   "expected": {
-    "result": "ack",
-    "units": [
-      {
-        "appendedLines": 1,
-        "replayed": false
-      }
-    ]
+    "code": "TRANSITION_REJECTED",
+    "message": "Transition in_progress -> for_review requires completed subtasks or force with reason",
+    "reason": "urn:spec-kitty:write-refusal:implementation_evidence_required",
+    "result": "refusal",
+    "unit": null
   },
   "id": "guard-shell-pid-tagged-int",
   "layer": "domain",
   "log": [
     {
       "actor": "implementer-a",
-      "at": "2026-01-24T06:20:02+00:00",
-      "event_id": "000000000000000000001EAB91",
+      "at": "2026-01-23T13:40:02+00:00",
+      "event_id": "000000000000000000001DC131",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -43,8 +28,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-24T06:20:04+00:00",
-      "event_id": "000000000000000000001EAB93",
+      "at": "2026-01-23T13:40:04+00:00",
+      "event_id": "000000000000000000001DC133",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -59,8 +44,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-24T06:20:06+00:00",
-      "event_id": "000000000000000000001EAB95",
+      "at": "2026-01-23T13:40:06+00:00",
+      "event_id": "000000000000000000001DC135",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -79,9 +64,9 @@
     "mission_id": "01J00000000000000000000000",
     "mission_slug": "999-status-transition-parity"
   },
-  "notes": "Core entry-point parity for guard shell pid tagged int.",
+  "notes": "R15/R19: an explicit tag makes the roster unresolvable; the service fails closed.",
   "operation": "transition",
-  "oracle": "core",
+  "oracle": "protocol",
   "request": {
     "kind": "unit",
     "units": [
@@ -90,8 +75,8 @@
         "rows": [
           {
             "actor": "implementer-a",
-            "at": "2026-01-24T06:20:08+00:00",
-            "event_id": "000000000000000000001EAB97",
+            "at": "2026-01-23T13:40:08+00:00",
+            "event_id": "000000000000000000001DC137",
             "evidence": null,
             "execution_mode": "worktree",
             "force": false,

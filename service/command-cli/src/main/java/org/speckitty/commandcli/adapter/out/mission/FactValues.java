@@ -16,6 +16,12 @@ public final class FactValues {
   private static final Pattern WP_ID = Pattern.compile("^WP\\d{2,}$");
   private static final Pattern COMMIT = Pattern.compile("^[0-9a-f]{7,40}$");
   private static final Pattern PYTHON_INT = Pattern.compile("^[+-]?\\d+(?:_\\d+)*$", Pattern.UNICODE_CHARACTER_CLASS);
+  // Python 3.11 uses Unicode 14. Newer JDKs recognize these later decimal ranges; int() does not.
+  private static final int[][] POST_PYTHON_311_DECIMAL_RANGES = {
+    {0x10D40, 0x10D49}, {0x116D0, 0x116E3}, {0x11BF0, 0x11BF9}, {0x11DE0, 0x11DE9},
+    {0x11F50, 0x11F59}, {0x16130, 0x16139}, {0x16D70, 0x16D79}, {0x1CCF0, 0x1CCF9},
+    {0x1E4F0, 0x1E4F9}, {0x1E5F1, 0x1E5FA}
+  };
   private static final Set<String> OPTIONAL_STRINGS = Set.of(
       "base_branch", "created_at", "planning_base_branch", "merge_target_branch", "branch_strategy",
       "priority", "execution_mode", "authoritative_surface", "scope", "task_type", "phases", "assignee",
@@ -149,6 +155,7 @@ public final class FactValues {
     StringBuilder ascii = new StringBuilder();
     for (int codePoint : text.replace("_", "").codePoints().toArray()) {
       if (codePoint == '+' || codePoint == '-') ascii.appendCodePoint(codePoint);
+      else if (!isPython311DecimalDigit(codePoint)) return false;
       else ascii.append((char) ('0' + Character.digit(codePoint, 10)));
     }
     try {
@@ -157,6 +164,14 @@ public final class FactValues {
     } catch (NumberFormatException invalid) {
       return false;
     }
+  }
+
+  static boolean isPython311DecimalDigit(int codePoint) {
+    if (!Character.isDigit(codePoint)) return false;
+    for (int[] range : POST_PYTHON_311_DECIMAL_RANGES) {
+      if (codePoint >= range[0] && codePoint <= range[1]) return false;
+    }
+    return true;
   }
 
   private static String pythonString(Object value) {

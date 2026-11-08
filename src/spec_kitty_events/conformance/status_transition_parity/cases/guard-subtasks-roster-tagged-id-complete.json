@@ -1,34 +1,19 @@
 {
   "area": "guard",
-  "core_call": {
-    "entry_point": "specify_cli.status.emit.emit_status_transition",
-    "kwargs": {
-      "actor": "implementer-a",
-      "fan_out": false,
-      "feature_dir": "${MISSION_DIR}",
-      "mission_slug": "999-status-transition-parity",
-      "refresh_projection": false,
-      "repo_root": "${REPO_ROOT}",
-      "to_lane": "for_review",
-      "wp_id": "WP01"
-    }
-  },
   "expected": {
-    "result": "ack",
-    "units": [
-      {
-        "appendedLines": 1,
-        "replayed": false
-      }
-    ]
+    "code": "TRANSITION_REJECTED",
+    "message": "Transition in_progress -> for_review requires completed subtasks or force with reason",
+    "reason": "urn:spec-kitty:write-refusal:implementation_evidence_required",
+    "result": "refusal",
+    "unit": null
   },
   "id": "guard-subtasks-roster-tagged-id-complete",
   "layer": "domain",
   "log": [
     {
       "actor": "implementer-a",
-      "at": "2026-01-24T03:33:22+00:00",
-      "event_id": "000000000000000000001E8481",
+      "at": "2026-01-22T15:26:42+00:00",
+      "event_id": "000000000000000000001C88B1",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -43,8 +28,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-24T03:33:24+00:00",
-      "event_id": "000000000000000000001E8483",
+      "at": "2026-01-22T15:26:44+00:00",
+      "event_id": "000000000000000000001C88B3",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -59,8 +44,8 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-24T03:33:26+00:00",
-      "event_id": "000000000000000000001E8485",
+      "at": "2026-01-22T15:26:46+00:00",
+      "event_id": "000000000000000000001C88B5",
       "evidence": null,
       "execution_mode": "worktree",
       "force": false,
@@ -75,13 +60,13 @@
     },
     {
       "actor": "implementer-a",
-      "at": "2026-01-24T03:33:27+00:00",
+      "at": "2026-01-22T15:26:47+00:00",
       "delta": {
         "subtasks": {
           "T001": "done"
         }
       },
-      "event_id": "000000000000000000001E8488",
+      "event_id": "000000000000000000001C88B8",
       "kind": "annotation",
       "wp_id": "WP01"
     }
@@ -91,9 +76,9 @@
     "mission_id": "01J00000000000000000000000",
     "mission_slug": "999-status-transition-parity"
   },
-  "notes": "Core entry-point parity for guard subtasks roster tagged id complete.",
+  "notes": "R15/R19: an explicit tag makes the roster unresolvable; the service fails closed.",
   "operation": "transition",
-  "oracle": "core",
+  "oracle": "protocol",
   "request": {
     "kind": "unit",
     "units": [
@@ -102,8 +87,8 @@
         "rows": [
           {
             "actor": "implementer-a",
-            "at": "2026-01-24T03:33:30+00:00",
-            "event_id": "000000000000000000001E8489",
+            "at": "2026-01-22T15:26:50+00:00",
+            "event_id": "000000000000000000001C88B9",
             "evidence": null,
             "execution_mode": "worktree",
             "force": false,
