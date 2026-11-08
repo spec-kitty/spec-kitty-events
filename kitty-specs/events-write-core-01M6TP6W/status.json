@@ -174,7 +174,7 @@
     },
     "WP06": {
       "actor": "claude",
-      "agent": "opencode",
+      "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -182,6 +182,9 @@
       "last_event_id": "01M6W848JYJ9VZ1FKQNMCMFZMQ",
       "last_transition_at": "2026-11-08T00:14:58.654305+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Cycle 2: Opus MAJORs (done evidence on every lane with Python truthiness; retrospective non-lane rows) and minors fixed in e5118115 with 9 new core-generated cases; orchestrator verified --check 175 core / 0 drift and ParityCorpusTest/PipelineGuards/WriteFold green; fold fuzz 3000 logs 0 mismatches"
+      ],
       "provider": "__resolved_provider_absent__",
       "review": null,
       "review_result": {
