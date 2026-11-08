@@ -25,6 +25,94 @@ class WriteFoldTest {
   }
 
   @Test
+  void transitionsMissingRequiredFieldsAreUnreducible() {
+    for (String field : List.of("wp_id", "at", "actor", "force", "execution_mode")) {
+      Map<String, Object> malformed = AuthorityFixtures.row("genesis", "planned");
+      malformed.remove(field);
+      assertThatThrownBy(() -> WriteFold.fold(List.of(malformed)))
+          .as(field)
+          .isInstanceOf(UnreducibleLog.class)
+          .hasMessageContaining(field);
+    }
+  }
+
+  @Test
+  void structuredActorsRequireAnExactCoreKeySet() {
+    Map<String, Object> subset = AuthorityFixtures.row("genesis", "planned");
+    subset.put("actor", Map.of("tool", "codex"));
+    assertThatThrownBy(() -> WriteFold.fold(List.of(subset))).isInstanceOf(UnreducibleLog.class);
+
+    Map<String, Object> extra = AuthorityFixtures.row("genesis", "planned");
+    Map<String, Object> actor = new LinkedHashMap<>();
+    actor.put("role", "implementer");
+    actor.put("profile", null);
+    actor.put("tool", "codex");
+    actor.put("model", null);
+    actor.put("unexpected", null);
+    extra.put("actor", actor);
+    assertThatThrownBy(() -> WriteFold.fold(List.of(extra))).isInstanceOf(UnreducibleLog.class);
+  }
+
+  @Test
+  void structuredActorValuesAndProfileSourceFollowCoreValidation() {
+    Map<String, Object> wrongType = AuthorityFixtures.row("genesis", "planned");
+    wrongType.put("actor", Map.of("role", "implementer", "profile", "p", "tool", 1, "model", "m"));
+    assertThatThrownBy(() -> WriteFold.fold(List.of(wrongType))).isInstanceOf(UnreducibleLog.class);
+
+    Map<String, Object> inconsistent = AuthorityFixtures.row("genesis", "planned");
+    Map<String, Object> actor = new LinkedHashMap<>();
+    actor.put("role", "implementer");
+    actor.put("profile", null);
+    actor.put("profile_source", "invocation");
+    actor.put("tool", "codex");
+    actor.put("model", null);
+    inconsistent.put("actor", actor);
+    assertThatThrownBy(() -> WriteFold.fold(List.of(inconsistent))).isInstanceOf(UnreducibleLog.class);
+
+    actor.put("profile", "java-jenny");
+    assertThat(WriteFold.fold(List.of(inconsistent)).of("WP01").tool()).isEqualTo("codex");
+  }
+
+  @Test
+  void foldedReviewPermitsNullValuesButRemainsUnmodifiable() {
+    Map<String, Object> review = new LinkedHashMap<>();
+    review.put("at", null);
+    review.put("actor", "reviewer-a");
+    review.put("wp_id", "WP01");
+    review.put("reason", "complete");
+    WpWriteState state = WriteFold.fold(List.of(annotation("WP01", Map.of("review", review)))).of("WP01");
+    assertThat(state.review()).containsKey("at").containsEntry("actor", "reviewer-a");
+    assertThat(state.review().get("at")).isNull();
+    assertThatThrownBy(() -> state.review().put("actor", "other"))
+        .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  void skipsRetrospectiveEventNameRows() {
+    assertSkipsRetrospectiveRow(Map.of("event_name", "retrospective.captured"));
+  }
+
+  @Test
+  void skipsRetrospectiveCapturedTypeRows() {
+    assertSkipsRetrospectiveRow(Map.of("type", "RetrospectiveCaptured"));
+  }
+
+  @Test
+  void skipsRetrospectiveCaptureFailedTypeRows() {
+    assertSkipsRetrospectiveRow(Map.of("type", "RetrospectiveCaptureFailed"));
+  }
+
+  @Test
+  void skipsRetrospectiveSkippedTypeRows() {
+    assertSkipsRetrospectiveRow(Map.of("type", "RetrospectiveSkipped"));
+  }
+
+  private static void assertSkipsRetrospectiveRow(Map<String, Object> retrospective) {
+    FoldView folded = WriteFold.fold(List.of(retrospective, AuthorityFixtures.row("genesis", "planned")));
+    assertThat(folded.of("WP01").lane()).isEqualTo(Lane.PLANNED);
+  }
+
+  @Test
   void emptyUnknownAndAnnotationOnlyStatesAreUninitialized() {
     FoldView empty = WriteFold.fold(List.<Map<String, Object>>of());
     assertThat(empty.of("WP99").lane()).isEqualTo(Lane.UNINITIALIZED);
@@ -63,6 +151,8 @@ class WriteFoldTest {
     Map<String, Object> actor = new LinkedHashMap<>();
     actor.put("tool", "codex");
     actor.put("role", "implementer");
+    actor.put("profile", null);
+    actor.put("model", null);
     Map<String, Object> row = AuthorityFixtures.row("genesis", "planned");
     row.put("actor", actor);
     WpWriteState state = WriteFold.fold(List.of(row)).of("WP01");

@@ -1,5 +1,6 @@
 package org.speckitty.commandcli.domain.authority;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.speckitty.commandcli.domain.service.RefusalCode;
@@ -44,11 +45,14 @@ public final class PipelineGuards {
     return Optional.of(Refusal.of(RefusalReason.FORCE_NOTE_REQUIRED, message));
   }
 
-  public static Optional<Refusal> doneEvidence(Lane to, Object evidence) {
-    if (to != Lane.DONE || evidence == null) return Optional.empty();
+  public static Optional<Refusal> doneEvidence(Object evidence) {
+    if (evidence == null) return Optional.empty();
     Object review = field(evidence, "review");
-    if (!(review instanceof Map<?, ?>) || blank(field(review, "reviewer"))
-        || blank(field(review, "verdict")) || blank(field(review, "reference"))) {
+    Object reviewer = field(review, "reviewer");
+    Object verdict = field(review, "verdict");
+    Object reference = field(review, "reference");
+    if (!(review instanceof Map<?, ?>) || !truthy(reviewer) || !truthy(verdict)
+        || !truthy(reference) || PyText.isBlank(String.valueOf(reference))) {
       return Optional.of(Refusal.of(RefusalReason.DONE_EVIDENCE_INCOMPLETE, DONE_MESSAGE));
     }
     return Optional.empty();
@@ -66,8 +70,16 @@ public final class PipelineGuards {
     return value instanceof Map<?, ?> map ? map.get(key) : null;
   }
 
-  private static boolean blank(Object value) {
-    return value == null || PyText.isBlank(String.valueOf(value));
+  private static boolean truthy(Object value) {
+    return switch (value) {
+      case null -> false;
+      case Boolean flag -> flag;
+      case Number number -> number.doubleValue() != 0.0;
+      case String string -> !string.isEmpty();
+      case List<?> list -> !list.isEmpty();
+      case Map<?, ?> map -> !map.isEmpty();
+      default -> true;
+    };
   }
 
   private static String text(Object value) {

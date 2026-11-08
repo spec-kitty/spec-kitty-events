@@ -11,6 +11,14 @@ import org.speckitty.missionstatus.domain.model.Lane;
 
 /** Core-parity write fold: partition, dedupe, order, transition arbitration, annotations and CLI projections. */
 public final class WriteFold {
+  private static final Set<String> RETROSPECTIVE_TYPES =
+      Set.of("RetrospectiveCaptured", "RetrospectiveCaptureFailed", "RetrospectiveSkipped");
+  private static final List<String> STATUS_REQUIRED =
+      List.of("event_id", "wp_id", "from_lane", "to_lane", "at", "actor", "force", "execution_mode");
+  private static final Set<String> ACTOR_FIELDS = Set.of("role", "profile", "tool", "model");
+  private static final Set<String> STATUS_ACTOR_FIELDS = Set.of("role", "profile", "tool", "model", "profile_source");
+  private static final Set<String> PROFILE_SOURCES = Set.of("invocation", "flag", "agent_string", "wp_frontmatter");
+
   private WriteFold() {}
 
   public static FoldView fold(Iterable<LogLine> lines) {
@@ -44,7 +52,7 @@ public final class WriteFold {
       if (kind != null) {
         if (!"annotation".equals(kind)) throw new UnreducibleLog("Unknown event kind " + kind);
         annotations.add(new AnnotationRow(row));
-      } else if (!row.containsKey("event_type")) {
+      } else if (!isNonLane(row)) {
         Transition transition = new Transition(row);
         transitions.add(transition);
         transitionWps.add(transition.wpId());
@@ -58,6 +66,41 @@ public final class WriteFold {
     Map<String, WpWriteState> result = new LinkedHashMap<>();
     states.forEach((wpId, state) -> result.put(wpId, stateView(state, transitionWps.contains(wpId))));
     return new FoldView(result);
+  }
+
+  private static Object decodeActor(Object actor) {
+    if (!(actor instanceof Map<?, ?> structured)) {
+      if (actor == null) return "None";
+      if (actor instanceof Boolean flag) return flag ? "True" : "False";
+      return actor;
+    }
+    if (!structured.keySet().equals(ACTOR_FIELDS) && !structured.keySet().equals(STATUS_ACTOR_FIELDS)) {
+      throw new IllegalArgumentException("structured actor has an unexpected key set");
+    }
+    for (String field : STATUS_ACTOR_FIELDS) {
+      Object value = structured.get(field);
+      if (value != null && !(value instanceof String)) {
+        throw new IllegalArgumentException("structured actor field " + field + " must be a string or null");
+      }
+    }
+    if (structured.containsKey("profile_source")) validateProfileSource(structured);
+    return new LinkedHashMap<>(castMap(structured));
+  }
+
+  private static void validateProfileSource(Map<?, ?> actor) {
+    Object source = actor.get("profile_source");
+    if (source != null && !PROFILE_SOURCES.contains(source)) {
+      throw new IllegalArgumentException("unknown structured actor profile_source");
+    }
+    if ((source == null) != (actor.get("profile") == null)) {
+      throw new IllegalArgumentException("profile_source must be null exactly when profile is null");
+    }
+  }
+
+  private static boolean isNonLane(Map<String, Object> row) {
+    return (row.get("event_name") instanceof String name && name.startsWith("retrospective."))
+        || (row.get("type") instanceof String type && RETROSPECTIVE_TYPES.contains(type))
+        || row.containsKey("event_type");
   }
 
   private static WpWriteState stateView(Map<String, Object> state, boolean hasTransitions) {
@@ -110,9 +153,12 @@ public final class WriteFold {
   record Transition(Map<String, Object> row) {
     Transition {
       row = new LinkedHashMap<>(row);
+      for (String field : STATUS_REQUIRED) {
+        if (!row.containsKey(field)) throw new IllegalArgumentException(field + " is required");
+      }
+      row.put("actor", decodeActor(row.get("actor")));
       Lane.fromWire(text(row.get("from_lane")));
       Lane.fromWire(text(row.get("to_lane")));
-      if (row.get("event_id") == null) throw new IllegalArgumentException("event_id is required");
     }
 
     String id() { return text(row.get("event_id")); }

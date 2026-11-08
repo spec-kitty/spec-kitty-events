@@ -30,7 +30,7 @@ public final class UnitJudge {
     if (refusal.isPresent()) return refusal;
     refusal = PipelineGuards.forceNoteRequired(unit.wpId(), from, row);
     if (refusal.isPresent()) return refusal;
-    refusal = PipelineGuards.doneEvidence(to, row.get("evidence"));
+    refusal = PipelineGuards.doneEvidence(row.get("evidence"));
     if (refusal.isPresent()) return refusal;
     Boolean ready = dependencyGate.readiness(unit.wpId(), from, to, state, facts);
     GuardContext context = Guards.context(row, state, facts::subtaskRoster, ready);
