@@ -207,7 +207,7 @@
     },
     "WP07": {
       "actor": "claude",
-      "agent": "opencode",
+      "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -215,6 +215,9 @@
       "last_event_id": "01M6WRWGT3YK3RT6H1H0YNY4VH",
       "last_transition_at": "2026-11-08T05:07:50.723728+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Cycle 2: both Opus MAJORs (start_implementation force reaches guards only from review lanes; latest implementer in raw log order) and 3 minors fixed in 005cb0f3; reviewer probe rerun 1603 scenarios 0 mismatches; orchestrator verified --check 185 core / 0 drift"
+      ],
       "provider": "__resolved_provider_absent__",
       "review": null,
       "review_result": {
