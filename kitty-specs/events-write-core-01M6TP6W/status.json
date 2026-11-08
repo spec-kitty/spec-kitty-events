@@ -254,7 +254,8 @@
         "Cycle 3: review-cycle-2 findings 1-8 fixed (37b9c3a5); command-cli check 1052/133/11/1; generator drift 0 (199 core); p95 118.8 ms",
         "Cycle 4: fix review-cycle-3 findings",
         "Cycle 4: review-cycle-3 findings 1-6 fixed; command-cli check 1064/133/11/1; generator drift 0 (202 core); gen_cases 302->73 (out-of-scope groups only); p95 130.6 ms",
-        "Cycle 5: R19 explicit tags fail closed; digit set parity"
+        "Cycle 5: R19 explicit tags fail closed; digit set parity",
+        "Cycle 5: R19 + digit set (639c2486); command-cli check 1072/133/11/1; generator drift 0 (200 core); direct diff 2024 cases, 0 fail-open; p95 115.4 ms"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
