@@ -11,9 +11,6 @@ import org.speckitty.missionstatus.domain.model.Lane;
 
 /** Core-parity write fold: partition, dedupe, order, transition arbitration, annotations and CLI projections. */
 public final class WriteFold {
-  private static final Set<String> RETROSPECTIVE_TYPES =
-      Set.of("RetrospectiveCaptured", "RetrospectiveCaptureFailed", "RetrospectiveSkipped");
-
   private WriteFold() {}
 
   public static FoldView fold(Iterable<LogLine> lines) {
@@ -47,7 +44,7 @@ public final class WriteFold {
       if (kind != null) {
         if (!"annotation".equals(kind)) throw new UnreducibleLog("Unknown event kind " + kind);
         annotations.add(new AnnotationRow(row));
-      } else if (!isNonLane(row)) {
+      } else if (StatusRowShape.nonLaneMarker(row).isEmpty()) {
         Transition transition = new Transition(row);
         transitions.add(transition);
         transitionWps.add(transition.wpId());
@@ -61,12 +58,6 @@ public final class WriteFold {
     Map<String, WpWriteState> result = new LinkedHashMap<>();
     states.forEach((wpId, state) -> result.put(wpId, stateView(state, transitionWps.contains(wpId))));
     return new FoldView(result);
-  }
-
-  private static boolean isNonLane(Map<String, Object> row) {
-    return (row.get("event_name") instanceof String name && name.startsWith("retrospective."))
-        || (row.get("type") instanceof String type && RETROSPECTIVE_TYPES.contains(type))
-        || row.containsKey("event_type");
   }
 
   private static WpWriteState stateView(Map<String, Object> state, boolean hasTransitions) {
@@ -134,8 +125,13 @@ public final class WriteFold {
       Lane.fromWire(text(row.get("to_lane")));
     }
 
-    /** Core reads any scalar event id and work-package id; {@code str} spells a null as {@code "None"}, as {@link #pyText} does. */
+    /**
+     * The id's spelling, for the maps the fold keys by id. Core does not coerce it ({@code StatusEvent.from_dict} keeps the raw
+     * scalar), so equality and ordering are {@link #idKey}'s; a spelling shared by two ids that are not equal is refused by the dedupe.
+     */
     String id() { return pyText(row.get("event_id")); }
+    /** The id as core's reducer compares and hashes it ({@link EventIds}). */
+    Object idKey() { return EventIds.key(row.get("event_id")); }
     String wpId() { return pyText(row.get("wp_id")); }
     String at() { return text(row.get("at")); }
     Lane from() { return Lane.fromWire(text(row.get("from_lane"))); }

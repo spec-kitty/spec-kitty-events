@@ -283,6 +283,73 @@ class WriteFoldTest {
     assertThat(claimed.of("WP01").agent()).isEqualTo("seed-agent");
   }
 
+  // ---- event ids: core keeps the raw scalar, deduplicates by Python equality and orders ties with Python's < --------------------
+
+  private static Map<String, Object> plannedWithId(Object eventId, String at) {
+    Map<String, Object> row = AuthorityFixtures.row("genesis", "planned");
+    row.put("event_id", eventId);
+    row.put("at", at);
+    return row;
+  }
+
+  private static Map<String, Object> claimWithId(String eventId, String at) {
+    Map<String, Object> row = AuthorityFixtures.row("planned", "claimed");
+    row.put("event_id", eventId);
+    row.put("at", at);
+    return row;
+  }
+
+  private static final String TIED_AT = "2026-11-07T10:00:00+00:00";
+  private static final String EARLIER_AT = "2026-11-07T09:00:00+00:00";
+  private static final String ULID = "01J6XW9KQT7M0YB3N4R5CQZ2E1";
+
+  @Test
+  void aPriorEventIdOfAnotherTypeThatTiesTheNewRowsAtMakesTheLogUnreducibleAsCoreSortRaises() {
+    for (Object id : java.util.Arrays.asList(null, java.math.BigInteger.valueOf(5), 5.5, true, false)) {
+      assertThatThrownBy(() -> WriteFold.fold(List.of(plannedWithId(id, TIED_AT), claimWithId(ULID, TIED_AT))))
+          .as(String.valueOf(id)).isInstanceOf(UnreducibleLog.class).hasMessageContaining("cannot be ordered");
+      assertThatThrownBy(() -> WriteFold.fold(List.of(claimWithId(ULID, TIED_AT), plannedWithId(id, TIED_AT))))
+          .as(id + " in the other order").isInstanceOf(UnreducibleLog.class);
+    }
+    assertThatThrownBy(() -> WriteFold.fold(List.of(plannedWithId(null, TIED_AT), plannedWithId(java.math.BigInteger.valueOf(5), TIED_AT))))
+        .as("None against a number").isInstanceOf(UnreducibleLog.class);
+  }
+
+  @Test
+  void anEventIdOfAnotherTypeThatTiesNothingIsReadAsCoreReadsIt() {
+    for (Object id : java.util.Arrays.asList(null, java.math.BigInteger.valueOf(5), 5.5, true)) {
+      FoldView folded = WriteFold.fold(List.of(plannedWithId(id, EARLIER_AT), claimWithId(ULID, TIED_AT)));
+      assertThat(folded.of("WP01").lane()).as(String.valueOf(id)).isEqualTo(Lane.CLAIMED);
+    }
+  }
+
+  @Test
+  void idsThatAreEqualInPythonDeduplicateAndNumbersOrderByValue() {
+    java.math.BigInteger five = java.math.BigInteger.valueOf(5);
+    assertThat(WriteFold.fold(List.of(plannedWithId(five, TIED_AT), numericClaim(java.math.BigInteger.valueOf(7), TIED_AT)))
+        .of("WP01").lane()).as("5 then 7, tied").isEqualTo(Lane.CLAIMED);
+    // 5 and 5.0 are one id: the second row is a duplicate and is dropped, so the WP stays planned
+    assertThat(WriteFold.fold(List.of(plannedWithId(five, TIED_AT), numericClaim(5.0, TIED_AT))).of("WP01").lane())
+        .as("5 and 5.0").isEqualTo(Lane.PLANNED);
+    assertThat(WriteFold.fold(List.of(plannedWithId(true, TIED_AT), numericClaim(java.math.BigInteger.ONE, TIED_AT))).of("WP01").lane())
+        .as("True and 1").isEqualTo(Lane.PLANNED);
+    assertThat(WriteFold.fold(List.of(plannedWithId(null, TIED_AT), numericClaim(null, TIED_AT))).of("WP01").lane())
+        .as("None and None").isEqualTo(Lane.PLANNED);
+  }
+
+  @Test
+  void idsThatSpellAlikeWithoutBeingEqualAreUnreducibleHereWhereCoreWouldReadThem() {
+    assertThatThrownBy(() -> WriteFold.fold(List.of(plannedWithId("1", EARLIER_AT), numericClaim(java.math.BigInteger.ONE, TIED_AT))))
+        .isInstanceOf(UnreducibleLog.class).hasMessageContaining("spell alike");
+  }
+
+  private static Map<String, Object> numericClaim(Object eventId, String at) {
+    Map<String, Object> row = AuthorityFixtures.row("planned", "claimed");
+    row.put("event_id", eventId);
+    row.put("at", at);
+    return row;
+  }
+
   private static Map<String, Object> annotation(String wpId, Map<String, Object> delta) {
     Map<String, Object> annotation = new LinkedHashMap<>();
     annotation.put("kind", "annotation");

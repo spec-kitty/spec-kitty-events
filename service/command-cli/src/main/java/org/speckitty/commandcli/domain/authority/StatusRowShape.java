@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.speckitty.missionstatus.domain.model.Lane;
-import org.speckitty.missionstatus.domain.model.PyText;
 
 /**
  * The one rule for which status-log rows core's reader accepts, shared by the HTTP edge (a new row) and by {@link WriteFold} (every
@@ -40,7 +39,16 @@ public final class StatusRowShape {
   private static final Pattern ULID = Pattern.compile("^[0-9A-HJKMNP-TV-Z]{26}\\n?\\z");
   /** CPython's limit on the digits of an integer built from text (3.11.15). */
   private static final int MAX_INTEGER_TEXT_DIGITS = 4300;
+  /**
+   * R28's {@code shell_pid} text and nothing wider: ASCII whitespace, one sign, 1 to 4300 ASCII digits, ASCII whitespace. Python's {@code
+   * int()} also reads digits of every script, underscores and non-ASCII whitespace, but its digit table is the interpreter's Unicode
+   * version (14.0 on 3.11) while the JVM's is newer, so a wider rule would acknowledge text core's {@code int()} refuses.
+   */
+  private static final Pattern SHELL_PID_TEXT =
+      Pattern.compile("[ \\t\\n\\x0B\\f\\r]*[+-]?[0-9]{1," + MAX_INTEGER_TEXT_DIGITS + "}[ \\t\\n\\x0B\\f\\r]*");
   private static final Set<String> SUBTASK_ALIASES = Set.of("skipped", "not_applicable");
+  private static final Set<String> RETROSPECTIVE_TYPES =
+      Set.of("RetrospectiveCaptured", "RetrospectiveCaptureFailed", "RetrospectiveSkipped");
 
   /** Where in the write order the rule is applied. */
   public enum Scope {
@@ -58,9 +66,23 @@ public final class StatusRowShape {
       for (String field : TRANSITION_REQUIRED) {
         if (!row.containsKey(field)) return Optional.of(field);
       }
+    } else {
+      Optional<String> marker = nonLaneMarker(row);
+      if (marker.isPresent()) return marker;
     }
-    Optional<String> identity = identity(row);
+    Optional<String> identity = identity(row, scope);
     return identity.isPresent() ? identity : coercions(row, scope);
+  }
+
+  /**
+   * The field that makes core skip a row in place instead of reading it as a lane transition ({@code _is_non_lane_row}): a
+   * {@code retrospective.*} {@code event_name}, a retrospective {@code type}, or any {@code event_type}. Such a row is never a
+   * transition, so a new row carrying one would be acknowledged and then ignored by core and by the fold, which is refused at the edge.
+   */
+  public static Optional<String> nonLaneMarker(Map<String, Object> row) {
+    if (row.get("event_name") instanceof String name && name.startsWith("retrospective.")) return Optional.of("event_name");
+    if (row.get("type") instanceof String type && RETROSPECTIVE_TYPES.contains(type)) return Optional.of("type");
+    return row.containsKey("event_type") ? Optional.of("event_type") : Optional.empty();
   }
 
   /** The first field of an annotation row that core's reader cannot read at this {@code scope}, or empty. */
@@ -73,7 +95,7 @@ public final class StatusRowShape {
     if (row.containsKey("event_id") && (!(row.get("event_id") instanceof String id) || !ULID.matcher(id).find())) {
       return Optional.of("event_id");
     }
-    if (row.containsKey("actor") && !Actors.decodable(row.get("actor"))) return Optional.of("actor");
+    if (row.containsKey("actor") && !actor(row.get("actor"), scope)) return Optional.of("actor");
     if (!row.containsKey("delta")) return Optional.empty();
     return row.get("delta") instanceof Map<?, ?> delta ? delta(castMap(delta)) : Optional.of("delta");
   }
@@ -85,12 +107,17 @@ public final class StatusRowShape {
    * {@code at} must be text (an integer or null cannot be ordered against the text of the other rows). The lane vocabulary is the lane
    * authority's ({@link Lane#fromWire} in {@link WriteFold}), and a non-text lane is refused by the edge before this rule.
    */
-  private static Optional<String> identity(Map<String, Object> row) {
+  private static Optional<String> identity(Map<String, Object> row, Scope scope) {
     for (String field : List.of("event_id", "wp_id")) {
       if (row.get(field) instanceof List<?> || row.get(field) instanceof Map<?, ?>) return Optional.of(field);
     }
     if (row.containsKey("at") && !(row.get("at") instanceof String)) return Optional.of("at");
-    return !row.containsKey("actor") || Actors.decodable(row.get("actor")) ? Optional.empty() : Optional.of("actor");
+    return !row.containsKey("actor") || actor(row.get("actor"), scope) ? Optional.empty() : Optional.of("actor");
+  }
+
+  /** A new row's actor must be one a writer may emit (four keys); a log's actor is read as core's reader reads it (five keys too). */
+  private static boolean actor(Object actor, Scope scope) {
+    return scope == Scope.EDGE ? Actors.writable(actor) : Actors.decodable(actor);
   }
 
   private static Optional<String> coercions(Map<String, Object> row, Scope scope) {
@@ -145,11 +172,20 @@ public final class StatusRowShape {
     return Optional.empty();
   }
 
-  /** {@code {str(id): ... Lane(value) ...}}: an object whose values are lanes or the {@code skipped} and {@code not_applicable} spellings. */
+  /**
+   * {@code {str(id): ... Status(value) ...}}: an object whose values are lanes or the {@code skipped} and {@code not_applicable}
+   * spellings. {@code uninitialized} is a lane in {@code read_events} only because {@code Lane} holds the read-only sentinel for a work
+   * package with no events; {@code materialize}'s diary decoder ({@code SubtaskStatus}, "fail closed") has no such member, and the
+   * producer contract's subtask enum omits it, so it is never a subtask value.
+   */
   private static boolean subtasks(Object subtasks) {
     if (subtasks == null) return true;
     if (!(subtasks instanceof Map<?, ?> map)) return false;
-    return map.values().stream().allMatch(value -> value instanceof String text && (SUBTASK_ALIASES.contains(text) || lane(text)));
+    return map.values().stream().allMatch(value -> value instanceof String text && subtaskStatus(text));
+  }
+
+  private static boolean subtaskStatus(String text) {
+    return SUBTASK_ALIASES.contains(text) || (!Lane.UNINITIALIZED.wire().equals(text) && lane(text));
   }
 
   /** {@code list(value)}: null is absent, a string, array or object iterates, a number or boolean does not. */
@@ -203,25 +239,9 @@ public final class StatusRowShape {
     };
   }
 
-  /**
-   * {@code int(text)} in base 10: surrounding whitespace, one sign, then decimal digits (any script) with single underscores between
-   * digits, at most {@value #MAX_INTEGER_TEXT_DIGITS} of them.
-   */
+  /** {@code int(text)} restricted to R28's ASCII form (see {@link #SHELL_PID_TEXT}); anything else is refused, never read. */
   private static boolean integerText(String text) {
-    String body = PyText.strip(text);
-    if (body.startsWith("+") || body.startsWith("-")) body = body.substring(1);
-    int digits = 0;
-    boolean previousDigit = false;
-    for (int index = 0; index < body.length(); ) {
-      int point = body.codePointAt(index);
-      index += Character.charCount(point);
-      boolean digit = Character.getType(point) == Character.DECIMAL_DIGIT_NUMBER;
-      boolean underscore = point == '_' && previousDigit && index < body.length();
-      if (!digit && !underscore) return false;
-      if (digit) digits++;
-      previousDigit = digit;
-    }
-    return digits > 0 && digits <= MAX_INTEGER_TEXT_DIGITS;
+    return SHELL_PID_TEXT.matcher(text).matches();
   }
 
   @SuppressWarnings("unchecked")

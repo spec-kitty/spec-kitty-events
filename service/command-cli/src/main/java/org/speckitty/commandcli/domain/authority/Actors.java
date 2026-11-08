@@ -38,6 +38,17 @@ public final class Actors {
     return copy;
   }
 
+  /**
+   * True when a NEW row may carry this actor: the fold can decode it, and it is not the 5-key {@code profile_source} shape. Core's CLI
+   * reader accepts that shape ahead of the events release, but the package decoder behind {@code materialize} ({@code
+   * spec_kitty_events.diary.decode_actor}, 11.3.0 at the pin) refuses it, so core documents "no writer may emit the 5-key shape until
+   * #6721 raises the floor" and pins it with a test. The service is a writer, so it refuses it at the edge; {@link #decodable} still reads
+   * it from a log, as core's reader does.
+   */
+  public static boolean writable(Object actor) {
+    return !(actor instanceof Map<?, ?> structured && structured.containsKey("profile_source")) && decodable(actor);
+  }
+
   /** True when the write fold can decode this actor, so a row carrying it can be read back from the log. */
   public static boolean decodable(Object actor) {
     try {

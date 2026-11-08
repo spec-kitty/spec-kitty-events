@@ -125,14 +125,14 @@ class WriteBodiesTest {
   }
 
   @Test
-  void aStructuredActorTheLogFoldCannotDecodeIsMalformedAtTheEdge() {
+  void aStructuredActorTheLogFoldCannotDecodeOrNoWriterMayEmitIsMalformedAtTheEdge() {
     String four = "{\"role\":\"implementer\",\"profile\":null,\"tool\":\"claude\",\"model\":null}";
     String five = "{\"role\":\"r\",\"profile\":\"p\",\"tool\":\"t\",\"model\":null,\"profile_source\":\"flag\"}";
-    for (String accepted : List.of(four, five, "\"claude\"")) {
+    for (String accepted : List.of(four, "\"claude\"")) {
       success(bodies.parseUnit(MISSION, bytes(unit(ROW.replace("\"actor\":\"claude\"", "\"actor\":" + accepted)))));
     }
     for (String refused : List.of(
-        "{}", "{\"tool\":\"x\"}", "{\"role\":null,\"profile\":null,\"tool\":null}",
+        five, "{}", "{\"tool\":\"x\"}", "{\"role\":null,\"profile\":null,\"tool\":null}",
         "{\"role\":\"r\",\"profile\":null,\"tool\":\"t\",\"model\":null,\"extra\":null}",
         "{\"role\":1,\"profile\":null,\"tool\":\"t\",\"model\":null}",
         "{\"role\":[],\"profile\":null,\"tool\":\"t\",\"model\":null}",

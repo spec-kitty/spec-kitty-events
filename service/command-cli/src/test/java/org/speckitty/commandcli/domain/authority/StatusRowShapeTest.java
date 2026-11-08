@@ -3,15 +3,18 @@ package org.speckitty.commandcli.domain.authority;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.speckitty.commandcli.domain.authority.StatusRowShape.Scope;
 import org.speckitty.missionstatus.adapter.out.filesystem.codec.StatusRowDecoder;
 
@@ -78,7 +81,7 @@ class StatusRowShapeTest {
     for (String scalar : List.of("5", "\"x\"", "true", "null", "1.5", "[1]", "{\"a\":1}")) {
       for (String field : List.of("force", "execution_mode", "reason", "reason_source", "review_ref")) shapes.add(transition(field, scalar, null));
     }
-    for (String actor : List.of("5", "null", "[1]", "{\"role\":\"r\",\"profile\":\"p\",\"tool\":\"t\",\"model\":\"m\",\"profile_source\":\"flag\"}")) {
+    for (String actor : List.of("5", "null", "[1]", "{\"role\":\"r\",\"profile\":null,\"tool\":\"t\",\"model\":null}")) {
       shapes.add(transition("actor", actor, null));
     }
     for (String at : List.of("\"\"", "\"zzz\"", "\"2026-11-07\"")) shapes.add(transition("at", at, null));
@@ -175,10 +178,12 @@ class StatusRowShapeTest {
       shapes.add(annotation("actor", actor, "actor"));
     }
     shapes.addAll(delta("shell_pid", "delta.shell_pid", "\"x\"", "\"\"", "\"5.0\"", "\"0x1\"", "\"1e3\"", "\"5__0\"", "\"_5\"", "\"5_\"",
-        "\"+\"", "\" \"", "\"\\u00b2\"", "[1]", "[]", "{}", "\"" + "9".repeat(4301) + "\""));
+        "\"+\"", "\" \"", "\"\\u00b2\"", "[1]", "[]", "{}", "\"" + "9".repeat(4301) + "\"",
+        // R28: ASCII only. Python's int() reads these too, but its digit table is Unicode 14 and the JVM's is newer.
+        "\"5_0\"", "\"\\u0665\"", "\"\\uff15\"", "\"\\u00a05\"", "\"5\\u00a0\"", "\"\\u001c5\"", "\"\\u20285\"", "\"\\u30005\""));
     shapes.addAll(delta("subtasks", "delta.subtasks", "\"x\"", "\"\"", "5", "true", "[1]", "[]", "{\"T1\":\"bogus\"}", "{\"T1\":5}",
         "{\"T1\":null}", "{\"T1\":true}", "{\"T1\":[\"done\"]}", "{\"T1\":{\"a\":1}}", "{\"T1\":\"Done\"}", "{\"T1\":\"SKIPPED\"}",
-        "{\"T1\":\" done\"}", "{\"T1\":\"\"}"));
+        "{\"T1\":\" done\"}", "{\"T1\":\"\"}", "{\"T1\":\"uninitialized\"}", "{\"T1\":\"done\",\"T2\":\"uninitialized\"}"));
     shapes.addAll(delta("tracker_refs", "delta.tracker_refs", "5", "0", "1.5", "true", "false"));
     shapes.addAll(delta("tracker_refs_replace", "delta.tracker_refs_replace", "5", "0", "1.5", "true", "false", "[[1]]", "[{\"a\":1}]",
         "[\"a\",[1]]"));
@@ -196,10 +201,10 @@ class StatusRowShapeTest {
       shapes.add(annotation("actor", actor, null));
     }
     shapes.addAll(delta("shell_pid", null, "5", "0", "-3", "true", "false", "null", "1.5", "-0.0", "1e300", "\"5\"", "\" 5 \"", "\"+5\"",
-        "\"-5\"", "\"5_0\"", "\"007\"", "\"\\u0665\"", "\"\\uff15\"", "\"5\\n\"", "\"\\u00a05\"", "\"" + "9".repeat(4300) + "\"",
+        "\"-5\"", "\"007\"", "\"5\\n\"", "\"\\t 5\\f\\r\\u000b\"", "\"" + "9".repeat(4300) + "\"",
         "99999999999999999999999999"));
     shapes.addAll(delta("subtasks", null, "null", "{}", "{\"T1\":\"done\"}", "{\"T1\":\"skipped\"}", "{\"T1\":\"not_applicable\"}",
-        "{\"T1\":\"uninitialized\"}", "{\"T1\":\"planned\",\"T2\":\"canceled\"}"));
+        "{\"T1\":\"genesis\"}", "{\"T1\":\"planned\",\"T2\":\"canceled\"}"));
     shapes.addAll(delta("tracker_refs", null, "null", "\"abc\"", "\"\"", "[]", "[\"a\",1,null,true,[1],{\"a\":1}]", "{\"a\":1}", "{}"));
     shapes.addAll(delta("tracker_refs_replace", null, "null", "\"abc\"", "[]", "[\"a\",1,null,true,1.5]", "{\"a\":1}"));
     shapes.addAll(delta("review", null, "null", "{\"at\":\"a\",\"actor\":\"b\",\"wp_id\":\"WP01\",\"reason\":\"r\"}",
@@ -231,6 +236,92 @@ class StatusRowShapeTest {
     Map<String, Object> second = map(NOTE);
     second.put("event_id", "01J6XW9KQT7M0YB3N4R5CQZ2E6");
     assertThat(WriteFold.fold(List.of(map(PRIOR), shape.row(), second)).all()).as(shape.label()).isNotEmpty();
+  }
+
+  /**
+   * Decimal digits Unicode added after version 14: JDK 25 classifies them as digits, CPython 3.11's {@code int()} (Unicode 14.0.0,
+   * checked against core's interpreter) raises on them, so a pid made of them must be refused, alone, mixed and padded.
+   */
+  static Stream<Integer> digitsAddedAfterUnicode14() {
+    return Stream.of(0x11F51, 0x1E4F1, 0x116D1, 0x1E5F1, 0x10D41, 0x11BF1, 0x16131, 0x16D71, 0x1CCF1);
+  }
+
+  @ParameterizedTest
+  @MethodSource("digitsAddedAfterUnicode14")
+  void aPidOfDigitsNewerThanUnicode14IsRefusedAtBothScopesAndByTheFold(int codePoint) {
+    String digit = new String(Character.toChars(codePoint));
+    assertThat(Character.getType(codePoint)).as("the JVM calls it a digit, which is the trap").isEqualTo(Character.DECIMAL_DIGIT_NUMBER);
+    for (String pid : List.of(digit, "1" + digit, " " + digit + " ", "-" + digit)) {
+      Map<String, Object> row = map(NOTE);
+      row.put("delta", Map.of("shell_pid", pid));
+      for (Scope scope : Scope.values()) assertThat(StatusRowShape.annotation(row, scope)).as(pid + " " + scope).contains("delta.shell_pid");
+      assertThatThrownBy(() -> WriteFold.fold(List.of(map(PRIOR), row))).isInstanceOf(UnreducibleLog.class);
+    }
+  }
+
+  @Test
+  void aPidThatIsAnIntegerBooleanOrFiniteFloatStaysAsCoreReadsIt() {
+    for (Object pid : List.of(BigInteger.valueOf(-3), BigInteger.ZERO, true, false, 1.5, -0.0, 1e300)) {
+      Map<String, Object> row = map(NOTE);
+      row.put("delta", Map.of("shell_pid", pid));
+      for (Scope scope : Scope.values()) assertThat(StatusRowShape.annotation(row, scope)).as(pid + " " + scope).isEmpty();
+    }
+    for (Object pid : List.of(Double.POSITIVE_INFINITY, Double.NaN)) {
+      Map<String, Object> row = map(NOTE);
+      row.put("delta", Map.of("shell_pid", pid));
+      assertThat(StatusRowShape.annotation(row, Scope.READ_BACK)).as(pid.toString()).contains("delta.shell_pid");
+    }
+  }
+
+  // ---- the 5-key actor: no writer may emit it (core's guard), a reader still reads it ----------------------------------------------
+
+  private static final String FIVE_KEY_ACTOR =
+      "{\"role\":\"r\",\"profile\":\"p\",\"tool\":\"t\",\"model\":\"m\",\"profile_source\":\"flag\"}";
+  private static final String FIVE_KEY_ACTOR_WITHOUT_PROFILE =
+      "{\"role\":\"r\",\"profile\":null,\"tool\":\"t\",\"model\":null,\"profile_source\":null}";
+
+  @ParameterizedTest
+  @ValueSource(strings = {FIVE_KEY_ACTOR, FIVE_KEY_ACTOR_WITHOUT_PROFILE})
+  void theFiveKeyActorIsRefusedAtTheEdgeAndStillReadFromALog(String actor) {
+    Shape transition = transition("actor", actor, "actor");
+    assertThat(refusal(transition, Scope.EDGE)).contains("actor");
+    assertThat(refusal(transition, Scope.READ_BACK)).isEmpty();
+    Map<String, Object> note = map(NOTE);
+    note.put("actor", parse(actor));
+    assertThat(StatusRowShape.annotation(note, Scope.EDGE)).contains("actor");
+    assertThat(StatusRowShape.annotation(note, Scope.READ_BACK)).isEmpty();
+    assertThat(WriteFold.fold(List.of(map(PRIOR), transition.row(), note)).all()).isNotEmpty();
+  }
+
+  // ---- non-lane markers: core skips such a row in place, so a new transition carrying one is never acknowledged --------------------
+
+  static Stream<String> nonLaneMembers() {
+    return Stream.of("\"event_type\":\"DecisionPointOpened\"", "\"event_type\":null", "\"event_type\":5", "\"event_name\":\"retrospective.x\"",
+        "\"event_name\":\"retrospective.\"", "\"type\":\"RetrospectiveCaptured\"", "\"type\":\"RetrospectiveCaptureFailed\"",
+        "\"type\":\"RetrospectiveSkipped\"");
+  }
+
+  static Stream<String> laneMembers() {
+    return Stream.of("\"event_name\":\"other\"", "\"event_name\":5", "\"event_name\":null", "\"type\":\"Other\"", "\"type\":5",
+        "\"type\":\"retrospectivecaptured\"", "\"EVENT_TYPE\":\"x\"");
+  }
+
+  @ParameterizedTest
+  @MethodSource("nonLaneMembers")
+  void aTransitionRowCoreSkipsAsNonLaneIsRefusedAtTheEdgeAndSkippedByTheFold(String member) {
+    Shape shape = row(member, CLAIM, member, member.substring(1, member.indexOf('"', 1)));
+    assertThat(refusal(shape, Scope.EDGE)).as(member).contains(shape.field());
+    assertThat(StatusRowShape.nonLaneMarker(shape.row())).as(member).contains(shape.field());
+    assertThat(WriteFold.fold(List.of(map(PRIOR), shape.row())).of("WP01").lane().wire()).as("the row is not applied").isEqualTo("planned");
+  }
+
+  @ParameterizedTest
+  @MethodSource("laneMembers")
+  void aRowWithoutANonLaneMarkerIsStillATransition(String member) {
+    Shape shape = row(member, CLAIM, member, null);
+    assertThat(refusal(shape, Scope.EDGE)).as(member).isEmpty();
+    assertThat(StatusRowShape.nonLaneMarker(shape.row())).isEmpty();
+    assertThat(WriteFold.fold(List.of(map(PRIOR), shape.row())).of("WP01").lane().wire()).isEqualTo("claimed");
   }
 
   @ParameterizedTest

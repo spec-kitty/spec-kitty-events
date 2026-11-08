@@ -10,10 +10,17 @@ section: Added
     `fsync`, rolled back on a failed write, with a torn tail refused and never repaired.
     `coordination_ref_commit` still answers `422 WRITE_LOCATION_UNVERIFIED` until migration
     step 4, so `statusCommit` is null in the acknowledgements.
-  - A row is acknowledged only when core's reader can read it back: the service refuses, as
-    `400 REQUEST_MALFORMED` naming the field and (in a batch) the unit, every row shape that
-    `read_events` raises on at the pinned core SHA, so one accepted row never makes a Mission's
-    log unreadable to the CLI or to the service's own next write.
+  - A row is acknowledged only when core can read it back on both of its read paths: the
+    service refuses, as `400 REQUEST_MALFORMED` naming the field and (in a batch) the unit,
+    every row shape that `read_events` or `materialize` (the `status.json` path through the
+    package's `parse_diary`) raises on at the pinned core SHA, and every row core would skip
+    as a non-lane event. So one accepted row never makes a Mission's log unreadable to the
+    CLI, to its status snapshot or to the service's own next write. Core's own sort is
+    reproduced exactly: a log whose event ids core would compare as a string with a
+    non-string is unreducible (`500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`, or
+    `400` when the new row causes it). A log that already holds a row core's `materialize`
+    refuses on the only guarded shape, the five-key `profile_source` actor, is still written
+    to, as core writes to it.
   - The lane authority ports the lane machine, the guards, dependency gating, the lifecycle
     claim and start rules, and replay/conflict classification. The optional
     `TransitionUnit.operation` selects core's `transition`, `start_implementation` or
