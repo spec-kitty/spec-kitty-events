@@ -108,11 +108,11 @@
       "criterion_id": "FR-011",
       "description": "The lane machine (11 lanes, 29 edges, terminals, force semantics) and the write fold are ported from core at the pin, separate from StatusReducer.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP06 LaneMachine tests and ParityCorpusTest"
+      "evidence": "LaneMachineTest 4 (exactly 29 edges, every other pair illegal, terminals have no targets, genesis illegal under force, force reaches any other target incl. same lane and uninitialized); WriteFoldTest 18 (separate WriteFold); ParityCorpusTest 239; StatusReducerTest 30 pass (no service/src/main diff, read side untouched).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:34.461158+00:00",
+      "notes": "Uses domain-model Lane. Parity generator --check against the core pin: exit 0 (196 core cases, drift 0)."
     },
     {
       "criterion_id": "FR-012",
