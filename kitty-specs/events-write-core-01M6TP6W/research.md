@@ -456,6 +456,7 @@ Lenses: scope fidelity (Opus) and contract and parity (Opus), 2026-11-07. Every 
     - R16: a `checkout_append` to a Mission whose primary `meta.json` records a non-blank `coordination_branch` answers `422 WRITE_LOCATION_UNVERIFIED` before any lock; core keys that Mission's lock with its mid8 and forbids a primary append, and `coordination_ref_commit` serves it from migration step 4 (decision 6).
     - R17: `--separate-git-dir` and submodule repositories refuse every write with `422` (FR-009's root-checkout rule); a deliberate divergence, since core writes status there.
     - R18: a work-package file larger than 16 MiB makes its facts unresolvable (fail closed: dependencies refuse `dependencies_unsatisfied`, the roster refuses under R15). Core reads files of any size; the bound keeps the read inside the Mission lock bounded.
+    - R19: any explicit YAML tag (`!`, `!!x`, `!<…>`, handles, custom tags, on scalars or collections) and any `%YAML`/`%TAG` directive in a work package's frontmatter make its facts unresolvable (dependencies refuse `dependencies_unsatisfied`, the roster refuses under R15). A deliberate fail-closed divergence: core's ruamel round-trip loader accepts some tagged forms (`!!int 12`, `[!!str T001]`). Four review cycles showed that mirroring ruamel's tag semantics node by node keeps opening fail-open gaps; no real work-package file uses tags.
 
 ## 13. Post-tasks squad dispositions
 
