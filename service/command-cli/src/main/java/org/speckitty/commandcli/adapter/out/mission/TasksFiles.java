@@ -1,6 +1,7 @@
 package org.speckitty.commandcli.adapter.out.mission;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -14,13 +15,18 @@ public final class TasksFiles {
 
   public static boolean exists(Path mission, String wpId) {
     Path tasks = mission.resolve("tasks");
-    if (Files.isRegularFile(tasks.resolve(wpId + ".md"))) return true;
+    Path exact = tasks.resolve(wpId + ".md");
+    if (Files.exists(exact)) return Files.isRegularFile(exact);
     try (Stream<Path> paths = Files.list(tasks)) {
       return paths.anyMatch(path -> path.getFileName().toString().startsWith(wpId + "-")
-          && path.getFileName().toString().endsWith(".md") && Files.isRegularFile(path));
-    } catch (IOException exception) {
+          && path.getFileName().toString().endsWith(".md") && regularOrDangling(path));
+    } catch (IOException | UncheckedIOException exception) {
       return false;
     }
+  }
+
+  private static boolean regularOrDangling(Path path) {
+    return Files.isRegularFile(path) || Files.isSymbolicLink(path) && !Files.exists(path);
   }
 
   public static List<Path> dependencies(Path mission, String wpId) {

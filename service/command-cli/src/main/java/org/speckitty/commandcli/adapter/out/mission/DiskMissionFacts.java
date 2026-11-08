@@ -1,5 +1,6 @@
 package org.speckitty.commandcli.adapter.out.mission;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -17,10 +18,12 @@ public final class DiskMissionFacts implements MissionFacts {
 
   @Override
   public DependencyDeclaration dependencies(String wpId) {
-    List<Path> matches = TasksFiles.dependencies(mission, wpId);
-    if (matches.isEmpty()) return new DependencyDeclaration.None();
-    if (matches.size() != 1) return new DependencyDeclaration.Unresolvable("cannot resolve declared dependencies");
     try {
+      List<Path> matches = TasksFiles.dependencies(mission, wpId);
+      if (matches.isEmpty()) return new DependencyDeclaration.None();
+      if (matches.size() != 1 || !Files.isRegularFile(matches.getFirst())) {
+        return new DependencyDeclaration.Unresolvable("cannot resolve declared dependencies");
+      }
       return Frontmatter.read(matches.getFirst()).map(FactValues::dependencies)
           .orElseGet(() -> new DependencyDeclaration.Unresolvable("cannot resolve declared dependencies"));
     } catch (RuntimeException invalid) {
@@ -30,9 +33,11 @@ public final class DiskMissionFacts implements MissionFacts {
 
   @Override
   public SubtaskRoster subtaskRoster(String wpId) {
-    List<Path> matches = TasksFiles.rosters(mission, wpId);
-    if (matches.size() != 1) return new SubtaskRoster.Unresolvable();
     try {
+      List<Path> matches = TasksFiles.rosters(mission, wpId);
+      if (matches.size() != 1 || !Files.isRegularFile(matches.getFirst())) {
+        return new SubtaskRoster.Unresolvable();
+      }
       Optional<SubtaskRoster> roster = Frontmatter.read(matches.getFirst()).map(FactValues::roster);
       return roster.orElseGet(SubtaskRoster.Unresolvable::new);
     } catch (RuntimeException invalid) {

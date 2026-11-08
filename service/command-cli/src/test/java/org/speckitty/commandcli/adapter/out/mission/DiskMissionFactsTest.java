@@ -135,6 +135,30 @@ class DiskMissionFactsTest {
   }
 
   @Test
+  void existenceUsesCoreGlobSemanticsIncludingDanglingSymlinks() throws Exception {
+    Files.createDirectories(mission.resolve("tasks"));
+    Path dangling = Path.of("/nonexistent/wp04");
+    Files.createSymbolicLink(mission.resolve("tasks/WP04-slug.md"), dangling);
+    assertThat(TasksFiles.exists(mission, "WP04")).isTrue();
+    Files.delete(mission.resolve("tasks/WP04-slug.md"));
+    Files.createSymbolicLink(mission.resolve("tasks/WP04.md"), dangling);
+    assertThat(TasksFiles.exists(mission, "WP04")).isFalse();
+    Files.delete(mission.resolve("tasks/WP04.md"));
+    Files.createDirectory(mission.resolve("tasks/WP04-slug.md"));
+    assertThat(TasksFiles.exists(mission, "WP04")).as("fail closed where core crashes on a directory").isFalse();
+  }
+
+  @Test
+  void aSingleNonRegularMatchFailsClosedWithoutOpeningIt() throws Exception {
+    Files.createDirectories(mission.resolve("tasks"));
+    Path fifo = mission.resolve("tasks/WP01.md");
+    Process mkfifo = new ProcessBuilder("mkfifo", fifo.toString()).start();
+    assertThat(mkfifo.waitFor()).isZero();
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    assertThat(facts().dependencies("WP01")).isInstanceOf(DependencyDeclaration.Unresolvable.class);
+  }
+
+  @Test
   void wholeFileIsDecodedStrictlyBeforeTheFrontmatterCapApplies() throws Exception {
     Files.createDirectories(mission.resolve("tasks"));
     byte[] head = task("[]").getBytes(StandardCharsets.UTF_8);
