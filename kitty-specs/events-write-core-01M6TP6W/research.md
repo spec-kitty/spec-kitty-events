@@ -412,13 +412,6 @@ Each entry gives the decision, why it was chosen, and the alternatives considere
 14. **SnakeYAML 2.6 (already sha-pinned) for frontmatter.**
     - Why: core's `dependencies` and `subtasks` come in several YAML forms. `SafeConstructor` only, on a bounded block.
     - Supply chain: no new artifact (DIRECTIVE_051 controls: the version is pinned and verified, no install scripts, no new transitive dependency).
-17. **Maintainer rulings, 2026-11-08.** Each is a resolved Decision Moment under `decisions/`.
-    - `operation` field kept in `1.0.1-SNAPSHOT` (decision 2; DM `01M6X2JWES41Y6PGF4EZ8M174K`).
-    - A stale `from_lane` answers `TRANSITION_REJECTED` with the reason `urn:spec-kitty:write-refusal:stale_from_lane`, added to the contract's provisional codes as an events-side addition with no core equivalent; if a code proves impossible, a clear human-readable detail. A test covers the outcome (supersedes decision 5; DM `01M6X2Q4YK41J0Q03F55NAPS8Y`).
-    - Torn-tail recovery after core #6195: an explicit repair command, spec-kitty/spec-kitty-events#222; the write path keeps refusing (C-006; DM `01M6X2Q7S8K2NET8XCE11KM7BA`).
-    - ADR-0007 and ADR-0008 become Accepted in this mission's PR (accepted by the maintainer 2026-11-07; supersedes C-002's "status untouched"; DM `01M6X2QAWDFC27AREE1HJ1C4RH`).
-    - `unreachable.json` stays as is; one issue per wire-unreachable reason: `workspace_context_required` #223, the evidence half of `implementation_evidence_required` #224 (DM `01M6X2QDYNTGZNG3A1HG4NJGMY`).
-
 ## 12. Post-spec squad dispositions
 
 Lenses: scope fidelity (Opus) and contract and parity (Opus), 2026-11-07. Every finding was **folded** into spec `f8e5cd9c`; none was dropped.
@@ -452,6 +445,12 @@ Lenses: scope fidelity (Opus) and contract and parity (Opus), 2026-11-07. Every 
 16. **FR-010's allowlist names three packages.**
     - The three: event-log's existing `adapter.out.ledger` (lock files and the read ledger's torn-tail repair, never a status log), the new `adapter.out.statuslog`, and command-cli's `adapter.out.filesystem` (endpoint and service-lock files).
     - The rule's intent is that no other code writes files, and above all that no other code writes a status log.
+17. **Maintainer rulings, 2026-11-08.** Each is a resolved Decision Moment under `decisions/`.
+    - `operation` field kept in `1.0.1-SNAPSHOT` (decision 2; DM `01M6X2JWES41Y6PGF4EZ8M174K`).
+    - A stale `from_lane` answers `TRANSITION_REJECTED` with the reason `urn:spec-kitty:write-refusal:stale_from_lane`, added to the contract's provisional codes as an events-side addition with no core equivalent; if a code proves impossible, a clear human-readable detail. A test covers the outcome (supersedes decision 5; DM `01M6X2Q4YK41J0Q03F55NAPS8Y`).
+    - Torn-tail recovery after core #6195: an explicit repair command, spec-kitty/spec-kitty-events#222; the write path keeps refusing (C-006; DM `01M6X2Q7S8K2NET8XCE11KM7BA`).
+    - ADR-0007 and ADR-0008 become Accepted in this mission's PR (accepted by the maintainer 2026-11-07; supersedes C-002's "status untouched"; DM `01M6X2QAWDFC27AREE1HJ1C4RH`).
+    - `unreachable.json` stays as is; one issue per wire-unreachable reason: `workspace_context_required` #223, the evidence half of `implementation_evidence_required` #224 (DM `01M6X2QDYNTGZNG3A1HG4NJGMY`).
 
 ## 13. Post-tasks squad dispositions
 
