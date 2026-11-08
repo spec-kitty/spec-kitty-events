@@ -103,7 +103,7 @@ class WriteIntegrationTest {
           throw new RuntimeException(exception);
         }
       });
-      assertThat(held.await(1, TimeUnit.SECONDS)).isTrue();
+      assertThat(held.await(10, TimeUnit.SECONDS)).isTrue();
       RawClient.Reply reply = rig.post("unit", WriteRig.unit(WriteRig.claimRow(ID1)));
       peer.join();
       assertThat(reply.status()).as(reply.text()).isEqualTo(201);
@@ -432,12 +432,25 @@ class WriteIntegrationTest {
     assertThat(ContractSchemas.violations("WriteRefusal", reply.body())).isEmpty();
   }
 
+  /**
+   * Hashes every regular file under the repository: its relative path and its bytes. The one exception is the service's own lock
+   * files, which the running service holds byte-range locked (mandatory on Windows, so reading them throws): the files under
+   * {@code .git/spec-kitty-write-service/} (the service lock, the endpoint) and {@code .git/spec-kitty-locks/} (the per-Mission write
+   * locks). For those the path and size enter the hash but not the bytes, so a lock file created, removed or resized still changes the
+   * hash, and every other file is still compared byte for byte.
+   */
   private static String treeHash(Path repository) throws Exception {
+    Path git = repository.resolve(".git");
+    List<Path> serviceOwned = List.of(git.resolve("spec-kitty-write-service"), git.resolve("spec-kitty-locks"));
     MessageDigest digest = MessageDigest.getInstance("SHA-256");
     try (Stream<Path> paths = Files.walk(repository)) {
       for (Path path : paths.filter(Files::isRegularFile).sorted().toList()) {
         digest.update(repository.relativize(path).toString().getBytes(StandardCharsets.UTF_8));
-        digest.update(Files.readAllBytes(path));
+        if (serviceOwned.stream().anyMatch(path::startsWith)) {
+          digest.update(Long.toString(Files.size(path)).getBytes(StandardCharsets.UTF_8));
+        } else {
+          digest.update(Files.readAllBytes(path));
+        }
       }
     }
     return HexFormat.of().formatHex(digest.digest());

@@ -15,9 +15,6 @@ public final class WriteFold {
       Set.of("RetrospectiveCaptured", "RetrospectiveCaptureFailed", "RetrospectiveSkipped");
   private static final List<String> STATUS_REQUIRED =
       List.of("event_id", "wp_id", "from_lane", "to_lane", "at", "actor", "force", "execution_mode");
-  private static final Set<String> ACTOR_FIELDS = Set.of("role", "profile", "tool", "model");
-  private static final Set<String> STATUS_ACTOR_FIELDS = Set.of("role", "profile", "tool", "model", "profile_source");
-  private static final Set<String> PROFILE_SOURCES = Set.of("invocation", "flag", "agent_string", "wp_frontmatter");
 
   private WriteFold() {}
 
@@ -66,35 +63,6 @@ public final class WriteFold {
     Map<String, WpWriteState> result = new LinkedHashMap<>();
     states.forEach((wpId, state) -> result.put(wpId, stateView(state, transitionWps.contains(wpId))));
     return new FoldView(result);
-  }
-
-  private static Object decodeActor(Object actor) {
-    if (!(actor instanceof Map<?, ?> structured)) {
-      if (actor == null) return "None";
-      if (actor instanceof Boolean flag) return flag ? "True" : "False";
-      return actor;
-    }
-    if (!structured.keySet().equals(ACTOR_FIELDS) && !structured.keySet().equals(STATUS_ACTOR_FIELDS)) {
-      throw new IllegalArgumentException("structured actor has an unexpected key set");
-    }
-    for (String field : STATUS_ACTOR_FIELDS) {
-      Object value = structured.get(field);
-      if (value != null && !(value instanceof String)) {
-        throw new IllegalArgumentException("structured actor field " + field + " must be a string or null");
-      }
-    }
-    if (structured.containsKey("profile_source")) validateProfileSource(structured);
-    return new LinkedHashMap<>(castMap(structured));
-  }
-
-  private static void validateProfileSource(Map<?, ?> actor) {
-    Object source = actor.get("profile_source");
-    if (source != null && !PROFILE_SOURCES.contains(source)) {
-      throw new IllegalArgumentException("unknown structured actor profile_source");
-    }
-    if ((source == null) != (actor.get("profile") == null)) {
-      throw new IllegalArgumentException("profile_source must be null exactly when profile is null");
-    }
   }
 
   private static boolean isNonLane(Map<String, Object> row) {
@@ -156,7 +124,7 @@ public final class WriteFold {
       for (String field : STATUS_REQUIRED) {
         if (!row.containsKey(field)) throw new IllegalArgumentException(field + " is required");
       }
-      row.put("actor", decodeActor(row.get("actor")));
+      row.put("actor", Actors.decode(row.get("actor")));
       Lane.fromWire(text(row.get("from_lane")));
       Lane.fromWire(text(row.get("to_lane")));
     }

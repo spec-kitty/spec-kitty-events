@@ -30,7 +30,7 @@ class WriteBodiesTest {
           + "\"at\":\"2026-10-27T18:00:00+00:00\",\"actor\":\"claude\",\"force\":false,\"execution_mode\":\"direct_repo\","
           + "\"reason\":null,\"review_ref\":null,\"evidence\":null,\"policy_metadata\":null}";
 
-  private final WriteBodies bodies = new WriteBodies(JSON);
+  private final WriteBodies bodies = new WriteBodies();
 
   @Test
   void aClaimExampleBecomesATypedRequestWithPythonJsonValues() {
@@ -110,7 +110,9 @@ class WriteBodiesTest {
 
   @Test
   void theTypedRequestDefendsEveryMutableContainer() {
-    WriteRequest request = requestWithRow(ROW.replace("\"actor\":\"claude\"", "\"actor\":{\"tool\":\"claude\",\"tags\":[\"x\"]}"));
+    WriteRequest request = requestWithRow(ROW.replace("\"actor\":\"claude\"",
+        "\"actor\":{\"role\":\"implementer\",\"profile\":null,\"tool\":\"claude\",\"model\":null}")
+        .replace("\"policy_metadata\":null", "\"policy_metadata\":{\"tags\":[\"x\"]}"));
     WriteRequest.UnitRequest unit = request.units().get(0);
     Map<String, Object> row = value(unit.rows().get(0));
 
@@ -118,8 +120,44 @@ class WriteBodiesTest {
     assertThatThrownBy(() -> unit.rows().add(unit.rows().get(0))).isInstanceOf(UnsupportedOperationException.class);
     assertThatThrownBy(() -> row.put("x", "y")).isInstanceOf(UnsupportedOperationException.class);
     assertThatThrownBy(() -> ((Map<String, Object>) row.get("actor")).put("x", "y")).isInstanceOf(UnsupportedOperationException.class);
-    assertThatThrownBy(() -> ((List<Object>) ((Map<String, Object>) row.get("actor")).get("tags")).add("y"))
+    assertThatThrownBy(() -> ((List<Object>) ((Map<String, Object>) row.get("policy_metadata")).get("tags")).add("y"))
         .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  void aStructuredActorTheLogFoldCannotDecodeIsMalformedAtTheEdge() {
+    String four = "{\"role\":\"implementer\",\"profile\":null,\"tool\":\"claude\",\"model\":null}";
+    String five = "{\"role\":\"r\",\"profile\":\"p\",\"tool\":\"t\",\"model\":null,\"profile_source\":\"flag\"}";
+    for (String accepted : List.of(four, five, "\"claude\"")) {
+      success(bodies.parseUnit(MISSION, bytes(unit(ROW.replace("\"actor\":\"claude\"", "\"actor\":" + accepted)))));
+    }
+    for (String refused : List.of(
+        "{}", "{\"tool\":\"x\"}", "{\"role\":null,\"profile\":null,\"tool\":null}",
+        "{\"role\":\"r\",\"profile\":null,\"tool\":\"t\",\"model\":null,\"extra\":null}",
+        "{\"role\":1,\"profile\":null,\"tool\":\"t\",\"model\":null}",
+        "{\"role\":[],\"profile\":null,\"tool\":\"t\",\"model\":null}",
+        "{\"role\":\"r\",\"profile\":\"p\",\"tool\":\"t\",\"model\":null,\"profile_source\":\"made_up\"}",
+        "{\"role\":\"r\",\"profile\":\"p\",\"tool\":\"t\",\"model\":null,\"profile_source\":null}",
+        "{\"role\":\"r\",\"profile\":null,\"tool\":\"t\",\"model\":null,\"profile_source\":\"flag\"}")) {
+      WriteBodies.Malformed malformed =
+          failure(bodies.parseUnit(MISSION, bytes(unit(ROW.replace("\"actor\":\"claude\"", "\"actor\":" + refused)))));
+      assertThat(malformed.detail()).as(refused).contains("actor").doesNotContain("made_up");
+    }
+  }
+
+  @Test
+  void theRequestParserTakesTheLogReadersLimitsExplicitly() {
+    var limits = org.speckitty.missionstatus.adapter.out.filesystem.codec.StatusRowDecoder.readConstraints();
+    assertThat(limits.getMaxNestingDepth()).isEqualTo(256);
+    assertThat(limits.getMaxNumberLength()).isEqualTo(4300);
+    String deep = "[".repeat(300) + "1" + "]".repeat(300);
+    assertThat(failure(bodies.parseUnit(MISSION, bytes(unit(ROW.replace("\"policy_metadata\":null", "\"policy_metadata\":" + deep))))).detail()).contains("not one JSON object");
+    String digits = "9".repeat(4300);
+    success(bodies.parseUnit(MISSION, bytes(unit(ROW.replace("\"policy_metadata\":null", "\"policy_metadata\":" + digits)))));
+    assertThat(failure(bodies.parseUnit(MISSION, bytes(unit(ROW.replace("\"policy_metadata\":null", "\"policy_metadata\":" + digits + "9"))))).detail())
+        .contains("not one JSON object");
+    String floating = "1." + "9".repeat(5000);
+    success(bodies.parseUnit(MISSION, bytes(unit(ROW.replace("\"policy_metadata\":null", "\"policy_metadata\":" + floating)))));
   }
 
   @Test

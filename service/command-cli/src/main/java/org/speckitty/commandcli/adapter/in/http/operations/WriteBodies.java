@@ -9,8 +9,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.speckitty.commandcli.application.write.WriteRequest;
+import org.speckitty.missionstatus.adapter.out.filesystem.codec.StatusRowDecoder;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.StreamReadFeature;
+import tools.jackson.core.json.JsonFactory;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -50,8 +52,13 @@ public final class WriteBodies {
 
   private final JsonMapper mapper;
 
-  public WriteBodies(JsonMapper mapper) {
-    this.mapper = mapper.rebuild().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS).build();
+  /**
+   * The request parser takes exactly the limits of the log reader (nesting, integer length, unbounded floats), set explicitly on its own
+   * token factory, so the edge never accepts a row the reader of the log would refuse and never refuses one it would read.
+   */
+  public WriteBodies() {
+    JsonFactory factory = JsonFactory.builder().streamReadConstraints(StatusRowDecoder.readConstraints()).build();
+    this.mapper = JsonMapper.builder(factory).enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS).build();
   }
 
   public Optional<Malformed> missionId(String missionId) {
@@ -248,7 +255,7 @@ public final class WriteBodies {
   }
 
   /** Objects retain document order; integers stay arbitrary precision and floating-point values stay doubles, including -0.0. */
-  private static Object jsonValue(JsonNode node) {
+  static Object jsonValue(JsonNode node) {
     if (node.isObject()) {
       Map<String, Object> value = new LinkedHashMap<>();
       for (Map.Entry<String, JsonNode> member : node.properties()) {

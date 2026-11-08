@@ -15,18 +15,9 @@ import org.speckitty.missionstatus.adapter.out.filesystem.codec.StatusRowEncoder
 import org.speckitty.missionstatus.adapter.out.filesystem.codec.StatusRowRefusedException;
 import org.speckitty.missionstatus.adapter.out.filesystem.codec.StatusRowSanitizer;
 import org.speckitty.missionstatus.domain.model.PyText;
-import tools.jackson.core.StreamReadConstraints;
 
 /** command-cli's application port over the event-log module's canonical codec. */
 public final class EventLogRowCodec implements RowCodec {
-  /** A fixed resource bound below any depth core's stack accepts; core's own limit depends on the caller's stack. */
-  private static final int MAX_NESTING_DEPTH = 256;
-
-  static {
-    StreamReadConstraints.overrideDefaultStreamReadConstraints(
-        new PythonNumberConstraints(StreamReadConstraints.defaults()));
-  }
-
   @Override
   public String refusal(Map<String, Object> row) {
     try {
@@ -54,21 +45,6 @@ public final class EventLogRowCodec implements RowCodec {
     }
     if (start < log.length) lines.add(line(Arrays.copyOfRange(log, start, log.length)));
     return new DecodedLog(lines);
-  }
-
-  /** Python caps integer conversion at 4300 digits but does not apply that limit to floats. */
-  private static final class PythonNumberConstraints extends StreamReadConstraints {
-    private static final long serialVersionUID = 1L;
-
-    private PythonNumberConstraints(StreamReadConstraints defaults) {
-      super(MAX_NESTING_DEPTH, defaults.getMaxDocumentLength(), defaults.getMaxTokenCount(), 4300,
-          defaults.getMaxStringLength(), defaults.getMaxNameLength());
-    }
-
-    @Override
-    public void validateFPLength(int length) {
-      // Deliberately unbounded, like Python's float parser.
-    }
   }
 
   /**

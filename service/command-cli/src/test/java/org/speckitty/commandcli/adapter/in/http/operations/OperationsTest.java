@@ -238,13 +238,29 @@ class OperationsTest {
     when(writes.write(any())).thenReturn(new WriteOutcome.Refused(
         RefusalCode.SERVICE_BUSY, null, "Another write is still in progress.", null));
     WriteController controller = new WriteController(new ServiceLifecycle(Clock.systemUTC(), () -> { }), writes,
-        new WriteBodies(JSON), JSON);
+        new WriteBodies(), JSON);
 
     ResponseEntity<byte[]> response = controller.recordWorkPackageTransition(
         MISSION, WriteRig.unit(WriteRig.claimRow("01J6XW9KQT7M0YB3N4R5CQZ2EY")).getBytes());
 
     assertThat(response.getStatusCode().value()).isEqualTo(503);
     assertThat(response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("1");
+  }
+
+  @Test
+  void anUnexpectedFailureOnTheWritePathStillAnswersAContractRefusalWithAFixedDetail() throws Exception {
+    WriteService writes = mock(WriteService.class);
+    when(writes.write(any())).thenThrow(new IllegalStateException("secret-row-value /tmp/path"));
+    WriteController controller = new WriteController(new ServiceLifecycle(Clock.systemUTC(), () -> { }), writes,
+        new WriteBodies(), JSON);
+
+    ResponseEntity<byte[]> response = controller.recordWorkPackageTransition(
+        MISSION, WriteRig.unit(WriteRig.claimRow("01J6XW9KQT7M0YB3N4R5CQZ2EY")).getBytes());
+
+    assertThat(response.getStatusCode().value()).isEqualTo(500);
+    assertThat(JSON.readTree(response.getBody()).get("code").asString()).isEqualTo("STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED");
+    assertThat(new String(response.getBody())).doesNotContain("secret").doesNotContain("/tmp");
+    assertThat(ContractSchemas.violations("WriteRefusal", new String(response.getBody()))).isEmpty();
   }
 
   @Test

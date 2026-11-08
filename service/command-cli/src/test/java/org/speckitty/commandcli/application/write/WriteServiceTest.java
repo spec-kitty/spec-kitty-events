@@ -1,6 +1,11 @@
 package org.speckitty.commandcli.application.write;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -22,6 +27,7 @@ import org.speckitty.commandcli.application.write.port.StatusLog;
 import org.speckitty.commandcli.domain.authority.Authority;
 import org.speckitty.commandcli.domain.authority.DependencyDeclaration;
 import org.speckitty.commandcli.domain.authority.MissionFacts;
+import org.speckitty.commandcli.domain.authority.UnreducibleLog;
 import org.speckitty.commandcli.domain.service.RefusalCode;
 import org.speckitty.missionstatus.adapter.out.filesystem.codec.StatusRowEncoder;
 import org.speckitty.commandcli.adapter.out.statuslog.EventLogRowCodec;
@@ -177,6 +183,77 @@ class WriteServiceTest {
   }
 
   @Test
+  void aRowTheServiceCannotReadBackIsRefusedBeforeTheAppendAndNeverAcknowledged() {
+    for (Object actor : List.<Object>of(Map.of("tool", "x"), nested(300))) {
+      Ports ports = new Ports();
+      Map<String, Object> bad = row("01J6XW9KQT7M0YB3N4R5CQZ2EY", "WP01", "planned", "claimed", "actor");
+      bad.put(actor instanceof Map ? "actor" : "policy_metadata", actor);
+      byte[] before = ports.log.log;
+      WriteOutcome outcome = ports.service().write(request(List.of(unit(bad))));
+      assertRefusal(outcome, RefusalCode.REQUEST_MALFORMED, null);
+      assertThat(((WriteOutcome.Refused) outcome).detail()).doesNotContain("tool").doesNotContain("[[[");
+      assertThat(ports.log.appendCalls).isZero();
+      assertThat(ports.log.log).isEqualTo(before);
+      assertThat(ports.service().write(validRequest())).isInstanceOf(WriteOutcome.Acked.class);
+    }
+  }
+
+  @Test
+  void anUnreadableUnitOfABatchIsNamedByItsRequestIndexEvenWhenTheAuthorityCannotJudgeTheNextUnit() {
+    Ports ports = new Ports();
+    Map<String, Object> bad = row("01J6XW9KQT7M0YB3N4R5CQZ2EY", "WP01", "planned", "claimed", "actor");
+    bad.put("actor", Map.of("tool", "x"));
+    Map<String, Object> second = row("01J6XW9KQT7M0YB3N4R5CQZ2EZ", "WP02", "genesis", "planned", "actor");
+    WriteOutcome outcome = ports.service().write(new WriteRequest(MISSION, WriteRequest.Kind.BATCH,
+        List.of(unit(bad), unit(second)), context("checkout_append")));
+    assertRefusal(outcome, RefusalCode.REQUEST_MALFORMED, 0);
+    assertThat(ports.log.appendCalls).isZero();
+    Map<String, Object> good = row("01J6XW9KQT7M0YB3N4R5CQZ2F0", "WP01", "planned", "claimed", "actor");
+    Map<String, Object> unreadableSecond = row("01J6XW9KQT7M0YB3N4R5CQZ2F1", "WP02", "genesis", "planned", "actor");
+    unreadableSecond.put("actor", Map.of("tool", "x"));
+    WriteOutcome later = ports.service().write(new WriteRequest(MISSION, WriteRequest.Kind.BATCH,
+        List.of(unit(good), unit(unreadableSecond)), context("checkout_append")));
+    assertRefusal(later, RefusalCode.REQUEST_MALFORMED, 1);
+    assertThat(ports.log.appendCalls).isZero();
+  }
+
+  @Test
+  void aReadableRowStillAppendsExactlyOnceAndTheAppendedBytesAreTheEncodedRow() {
+    Ports ports = new Ports();
+    Map<String, Object> row = row("01J6XW9KQT7M0YB3N4R5CQZ2EY", "WP01", "planned", "claimed", "actor");
+    byte[] before = ports.log.log;
+    assertThat(ports.service().write(request(List.of(unit(row))))).isInstanceOf(WriteOutcome.Acked.class);
+    assertThat(ports.log.appendCalls).isOne();
+    assertThat(ports.log.log).isEqualTo(concat(before, StatusRowEncoder.encodeLine(row)));
+  }
+
+  @Test
+  void anUnexpectedFailureAnywhereIsACodedRefusalAndTheTurnAndLockAreReleased() {
+    Ports ports = new Ports();
+    WriteService service = ports.service();
+    ports.missions.failure = new IllegalStateException("boom: secret-value");
+    WriteOutcome outcome = service.write(validRequest());
+    assertRefusal(outcome, RefusalCode.STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED, null);
+    assertThat(((WriteOutcome.Refused) outcome).detail()).doesNotContain("boom").doesNotContain("secret");
+    assertThat(ports.log.appendCalls).isZero();
+    assertThat(ports.log.locksHeld).isZero();
+    ports.missions.failure = null;
+    assertThat(service.write(validRequest())).isInstanceOf(WriteOutcome.Acked.class);
+  }
+
+  @Test
+  void anAuthorityThatCannotReduceReadableUnitsBlamesTheLogNotTheClient() {
+    Ports ports = new Ports();
+    Authority authority = mock(Authority.class);
+    when(authority.judge(anyList(), anyList(), anyBoolean(), any())).thenThrow(new UnreducibleLog("log"));
+    WriteService service = new WriteService(ports.missions, ports.log, ports.codec, new WriteTurn(), authority,
+        Duration.ofMillis(200), System::nanoTime);
+    assertRefusal(service.write(validRequest()), RefusalCode.STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED, null);
+    assertThat(ports.log.appendCalls).isZero();
+    assertThat(ports.log.locksHeld).isZero();
+  }
+
+  @Test
   void aHeldTurnIsBusyAndTheLockReceivesTheOriginalAbsoluteDeadline() throws Exception {
     Ports ports = new Ports();
     WriteTurn turn = new WriteTurn();
@@ -187,24 +264,27 @@ class WriteServiceTest {
     Thread holder = new Thread(() -> {
       try (var ignored = turn.tryAcquire(0).orElseThrow()) {
         held.countDown();
-        release.await(1, TimeUnit.SECONDS);
+        release.await(30, TimeUnit.SECONDS);
       } catch (InterruptedException exception) {
         Thread.currentThread().interrupt();
         throw new AssertionError(exception);
       }
     });
     holder.start();
-    assertThat(held.await(1, TimeUnit.SECONDS)).isTrue();
+    assertThat(held.await(30, TimeUnit.SECONDS)).isTrue();
     long before = System.nanoTime();
     assertRefusal(service.write(validRequest()), RefusalCode.SERVICE_BUSY, null);
     assertThat(ports.log.calls).isZero();
-    assertThat(System.nanoTime() - before).isLessThan(Duration.ofSeconds(1).toNanos());
+    assertThat(System.nanoTime() - before).isLessThan(Duration.ofSeconds(10).toNanos());
     release.countDown();
-    holder.join(1000);
+    holder.join(30_000);
 
-    long deadlineBefore = System.nanoTime();
-    assertThat(service.write(validRequest())).isInstanceOf(WriteOutcome.Acked.class);
-    assertThat(ports.log.deadline).isBetween(deadlineBefore, deadlineBefore + Duration.ofMillis(250).toNanos());
+    // The deadline is the clock at the start of the write plus the budget. A frozen clock makes that exact, whatever the runner's speed.
+    long frozen = 5_000_000_000L;
+    WriteService frozenClock = new WriteService(ports.missions, ports.log, ports.codec, new WriteTurn(), Authority.standard(),
+        Duration.ofMillis(200), () -> frozen);
+    assertThat(frozenClock.write(validRequest())).isInstanceOf(WriteOutcome.Acked.class);
+    assertThat(ports.log.deadline).isEqualTo(frozen + Duration.ofMillis(200).toNanos());
   }
 
   @Test
@@ -213,22 +293,30 @@ class WriteServiceTest {
     ports.log.entered = new CountDownLatch(1);
     ports.log.release = new CountDownLatch(1);
     ExecutorService executor = Executors.newFixedThreadPool(2);
-    WriteService service = ports.service();
+    // A budget far above any runner's scheduling delay: the second write must wait for the first's turn, never time out. The busy
+    // path has its own test (aHeldTurnIsBusy...) with a short budget.
+    WriteService service = ports.service(Duration.ofSeconds(30));
     try {
       Future<WriteOutcome> first = executor.submit(() -> service.write(validRequest()));
-      assertThat(ports.log.entered.await(1, TimeUnit.SECONDS)).isTrue();
+      assertThat(ports.log.entered.await(30, TimeUnit.SECONDS)).isTrue();
       Map<String, Object> secondRow = row("01J6XW9KQT7M0YB3N4R5CQZ2EZ", "WP01", "claimed", "in_progress", "actor");
       Future<WriteOutcome> second = executor.submit(() -> service.write(request(List.of(unit(secondRow)))));
       Thread.sleep(40);
       assertThat(second.isDone()).isFalse();
       ports.log.release.countDown();
-      assertThat(first.get(2, TimeUnit.SECONDS)).isInstanceOf(WriteOutcome.Acked.class);
-      assertThat(second.get(2, TimeUnit.SECONDS)).isInstanceOf(WriteOutcome.Acked.class);
+      assertThat(first.get(30, TimeUnit.SECONDS)).isInstanceOf(WriteOutcome.Acked.class);
+      assertThat(second.get(30, TimeUnit.SECONDS)).isInstanceOf(WriteOutcome.Acked.class);
       assertThat(ports.log.appendCalls).isEqualTo(2);
     } finally {
       ports.log.release.countDown();
       executor.shutdownNow();
     }
+  }
+
+  private static List<Object> nested(int depth) {
+    List<Object> value = new ArrayList<>(List.of(java.math.BigInteger.ONE));
+    for (int level = 1; level < depth; level++) value = new ArrayList<>(List.of(value));
+    return value;
   }
 
   private static WriteRequest validRequest() {
@@ -301,7 +389,11 @@ class WriteServiceTest {
     }
 
     WriteService service() {
-      return new WriteService(missions, log, codec, new WriteTurn(), Authority.standard(), Duration.ofMillis(200), System::nanoTime);
+      return service(Duration.ofMillis(200));
+    }
+
+    WriteService service(Duration budget) {
+      return new WriteService(missions, log, codec, new WriteTurn(), Authority.standard(), budget, System::nanoTime);
     }
   }
 
@@ -309,6 +401,7 @@ class WriteServiceTest {
     FindResult found = new Found(REF);
     boolean location = true;
     boolean wpExists = true;
+    RuntimeException failure;
     int findCalls;
     int locationCalls;
     int wpCalls;
@@ -320,6 +413,7 @@ class WriteServiceTest {
     }
     @Override public boolean wpExists(MissionRef mission, String wpId) { wpCalls++; return wpExists; }
     @Override public MissionFacts facts(MissionRef mission) {
+      if (failure != null) throw failure;
       return new MissionFacts() {
         @Override public DependencyDeclaration dependencies(String wpId) { return new DependencyDeclaration.None(); }
         @Override public org.speckitty.commandcli.domain.authority.SubtaskRoster subtaskRoster(String wpId) {
@@ -336,6 +430,7 @@ class WriteServiceTest {
     boolean held;
     boolean persistenceFails;
     long deadline;
+    int locksHeld;
     CountDownLatch entered;
     CountDownLatch release;
 
@@ -346,7 +441,7 @@ class WriteServiceTest {
       if (entered != null) entered.countDown();
       if (release != null) {
         try {
-          if (!release.await(1, TimeUnit.SECONDS)) throw new AssertionError("test lock was not released");
+          if (!release.await(30, TimeUnit.SECONDS)) throw new AssertionError("test lock was not released");
         } catch (InterruptedException exception) {
           Thread.currentThread().interrupt();
           throw new AssertionError(exception);
@@ -354,14 +449,19 @@ class WriteServiceTest {
       }
       if (held) return new LockResult.LockHeld<>();
       if (persistenceFails) return new LockResult.PersistenceFailed<>();
-      T result = work.run(new Session() {
-        @Override public byte[] currentBytes() { return log; }
-        @Override public void appendAndSync(byte[] bytes) {
-          appendCalls++;
-          log = concat(log, bytes);
-        }
-      });
-      return new LockResult.Completed<>(result);
+      locksHeld++;
+      try {
+        T result = work.run(new Session() {
+          @Override public byte[] currentBytes() { return log; }
+          @Override public void appendAndSync(byte[] bytes) {
+            appendCalls++;
+            log = concat(log, bytes);
+          }
+        });
+        return new LockResult.Completed<>(result);
+      } finally {
+        locksHeld--;
+      }
     }
   }
 }
