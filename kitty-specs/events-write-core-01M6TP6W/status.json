@@ -238,7 +238,7 @@
     },
     "WP08": {
       "actor": "claude",
-      "agent": "claude",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 8,
@@ -275,14 +275,14 @@
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
-        "T044": "done",
-        "T045": "done",
-        "T046": "done",
-        "T047": "done",
-        "T048": "done",
-        "T049": "done",
-        "T050": "done",
-        "T051": "done"
+        "T044": "planned",
+        "T045": "planned",
+        "T046": "planned",
+        "T047": "planned",
+        "T048": "planned",
+        "T049": "planned",
+        "T050": "planned",
+        "T051": "planned"
       }
     },
     "WP09": {
