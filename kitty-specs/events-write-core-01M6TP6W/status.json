@@ -216,7 +216,14 @@
       "last_transition_at": "2026-11-08T00:15:01.623121+00:00",
       "model": "__resolved_model_absent__",
       "provider": "__resolved_provider_absent__",
-      "role": "implementer"
+      "role": "implementer",
+      "subtasks": {
+        "T039": "done",
+        "T040": "done",
+        "T041": "done",
+        "T042": "done",
+        "T043": "done"
+      }
     },
     "WP08": {
       "actor": "finalize-tasks",
