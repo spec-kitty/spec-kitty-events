@@ -8,8 +8,8 @@ import java.util.regex.Pattern;
 
 /** The root checkout independently verified from a configured git common directory. */
 public final class RootCheckout {
-  private static final Pattern CORE = Pattern.compile("(?ms)^\\s*\\[core]\\s*(.*?)(?=^\\s*\\[|\\z)");
-  private static final Pattern BARE = Pattern.compile("(?m)^\\s*bare\\s*=\\s*true\\s*(?:[#;].*)?$");
+  private static final Pattern CORE = Pattern.compile("(?msi)^\\s*\\[core]\\s*(.*?)(?=^\\s*\\[|\\z)");
+  private static final Pattern BARE = Pattern.compile("(?mi)^\\s*bare(?:\\s*=\\s*(?:true|yes|on|1))?\\s*(?:[#;].*)?$");
 
   private final Path root;
 

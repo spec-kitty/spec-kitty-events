@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.speckitty.commandcli.domain.authority.DependencyDeclaration;
 import org.speckitty.commandcli.domain.authority.FoldView;
 import org.speckitty.commandcli.domain.authority.MissionFacts;
+import org.speckitty.commandcli.domain.authority.SubtaskRoster;
 import org.speckitty.commandcli.domain.authority.WpWriteState;
 import org.speckitty.missionstatus.domain.model.Lane;
 
@@ -58,7 +59,7 @@ class DependencyVerdictTest {
   private static MissionFacts facts(DependencyDeclaration declaration) {
     return new MissionFacts() {
       public DependencyDeclaration dependencies(String wpId) { return declaration; }
-      public List<String> subtaskRoster(String wpId) { return List.of(); }
+      public SubtaskRoster subtaskRoster(String wpId) { return new SubtaskRoster.Resolved(List.of()); }
     };
   }
 

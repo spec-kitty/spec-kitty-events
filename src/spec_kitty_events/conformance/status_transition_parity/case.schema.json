@@ -9,7 +9,7 @@
     "id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
     "oracle": {"enum": ["core", "protocol"]},
     "layer": {"enum": ["domain", "edge", "service"]},
-    "area": {"enum": ["lane_machine", "guard", "force", "done_evidence", "force_note", "stale", "unknown_lane", "dependency", "claim", "review_claim", "start_rejected", "batch", "annotation", "fold", "replay", "alias"]},
+    "area": {"enum": ["lane_machine", "guard", "force", "done_evidence", "force_note", "stale", "unknown_lane", "dependency", "claim", "review_claim", "start_rejected", "batch", "annotation", "fold", "replay", "alias", "location"]},
     "operation": {"enum": ["transition", "start_implementation", "start_review", "annotation"]},
     "mission": {
       "type": "object",

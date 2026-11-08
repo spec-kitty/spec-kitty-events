@@ -1,6 +1,7 @@
 package org.speckitty.commandcli.adapter.out.mission;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.stream.Stream;
 import org.speckitty.commandcli.application.write.port.MissionCatalog;
 import org.speckitty.commandcli.application.write.port.MissionRef;
 import org.speckitty.commandcli.domain.authority.MissionFacts;
+import org.speckitty.missionstatus.domain.model.PyText;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -37,8 +39,12 @@ public final class FilesystemMissionCatalog implements MissionCatalog {
     Path missions = checkout.root().orElseThrow().resolve("kitty-specs");
     try (Stream<Path> paths = Files.list(missions)) {
       for (Path directory : paths.filter(Files::isDirectory).toList()) {
-        MissionRef match = readMission(directory, missionId);
-        if (match != null) matches.add(match);
+        try {
+          MissionRef match = readMission(directory, missionId);
+          if (match != null) matches.add(match);
+        } catch (IOException | RuntimeException unreadableSibling) {
+          // Core skips an unreadable sibling rather than hiding every healthy Mission.
+        }
       }
     } catch (IOException | RuntimeException exception) {
       return new NotFound();
@@ -48,7 +54,9 @@ public final class FilesystemMissionCatalog implements MissionCatalog {
 
   @Override
   public boolean locationMatches(MissionRef mission, String requestedCheckout, String requestedDirectory, String destinationRef) {
-    if (!".".equals(requestedCheckout) || destinationRef != null || checkout.root().isEmpty()) return false;
+    if (mission.coordinationRouted() || !".".equals(requestedCheckout) || destinationRef != null || checkout.root().isEmpty()) {
+      return false;
+    }
     try {
       Path root = checkout.root().orElseThrow();
       Path actual = root.resolve(requestedDirectory).toRealPath();
@@ -72,10 +80,15 @@ public final class FilesystemMissionCatalog implements MissionCatalog {
   private MissionRef readMission(Path directory, String missionId) throws IOException {
     Path metadata = directory.resolve("meta.json");
     if (!Files.isRegularFile(metadata)) return null;
-    JsonNode root = json.readTree(Files.readString(metadata));
+    String text = Files.readString(metadata, StandardCharsets.UTF_8);
+    if (text.startsWith("\uFEFF")) text = text.substring(1);
+    JsonNode root = json.readTree(text);
     if (root == null || !missionId.equals(root.path("mission_id").asString(null))) return null;
+    JsonNode branch = root.path("coordination_branch");
+    boolean coordinationRouted = branch.isString() && !PyText.isBlank(branch.asString());
     Path real = directory.toRealPath();
-    return new MissionRef(missionId, checkout.root().orElseThrow().relativize(real).toString().replace(pathSeparator(), "/"));
+    String relative = checkout.root().orElseThrow().relativize(real).toString().replace(pathSeparator(), "/");
+    return new MissionRef(missionId, relative, coordinationRouted);
   }
 
   private java.util.Optional<Path> path(MissionRef mission) {

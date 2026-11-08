@@ -1,90 +1,35 @@
 package org.speckitty.commandcli.domain.authority;
 
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
-import org.yaml.snakeyaml.LoaderOptions;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
+import java.util.Optional;
+import org.speckitty.commandcli.adapter.out.mission.FactValues;
+import org.speckitty.commandcli.adapter.out.mission.Frontmatter;
+import org.speckitty.commandcli.adapter.out.mission.TasksFiles;
 
-/** Small in-memory frontmatter adapter mirroring WP08's production reader. */
+/** In-memory MissionFacts using exactly the production frontmatter and value rules. */
 final class CorpusMissionFacts implements MissionFacts {
-  private final Map<String, Map<String, Object>> frontmatter;
-  private final Map<String, String> tasks;
-  private final Set<String> unreadable = new HashSet<>();
+  private final Map<String, Optional<Map<String, Object>>> documents;
 
   CorpusMissionFacts(Map<String, String> tasks) {
-    this.tasks = Map.copyOf(tasks);
-    frontmatter = new java.util.LinkedHashMap<>();
-    tasks.forEach((filename, text) -> parse(filename, text));
+    documents = new HashMap<>();
+    tasks.forEach((filename, text) -> documents.put(filename, Frontmatter.readText(filename, text)));
   }
 
   @Override
   public DependencyDeclaration dependencies(String wpId) {
-    List<String> matches = matchingFiles(wpId);
+    List<String> matches = TasksFiles.dependencyNames(documents.keySet(), wpId);
     if (matches.isEmpty()) return new DependencyDeclaration.None();
-    if (matches.size() != 1 || unreadable.contains(matches.getFirst()) || !frontmatter.containsKey(wpId)) {
-      return new DependencyDeclaration.Unresolvable("cannot resolve declared dependencies");
-    }
-    Object value = frontmatter.get(wpId).get("dependencies");
-    if (value == null) return new DependencyDeclaration.None();
-    if (value instanceof List<?> list) return strings(list);
-    if (value instanceof String text) {
-      String stripped = text.strip();
-      if (stripped.equals("[]") || stripped.isEmpty()) return new DependencyDeclaration.None();
-      return strings(List.of(stripped.split("\\s*,\\s*")));
-    }
-    return new DependencyDeclaration.Unresolvable("dependencies is neither a string nor a list");
-  }
-
-  private DependencyDeclaration strings(List<?> values) {
-    List<String> ids = new ArrayList<>();
-    for (Object value : values) {
-      if (!(value instanceof String id)) return new DependencyDeclaration.Unresolvable("invalid dependency declaration");
-      if (!id.strip().isEmpty()) ids.add(id.strip());
-    }
-    return ids.isEmpty() ? new DependencyDeclaration.None() : new DependencyDeclaration.Declared(ids);
+    if (matches.size() != 1) return new DependencyDeclaration.Unresolvable("cannot resolve declared dependencies");
+    return documents.get(matches.getFirst()).map(FactValues::dependencies)
+        .orElseGet(() -> new DependencyDeclaration.Unresolvable("cannot resolve declared dependencies"));
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public List<String> subtaskRoster(String wpId) {
-    Object value = frontmatter.getOrDefault(wpId, Map.of()).get("subtasks");
-    return value instanceof List<?> list ? (List<String>) list : List.of();
-  }
-
-  private List<String> matchingFiles(String wpId) {
-    Pattern pattern = Pattern.compile("^" + Pattern.quote(wpId) + "(?:[-_.]|\\.md$)");
-    return tasks.keySet().stream()
-        .filter(filename -> !filename.equalsIgnoreCase("readme.md") && pattern.matcher(filename).find())
-        .sorted()
-        .toList();
-  }
-
-  @SuppressWarnings("unchecked")
-  private void parse(String filename, String text) {
-    try {
-      if (!text.startsWith("---\n")) {
-        unreadable.add(filename);
-        return;
-      }
-      int end = text.indexOf("\n---", 4);
-      if (end < 0) {
-        unreadable.add(filename);
-        return;
-      }
-      Object loaded = new Yaml(new SafeConstructor(new LoaderOptions())).load(text.substring(4, end));
-      if (!(loaded instanceof Map<?, ?> map)) {
-        unreadable.add(filename);
-        return;
-      }
-      String wpId = map.get("work_package_id") instanceof String id ? id : filename.replaceFirst("([-.].*)?\\.md$", "");
-      frontmatter.put(wpId, (Map<String, Object>) map);
-    } catch (RuntimeException exception) {
-      unreadable.add(filename);
-    }
+  public SubtaskRoster subtaskRoster(String wpId) {
+    List<String> matches = TasksFiles.rosterNames(documents.keySet(), wpId);
+    if (matches.size() != 1) return new SubtaskRoster.Unresolvable();
+    return documents.get(matches.getFirst()).map(FactValues::roster).orElseGet(SubtaskRoster.Unresolvable::new);
   }
 }

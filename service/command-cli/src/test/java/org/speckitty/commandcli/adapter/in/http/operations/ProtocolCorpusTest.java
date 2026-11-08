@@ -81,13 +81,23 @@ class ProtocolCorpusTest {
           "WP01.md", "---\nwork_package_id: WP01\ndependencies: []\nsubtasks: []\n---\n",
           "WP02-write.md", "---\nwork_package_id: WP02\ndependencies: []\nsubtasks: []\n---\n"),
           WriteRig.priorPlannedLine().getBytes(StandardCharsets.UTF_8));
-      String fixture = JSON.readTree(Files.readString(path)).required("input_json").asString();
+      JsonNode fixtureDocument = JSON.readTree(Files.readString(path));
+      String fixture = fixtureDocument.required("input_json").asString();
       String row = WriteRig.claimRow("01J6XW9KQT7M0YB3N4R5CQZ2EZ");
       row = row.substring(0, row.length() - 1) + "," + fixture.substring(1, fixture.length() - 1) + "}";
       byte[] before = Files.exists(rig.log()) ? Files.readAllBytes(rig.log()) : null;
       RawClient.Reply reply = rig.post("unit", WriteRig.unit(row));
       assertThat(reply.status()).as(reply.text()).isEqualTo(400);
-      assertThat(JSON.readTree(reply.body()).get("code").asString()).isEqualTo("REQUEST_MALFORMED");
+      JsonNode refusal = JSON.readTree(reply.body());
+      assertThat(refusal.get("code").asString()).isEqualTo("REQUEST_MALFORMED");
+      String expectedDetail = switch (path.getFileName().toString()) {
+        case "non_finite_nan.json", "non_finite_infinity.json" -> "The body is not one JSON object.";
+        case "non_finite_overflow.json" -> "A row must not contain a non-finite number.";
+        case "session_pair_naive_then_aware.json", "session_pair_aware_then_naive.json" ->
+            "A row's session timestamps must both be naive or both be aware.";
+        default -> throw new AssertionError("unknown invalid status fixture");
+      };
+      assertThat(refusal.path("detail").asString()).isEqualTo(expectedDetail);
       assertThat(before == null ? null : Files.readAllBytes(rig.log())).isEqualTo(before);
       PASSED.add(path.getFileName().toString());
     }));
@@ -101,6 +111,16 @@ class ProtocolCorpusTest {
     Map<String, String> tasks = new LinkedHashMap<>();
     testCase.required("tasks").properties().forEach(entry -> tasks.put(entry.getKey(), entry.getValue().asString()));
     rig.replaceMission(missionId, directory, tasks, initialLog(testCase));
+    String caseId = testCase.required("id").asString();
+    if ("write-location-coordination-routed-mission".equals(caseId)) {
+      Files.writeString(rig.missionDirectory.resolve("meta.json"),
+          "{\"mission_id\":\"" + missionId + "\",\"coordination_branch\":\"kitty/mission-status\"}\n");
+    }
+    if ("catalog-broken-sibling-meta".equals(caseId)) {
+      Path broken = rig.repository.resolve("kitty-specs/broken-sibling");
+      Files.createDirectories(broken);
+      Files.writeString(broken.resolve("meta.json"), "{not json");
+    }
     byte[] before = Files.exists(rig.log()) ? Files.readAllBytes(rig.log()) : null;
     JsonNode request = testCase.required("request");
     String kind = request.required("kind").asString();
@@ -148,6 +168,7 @@ class ProtocolCorpusTest {
       case EVENT_ID_CONFLICT -> "The request's event ids conflict with the status event log.";
       case STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED ->
           "The status event log could not be verified or persisted; nothing was acknowledged.";
+      case WRITE_LOCATION_UNVERIFIED -> "The write location could not be verified.";
       default -> throw new AssertionError("No fixed protocol detail for " + code);
     };
   }
@@ -175,11 +196,7 @@ class ProtocolCorpusTest {
   private static byte[] initialLog(JsonNode testCase) throws IOException {
     if (testCase.has("log_text")) return testCase.get("log_text").asString().getBytes(StandardCharsets.UTF_8);
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-    JsonNode firstRequestId = testCase.path("request").path("units").path(0).path("rows").path(0).path("event_id");
     for (JsonNode row : testCase.path("log")) {
-      // The new-then-replayed protocol case carries the new row's bytes as reference data; its prior log omits that row.
-      if ("replay-new-then-replayed-conflict".equals(testCase.required("id").asString())
-          && row.path("event_id").equals(firstRequestId)) continue;
       @SuppressWarnings("unchecked")
       Map<String, Object> value = (Map<String, Object>) valueTree(row);
       bytes.write(StatusRowEncoder.encodeLine(value));
@@ -228,7 +245,7 @@ class ProtocolCorpusTest {
     assertThat(GUARD_REASONS).hasSize(15); // workspace_context_required is recorded unreachable over the wire.
     JsonNode unreachable = read(CASES.resolveSibling("unreachable.json"));
     assertThat(unreachable.has("urn:spec-kitty:write-refusal:workspace_context_required")).isTrue();
-    assertThat(PASSED).hasSize(31);
-    System.out.printf("Protocol/service corpus 11/11; guard reasons 15/15 (+1 recorded unreachable); invalid status rows 5/5 passed%n");
+    assertThat(PASSED).hasSize(33);
+    System.out.printf("Protocol/service corpus 13/13; guard reasons 15/15 (+1 recorded unreachable); invalid status rows 5/5 passed%n");
   }
 }

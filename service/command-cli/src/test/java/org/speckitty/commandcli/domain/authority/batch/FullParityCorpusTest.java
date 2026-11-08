@@ -10,6 +10,8 @@ import org.speckitty.commandcli.domain.authority.CorpusAuthorityCases;
 class FullParityCorpusTest {
   private static final Map<String, String> LATER_LAYER_REASONS = Map.ofEntries(
       Map.entry("alias-noncanonical-row", "request alias canonicalization belongs to edge validation"),
+      Map.entry("catalog-broken-sibling-meta", "one malformed sibling does not hide a healthy Mission"),
+      Map.entry("write-location-coordination-routed-mission", "R16 primary appends are refused before taking a lock"),
       Map.entry("fold-crlf-replay", "CRLF log decoding and replay belong to service input"),
       Map.entry("fold-invalid-json", "malformed JSON is rejected while decoding the log"),
       Map.entry("fold-torn-tail", "torn-tail recovery belongs to status-log service input"),
@@ -23,7 +25,7 @@ class FullParityCorpusTest {
 
   @Test
   void everyLaterLayerCaseHasAProtocolReasonForWp08() {
-    assertThat(LATER_LAYER_REASONS).hasSize(11).allSatisfy((id, reason) -> {
+    assertThat(LATER_LAYER_REASONS).hasSize(13).allSatisfy((id, reason) -> {
       assertThat(id).isNotBlank();
       assertThat(reason).isNotBlank();
     });

@@ -35,6 +35,52 @@ class FilesystemMissionCatalogTest {
   }
 
   @Test
+  void everyGitBareBooleanSpellingIsRejectedCaseInsensitively() throws Exception {
+    for (String value : new String[] {"TRUE", "yes", "On", "1", ""}) {
+      Path host = Files.createTempDirectory("bare-config");
+      Path bare = host.resolve(".git");
+      run(host, "git", "init", "--bare", "--quiet", bare.toString());
+      String config = Files.readString(bare.resolve("config"))
+          .replace("bare = true", "bare" + (value.isEmpty() ? "" : " = " + value));
+      Files.writeString(bare.resolve("config"), config.replace("[core]", "[CORE]"));
+      assertThat(RootCheckout.of(bare).root()).as(value).isEmpty();
+      delete(host);
+    }
+  }
+
+  @Test
+  void unreadableSiblingsAreSkippedAndBomPrefixedMetadataIsRead() throws Exception {
+    Path root = repo("catalog-siblings");
+    try {
+      mission(root, "healthy", ID);
+      Files.write(root.resolve("kitty-specs/healthy/meta.json"),
+          ("﻿{\"mission_id\":\"" + ID + "\",\"coordination_branch\":\"  \"}\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      Files.createDirectories(root.resolve("kitty-specs/broken"));
+      Files.writeString(root.resolve("kitty-specs/broken/meta.json"), "{not json");
+      FilesystemMissionCatalog catalog = new FilesystemMissionCatalog(root.resolve(".git"));
+      assertThat(catalog.find(ID)).isInstanceOf(MissionCatalog.Found.class);
+    } finally {
+      delete(root);
+    }
+  }
+
+  @Test
+  void coordinationRoutedMissionsRefusePrimaryCheckoutAppends() throws Exception {
+    Path root = repo("coordination-routed");
+    try {
+      Path mission = mission(root, "mission", ID);
+      Files.writeString(mission.resolve("meta.json"),
+          "{\"mission_id\":\"" + ID + "\",\"coordination_branch\":\"kitty/mission-status\"}");
+      FilesystemMissionCatalog catalog = new FilesystemMissionCatalog(root.resolve(".git"));
+      MissionRef ref = ((MissionCatalog.Found) catalog.find(ID)).mission();
+      assertThat(ref.coordinationRouted()).isTrue();
+      assertThat(catalog.locationMatches(ref, ".", "kitty-specs/mission", null)).isFalse();
+    } finally {
+      delete(root);
+    }
+  }
+
+  @Test
   void duplicateMissionsAreAbsentAndACreatedMissionIsSeenWithoutRestart() throws Exception {
     Path root = repo("catalog");
     try {
