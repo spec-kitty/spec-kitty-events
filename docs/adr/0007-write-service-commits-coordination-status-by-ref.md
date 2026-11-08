@@ -1,8 +1,8 @@
 ---
 title: 'ADR-0007: the write service commits coordination status onto the branch ref by compare-and-swap'
-description: 'Proposed: the write service commits coordination status straight onto refs/heads/<coord> from git objects with a compare-and-swap ref update; no coordination worktree.'
-doc_status: draft
-updated: 2026-11-06T00:00:00Z
+description: 'Accepted: the write service commits coordination status straight onto refs/heads/<coord> from git objects with a compare-and-swap ref update; no coordination worktree.'
+doc_status: active
+updated: 2026-11-08T00:00:00Z
 type: ADR
 kind: ADR
 authors:
@@ -15,12 +15,11 @@ related:
 
 # ADR-0007: the write service commits coordination status onto the branch ref by compare-and-swap
 
-**Status:** Proposed. Written for slice S9
+**Status:** Accepted (2026-11-08; accepted by the maintainer on 2026-11-07). Written for slice S9
 ([spec-kitty/spec-kitty#7284](https://github.com/spec-kitty/spec-kitty/issues/7284)) of the
 epic "Lane and worktree model hardening"
 ([spec-kitty/spec-kitty#7276](https://github.com/spec-kitty/spec-kitty/issues/7276)), on the
-operator rulings of 2026-11-06 recorded there. It becomes Accepted when the operator accepts it
-with the core records it pairs with (below).
+operator rulings of 2026-11-06 recorded there.
 
 **Date:** 2026-11-06
 
@@ -259,8 +258,8 @@ The operator ruled on 2026-11-06 that `1.0.0-SNAPSHOT`, which shipped inside the
   is nothing to materialize. The CLI's own codes of the same names retire with the worktree
   (core **C-1**).
 - Added protocol-only codes: `COORDINATION_REF_MOVED` (409), `COORDINATION_REF_CHECKED_OUT`
-  (409), `COORDINATION_LEDGER_UNREADABLE` (500), marked provisional while this record is
-  Proposed.
+  (409), `COORDINATION_LEDGER_UNREADABLE` (500), marked provisional until migration step 4
+  serves the surface.
 - The protocol major stays 1. A client built on the `rc.1`/`rc.2` bundle that sends
   `coordination_transaction_append` gets `REQUEST_MALFORMED`, not `PROTOCOL_VERSION_UNSUPPORTED`
   at the handshake. That is accepted because no client transport exists yet (2026-10-27-1 D-8)

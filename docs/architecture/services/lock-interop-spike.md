@@ -2,7 +2,7 @@
 title: Lock-interop spike
 description: 'Verdict and CI evidence of the core #6193 spike: which Java lock excludes the CLI event-log lock on Linux, macOS and Windows, and whether mixed appends pass both readers.'
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Architecture
 kind: Reference
 ---
@@ -28,6 +28,8 @@ Appends from both sides, interleaved under load, land as whole lines. Each line 
 Exclusion matters even though ADR D-4 hands each log over whole, one release at a time: an older CLI, still installed in another checkout of the same repository, keeps appending to a log the service already owns, and both take the lock files under the shared git common dir.
 
 This is the first work package of #6193 (Mission Write API step 3, epic #6117). Nothing here changes the CLI, the event row (the `spec-kitty-events` #92 envelope is not used) or any command.
+
+The production appender this evidence supports is `adapter.out.statuslog` (`StatusLogAppender` and `LockedStatusLogSession`) in `service/event-log`; `StatusLogInteropTest` runs the same cross-process check against core's real status writer, in the same `lock-interop` job ([event-log lock and append](./event-log-lock-and-append.md)).
 
 ## What was tested
 
