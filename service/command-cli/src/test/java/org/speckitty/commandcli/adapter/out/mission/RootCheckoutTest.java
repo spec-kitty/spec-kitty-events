@@ -1,164 +1,271 @@
 package org.speckitty.commandcli.adapter.out.mission;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
-/** core.bare read the way git reads it: every [core] section, case-insensitive, the last value wins. */
+/**
+ * R31: the root checkout is whatever git itself says it is. Every case builds a real repository, applies what a user (or git) can
+ * do to it, and pins the outcome git implies; {@code gitAccepts} states that premise independently of the code under test.
+ */
 class RootCheckoutTest {
-  private static Map<String, Boolean> cases() {
-    Map<String, Boolean> cases = new LinkedHashMap<>(); // config text -> a root checkout is accepted
-    cases.put("[core]\n\tbare = false\n", true);
-    cases.put("[core]\n\tbare = true\n", false);
-    cases.put("[core]\n\trepositoryformatversion = 0\n", true);
-    cases.put("[remote \"o\"]\n\turl = x\n", false);
-    cases.put("", false);
-    cases.put("[core]\n\tbare = false\n[remote \"o\"]\n\turl = x\n[core]\n\tbare = true\n", false);
-    cases.put("[core]\n\tbare = true\n[remote \"o\"]\n\turl = x\n[core]\n\tbare = false\n", true);
-    cases.put("[core]\n\tbare = true\n\tbare = false\n", true);
-    cases.put("[core]\n\tbare = false\n\tbare\n", false);
-    cases.put("[CORE]\n\tBARE = TRUE\n", false);
-    cases.put("[Core]\n\tBare = No\n", true);
-    cases.put("[core]\n\tbare = \"true\"\n", false);
-    cases.put("[core]\n\tbare = \"false\"\n", true);
-    cases.put("[core]\n\tbare = \"tr\"\"ue\"\n", false);
-    cases.put("[core] bare = true\n", false);
-    cases.put("[core] # comment\n\tbare = false\n", true);
-    cases.put("[core]\n\tbare = true # comment\n", false);
-    cases.put("[core]\n\tbare = false ; comment\n", true);
-    cases.put("[core]\n\tbare = \"false # not a comment\"\n", false);
-    cases.put("[core]\n\tbare\n", false);
-    cases.put("[core]\n\tbare = \n", true);
-    cases.put("[core]\n\tbare = \"\"\n", true);
-    cases.put("[core \"sub\"]\n\tbare = true\n[core]\n\tbare = false\n", true);
-    cases.put("[core.sub]\n\tbare = true\n[core]\n\tbare = false\n", true);
-    cases.put("[core]\n\tbare = false\n[other]\n\tbare = true\n", true);
-    cases.put("[core]\n\tbare = maybe\n", false);
-    cases.put("[user]\n\tname = Jos\u00e9\n[core]\n\tbare = false\n", true); // written as Latin-1: not UTF-8
-    cases.put("[core]\n\tbare = 0x0\n", true); // strtol base 0: hex zero is false
-    cases.put("[core]\n\tbare = 0x1\n", false);
-    cases.put("[core]\n\tbare = 010\n", false); // octal 8
-    cases.put("[core]\n\tbare = false\n\tx = a\\\nbare = true\n", true); // the continuation is inside x's value
-    cases.put("[core]\n\tbare = true\n\tx = a\\\nbare = false\n", false); // so it does not hide a bare = false
-    cases.put("[core]\n\tbare = false\r\n\tx = 1\r\n", true);
-    cases.put("\u00ef\u00bb\u00bf[core]\n\tbare = false\n", true);
-    cases.put("[core]\n\trepositoryformatversion = 1\n[extensions]\n\tworktreeConfig = true\n", true);
-    cases.put("[core]\n\tbare = false\n[extensions]\n\tworktreeConfig = true\n", true);
-    cases.put("[core]\n\trepositoryformatversion = 1\n[extensions]\n\tfromTheFuture = true\n", false);
-    cases.put("[core]\n\trepositoryformatversion = 0\n[extensions]\n\tfromTheFuture = true\n", true);
-    cases.put("[core]\n\trepositoryformatversion = 2\n", false);
-    cases.put("[core]\n\trepositoryformatversion = x\n", false);
-    cases.put("[core]\n\tbare = maybe\n\tbare = false\n", false); // git dies on the first value it cannot read
-    cases.put("[branch \"" + "a".repeat(100_000) + "\"]\n\tremote = o\n[core]\n\tbare = false\n", true);
-    cases.put("[branch \"" + "a\\\"".repeat(40_000) + "\"]\n[core]\n\tbare = false\n", true);
-    cases.put("[core]\n\tbare = false\n\tx = " + "y".repeat(100_000) + "\n", true);
-    for (String spelling : new String[] {"true", "yes", "on", "1", "2", "-1", "1k", "TRUE", "Yes", "ON"}) {
-      cases.put("[core]\n\tbare = " + spelling + "\n", false);
-    }
-    for (String spelling : new String[] {"false", "no", "off", "0", "00", "0k", "FALSE", "No", "OFF"}) {
-      cases.put("[core]\n\tbare = " + spelling + "\n", true);
-    }
+  private static final String CORE = "[core]\n\trepositoryformatversion = 1\n";
+
+  /** A repository whose config is changed after {@code git init}: a name, the config text appended, and whether git accepts it. */
+  private static Map<String, Object[]> configCases() {
+    Map<String, Object[]> cases = new LinkedHashMap<>();
+    cases.put("untouched", new Object[] {"", true});
+    cases.put("core.bare = true", new Object[] {"[core]\n\tbare = true\n", false});
+    cases.put("core.bare = false later wins", new Object[] {"[core]\n\tbare = true\n[core]\n\tbare = false\n", true});
+    cases.put("core.bare = true later wins", new Object[] {"[core]\n\tbare = false\n[core]\n\tbare = true\n", false});
+    cases.put("CORE BARE TRUE", new Object[] {"[CORE]\n\tBARE = TRUE\n", false});
+    cases.put("core.bare = maybe", new Object[] {"[core]\n\tbare = maybe\n", false});
+    cases.put("core.bare with no value", new Object[] {"[core]\n\tbare\n", false});
+    cases.put("core.worktree empty", new Object[] {"[core]\n\tworktree\n", false});
+    cases.put("core.worktree elsewhere", new Object[] {"[core]\n\tworktree = /\n", false});
+    cases.put("filemode = flase", new Object[] {"[core]\n\tfilemode = flase\n", false});
+    cases.put("logallrefupdates = sometimes", new Object[] {"[core]\n\tlogallrefupdates = sometimes\n", false});
+    cases.put("core.compression = 99", new Object[] {"[core]\n\tcompression = 99\n", false});
+    cases.put("unknown extension, version 0", new Object[] {"[extensions]\n\tfromTheFuture = true\n", true});
+    cases.put("unknown extension, version 1", new Object[] {CORE + "[extensions]\n\tfromTheFuture = true\n", false});
+    cases.put("version 2", new Object[] {"[core]\n\trepositoryformatversion = 2\n", false});
+    cases.put("bad objectFormat", new Object[] {"[core]\n\trepositoryformatversion = 1\n[extensions]\n\tobjectFormat = md5\n", false});
+    cases.put("worktreeConfig = maybe", new Object[] {"[extensions]\n\tworktreeConfig = maybe\n", false});
+    cases.put("worktreeConfig = true, v1", new Object[] {"[core]\n\trepositoryformatversion = 1\n[extensions]\n\tworktreeConfig = true\n", true});
+    cases.put("garbage line", new Object[] {"[core]\n\tgarbage line\n", false});
+    cases.put("unterminated quote", new Object[] {"[core]\n\tx = \"unterminated\n", false});
+    cases.put("malformed section", new Object[] {"[core\n", false});
+    cases.put("continuation hides nothing", new Object[] {"[core]\n\tx = a\\\nbare = true\n", true});
+    cases.put("include of a good file", new Object[] {"[include]\n\tpath = good.cfg\n", true});
+    cases.put("include of a broken file", new Object[] {"[include]\n\tpath = broken.cfg\n", false});
+    cases.put("include of a directory", new Object[] {"[include]\n\tpath = subdir\n", false});
+    cases.put("include with no value", new Object[] {"[include]\n\tpath\n", false});
+    cases.put("include cycle", new Object[] {"[include]\n\tpath = cycle.cfg\n", false});
     return cases;
   }
 
   @Test
-  void bareFollowsGitsLastValueWinsRuleAcrossEveryCoreSection() throws Exception {
-    for (Map.Entry<String, Boolean> expected : cases().entrySet()) {
-      Path host = Files.createTempDirectory("root-checkout");
+  void aRepositoryIsVerifiedExactlyWhenGitAcceptsItAsANonBareCheckoutAtTheRoot() throws Exception {
+    for (Map.Entry<String, Object[]> entry : configCases().entrySet()) {
+      Path repository = repository("root-checkout");
       try {
-        Path gcd = host.resolve(".git");
-        Files.createDirectories(gcd);
-        Files.write(gcd.resolve("config"), expected.getKey().getBytes(StandardCharsets.ISO_8859_1));
-        assertThat(RootCheckout.of(gcd).root().isPresent()).as(expected.getKey()).isEqualTo(expected.getValue());
-        String git = gitBoolean(gcd.resolve("config"));
-        if (git != null) {
-          assertThat(expected.getValue()).as("git itself reads %s for %s", git, expected.getKey()).isEqualTo(git.equals("false"));
-        }
+        Path gcd = repository.resolve(".git");
+        Files.writeString(gcd.resolve("good.cfg"), "[user]\n\tname = a\n");
+        Files.writeString(gcd.resolve("broken.cfg"), "[core\n");
+        Files.createDirectories(gcd.resolve("subdir"));
+        Files.writeString(gcd.resolve("cycle.cfg"), "[include]\n\tpath = cycle.cfg\n");
+        Files.writeString(gcd.resolve("config"), (String) entry.getValue()[0], StandardOpenOption.APPEND);
+        boolean accepted = (Boolean) entry.getValue()[1];
+        assertThat(gitAccepts(repository)).as("git's own verdict on %s", entry.getKey()).isEqualTo(accepted);
+        assertThat(RootCheckout.of(gcd).root().isPresent()).as(entry.getKey()).isEqualTo(accepted);
+        if (accepted) assertThat(RootCheckout.of(gcd).root()).contains(repository.toRealPath());
       } finally {
-        delete(host);
-      }
-    }
-  }
-
-  /** Config text git refuses ("bad config line", an unterminated quote, an unknown escape): never a verified root. */
-  private static Map<String, String> refused() {
-    Map<String, String> refused = new LinkedHashMap<>(); // config text -> what is wrong with it
-    refused.put("[core]\n\tbare = true\n\tbare = fal\\se\n", "an unknown escape");
-    refused.put("[core]\n\tbare = false\n\tx = \"unterminated\n", "an unterminated quote");
-    refused.put("[core\n\tbare = false\n", "a malformed section header");
-    refused.put("[core]\n\tbare = false\n[remote \"o\n\turl = x\n", "an unterminated subsection");
-    refused.put("[core]\n\tbare = false\ncore.bare = true\n", "a dotted key outside a section header");
-    refused.put("[core]\n\tbare = false\n\tgarbage line\n", "a line that is neither a section nor an entry");
-    refused.put("[core]\n\tbare = false\n\t= value\n", "an entry with no name");
-    refused.put("[core]\n\tbare = false\n\t9x = 1\n", "a key that does not start with a letter");
-    refused.put("[ core ]\n\tbare = false\n", "a space inside the brackets");
-    refused.put("[core ]\n\tbare = false\n", "a trailing space inside the brackets");
-    refused.put("[core \"x\" ]\n\tbare = false\n", "text after the closing quote");
-    refused.put("[]\n\tbare = false\n", "an empty section name");
-    refused.put("[core]\n\tbare = false\n\tx # comment\n", "a comment after a key with no value");
-    refused.put("[core]\n\tbare = \"false;\"\n", "a boolean git cannot read");
-    refused.put("[core]\n\tbare = 08\n", "an invalid octal");
-    refused.put("[core]\n\tbare = 4294967296\n", "an integer beyond an int");
-    return refused;
-  }
-
-  @Test
-  void aConfigGitRefusesIsNeverAVerifiedRootCheckout() throws Exception {
-    for (Map.Entry<String, String> expected : refused().entrySet()) {
-      Path host = Files.createTempDirectory("root-checkout");
-      try {
-        Path gcd = host.resolve(".git");
-        Files.createDirectories(gcd);
-        Files.write(gcd.resolve("config"), expected.getKey().getBytes(StandardCharsets.ISO_8859_1));
-        assertThat(RootCheckout.of(gcd).root()).as("%s: %s", expected.getValue(), expected.getKey()).isEmpty();
-        assertThat(gitReads(gcd.resolve("config"))).as("git itself refuses to read core.bare: %s", expected.getValue()).isFalse();
-      } finally {
-        delete(host);
+        delete(repository);
       }
     }
   }
 
   @Test
-  void aConfigOverTheSizeLimitIsNotRead() throws Exception {
-    Path host = Files.createTempDirectory("root-checkout");
+  void aBareRepositoryNamedDotGitIsNeverAVerifiedRoot() throws Exception {
+    Path host = Files.createTempDirectory("bare-host");
     try {
-      Path gcd = host.resolve(".git");
-      Files.createDirectories(gcd);
-      byte[] filler = "# x\n".repeat(4 * 1024 * 1024 + 1).getBytes(StandardCharsets.ISO_8859_1);
-      Files.write(gcd.resolve("config"), filler);
-      assertThat(RootCheckout.of(gcd).root()).isEmpty();
+      run(host, "git", "init", "--bare", "--quiet", host.resolve(".git").toString());
+      assertThat(RootCheckout.of(host.resolve(".git")).root()).isEmpty();
     } finally {
       delete(host);
     }
   }
 
-  private static boolean gitReads(Path config) throws IOException, InterruptedException {
-    Process process = new ProcessBuilder("git", "config", "--file", config.toString(), "--type=bool", "--get", "core.bare").redirectErrorStream(true).start();
-    process.getInputStream().readAllBytes();
-    // Reading core.bare as a boolean is what core's git does: a refused file, or a value that is no boolean, fails.
-    return process.waitFor(30, TimeUnit.SECONDS) && process.exitValue() == 0;
+  @Test
+  void aBareCloneWhoseWorktreeRanSparseCheckoutInitIsNeverAVerifiedRoot() throws Exception {
+    Path host = Files.createTempDirectory("bare-clone");
+    try {
+      Path source = Files.createDirectories(host.resolve("src"));
+      run(source, "git", "init", "--quiet");
+      run(source, "git", "-c", "user.email=t@example.invalid", "-c", "user.name=T", "commit", "--allow-empty", "-m", "i", "--quiet");
+      Path project = Files.createDirectories(host.resolve("proj"));
+      run(project, "git", "clone", "--bare", "--quiet", source.toString(), project.resolve(".git").toString());
+      run(project, "git", "worktree", "add", "--quiet", "../wt");
+      assertThat(RootCheckout.of(project.resolve(".git")).root()).isEmpty();
+      // git's own sparse-checkout moves core.bare = true into config.worktree, which only git reads.
+      run(host.resolve("wt"), "git", "sparse-checkout", "init");
+      assertThat(Files.readString(project.resolve(".git/config.worktree"))).contains("bare = true");
+      assertThat(gitAccepts(project)).isFalse();
+      assertThat(RootCheckout.of(project.resolve(".git")).root()).isEmpty();
+    } finally {
+      delete(host);
+    }
   }
 
-  /** git's own answer, or null where git has none or refuses the value (the service then refuses too). */
-  private static String gitBoolean(Path config) throws IOException, InterruptedException {
-    Process process = new ProcessBuilder("git", "config", "--file", config.toString(), "--type=bool", "--get", "core.bare")
-        .redirectErrorStream(true).start();
-    String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).strip();
-    if (!process.waitFor(30, TimeUnit.SECONDS) || process.exitValue() != 0) return null;
-    return output;
+  @Test
+  void aNonBareCheckoutWithConfigWorktreeBareTrueIsRefusedAndWithBareFalseIsAccepted() throws Exception {
+    for (boolean bare : new boolean[] {true, false}) {
+      Path repository = repository("config-worktree");
+      try {
+        Path gcd = repository.resolve(".git");
+        Files.writeString(gcd.resolve("config"), "[extensions]\n\tworktreeConfig = true\n[core]\n\trepositoryformatversion = 1\n", StandardOpenOption.APPEND);
+        Files.writeString(gcd.resolve("config.worktree"), "[core]\n\tbare = " + bare + "\n");
+        assertThat(gitAccepts(repository)).isEqualTo(!bare);
+        assertThat(RootCheckout.of(gcd).root().isPresent()).isEqualTo(!bare);
+      } finally {
+        delete(repository);
+      }
+    }
+  }
+
+  @Test
+  void aLinkedWorktreeGitDirIsNeverTheRoot() throws Exception {
+    Path repository = repository("linked-root");
+    try {
+      run(repository, "git", "-c", "user.email=t@example.invalid", "-c", "user.name=T", "commit", "--allow-empty", "-m", "i", "--quiet");
+      run(repository, "git", "worktree", "add", "--quiet", "../linked-lane-" + repository.getFileName());
+      assertThat(RootCheckout.of(repository.resolve(".git/worktrees").resolve(
+          "linked-lane-" + repository.getFileName())).root()).isEmpty();
+      assertThat(RootCheckout.of(repository.resolve(".git")).root()).contains(repository.toRealPath());
+    } finally {
+      delete(repository.resolveSibling("linked-lane-" + repository.getFileName()));
+      delete(repository);
+    }
+  }
+
+  @Test
+  void aGcdThatIsNotNamedDotGitOrIsMissingIsNeverVerified() throws Exception {
+    Path repository = repository("odd-names");
+    try {
+      Path renamed = repository.resolveSibling(repository.getFileName() + "-gcd");
+      Files.move(repository.resolve(".git"), renamed);
+      assertThat(RootCheckout.of(renamed).root()).isEmpty();
+      assertThat(RootCheckout.of(repository.resolve("nowhere/.git")).root()).isEmpty();
+      Files.move(renamed, repository.resolve(".git"));
+    } finally {
+      delete(repository);
+    }
+  }
+
+  @Test
+  void aSymlinkedPathVerifiesToTheRealRoot() throws Exception {
+    Path repository = repository("symlink-target");
+    Path link = repository.resolveSibling(repository.getFileName() + "-link");
+    try {
+      Files.createSymbolicLink(link, repository);
+      assertThat(RootCheckout.of(link.resolve(".git")).root()).contains(repository.toRealPath());
+    } finally {
+      Files.deleteIfExists(link);
+      delete(repository);
+    }
+  }
+
+  @Test
+  void aMissingFailingSilentOrHungGitFailsClosed() throws Exception {
+    assumeFalse(System.getProperty("os.name").toLowerCase().contains("win"));
+    Path repository = repository("git-failures");
+    Path scripts = Files.createTempDirectory("fake-git");
+    try {
+      Path gcd = repository.resolve(".git");
+      assertThat(RootCheckout.of(gcd, "git", 5).root()).contains(repository.toRealPath());
+      assertThat(RootCheckout.of(gcd, scripts.resolve("no-such-git").toString(), 5).root()).as("missing binary").isEmpty();
+      String real = repository.toRealPath().toString();
+      Map<String, String> fakes = new LinkedHashMap<>();
+      fakes.put("non-zero exit", "exit 1");
+      fakes.put("exit 0, no output", "exit 0");
+      fakes.put("short output", "printf '.git\\nfalse\\n'");
+      fakes.put("long output", "printf '.git\\nfalse\\n%s\\nextra\\n' '" + real + "'");
+      fakes.put("no trailing newline", "printf '.git\\nfalse\\n%s' '" + real + "'");
+      fakes.put("bare answer", "printf '.git\\ntrue\\n%s\\n' '" + real + "'");
+      fakes.put("other top level", "printf '.git\\nfalse\\n%s\\n' '" + scripts + "'");
+      fakes.put("other common dir", "printf '%s\\nfalse\\n%s\\n' '" + scripts + "' '" + real + "'");
+      fakes.put("unresolvable path", "printf '.git\\nfalse\\n/no/such/path\\n'");
+      fakes.put("huge output", "head -c 200000 /dev/zero | tr '\\0' 'a'");
+      fakes.put("killed by a signal", "kill -9 $$");
+      for (Map.Entry<String, String> fake : fakes.entrySet()) {
+        Path script = script(scripts, fake.getKey().replace(' ', '-'), fake.getValue());
+        assertThat(RootCheckout.of(gcd, script.toString(), 5).root()).as(fake.getKey()).isEmpty();
+      }
+      Path agreeing = script(scripts, "agreeing", "printf '.git\\nfalse\\n%s\\n' '" + real + "'");
+      assertThat(RootCheckout.of(gcd, agreeing.toString(), 5).root()).as("a git that agrees").contains(repository.toRealPath());
+      Path hung = script(scripts, "hung", "sleep 30");
+      long started = System.nanoTime();
+      assertThat(RootCheckout.of(gcd, hung.toString(), 1).root()).as("timeout").isEmpty();
+      assertThat(TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - started)).isLessThan(10);
+    } finally {
+      delete(scripts);
+      delete(repository);
+    }
+  }
+
+  @Test
+  void anInterruptedStartupFailsClosedAndKeepsTheInterrupt() throws Exception {
+    assumeFalse(System.getProperty("os.name").toLowerCase().contains("win"));
+    Path repository = repository("interrupted");
+    Path scripts = Files.createTempDirectory("fake-git");
+    try {
+      Path hung = script(scripts, "hung", "sleep 30");
+      Thread.currentThread().interrupt();
+      assertThat(RootCheckout.of(repository.resolve(".git"), hung.toString(), 30).root()).isEmpty();
+      assertThat(Thread.interrupted()).isTrue();
+    } finally {
+      Thread.interrupted();
+      delete(scripts);
+      delete(repository);
+    }
+  }
+
+  @Test
+  void everyGitVariableIsRemovedFromTheChildEnvironment() {
+    Map<String, String> environment = new LinkedHashMap<>(Map.of(
+        "GIT_DIR", "x", "GIT_WORK_TREE", "x", "git_config_count", "1", "GIT_CONFIG_KEY_0", "core.bare",
+        "PATH", "/usr/bin", "HOME", "/home/x", "NOT_GIT_DIR", "kept", "GITHUB_TOKEN", "kept"));
+    RootCheckout.clearGitEnvironment(environment);
+    assertThat(environment).containsOnlyKeys("PATH", "HOME", "NOT_GIT_DIR", "GITHUB_TOKEN");
+  }
+
+  /** git's own verdict, stated without the code under test: exit 0, not bare, and the top level is the repository itself. */
+  private static boolean gitAccepts(Path repository) throws IOException, InterruptedException {
+    Process process = new ProcessBuilder("git", "rev-parse", "--is-bare-repository", "--show-toplevel")
+        .directory(repository.toFile()).redirectErrorStream(true).start();
+    String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+    if (!process.waitFor(30, TimeUnit.SECONDS) || process.exitValue() != 0) return false;
+    String[] lines = output.strip().split("\n");
+    return lines.length == 2 && lines[0].equals("false") && Path.of(lines[1]).toRealPath().equals(repository.toRealPath());
+  }
+
+  private static Path repository(String name) throws Exception {
+    Path repository = Files.createTempDirectory(name);
+    run(repository, "git", "init", "--quiet");
+    return repository;
+  }
+
+  private static Path script(Path directory, String name, String body) throws IOException {
+    Path script = directory.resolve(name);
+    Files.writeString(script, "#!/bin/sh\n" + body + "\n");
+    Files.setPosixFilePermissions(script, PosixFilePermissions.fromString("rwxr-xr-x"));
+    return script;
+  }
+
+  private static void run(Path directory, String... command) throws Exception {
+    Process process = new ProcessBuilder(command).directory(directory.toFile()).redirectErrorStream(true).start();
+    String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+    if (!process.waitFor(30, TimeUnit.SECONDS) || process.exitValue() != 0) {
+      throw new AssertionError(String.join(" ", command) + ": " + output);
+    }
   }
 
   private static void delete(Path path) throws IOException {
+    if (!Files.exists(path)) return;
     try (Stream<Path> paths = Files.walk(path)) {
-      paths.sorted(java.util.Comparator.reverseOrder()).forEach(item -> item.toFile().delete());
+      paths.sorted(Comparator.reverseOrder()).forEach(item -> item.toFile().delete());
     }
   }
 }
