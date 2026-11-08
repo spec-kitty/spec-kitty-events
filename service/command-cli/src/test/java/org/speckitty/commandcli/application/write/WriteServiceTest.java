@@ -9,6 +9,11 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.speckitty.commandcli.application.write.port.MissionCatalog;
 import org.speckitty.commandcli.application.write.port.MissionRef;
@@ -136,6 +141,58 @@ class WriteServiceTest {
     assertRefusal(failed.service().write(validRequest()), RefusalCode.STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED, null);
   }
 
+  @Test
+  void aHeldTurnIsBusyAndTheLockReceivesTheOriginalAbsoluteDeadline() throws Exception {
+    Ports ports = new Ports();
+    WriteTurn turn = new WriteTurn();
+    WriteService service = new WriteService(ports.missions, ports.log, ports.codec, turn, Authority.standard(),
+        Duration.ofMillis(200), System::nanoTime);
+    CountDownLatch held = new CountDownLatch(1);
+    CountDownLatch release = new CountDownLatch(1);
+    Thread holder = new Thread(() -> {
+      try (var ignored = turn.tryAcquire(0).orElseThrow()) {
+        held.countDown();
+        release.await(1, TimeUnit.SECONDS);
+      }
+    });
+    holder.start();
+    assertThat(held.await(1, TimeUnit.SECONDS)).isTrue();
+    long before = System.nanoTime();
+    assertRefusal(service.write(validRequest()), RefusalCode.SERVICE_BUSY, null);
+    assertThat(ports.log.calls).isZero();
+    assertThat(System.nanoTime() - before).isLessThan(Duration.ofSeconds(1).toNanos());
+    release.countDown();
+    holder.join(1000);
+
+    long deadlineBefore = System.nanoTime();
+    assertThat(service.write(validRequest())).isInstanceOf(WriteOutcome.Acked.class);
+    assertThat(ports.log.deadline).isBetween(deadlineBefore, deadlineBefore + Duration.ofMillis(250).toNanos());
+  }
+
+  @Test
+  void concurrentWritesAreSerializedAndTheSecondSeesTheFirstResult() throws Exception {
+    Ports ports = new Ports();
+    ports.log.entered = new CountDownLatch(1);
+    ports.log.release = new CountDownLatch(1);
+    ExecutorService executor = Executors.newFixedThreadPool(2);
+    WriteService service = ports.service();
+    try {
+      Future<WriteOutcome> first = executor.submit(() -> service.write(validRequest()));
+      assertThat(ports.log.entered.await(1, TimeUnit.SECONDS)).isTrue();
+      Map<String, Object> secondRow = row("01J6XW9KQT7M0YB3N4R5CQZ2EZ", "WP01", "claimed", "in_progress", "actor");
+      Future<WriteOutcome> second = executor.submit(() -> service.write(request(List.of(unit(secondRow)))));
+      Thread.sleep(40);
+      assertThat(second.isDone()).isFalse();
+      ports.log.release.countDown();
+      assertThat(first.get(2, TimeUnit.SECONDS)).isInstanceOf(WriteOutcome.Acked.class);
+      assertThat(second.get(2, TimeUnit.SECONDS)).isInstanceOf(WriteOutcome.Acked.class);
+      assertThat(ports.log.appendCalls).isEqualTo(2);
+    } finally {
+      ports.log.release.countDown();
+      executor.shutdownNow();
+    }
+  }
+
   private static WriteRequest validRequest() {
     return request(List.of(unit(row("01J6XW9KQT7M0YB3N4R5CQZ2EY", "WP01", "planned", "claimed", "actor"))));
   }
@@ -234,10 +291,23 @@ class WriteServiceTest {
     int appendCalls;
     boolean held;
     boolean persistenceFails;
+    long deadline;
+    CountDownLatch entered;
+    CountDownLatch release;
 
     @Override
     public <T> LockResult<T> withLock(MissionRef mission, long deadline, SessionWork<T> work) {
       calls++;
+      this.deadline = deadline;
+      if (entered != null) entered.countDown();
+      if (release != null) {
+        try {
+          if (!release.await(1, TimeUnit.SECONDS)) throw new AssertionError("test lock was not released");
+        } catch (InterruptedException exception) {
+          Thread.currentThread().interrupt();
+          throw new AssertionError(exception);
+        }
+      }
       if (held) return new LockResult.LockHeld<>();
       if (persistenceFails) return new LockResult.PersistenceFailed<>();
       T result = work.run(new Session() {

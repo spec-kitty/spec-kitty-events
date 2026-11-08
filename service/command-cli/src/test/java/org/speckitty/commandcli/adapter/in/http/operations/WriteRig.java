@@ -65,13 +65,17 @@ final class WriteRig implements AutoCloseable {
   }
 
   RawClient.Reply post(String operation, String body) {
+    return postMission(missionId, operation, body);
+  }
+
+  RawClient.Reply postMission(String targetMission, String operation, String body) {
     String path = switch (operation) {
       case "unit" -> "/work-package-transitions";
       case "batch" -> "/work-package-transitions/batch";
       case "annotation" -> "/inner-state-annotations";
       default -> throw new IllegalArgumentException(operation);
     };
-    return RawClient.request(port(), "POST /api/v1/missions/" + missionId + path + " HTTP/1.1", body,
+    return RawClient.request(port(), "POST /api/v1/missions/" + targetMission + path + " HTTP/1.1", body,
         "Host: 127.0.0.1:" + port(), "Authorization: Bearer " + token.reveal(),
         "Spec-Kitty-Write-Protocol: 1", "Content-Type: application/json");
   }
@@ -110,7 +114,39 @@ final class WriteRig implements AutoCloseable {
   }
 
   static String unit(String row) {
-    return "{\"wpId\":\"WP01\",\"rows\":[" + row + "],\"context\":" + context() + "}";
+    return unit("WP01", null, row);
+  }
+
+  static String unit(String wp, String operation, String row) {
+    return "{\"wpId\":\"" + wp + "\"," + (operation == null ? "" : "\"operation\":\"" + operation + "\",")
+        + "\"rows\":[" + row + "],\"context\":" + context() + "}";
+  }
+
+  static String batch(String... units) {
+    return "{\"units\":[" + String.join(",", units) + "]}";
+  }
+
+  static String transitionRow(String id, String wp, String from, String to, String actor) {
+    return "{\"event_id\":\"" + id + "\",\"wp_id\":\"" + wp + "\",\"from_lane\":\"" + from + "\",\"to_lane\":\"" + to
+        + "\",\"at\":\"2026-11-07T10:00:00+00:00\",\"actor\":\"" + actor + "\",\"force\":false,"
+        + "\"execution_mode\":\"direct_repo\",\"reason\":null,\"review_ref\":null,\"evidence\":null,\"policy_metadata\":null}";
+  }
+
+  static String encodedRow(String raw) {
+    @SuppressWarnings("unchecked")
+    java.util.Map<String, Object> row = (java.util.Map<String, Object>)
+        org.speckitty.missionstatus.adapter.out.filesystem.codec.StatusRowDecoder.parse(raw);
+    return new String(org.speckitty.missionstatus.adapter.out.filesystem.codec.StatusRowEncoder.encodeLine(row),
+        java.nio.charset.StandardCharsets.US_ASCII);
+  }
+
+  static String annotationRow(String id, String wp, String note) {
+    return "{\"event_id\":\"" + id + "\",\"kind\":\"annotation\",\"wp_id\":\"" + wp
+        + "\",\"at\":\"2026-11-07T10:00:00+00:00\",\"actor\":\"java-jenny\",\"delta\":{\"note\":\"" + note + "\"}}";
+  }
+
+  static String annotation(String wp, String row) {
+    return "{\"wpId\":\"" + wp + "\",\"row\":" + row + ",\"context\":" + context() + "}";
   }
 
   static String expectedClaimLine(String eventId) {

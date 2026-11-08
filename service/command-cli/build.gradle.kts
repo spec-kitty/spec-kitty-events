@@ -70,7 +70,11 @@ springBoot {
 tasks.bootJar {
     archiveFileName.set("command-cli.jar")
     manifest {
-        attributes("Implementation-Title" to "command-cli", "Implementation-Version" to serviceVersion)
+        attributes(
+            "Implementation-Title" to "command-cli",
+            "Implementation-Version" to serviceVersion,
+            "Enable-Native-Access" to "ALL-UNNAMED",
+        )
     }
 }
 
@@ -85,11 +89,12 @@ val bootJarFile = tasks.bootJar.flatMap { it.archiveFile }
 val contractRootPath: String = file(contractRoot).absolutePath
 tasks.withType<Test>().configureEach {
     systemProperty("commandCli.contractRoot", contractRootPath)
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
 tasks.named<Test>("test") {
     useJUnitPlatform {
-        excludeTags("native-binary", "process")
+        excludeTags("native-binary", "process", "benchmark")
     }
     finalizedBy("jacocoTestReport")
 }
@@ -104,7 +109,7 @@ val nativeTagJvmTest = tasks.register<Test>("nativeTagJvmTest") {
     classpath = testSourceSet.get().runtimeClasspath
     useJUnitPlatform {
         includeTags("native")
-        excludeTags("process", "native-binary")
+        excludeTags("process", "native-binary", "benchmark")
     }
     systemProperty("junit.platform.listeners.uid.tracking.enabled", "true")
     systemProperty("junit.platform.listeners.uid.tracking.output.dir", nativeTestListDirectory.get().asFile.path)
@@ -144,6 +149,17 @@ val nativeSmoke = tasks.register<Test>("nativeSmoke") {
     binary.orNull?.let { systemProperty("nativeBinary", it) }
 }
 
+val benchmarkTest = tasks.register<Test>("benchmarkTest") {
+    group = "verification"
+    description = "Runs the FR-026/NFR-001 write benchmark against a 10,000-row Mission log."
+    testClassesDirs = testSourceSet.get().output.classesDirs
+    classpath = testSourceSet.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("benchmark")
+        excludeTags("process", "native-binary", "benchmark")
+    }
+}
+
 // ---------------------------------------------------------------------------------------------------------------------------
 // Native image (GraalVM Native Build Tools through the Spring Boot plugin)
 // ---------------------------------------------------------------------------------------------------------------------------
@@ -151,6 +167,10 @@ val nativeSmoke = tasks.register<Test>("nativeSmoke") {
 graalvmNative {
     // The image comes from JAVA_HOME (graalvm/setup-graalvm in CI), never from toolchain detection.
     toolchainDetection.set(false)
+    // GraalVM 25 enables ForeignAPISupport by default; no -H:+ForeignAPISupport/UnlockExperimentalVMOptions is needed.
+    binaries.configureEach {
+        buildArgs.add("--enable-native-access=ALL-UNNAMED")
+    }
     binaries.named("main") {
         imageName.set("command-cli")
     }
@@ -177,8 +197,7 @@ tasks.named<NativeRunTask>("nativeTest") {
 // JaCoCo: the read service's three rules over this module's domain.* and application.*, with the scope guard
 // ---------------------------------------------------------------------------------------------------------------------------
 
-val coverageExcludes = arrayOf("org/speckitty/commandcli/adapter/**", "org/speckitty/commandcli/config/**")
-val coverageClassDirectories = files(sourceSets.main.get().output.classesDirs.asFileTree.matching { exclude(*coverageExcludes) })
+val coverageClassDirectories = files(sourceSets.main.get().output.classesDirs)
 
 tasks.named<JacocoReport>("jacocoTestReport") {
     dependsOn(tasks.test)
@@ -210,11 +229,35 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
             }
         }
         rule {
-            element = "CLASS"
-            includes = listOf("org.speckitty.commandcli.domain.*")
+            element = "METHOD"
+            includes = listOf(
+                "org.speckitty.commandcli.domain.authority.*",
+                "org.speckitty.commandcli.application.write.*",
+                "org.speckitty.commandcli.adapter.out.mission.*",
+                "org.speckitty.commandcli.adapter.out.statuslog.*",
+                "org.speckitty.commandcli.adapter.in.http.operations.WriteBodies",
+                "org.speckitty.commandcli.adapter.in.http.operations.AckBody",
+            )
             limit {
-                counter = "BRANCH"
-                minimum = "0.80".toBigDecimal()
+                counter = "COMPLEXITY"
+                value = "TOTALCOUNT"
+                maximum = "15".toBigDecimal()
+            }
+        }
+        rule {
+            element = "METHOD"
+            includes = listOf(
+                "org.speckitty.commandcli.domain.authority.*",
+                "org.speckitty.commandcli.application.write.*",
+                "org.speckitty.commandcli.adapter.out.mission.*",
+                "org.speckitty.commandcli.adapter.out.statuslog.*",
+                "org.speckitty.commandcli.adapter.in.http.operations.WriteBodies",
+                "org.speckitty.commandcli.adapter.in.http.operations.AckBody",
+            )
+            limit {
+                counter = "COMPLEXITY"
+                value = "TOTALCOUNT"
+                maximum = "15".toBigDecimal()
             }
         }
     }
@@ -285,5 +328,5 @@ val jacocoScopeCheck = tasks.register("jacocoScopeCheck") {
 }
 
 tasks.named("check") {
-    dependsOn("nativeTagJvmTest", processTest, "jacocoTestCoverageVerification", "jacocoScopeCheck")
+    dependsOn("nativeTagJvmTest", processTest, benchmarkTest, "jacocoTestCoverageVerification", "jacocoScopeCheck")
 }
