@@ -26,6 +26,7 @@
   "purpose_context": "Core's 4.0.0 path waits on the events write service, which today refuses every write. This mission gives it a canonical writer that produces the same bytes core writes, a ported lane state machine that decides every transition with the codes users already see, and the wiring that turns the fail-closed refusal into real, durable writes (events #160, #161, #155).",
   "purpose_tldr": "Make the events write service actually write: byte-exact durable status appends, authoritative lane rules, and the transition operations wired to them.",
   "slug": "events-write-core-01M6TP6W",
+  "status_phase": "1",
   "target_branch": "main",
   "topology": "single_branch"
 }
