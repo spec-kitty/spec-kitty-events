@@ -225,6 +225,125 @@ class UnreadableRowIntegrationTest {
     }
   }
 
+  // ---- PR #230 close-out 2: core's materialize, its sort and its non-lane skip ---------------------------------------------------
+
+  private static final String FIVE_KEY_ACTOR =
+      "{\"role\":\"implementer\",\"profile\":\"p\",\"tool\":\"claude\",\"model\":null,\"profile_source\":\"flag\"}";
+  private static final String TIED_AT = "2026-11-07T10:00:00+00:00";
+
+  @Test
+  void aPidOfDigitsNewerThanUnicode14IsRefusedAndTheLogStaysWritable() throws Exception {
+    try (WriteRig rig = WriteRig.start()) {
+      int sequence = 0;
+      for (int codePoint : new int[] {0x11F51, 0x1E4F1, 0x116D1, 0x1E5F1, 0x10D41, 0x11BF1, 0x16131, 0x16D71, 0x1CCF1}) {
+        String digit = new String(Character.toChars(codePoint));
+        for (String pid : List.of(digit, "1" + digit, " " + digit + " ")) {
+          String row = annotationRow(id(600 + sequence), "\"java-jenny\"", "{\"shell_pid\":\"" + pid + "\"}", "\"" + TIED_AT + "\"");
+          assertRefusedAndLogWritable(rig, "annotation", WriteRig.annotation("WP01", row), null, sequence++);
+        }
+      }
+      // R28: ASCII only, so Python's other int() spellings are refused too
+      for (String pid : List.of("5_0", "\\u0665", "\\uff15", "\\u00a05")) {
+        String row = annotationRow(id(600 + sequence), "\"java-jenny\"", "{\"shell_pid\":\"" + pid + "\"}", "\"" + TIED_AT + "\"");
+        assertRefusedAndLogWritable(rig, "annotation", WriteRig.annotation("WP01", row), null, sequence++);
+      }
+      String ascii = annotationRow(id(700), "\"java-jenny\"", "{\"shell_pid\":\" +42 \",\"note\":\"n\"}", "\"" + TIED_AT + "\"");
+      assertThat(rig.post("annotation", WriteRig.annotation("WP01", ascii)).status()).isEqualTo(201);
+    }
+  }
+
+  @Test
+  void theFiveKeyActorIsRefusedOnEveryRowKindAndTheLogStaysWritable() throws Exception {
+    try (WriteRig rig = WriteRig.start()) {
+      assertRefusedAndLogWritable(rig, "unit", WriteRig.unit(withActor(WriteRig.claimRow(ID1), FIVE_KEY_ACTOR)), null, 0);
+      String note = annotationRow(id(800), FIVE_KEY_ACTOR, "{\"note\":\"n\"}", "\"" + TIED_AT + "\"");
+      assertRefusedAndLogWritable(rig, "annotation", WriteRig.annotation("WP01", note), null, 1);
+      String second = WriteRig.unit("WP02", null, withActor(WriteRig.transitionRow(ID2, "WP02", "genesis", "planned", "java-jenny"), FIVE_KEY_ACTOR));
+      byte[] before = Files.readAllBytes(rig.log());
+      assertRefusal(rig.post("batch", WriteRig.batch(WriteRig.unit("WP01", null, WriteRig.claimRow(ID1)), second)), 400, "#/units/1");
+      assertThat(Files.readAllBytes(rig.log())).isEqualTo(before);
+    }
+  }
+
+  @Test
+  void aFiveKeyActorAlreadyInTheLogIsReadAsCoresReaderReadsIt() throws Exception {
+    try (WriteRig rig = WriteRig.start()) {
+      String legacy = WriteRig.priorPlannedLine().replace("\"actor\": \"java-jenny\"", "\"actor\": " + FIVE_KEY_ACTOR);
+      Files.writeString(rig.log(), legacy);
+      RawClient.Reply reply = rig.post("unit", WriteRig.unit(WriteRig.claimRow(ID1)));
+      assertThat(reply.status()).as(reply.text()).isEqualTo(201);
+    }
+  }
+
+  @Test
+  void aSubtaskOfUninitializedIsRefusedAtTheEdgeAndAnExistingOneMakesTheLogUnreducible() throws Exception {
+    try (WriteRig rig = WriteRig.start()) {
+      String row = annotationRow(id(900), "\"java-jenny\"", "{\"subtasks\":{\"T1\":\"uninitialized\"}}", "\"" + TIED_AT + "\"");
+      assertRefusedAndLogWritable(rig, "annotation", WriteRig.annotation("WP01", row), null, 0);
+      String poisoned = WriteRig.priorPlannedLine()
+          + WriteRig.encodedRow(annotationRow(id(901), "\"java-jenny\"", "{\"subtasks\":{\"T1\":\"uninitialized\"}}", "\"" + TIED_AT + "\""));
+      Files.writeString(rig.log(), poisoned);
+      RawClient.Reply reply = rig.post("unit", WriteRig.unit(WriteRig.claimRow(ID1)));
+      assertThat(reply.status()).as(reply.text()).isEqualTo(500);
+      assertThat(JSON.readTree(reply.body()).get("code").asString()).isEqualTo("STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED");
+      assertThat(Files.readString(rig.log())).isEqualTo(poisoned);
+    }
+  }
+
+  @Test
+  void aTransitionCoreWouldSkipAsNonLaneIsRefusedAtTheEdgeAndTheLogStaysWritable() throws Exception {
+    List<String[]> markers = List.of(member("event_type", "\"DecisionPointOpened\""), member("event_type", "null"),
+        member("event_name", "\"retrospective.requested\""), member("type", "\"RetrospectiveCaptured\""),
+        member("type", "\"RetrospectiveCaptureFailed\""), member("type", "\"RetrospectiveSkipped\""));
+    try (WriteRig rig = WriteRig.start()) {
+      for (int i = 0; i < markers.size(); i++) {
+        String row = withMember(WriteRig.claimRow(ID1), markers.get(i)[0], markers.get(i)[1]);
+        assertRefusedAndLogWritable(rig, "unit", WriteRig.unit(row), null, i);
+      }
+      // a similar but different key is an ordinary field of a transition, as it is for core
+      String other = withMember(WriteRig.claimRow(ID1), "event_name", "\"claim\"");
+      assertThat(rig.post("unit", WriteRig.unit(other)).status()).isEqualTo(201);
+    }
+  }
+
+  private static String planned(String eventIdJson, String at) {
+    return "{\"actor\": \"java-jenny\", \"at\": \"" + at + "\", \"event_id\": " + eventIdJson
+        + ", \"evidence\": null, \"execution_mode\": \"direct_repo\", \"force\": false, \"from_lane\": \"genesis\", "
+        + "\"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"planned\", \"wp_id\": \"WP01\"}\n";
+  }
+
+  @Test
+  void aPriorEventIdOfAnotherTypeThatTiesTheNewRowsAtIsRefusedAndOneThatTiesNothingIsRead() throws Exception {
+    try (WriteRig rig = WriteRig.start()) {
+      for (String prior : List.of("null", "5", "5.5", "true")) {
+        // the new row's sort key would make core's sort compare a string with this id: the row is the one that cannot be read back
+        String log = planned(prior, TIED_AT);
+        Files.writeString(rig.log(), log);
+        RawClient.Reply reply = rig.post("unit", WriteRig.unit(WriteRig.claimRow(ID1)));
+        assertRefusal(reply, 400, null);
+        assertThat(Files.readString(rig.log())).as(prior).isEqualTo(log);
+        // an earlier `at` never compares the ids, so core reads the log and so does the service
+        Files.writeString(rig.log(), planned(prior, "2026-11-07T09:00:00+00:00"));
+        RawClient.Reply next = rig.post("unit", WriteRig.unit(WriteRig.claimRow(ID1)));
+        assertThat(next.status()).as(prior + ": " + next.text()).isEqualTo(201);
+      }
+    }
+  }
+
+  @Test
+  void aLogWhoseOwnEventIdsCannotBeOrderedRefusesEveryWriteWithAServerError() throws Exception {
+    try (WriteRig rig = WriteRig.start()) {
+      String log = planned("null", TIED_AT) + planned("\"" + PRIOR_TIED_ID + "\"", TIED_AT);
+      Files.writeString(rig.log(), log);
+      RawClient.Reply reply = rig.post("annotation", WriteRig.annotation("WP01", WriteRig.annotationRow(id(950), "WP01", "n")));
+      assertThat(reply.status()).as(reply.text()).isEqualTo(500);
+      assertThat(JSON.readTree(reply.body()).get("code").asString()).isEqualTo("STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED");
+      assertThat(Files.readString(rig.log())).isEqualTo(log);
+    }
+  }
+
+  private static final String PRIOR_TIED_ID = "00000000000000000000000002";
+
   private static String[] member(String name, String json) {
     return new String[] {name, json};
   }

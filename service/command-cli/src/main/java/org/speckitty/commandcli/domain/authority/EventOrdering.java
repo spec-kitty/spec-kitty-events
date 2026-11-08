@@ -3,9 +3,11 @@ package org.speckitty.commandcli.domain.authority;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.speckitty.commandcli.domain.authority.WriteFold.Transition;
 import org.speckitty.missionstatus.domain.model.CodePoints;
 import org.speckitty.missionstatus.domain.model.Lane;
@@ -16,12 +18,20 @@ final class EventOrdering {
 
   static int compare(Transition left, Transition right) {
     int at = CodePoints.compare(left.at(), right.at());
-    return at != 0 ? at : CodePoints.compare(left.id(), right.id());
+    return at != 0 ? at : EventIds.compare(left.idKey(), right.idKey());
   }
 
+  /**
+   * First-wins dedupe by core's id equality. The fold keys several maps by an id's spelling, so two ids that spell alike without being
+   * equal (the text {@code "1"} and the number {@code 1}), which core tells apart, make the log unreducible here rather than merge.
+   */
   static List<Transition> dedup(List<Transition> transitions) {
-    Map<String, List<Transition>> groups = new LinkedHashMap<>();
-    transitions.forEach(event -> groups.computeIfAbsent(event.id(), ignored -> new ArrayList<>()).add(event));
+    Map<Object, List<Transition>> groups = new LinkedHashMap<>();
+    transitions.forEach(event -> groups.computeIfAbsent(event.idKey(), ignored -> new ArrayList<>()).add(event));
+    Set<String> spellings = new HashSet<>();
+    for (List<Transition> rows : groups.values()) {
+      if (!spellings.add(rows.getFirst().id())) throw new UnreducibleLog("Event ids that spell alike are not equal");
+    }
     List<Transition> unique = new ArrayList<>();
     groups.values().forEach(rows -> unique.add(rows.size() > 1 && rows.stream().allMatch(Transition::seed)
         ? rows.stream().min(Comparator.comparing(EventOrdering::canonical)).orElseThrow() : rows.getFirst()));
@@ -46,7 +56,7 @@ final class EventOrdering {
     result = Boolean.compare(afterApproval(left, carry, approvals), afterApproval(right, carry, approvals));
     if (result != 0) return result;
     result = Integer.compare(carry.sequence().getOrDefault(left.id(), 0), carry.sequence().getOrDefault(right.id(), 0));
-    return result != 0 ? result : CodePoints.compare(left.id(), right.id());
+    return result != 0 ? result : EventIds.compare(left.idKey(), right.idKey());
   }
 
   private static boolean afterApproval(Transition event, Carry carry, List<String> approvals) {

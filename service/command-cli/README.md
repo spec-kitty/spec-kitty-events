@@ -263,7 +263,7 @@ described above; this table is the compact list (R15–R31).
 | Log | torn tail refused, never repaired; LF-only writes, a CR before the LF tolerated on read | C-006, decision 10, [#222](https://github.com/spec-kitty/spec-kitty-events/issues/222) |
 | Log | a raw U+0085/U+2028/U+2029/VT/FF/FS/GS/RS makes the log unreducible (`500`) | R24, [core #7439](https://github.com/spec-kitty/spec-kitty/issues/7439) |
 | Log | JSON nesting capped at 256, integers at 4300 digits, floats unbounded | decision 16, [core #7439](https://github.com/spec-kitty/spec-kitty/issues/7439) |
-| Request | a row the log reader or fold cannot read back (nesting over 256, a structured actor core's `decode_actor` refuses) is `REQUEST_MALFORMED`; an unexpected failure is `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`, never a Problem without a code | PR #230 squad |
+| Request | a row either of core's read paths (`read_events`, `materialize`) or the fold cannot read back (nesting over 256, a structured actor core's `decode_actor` refuses, the five-key `profile_source` actor no writer may emit, a subtask `uninitialized`, a `shell_pid` outside R28's ASCII form, a transition core would skip as non-lane) is `REQUEST_MALFORMED`; an unexpected failure is `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`, never a Problem without a code | PR #230 squad, decision 22 |
 | Request | a non-finite number, or a mixed naive/aware session pair, is `REQUEST_MALFORMED` | decision 9, [core #7440](https://github.com/spec-kitty/spec-kitty/issues/7440), [#7441](https://github.com/spec-kitty/spec-kitty/issues/7441) |
 | Request | a stale `from_lane` is `TRANSITION_REJECTED` + `stale_from_lane` | decision 17 |
 | Location | a coordination-routed Mission answers `422` | R16 |
