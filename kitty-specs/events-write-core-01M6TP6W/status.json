@@ -1,7 +1,7 @@
 {
-  "event_count": 94,
-  "last_event_id": "01M6Y2KJRSP014SXW1D93JGRG6",
-  "materialized_at": "2026-11-08T17:16:58.010015+00:00",
+  "event_count": 95,
+  "last_event_id": "01M6Y2KP2VAGQQPDPFRZ9FXHKS",
+  "materialized_at": "2026-11-08T17:17:01.403895+00:00",
   "mission_number": "",
   "mission_slug": "events-write-core-01M6TP6W",
   "mission_type": "software-dev",
@@ -10,12 +10,12 @@
     "approved": 8,
     "blocked": 0,
     "canceled": 0,
-    "claimed": 0,
+    "claimed": 1,
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 2
+    "planned": 1
   },
   "work_packages": {
     "WP01": {
@@ -237,14 +237,14 @@
       }
     },
     "WP08": {
-      "actor": "claude",
-      "agent": "claude",
+      "actor": "opencode",
+      "agent": "opencode",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 6,
-      "lane": "planned",
-      "last_event_id": "01M6Y2KJRSP014SXW1D93JGRG6",
-      "last_transition_at": "2026-11-08T17:16:58.010015+00:00",
+      "lane": "claimed",
+      "last_event_id": "01M6Y2KP2VAGQQPDPFRZ9FXHKS",
+      "last_transition_at": "2026-11-08T17:17:01.403895+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Implemented by opencode tokenfactory/kimi-k3 (3 runs); f4c35699 merged as 66ec32f8. :command-cli:check 984 JVM+10 process+1 benchmark+133 native-tagged green; benchmark p50 78.6 ms p95 102.1 ms",
