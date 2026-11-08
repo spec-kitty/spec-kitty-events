@@ -68,11 +68,11 @@
       "criterion_id": "FR-007",
       "description": "A torn tail or unreducible log is refused with 500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED and the file is unchanged.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP02 torn-tail tests; WP08 WriteIntegrationTest US1-6 and fold protocol cases"
+      "evidence": "StatusLogAppenderTest.refusesATornTailOnReadAndAppendWithoutRepairingIt (9 pass); WriteServiceTest.tornOrUnreducibleLogsAndLockTimeoutsAreNotWritten (appendCalls 0); WriteIntegrationTest.us1ScenarioSixATornTailIsRefusedUnchanged (500, bytes equal), interiorLogLinesFollowTheFold...; corpus fold-torn-tail and fold-invalid-json; WriteFoldTest 18.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:27.365031+00:00",
+      "notes": "Torn tail and unreducible-log paths both asserted file-unchanged."
     },
     {
       "criterion_id": "FR-008",
