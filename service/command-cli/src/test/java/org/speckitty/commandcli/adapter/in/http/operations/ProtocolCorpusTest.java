@@ -121,6 +121,10 @@ class ProtocolCorpusTest {
       Files.createDirectories(broken);
       Files.writeString(broken.resolve("meta.json"), "{not json");
     }
+    if ("own-meta-bom".equals(caseId)) {
+      Path metadata = rig.missionDirectory.resolve("meta.json");
+      Files.writeString(metadata, "\uFEFF" + Files.readString(metadata));
+    }
     byte[] before = Files.exists(rig.log()) ? Files.readAllBytes(rig.log()) : null;
     JsonNode request = testCase.required("request");
     String kind = request.required("kind").asString();
@@ -169,6 +173,7 @@ class ProtocolCorpusTest {
       case STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED ->
           "The status event log could not be verified or persisted; nothing was acknowledged.";
       case WRITE_LOCATION_UNVERIFIED -> "The write location could not be verified.";
+      case MISSION_NOT_FOUND -> "The Mission was not found.";
       default -> throw new AssertionError("No fixed protocol detail for " + code);
     };
   }
@@ -245,7 +250,7 @@ class ProtocolCorpusTest {
     assertThat(GUARD_REASONS).hasSize(15); // workspace_context_required is recorded unreachable over the wire.
     JsonNode unreachable = read(CASES.resolveSibling("unreachable.json"));
     assertThat(unreachable.has("urn:spec-kitty:write-refusal:workspace_context_required")).isTrue();
-    assertThat(PASSED).hasSize(33);
-    System.out.printf("Protocol/service corpus 13/13; guard reasons 15/15 (+1 recorded unreachable); invalid status rows 5/5 passed%n");
+    assertThat(PASSED).hasSize(34);
+    System.out.printf("Protocol/service corpus 14/14; guard reasons 15/15 (+1 recorded unreachable); invalid status rows 5/5 passed%n");
   }
 }

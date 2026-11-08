@@ -22,10 +22,8 @@ public final class EventLogRowCodec implements RowCodec {
   private static final java.util.Set<Integer> SINGLE_BYTE_SEPARATORS = java.util.Set.of(0x0a, 0x0b, 0x0c, 0x1c, 0x1d, 0x1e);
 
   static {
-    StreamReadConstraints.overrideDefaultStreamReadConstraints(StreamReadConstraints.defaults().rebuild()
-        .maxNestingDepth(1000)
-        .maxNumberLength(4300)
-        .build());
+    StreamReadConstraints.overrideDefaultStreamReadConstraints(
+        new PythonNumberConstraints(StreamReadConstraints.defaults()));
   }
 
   @Override
@@ -61,6 +59,21 @@ public final class EventLogRowCodec implements RowCodec {
     }
     if (start < log.length) lines.add(line(Arrays.copyOfRange(log, start, log.length)));
     return new DecodedLog(lines);
+  }
+
+  /** Python caps integer conversion at 4300 digits but does not apply that limit to floats. */
+  private static final class PythonNumberConstraints extends StreamReadConstraints {
+    private static final long serialVersionUID = 1L;
+
+    private PythonNumberConstraints(StreamReadConstraints defaults) {
+      super(1000, defaults.getMaxDocumentLength(), defaults.getMaxTokenCount(), 4300,
+          defaults.getMaxStringLength(), defaults.getMaxNameLength());
+    }
+
+    @Override
+    public void validateFPLength(int length) {
+      // Deliberately unbounded, like Python's float parser.
+    }
   }
 
   private static int separatorLength(byte[] log, int index) {

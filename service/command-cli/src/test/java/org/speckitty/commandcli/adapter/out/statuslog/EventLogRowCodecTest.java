@@ -79,10 +79,12 @@ class EventLogRowCodecTest {
     String nested1200 = "{\"x\":" + "[".repeat(1200) + "1" + "]".repeat(1200) + "}\n";
     String integer2000 = "{\"x\":" + "9".repeat(2000) + "}\n";
     String integer4301 = "{\"x\":" + "9".repeat(4301) + "}\n";
+    String float5000 = "{\"x\":1." + "9".repeat(5000) + "}\n";
     assertThat(codec.decode(nested600.getBytes(StandardCharsets.UTF_8)).values().getFirst()).isInstanceOf(LogLine.Value.class);
     assertThat(codec.decode(nested1200.getBytes(StandardCharsets.UTF_8)).values().getFirst()).isInstanceOf(LogLine.Unparseable.class);
     assertThat(codec.decode(integer2000.getBytes(StandardCharsets.UTF_8)).values().getFirst()).isInstanceOf(LogLine.Value.class);
     assertThat(codec.decode(integer4301.getBytes(StandardCharsets.UTF_8)).values().getFirst()).isInstanceOf(LogLine.Unparseable.class);
+    assertThat(codec.decode(float5000.getBytes(StandardCharsets.UTF_8)).values().getFirst()).isInstanceOf(LogLine.Value.class);
   }
 
   @Test

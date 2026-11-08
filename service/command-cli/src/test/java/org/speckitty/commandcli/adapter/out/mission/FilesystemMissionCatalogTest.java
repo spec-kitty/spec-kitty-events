@@ -49,16 +49,17 @@ class FilesystemMissionCatalogTest {
   }
 
   @Test
-  void unreadableSiblingsAreSkippedAndBomPrefixedMetadataIsRead() throws Exception {
+  void unreadableSiblingsAreSkippedButOwnBomMetadataIsAbsent() throws Exception {
     Path root = repo("catalog-siblings");
     try {
       mission(root, "healthy", ID);
-      Files.write(root.resolve("kitty-specs/healthy/meta.json"),
-          ("﻿{\"mission_id\":\"" + ID + "\",\"coordination_branch\":\"  \"}\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
       Files.createDirectories(root.resolve("kitty-specs/broken"));
       Files.writeString(root.resolve("kitty-specs/broken/meta.json"), "{not json");
       FilesystemMissionCatalog catalog = new FilesystemMissionCatalog(root.resolve(".git"));
       assertThat(catalog.find(ID)).isInstanceOf(MissionCatalog.Found.class);
+      Files.write(root.resolve("kitty-specs/healthy/meta.json"),
+          ("﻿{\"mission_id\":\"" + ID + "\"}\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      assertThat(catalog.find(ID)).isInstanceOf(MissionCatalog.NotFound.class);
     } finally {
       delete(root);
     }

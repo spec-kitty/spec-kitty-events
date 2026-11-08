@@ -42,7 +42,7 @@ public final class TasksFiles {
   private static List<Path> paths(Path mission, String wpId, boolean roster) {
     Path tasks = mission.resolve("tasks");
     try (Stream<Path> paths = Files.list(tasks)) {
-      List<String> names = paths.filter(Files::isRegularFile).map(path -> path.getFileName().toString()).toList();
+      List<String> names = paths.map(path -> path.getFileName().toString()).toList();
       List<String> matches = roster ? rosterNames(names, wpId) : dependencyNames(names, wpId);
       return matches.stream().map(tasks::resolve).toList();
     } catch (IOException exception) {
