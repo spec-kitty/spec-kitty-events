@@ -362,6 +362,33 @@ class WriteIntegrationTest {
   }
 
   @Test
+  void concurrentHttpWritesAreSerializedAndTheSecondSeesTheFirstResult() throws Exception {
+    ExecutorService executor = Executors.newFixedThreadPool(2);
+    try (WriteRig rig = WriteRig.start()) {
+      Path lock = rig.gitCommonDir.resolve("spec-kitty-locks/mission.status.lock");
+      Files.createDirectories(lock.getParent());
+      var peer = LedgerLocks.forThisOs().acquire(lock, Duration.ofSeconds(2));
+      try {
+        Future<RawClient.Reply> first = executor.submit(() -> rig.post("unit", WriteRig.unit(WriteRig.claimRow(ID1))));
+        awaitInFlight(rig, 1);
+        Thread.sleep(100); // let the first request acquire the service turn before the second joins the fair queue
+        String secondRow = WriteRig.transitionRow(ID2, "WP01", "claimed", "in_progress", "java-jenny");
+        Future<RawClient.Reply> second = executor.submit(() -> rig.post("unit", WriteRig.unit(secondRow)));
+        awaitInFlight(rig, 2);
+        peer.close();
+
+        assertThat(first.get(5, TimeUnit.SECONDS).status()).isEqualTo(201);
+        assertThat(second.get(5, TimeUnit.SECONDS).status()).isEqualTo(201);
+        assertThat(Files.readString(rig.log())).isEqualTo(WriteRig.priorPlannedLine()
+            + WriteRig.expectedClaimLine(ID1) + WriteRig.encodedRow(secondRow));
+      } finally {
+        peer.close();
+        executor.shutdownNow();
+      }
+    }
+  }
+
+  @Test
   void firstAndEmptyLogsAcceptAGenesisTransition() throws Exception {
     for (boolean empty : new boolean[] {false, true}) {
       try (WriteRig rig = WriteRig.start()) {
