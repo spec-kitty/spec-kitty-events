@@ -1,7 +1,7 @@
 {
-  "event_count": 98,
-  "last_event_id": "01M6Y4Q9JM02P0K6WM10516QKF",
-  "materialized_at": "2026-11-08T17:53:56.820839+00:00",
+  "event_count": 99,
+  "last_event_id": "01M6Y4QC0N4GB2KCWGN9Z498XX",
+  "materialized_at": "2026-11-08T17:53:59.318003+00:00",
   "mission_number": "",
   "mission_slug": "events-write-core-01M6TP6W",
   "mission_type": "software-dev",
@@ -10,12 +10,12 @@
     "approved": 8,
     "blocked": 0,
     "canceled": 0,
-    "claimed": 0,
+    "claimed": 1,
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 2
+    "planned": 1
   },
   "work_packages": {
     "WP01": {
@@ -242,9 +242,9 @@
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 7,
-      "lane": "planned",
-      "last_event_id": "01M6Y4Q9JM02P0K6WM10516QKF",
-      "last_transition_at": "2026-11-08T17:53:56.820839+00:00",
+      "lane": "claimed",
+      "last_event_id": "01M6Y4QC0N4GB2KCWGN9Z498XX",
+      "last_transition_at": "2026-11-08T17:53:59.318003+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Implemented by opencode tokenfactory/kimi-k3 (3 runs); f4c35699 merged as 66ec32f8. :command-cli:check 984 JVM+10 process+1 benchmark+133 native-tagged green; benchmark p50 78.6 ms p95 102.1 ms",
