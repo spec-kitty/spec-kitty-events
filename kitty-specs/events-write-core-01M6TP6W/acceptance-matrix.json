@@ -2,7 +2,7 @@
   "mission_slug": "events-write-core-01M6TP6W",
   "mission_number": "",
   "mission_type": "software-dev",
-  "overall_verdict": "pending",
+  "overall_verdict": "pass",
   "criteria": [
     {
       "criterion_id": "FR-001",
@@ -278,11 +278,11 @@
       "criterion_id": "FR-028",
       "description": "Failed writes or syncs are truncated back and answer 500; non-finite numbers and unsubtractable session pairs are 400 and pinned by invalid fixtures.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP02 StatusLogFaultInjectionTest; WP01/WP05 invalid fixtures; WP08 invalid fixtures over HTTP"
+      "evidence": "StatusLogFaultInjectionTest 6 (120-iteration, 4-fault matrix: truncated back, never durable on failure; rollbackTruncatesThenForces, failedParentDirectorySyncRollsBackANewFile, rollbackFailureIsSuppressed...); ProtocolCorpusTest.invalidStatusRows 5/5 -> 400 REQUEST_MALFORMED, log bytes unchanged; invalid fixtures non_finite_{nan,infinity,overflow}, session_pair_{aware_then_naive,naive_then_aware}.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:37:05.722114+00:00",
+      "notes": "Non-finite and mixed-awareness pinned as invalid fixtures in both bindings (StatusAppendFixtureTest 26, Python test_status_append 25)."
     }
   ],
   "negative_invariants": []
