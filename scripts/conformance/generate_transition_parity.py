@@ -24,6 +24,9 @@ CORE_SHA = "512567eee71e31bb39f580c4f7acf8b865e9d1b2"
 REASON_PREFIX = "urn:spec-kitty:write-refusal:"
 STALE_FROM_LANE_REASON = REASON_PREFIX + "stale_from_lane"
 STALE_FROM_LANE_MESSAGE = "The unit's from_lane is not the work package's current lane."
+# The smallest integer whose decimal form has 4301 digits (R29): CPython cannot str() it.
+OVER_LIMIT_INT = 10**4300
+
 # The hand-written protocol cases whose expected outcome is the stale-from_lane refusal.
 STALE_FROM_LANE_CASES = frozenset(
     {
@@ -263,6 +266,21 @@ def protocol_r15_cases(core_rendered: Mapping[str, str]) -> dict[str, str]:
                 r15_note,
             ),
             roster_case(
+                "guard-phase-hex-int-over-4300-digits",
+                "guard-shell-pid-str-padded",
+                task_text().replace("subtasks: []", f"phase: 0x{OVER_LIMIT_INT:x}\nsubtasks: []"),
+                "R29 (widened): a hex integer past 4300 decimal digits in phase makes the roster "
+                "unresolvable. Core's coerce_phase str()s it and CPython refuses "
+                "(spec-kitty/spec-kitty#7442).",
+            ),
+            roster_case(
+                "guard-phase-octal-int-over-4300-digits",
+                "guard-shell-pid-str-padded",
+                task_text().replace("subtasks: []", f"phase: 0o{OVER_LIMIT_INT:o}\nsubtasks: []"),
+                "R29 (widened): an octal integer past 4300 decimal digits in phase makes the "
+                "roster unresolvable (spec-kitty/spec-kitty#7442).",
+            ),
+            roster_case(
                 "guard-subtasks-roster-description-tab",
                 "guard-subtasks-incomplete",
                 task_text().replace(
@@ -314,6 +332,41 @@ def protocol_r15_cases(core_rendered: Mapping[str, str]) -> dict[str, str]:
                 ),
                 "R29: a decimal integer of more than 4300 digits makes WP02 unreadable; "
                 "dependencies refuse dependencies_unsatisfied (core's Python refuses to build it).",
+            ),
+            dependency_case(
+                "dependency-frontmatter-hex-int-over-4300-digits",
+                task_text("WP02", dependencies="[WP01]").replace(
+                    "subtasks: []", f"agent: 0x{OVER_LIMIT_INT:x}\nsubtasks: []"
+                ),
+                "R29 (widened): an integer of any base whose decimal form exceeds 4300 digits makes "
+                "WP02 unreadable; dependencies refuse dependencies_unsatisfied. Core's CPython "
+                "cannot str() it (spec-kitty/spec-kitty#7442).",
+            ),
+            dependency_case(
+                "dependency-frontmatter-octal-int-nested-over-4300-digits",
+                task_text("WP02", dependencies="[WP01]").replace(
+                    "subtasks: []", f"history: [{{a: [0o{OVER_LIMIT_INT:o}]}}]\nsubtasks: []"
+                ),
+                "R29 (widened): the bound holds anywhere in the frontmatter, nested in maps and "
+                "lists; dependencies refuse dependencies_unsatisfied (spec-kitty/spec-kitty#7442).",
+            ),
+            dependency_case(
+                "dependency-frontmatter-timestamp-fraction-overflows",
+                task_text("WP02", dependencies="[WP01]").replace(
+                    "subtasks: []", "agent: 9999-12-31 23:59:59.9999995\nsubtasks: []"
+                ),
+                "R30: a timestamp with more than 6 fractional digits makes WP02 unreadable; "
+                "dependencies refuse dependencies_unsatisfied. Core's ruamel rounds the seventh "
+                "digit into the seconds and overflows datetime (spec-kitty/spec-kitty#7444).",
+            ),
+            dependency_case(
+                "dependency-frontmatter-timestamp-seven-digit-fraction",
+                task_text("WP02", dependencies="[WP01]").replace(
+                    "subtasks: []", "history: [2001-01-01 00:00:00.1234567]\nsubtasks: []"
+                ),
+                "R30: any timestamp fraction of more than 6 digits is unresolvable, even one core "
+                "can build (it rounds the seventh digit); dependencies refuse "
+                "dependencies_unsatisfied (spec-kitty/spec-kitty#7444).",
             ),
             dependency_case(
                 "dependency-frontmatter-block-scalar-spaces-first-line",

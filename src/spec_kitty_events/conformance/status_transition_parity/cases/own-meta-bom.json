@@ -155,7 +155,7 @@
     "mission_id": "01J00000000000000000000000",
     "mission_slug": "999-status-transition-parity"
   },
-  "notes": "The test rig prefixes the Mission meta.json with a UTF-8 BOM; core strict UTF-8 JSON decoding rejects it.",
+  "notes": "Protocol case: the test rig prefixes the Mission's own meta.json with a UTF-8 BOM, an input the case's tasks and log cannot express. Matches core's guard: kernel/meta_decode.py decodes bytes as strict UTF-8 before json.loads, so a BOM is a JSONDecodeError in its documented malformed set, and mission_metadata.load_meta defaults to encoding utf-8 (BOM tolerance is opt-in per contract). Core therefore reports the Mission absent, and so does the service (404): appending would write to a Mission core cannot see. Core's own inconsistency with load_meta_strict and frontmatter BOM tolerance: spec-kitty/spec-kitty#7445.",
   "operation": "transition",
   "oracle": "protocol",
   "request": {

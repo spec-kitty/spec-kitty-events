@@ -3,6 +3,7 @@ package org.speckitty.commandcli.adapter.out.mission;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -319,8 +320,7 @@ class DiskMissionFactsTest {
       assertThat(facts().dependencies("WP02")).as(number.length() + " digits")
           .isInstanceOf(DependencyDeclaration.Unresolvable.class);
     }
-    for (String number : List.of("9".repeat(4300), "-" + "9".repeat(4300), "0x" + "f".repeat(5000), "0o" + "7".repeat(5000),
-        "1." + "9".repeat(5000))) {
+    for (String number : List.of("9".repeat(4300), "-" + "9".repeat(4300), "1." + "9".repeat(5000))) {
       write("WP01.md", task("[]").replace("title: test\n", "title: test\nagent: " + number + "\n"));
       assertThat(facts().subtaskRoster("WP01")).as(number.length() + " chars").isInstanceOf(SubtaskRoster.Resolved.class);
     }
@@ -328,13 +328,52 @@ class DiskMissionFactsTest {
   }
 
   @Test
-  void aHexOrOctalRosterIdWhoseDecimalRenderingExceeds4300DigitsIsUnresolvable() throws Exception {
-    // Core builds the id with str(int), which raises past 4300 digits although parsing the literal does not.
+  void anIntegerOfAnyBaseOver4300DecimalDigitsMakesTheFileUnreadableAnywhereUnderR29() throws Exception {
+    BigInteger limit = BigInteger.TEN.pow(4300);
+    BigInteger largest = limit.subtract(BigInteger.ONE);
+    List<String> over = List.of("0x" + limit.toString(16), "0x" + limit.multiply(BigInteger.valueOf(7)).toString(16),
+        "0o" + limit.toString(8), "0x" + "f".repeat(5000), "0o" + "7".repeat(5000));
+    List<String> within = List.of("0x" + largest.toString(16), "0o" + largest.toString(8), "0x" + "0".repeat(5000) + "1",
+        "0o" + "0".repeat(5000) + "7", "0x0");
+    List<String> places = List.of("phase: %s", "agent: %s", "history: [%s]", "history: {a: %s}", "history: [{a: [%s]}]",
+        "history: {a: {b: %s}}", "\"history\": [%s]");
+    for (String place : places) {
+      for (String number : over) {
+        String line = place.formatted(number);
+        write("WP01.md", task("[]").replace("title: test\n", "title: test\n" + line + "\n"));
+        assertThat(facts().subtaskRoster("WP01")).as(line.substring(0, Math.min(40, line.length()))).isInstanceOf(SubtaskRoster.Unresolvable.class);
+        write("WP02.md", "---\nwork_package_id: WP02\ndependencies: [WP01]\n" + line + "\n---\n");
+        assertThat(facts().dependencies("WP02")).as(line.substring(0, Math.min(40, line.length())))
+            .isInstanceOf(DependencyDeclaration.Unresolvable.class);
+      }
+      for (String number : within) {
+        String line = place.formatted(number);
+        assertThat(Frontmatter.readText("WP01.md", taskWith(line + "\n"))).as(line.substring(0, Math.min(40, line.length()))).isPresent();
+      }
+    }
+  }
+
+  @Test
+  void aRosterIdWhoseDecimalRenderingExceeds4300DigitsIsUnresolvable() throws Exception {
     for (String entry : List.of("0x" + "f".repeat(4000), "0o" + "7".repeat(4800), "0x" + "f".repeat(3000))) {
       write("WP01.md", task("[" + entry + "]"));
       boolean resolved = entry.length() < 4000;
       assertThat(facts().subtaskRoster("WP01")).as(entry.length() + " chars")
           .isInstanceOf(resolved ? SubtaskRoster.Resolved.class : SubtaskRoster.Unresolvable.class);
+    }
+  }
+
+  @Test
+  void aTimestampWithMoreThanSixFractionalDigitsMakesTheFileUnreadableUnderR30() throws Exception {
+    for (String timestamp : List.of("9999-12-31 23:59:59.9999995", "2001-01-01 00:00:00.1234567", "2001-01-01T00:00:00.0000000Z",
+        "2001-01-01 00:00:00.1234567 +01:00", "2001-01-01 00:00:00." + "9".repeat(40))) {
+      write("WP02.md", "---\nwork_package_id: WP02\ndependencies: [WP01]\nagent: " + timestamp + "\n---\n");
+      assertThat(facts().dependencies("WP02")).as(timestamp).isInstanceOf(DependencyDeclaration.Unresolvable.class);
+      assertThat(Frontmatter.readText("WP01.md", taskWith("history: [" + timestamp + "]\n"))).as(timestamp).isEmpty();
+    }
+    for (String timestamp : List.of("9999-12-31 23:59:59.999999", "2001-01-01 00:00:00.123456", "2001-01-01 00:00:00.",
+        "2001-01-01 00:00:00.5", "2001-01-01T00:00:00.000000Z", "2001-01-01 00:00:00")) {
+      assertThat(Frontmatter.readText("WP01.md", taskWith("history: [" + timestamp + "]\n"))).as(timestamp).isPresent();
     }
   }
 
@@ -362,11 +401,11 @@ class DiskMissionFactsTest {
   @Test
   void invalidTimestampsMakeTheFileUnreadableAsInCore() throws Exception {
     for (String scalar : List.of("2001-13-45", "2001-02-30", "0000-01-01", "2001-12-14T24:00:00", "2001-12-14T23:60:00",
-        "2001-12-14T23:59:60", "2001-12-14T23:59:59+25:00", "1999-02-29")) {
+        "2001-12-14T23:59:60", "2001-12-14T23:59:59+25:00", "1999-02-29", "2001-12-14T23:59:59.9999995Z")) {
       assertThat(Frontmatter.readText("WP01.md", taskWith("created_at: " + scalar + "\n"))).as(scalar).isEmpty();
     }
     for (String scalar : List.of("2001-12-14", "2001-12-14t21:59:43.10-05:00", "2001-12-15 2:59:43.10", "2000-02-29",
-        "2001-12-14T23:59:59.9999995Z", "2001-12-14T23:59:59+23:59")) {
+        "2001-12-14T23:59:59.999999Z", "2001-12-14T23:59:59+23:59")) {
       assertThat(Frontmatter.readText("WP01.md", taskWith("created_at: " + scalar + "\n"))).as(scalar).isPresent();
     }
     write("WP01.md", taskWith("created_at: 2001-12-14\n"));

@@ -60,10 +60,6 @@ public final class FactValues {
     for (Object item : list) {
       // R25: core str()-renders other entries into ids no event can match.
       if (!(item instanceof String) && !(item instanceof BigInteger)) return new SubtaskRoster.Unresolvable();
-      // Parsing a 0x/0o integer is unlimited in CPython, but str() of one past 4300 decimal digits raises.
-      if (item instanceof BigInteger number && number.abs().toString().length() > Yaml12Schema.MAX_DECIMAL_DIGITS) {
-        return new SubtaskRoster.Unresolvable();
-      }
       String id = PyText.strip(item.toString());
       if (!id.isEmpty()) seen.add(id);
     }
