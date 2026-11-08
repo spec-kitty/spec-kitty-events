@@ -132,6 +132,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#223": {
+      "evidence_ref": "maintainer ruling 2026-11-08 (5): unreachable.json kept; follow-up issue for workspace_context_required (research \u00a711 decision 17)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
     "#6195": {
       "evidence_ref": "context only: core client half spec-kitty/spec-kitty#6195, out of scope (spec C-004)",
       "fr": null,
