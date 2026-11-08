@@ -168,11 +168,11 @@
       "criterion_id": "FR-017",
       "description": "Transition, batch and annotation operations acknowledge legal writes with contract-valid DurabilityAck/BatchDurabilityAck; fsyncs is 0 only for an all-replayed batch; the fail-closed refusal is gone.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP08 AckBodyTest and WriteIntegrationTest"
+      "evidence": "AckBodyTest 2 (DurabilityAck and BatchDurabilityAck validate against contract schemas, statusCommit null, new and fully-replayed); WriteIntegrationTest 24 (201 acks; us3-1 fsyncs 1 then 0; us5 annotation); OperationsTest 40 (fail-closed 500 replaced by 404 MISSION_NOT_FOUND / 422).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:45.579441+00:00",
+      "notes": "The 'write core is not built yet' refusal is gone from the operations tests (diff vs base)."
     },
     {
       "criterion_id": "FR-018",
