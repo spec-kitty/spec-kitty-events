@@ -198,11 +198,11 @@
       "criterion_id": "FR-020",
       "description": "Writes are serialized by one fair in-process turn; turn and lock share one 10 s deadline; a missed turn answers 503 SERVICE_BUSY with Retry-After: 1.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP08 WriteTurn tests and ServiceWiringTest"
+      "evidence": "WriteTurnTest 2 (fair ReentrantLock(true); timeout then reacquire; interrupt flag); WriteServiceTest aHeldTurnIsBusy...OriginalAbsoluteDeadline (SERVICE_BUSY, one deadline shared with the lock), concurrentWritesAreSerialized...; ServiceWiringTest 1 (budget exactly 10 s); OperationsTest.aBusyWriteCarriesRetryAfterOneSecond (503, Retry-After: 1).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:51.149860+00:00",
+      "notes": "Retry-After set in WriteController via HttpHeaders.RETRY_AFTER; SERVICE_DRAINING stays without it (DrainTest)."
     },
     {
       "criterion_id": "FR-021",
