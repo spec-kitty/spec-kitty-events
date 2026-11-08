@@ -2,29 +2,38 @@ package org.speckitty.commandcli.adapter.out.mission;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.ByteBuffer;
-import java.security.MessageDigest;
-import java.util.HexFormat;
 import java.util.List;
-import java.util.stream.IntStream;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.speckitty.commandcli.domain.authority.DependencyDeclaration;
+import org.speckitty.commandcli.domain.authority.SubtaskRoster;
 
+/** The value rules over parsed frontmatter, without the filesystem. */
 class FactValuesTest {
   @Test
-  void shellPidDecimalDigitsExactlyMatchPython311Unicode14() throws Exception {
-    List<Integer> actual = IntStream.range(0, Character.MAX_CODE_POINT + 1)
-        .filter(FactValues::isPython311DecimalDigit)
-        .boxed()
-        .toList();
-    ByteBuffer sortedCodePoints = ByteBuffer.allocate(actual.size() * Integer.BYTES);
-    actual.forEach(sortedCodePoints::putInt);
+  void shellPidAcceptsOnlyTheR28Forms() {
+    for (String pid : List.of("", "12", "' 12 '", "'+12'", "'-12'", "~", "'" + "1".repeat(4300) + "'")) {
+      assertThat(roster("shell_pid: " + pid + "\n")).as(pid).isInstanceOf(SubtaskRoster.Resolved.class);
+    }
+    for (String pid : List.of("true", "12.5", "'1_000'", "'𝟙'", "'" + "1".repeat(4301) + "'", "'1 2'")) {
+      assertThat(roster("shell_pid: " + pid + "\n")).as(pid).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    }
+    assertThat(roster("")).as("absent").isInstanceOf(SubtaskRoster.Resolved.class);
+  }
 
-    // Generated once with core 512567ee's Python 3.11.15 (Unicode 14.0.0):
-    // points = [cp for cp in range(sys.maxunicode + 1) if chr(cp).isdecimal()]
-    // digest = sha256(b"".join(cp.to_bytes(4, "big") for cp in points)).hexdigest()
-    assertThat(actual).hasSize(660);
-    assertThat(HexFormat.of().formatHex(
-        MessageDigest.getInstance("SHA-256").digest(sortedCodePoints.array())))
-        .isEqualTo("6a3d60c3fba3543c006ac150be6fe964a320bf8d2e9ca061ba194acfa25df5fb");
+  @Test
+  void rosterEntriesAreStringsOrIntegersOnlyUnderR25() {
+    assertThat(roster("")).isEqualTo(new SubtaskRoster.Resolved(List.of("T001", "7")));
+  }
+
+  @Test
+  void dependencyEntriesMustBeStrings() {
+    Map<String, Object> frontmatter = Frontmatter.readText("WP02.md", "---\ndependencies: [WP01, 7]\n---\n").orElseThrow();
+    assertThat(FactValues.dependencies(frontmatter)).isInstanceOf(DependencyDeclaration.Unresolvable.class);
+  }
+
+  private static SubtaskRoster roster(String extra) {
+    String document = "---\nwork_package_id: WP01\ntitle: t\n" + extra + "subtasks: [T001, 7]\n---\n";
+    return FactValues.roster(Frontmatter.readText("WP01.md", document).orElseThrow());
   }
 }

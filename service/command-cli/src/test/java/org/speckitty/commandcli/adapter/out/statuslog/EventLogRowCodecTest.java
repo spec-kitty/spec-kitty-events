@@ -48,15 +48,14 @@ class EventLogRowCodecTest {
   }
 
   @Test
-  void decodeUsesEveryPythonSplitlinesSeparatorAndPythonWhitespace() {
+  void decodeSplitsRowsOnLfOnlyTolerantOfATrailingCrAndPythonWhitespaceBlanks() {
     String row = "{\"event_id\":\"abc\"}";
-    for (String separator : new String[] {"\n", "\r\n", "\r", "\u000b", "\u000c", "\u001c", "\u001d", "\u001e", "\u0085", "\u2028", "\u2029"}) {
-      var split = codec.decode((row + separator + row).getBytes(StandardCharsets.UTF_8));
-      assertThat(split.values()).as("separator U+%04X", (int) separator.charAt(0)).hasSize(2)
-          .allSatisfy(line -> assertThat(line).isInstanceOf(LogLine.Value.class));
-    }
-    String document = row + "\f\n\u00a0\r\n" + row;
-    var decoded = codec.decode(document.getBytes(StandardCharsets.UTF_8));
+    var split = codec.decode((row + "\n" + row + "\r\n" + row + "\r\r\n").getBytes(StandardCharsets.UTF_8));
+    assertThat(split.values()).hasSize(3).allSatisfy(line -> assertThat(line).isInstanceOf(LogLine.Value.class));
+    assertThat(split.lines().get(1).bytesWithoutLfOrCr()).isEqualTo(row.getBytes(StandardCharsets.UTF_8));
+    var bareCr = codec.decode((row + "\r" + row + "\n").getBytes(StandardCharsets.UTF_8));
+    assertThat(bareCr.values()).as("a bare CR is not a row separator").singleElement().isInstanceOf(LogLine.Unparseable.class);
+    var decoded = codec.decode((row + "\n\u00a0\r\n   \n" + row).getBytes(StandardCharsets.UTF_8));
     assertThat(decoded.lines()).hasSize(4);
     assertThat(decoded.values().get(0)).isInstanceOf(LogLine.Value.class);
     assertThat(decoded.values().get(1)).isInstanceOf(LogLine.Blank.class);
@@ -65,26 +64,51 @@ class EventLogRowCodecTest {
   }
 
   @Test
-  void rawLineSeparatorsInsideJsonStringsMakeTheLogUnreducible() {
-    for (String separator : new String[] {"\u2028", "\u0085"}) {
-      var decoded = codec.decode(("{\"event_id\":\"ab" + separator + "cd\"}\n").getBytes(StandardCharsets.UTF_8));
-      assertThat(decoded.values()).as("U+%04X", (int) separator.charAt(0))
-          .allSatisfy(line -> assertThat(line).isInstanceOf(LogLine.Unparseable.class));
+  void aRawPythonLineBoundaryAnywhereMakesTheLogUnreducibleUnderR24() {
+    String row = "{\"event_id\":\"abc\"}";
+    for (String separator : new String[] {"\u0085", "\u2028", "\u2029", "\u000b", "\u000c", "\u001c", "\u001d", "\u001e"}) {
+      for (String log : new String[] {
+          row + "\n" + row + separator + row + "\n", // between rows
+          "{\"event_id\":\"ab" + separator + "cd\"}\n", // inside a string
+          row + "\n" + separator + "\n", // alone on a line
+          row + separator}) { // at the end
+        var decoded = codec.decode(log.getBytes(StandardCharsets.UTF_8));
+        assertThat(decoded.values()).as("U+%04X", (int) separator.charAt(0)).singleElement().isInstanceOf(LogLine.Unparseable.class);
+      }
+    }
+    for (String ordinary : new String[] {"\u00a0", "\u2027", "\u202a", "\u0084", "\u0086", "\u00c2"}) {
+      var decoded = codec.decode(("{\"event_id\":\"ab" + ordinary + "cd\"}\n").getBytes(StandardCharsets.UTF_8));
+      assertThat(decoded.values()).as("U+%04X", (int) ordinary.charAt(0)).singleElement().isInstanceOf(LogLine.Value.class);
     }
   }
 
   @Test
-  void decodeRaisesJacksonLimitsToThePythonOracleLimits() {
-    String nested600 = "{\"x\":" + "[".repeat(600) + "1" + "]".repeat(600) + "}\n";
-    String nested1200 = "{\"x\":" + "[".repeat(1200) + "1" + "]".repeat(1200) + "}\n";
+  void decodeRaisesJacksonLimitsToTheOracleLimitsWithAFixedNestingCap() {
+    String nested200 = "{\"x\":" + "[".repeat(200) + "1" + "]".repeat(200) + "}\n";
+    String nested300 = "{\"x\":" + "[".repeat(300) + "1" + "]".repeat(300) + "}\n";
     String integer2000 = "{\"x\":" + "9".repeat(2000) + "}\n";
     String integer4301 = "{\"x\":" + "9".repeat(4301) + "}\n";
     String float5000 = "{\"x\":1." + "9".repeat(5000) + "}\n";
-    assertThat(codec.decode(nested600.getBytes(StandardCharsets.UTF_8)).values().getFirst()).isInstanceOf(LogLine.Value.class);
-    assertThat(codec.decode(nested1200.getBytes(StandardCharsets.UTF_8)).values().getFirst()).isInstanceOf(LogLine.Unparseable.class);
+    assertThat(codec.decode(nested200.getBytes(StandardCharsets.UTF_8)).values().getFirst()).isInstanceOf(LogLine.Value.class);
+    assertThat(codec.decode(nested300.getBytes(StandardCharsets.UTF_8)).values().getFirst()).isInstanceOf(LogLine.Unparseable.class);
     assertThat(codec.decode(integer2000.getBytes(StandardCharsets.UTF_8)).values().getFirst()).isInstanceOf(LogLine.Value.class);
     assertThat(codec.decode(integer4301.getBytes(StandardCharsets.UTF_8)).values().getFirst()).isInstanceOf(LogLine.Unparseable.class);
     assertThat(codec.decode(float5000.getBytes(StandardCharsets.UTF_8)).values().getFirst()).isInstanceOf(LogLine.Value.class);
+  }
+
+  @Test
+  void aCoreWrittenNonFiniteNumberDecodesDeliberatelyAsADouble() {
+    for (String token : new String[] {"NaN", "Infinity", "-Infinity"}) {
+      var decoded = codec.decode(("{\"evidence\":{\"x\":" + token + "}}\n").getBytes(StandardCharsets.UTF_8));
+      assertThat(decoded.values()).as(token).singleElement().isInstanceOf(LogLine.Value.class);
+      @SuppressWarnings("unchecked")
+      Map<String, Object> evidence = (Map<String, Object>) ((LogLine.Value) decoded.values().getFirst()).row().get("evidence");
+      assertThat(evidence.get("x")).as(token).isInstanceOf(Double.class);
+    }
+    for (String token : new String[] {"+Infinity", "INF", "nan", "inf"}) {
+      var decoded = codec.decode(("{\"x\":" + token + "}\n").getBytes(StandardCharsets.UTF_8));
+      assertThat(decoded.values()).as(token).singleElement().isInstanceOf(LogLine.Unparseable.class);
+    }
   }
 
   @Test
