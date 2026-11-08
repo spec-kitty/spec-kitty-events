@@ -293,7 +293,7 @@
     },
     "WP09": {
       "actor": "claude",
-      "agent": "opencode:tokenfactory/deepseek-v4.1-flash-1017:scribe-sally",
+      "agent": "claude:claude-opus-5-5:reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -305,7 +305,8 @@
         "WP09 docs and changelog, opencode tokenfactory/kimi-k3",
         "WP09 by opencode tokenfactory/deepseek-v4.1-flash-1017 (kimi-k3 unavailable): f248890a merged as 810eab66; validate, changelog check/guard, docs tests 74, contract tests 379, ruff green",
         "Cycle 2: fix review-cycle-1 findings",
-        "Cycle 2: all review-cycle-1 findings fixed (4befdaec)"
+        "Cycle 2: all review-cycle-1 findings fixed (4befdaec)",
+        "Review cycle 2 APPROVE (orchestrator diff review after Sonnet cycle-1 review)"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
