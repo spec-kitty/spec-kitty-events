@@ -38,11 +38,11 @@
       "criterion_id": "FR-004",
       "description": "An accepted unit or batch is one O_APPEND write plus a sync (and a parent-directory sync on create) before 201; refused or fully replayed requests write and sync nothing.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP02 StatusLogAppender tests; WP08 one-appendAndSync-per-batch test and WriteIntegrationTest"
+      "evidence": "StatusLogSessionTest (4): appendsEveryByteInOneCallThenForcesTheFile [open,size,write,force,close], syncingANewFile...ParentDirectory; JdkFileOps opens with APPEND. WriteServiceTest (14): aBatchUsesOneAppendAndAnAllReplayedBatchUsesNone, authorityAndPersistenceFailuresNeverAcknowledge; WriteIntegrationTest (24) us1-2, us3-1 (fsync 1 then 0).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:22.038949+00:00",
+      "notes": "Refused and replayed requests: appendCalls == 0 asserted in WriteServiceTest; bytes unchanged asserted over HTTP in WriteIntegrationTest."
     },
     {
       "criterion_id": "FR-005",
