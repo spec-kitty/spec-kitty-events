@@ -16,14 +16,16 @@ section: Added
     `start_review` path. Lifecycle-start dependency gating, append-order implementer claims,
     operator-note handling and the refusal messages match pinned core, with transition-parity
     coverage.
-  - The deliberate divergences from core are documented with their rulings (R15–R31) and
-    linked to the core follow-ups spec-kitty/spec-kitty#7439, #7440, #7441, #7442, #7443,
+  - The deliberate divergences from core are documented with their rulings (R15–R31) in
+    [`service/command-cli/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/command-cli/README.md)
+    and linked to the core follow-ups spec-kitty/spec-kitty#7439, #7440, #7441, #7442, #7443,
     #7444 and #7445, and to the events follow-ups #222 (torn-tail repair), #223 and #224
     (wire-unreachable guard reasons).
 - The public `spec_kitty_events.status_log` module on the package line — `sanitize_status_row`,
   `encode_status_row` and their refusals — together with the `status_append` conformance
   family, so any binding can produce and check the exact status-row bytes (#160).
-- The status-transition parity corpus, `conformance/status_transition_parity/`: a
-  language-neutral `(prior log, tasks files, request) -> outcome` set generated from core's
-  real entry points, with the `write-core-parity` CI job keeping it in drift with the pinned
-  core SHA (#155).
+- The status-transition parity corpus,
+  `src/spec_kitty_events/conformance/status_transition_parity/`: a language-neutral
+  `(prior log, tasks files, request) -> outcome` set generated from core's real entry points,
+  with the `write-core-parity` CI job keeping it free of drift against the pinned core SHA
+  (#155).

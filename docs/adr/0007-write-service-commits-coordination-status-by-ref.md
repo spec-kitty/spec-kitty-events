@@ -262,9 +262,9 @@ The operator ruled on 2026-11-06 that `1.0.0-SNAPSHOT`, which shipped inside the
   serves the surface.
 - The protocol major stays 1. A client built on the `rc.1`/`rc.2` bundle that sends
   `coordination_transaction_append` gets `REQUEST_MALFORMED`, not `PROTOCOL_VERSION_UNSUPPORTED`
-  at the handshake. That is accepted because no client transport exists yet (2026-10-27-1 D-8)
-  and every write still fails closed; a protocol major is the tool once a client speaks to a
-  serving writer.
+  at the handshake. That is accepted because no client transport exists yet, and
+  `coordination_ref_commit`, the surface that changes, is refused until migration step 4; a
+  protocol major is the tool once a client speaks to a serving writer.
 - `breaking_check.py` reads `1.0.Z` and `1.0.Z-SNAPSHOT` as the initial line while no release
   exists, and `contracts/README.md`'s versioning rule records the ruling.
 

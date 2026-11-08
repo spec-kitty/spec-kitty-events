@@ -12,8 +12,9 @@ ADR 2026-10-27-1 (D-2, open question 6) and in this module. `/shutdown` and the 
 health status were provisional until `command-cli` was built; they were settled with it
 (spec-kitty/spec-kitty-events#156, operator rulings of 2026-10-31), and the
 [`CHANGELOG.md`](./CHANGELOG.md) records the change. The service in this repository,
-`service/command-cli`, implements this contract; its writes refuse fail-closed until the
-canonical writer (#160) and the lane authority (#161) land.
+`service/command-cli`, implements this contract; the canonical writer (#160) and the lane
+authority (#161) are built, so its writes are served, apart from `coordination_ref_commit`, which
+is refused until migration step 4.
 
 Every path below is under the contract's server prefix `/api/v1` (`GET /api/v1/handshake`,
 `GET /api/v1/health`, `POST /api/v1/shutdown`). The prefix wins over core's launcher client,
