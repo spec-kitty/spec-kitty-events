@@ -48,11 +48,11 @@
       "criterion_id": "FR-005",
       "description": "Every write holds <gcd>/spec-kitty-locks/<dir>.status.lock with core's lock semantics; a lock held past the 10 s budget answers 409 STATUS_LOCK_HELD.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP02 StatusLogInteropTest (lock-interop) and lock tests; WP08 US1-5 integration test"
+      "evidence": "MissionLockPathTest 8; StatusLogAppenderTest 9 (timesOutAgainstAnotherHolder..., release on throw); StatusLogInteropTest run with SPEC_KITTY_LOCK_INTEROP_PYTHON=core-pin venv: 1 pass (3 core Python writers + Java, 400 rows intact, java_contended 5); WriteServiceTest ...LockTimeouts (STATUS_LOCK_HELD); WriteIntegrationTest us1-5.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:23.810712+00:00",
+      "notes": "Interop test is env-gated (skipped in the default run); I ran it against core at the pin. 409 mapping pinned by DomainValuesTest and OperationsTest all-code schema check. Windows channel-lock leg runs only in the CI matrix."
     },
     {
       "criterion_id": "FR-006",
