@@ -2,6 +2,7 @@ package org.speckitty.commandcli.adapter.out.mission;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,6 +65,66 @@ class DiskMissionFactsTest {
   void dependencyIdsUsePythonWhitespaceIncludingNbsp() throws Exception {
     write("WP02.md", "---\ndependencies: [\" WP01　\"]\n---\n");
     assertThat(facts().dependencies("WP02")).isEqualTo(new DependencyDeclaration.Declared(List.of("WP01")));
+  }
+
+  @Test
+  void rosterRejectsEveryWpMetadataTypeFailureWithoutEscaping() throws Exception {
+    for (String extra : List.of(
+        "dependencies:\n",
+        "work_package_title: 5\n",
+        "description: =\n",
+        "description: !!str 5\n",
+        "~: x\n",
+        "null: x\n")) {
+      write("WP01.md", task("[]").replace("title: test\n", "title: test\n" + extra));
+      assertThat(facts().subtaskRoster("WP01")).as(extra).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    }
+  }
+
+  @Test
+  void shellPidUsesPythonIntCoercion() throws Exception {
+    for (String declaration : List.of("' 12 '", "12.5", "true", "'99999999999'", "'1_000'")) {
+      write("WP01.md", task("[]").replace("title: test\n", "title: test\nshell_pid: " + declaration + "\n"));
+      assertThat(facts().subtaskRoster("WP01")).as(declaration).isInstanceOf(SubtaskRoster.Resolved.class);
+    }
+  }
+
+  @Test
+  void nonRegularMarkdownEntriesMakeRosterAndDependenciesUnresolvable() throws Exception {
+    write("WP01.md", task("[]"));
+    write("WP02.md", task("[]").replace("WP01", "WP02"));
+    Files.createDirectory(mission.resolve("tasks/WP01-notes.md"));
+    Files.createDirectory(mission.resolve("tasks/WP02-notes.md"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    assertThat(facts().dependencies("WP02")).isInstanceOf(DependencyDeclaration.Unresolvable.class);
+    Files.delete(mission.resolve("tasks/WP01-notes.md"));
+    Files.delete(mission.resolve("tasks/WP02-notes.md"));
+    Files.createSymbolicLink(mission.resolve("tasks/WP01-old.md"), Path.of("/nonexistent/wp01"));
+    Files.createSymbolicLink(mission.resolve("tasks/WP02-old.md"), Path.of("/nonexistent/wp02"));
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
+    assertThat(facts().dependencies("WP02")).isInstanceOf(DependencyDeclaration.Unresolvable.class);
+  }
+
+  @Test
+  void wholeFileIsDecodedStrictlyBeforeTheFrontmatterCapApplies() throws Exception {
+    Files.createDirectories(mission.resolve("tasks"));
+    byte[] head = task("[]").getBytes(StandardCharsets.UTF_8);
+    for (int offset : new int[] {65535, 65536}) {
+      ByteArrayOutputStream document = new ByteArrayOutputStream();
+      document.write(head);
+      document.writeBytes(new byte[offset - head.length]);
+      document.write("—".getBytes(StandardCharsets.UTF_8));
+      document.writeBytes("\ntail\n".repeat(10).getBytes(StandardCharsets.UTF_8));
+      Files.write(mission.resolve("tasks/WP01.md"), document.toByteArray());
+      assertThat(facts().subtaskRoster("WP01")).as("multibyte offset " + offset)
+          .isInstanceOf(SubtaskRoster.Resolved.class);
+    }
+    ByteArrayOutputStream invalid = new ByteArrayOutputStream();
+    invalid.write(head);
+    invalid.writeBytes(new byte[70000]);
+    invalid.write(0xff);
+    Files.write(mission.resolve("tasks/WP01.md"), invalid.toByteArray());
+    assertThat(facts().subtaskRoster("WP01")).isInstanceOf(SubtaskRoster.Unresolvable.class);
   }
 
   private DiskMissionFacts facts() {

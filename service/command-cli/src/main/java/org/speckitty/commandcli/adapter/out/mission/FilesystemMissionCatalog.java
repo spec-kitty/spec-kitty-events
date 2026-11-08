@@ -81,7 +81,6 @@ public final class FilesystemMissionCatalog implements MissionCatalog {
     Path metadata = directory.resolve("meta.json");
     if (!Files.isRegularFile(metadata)) return null;
     String text = Files.readString(metadata, StandardCharsets.UTF_8);
-    if (text.startsWith("\uFEFF")) text = text.substring(1);
     JsonNode root = json.readTree(text);
     if (root == null || !missionId.equals(root.path("mission_id").asString(null))) return null;
     JsonNode branch = root.path("coordination_branch");

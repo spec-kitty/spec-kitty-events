@@ -15,7 +15,9 @@ import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
+import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.NodeId;
+import org.yaml.snakeyaml.nodes.ScalarNode;
 import org.yaml.snakeyaml.nodes.Tag;
 import org.yaml.snakeyaml.representer.Representer;
 import org.yaml.snakeyaml.resolver.Resolver;
@@ -23,13 +25,17 @@ import org.yaml.snakeyaml.resolver.Resolver;
 /** Bounded, tag-free YAML frontmatter parsing with core's fence, BOM and newline rules. */
 public final class Frontmatter {
   private static final int MAX_BLOCK_BYTES = 64 * 1024;
+  // A task file is documentation, not a status log. Sixteen MiB is ample for authored WPs while
+  // keeping an untrusted whole-file UTF-8 decode bounded; anything larger fails closed.
+  private static final int MAX_FILE_BYTES = 16 * 1024 * 1024;
 
   private Frontmatter() {}
 
   public static Optional<Map<String, Object>> read(Path file) {
     try (InputStream input = Files.newInputStream(file)) {
-      String text = decode(input.readNBytes(MAX_BLOCK_BYTES + 1));
-      return readText(file.getFileName().toString(), text);
+      byte[] bytes = input.readNBytes(MAX_FILE_BYTES + 1);
+      if (bytes.length > MAX_FILE_BYTES) return Optional.empty();
+      return readText(file.getFileName().toString(), decode(bytes));
     } catch (IOException | RuntimeException exception) {
       return Optional.empty();
     }
@@ -50,7 +56,9 @@ public final class Frontmatter {
       if (!(loaded instanceof Map<?, ?> map)) return Optional.empty();
       @SuppressWarnings("unchecked")
       Map<String, Object> result = (Map<String, Object>) map;
-      if (filename.startsWith("WP")) result.computeIfAbsent("dependencies", ignored -> new java.util.ArrayList<>());
+      if (filename.startsWith("WP") && !result.containsKey("dependencies")) {
+        result.put("dependencies", new java.util.ArrayList<>());
+      }
       return Optional.of(result);
     } catch (RuntimeException exception) {
       return Optional.empty();
@@ -59,8 +67,30 @@ public final class Frontmatter {
 
   private static Yaml yaml(LoaderOptions options) {
     DumperOptions dumping = new DumperOptions();
-    return new Yaml(new SafeConstructor(options), new Representer(dumping), dumping, options, new Yaml12Resolver());
+    return new Yaml(new RoundTripSafeConstructor(options), new Representer(dumping), dumping, options, new Yaml12Resolver());
   }
+
+  /** Preserves ruamel's non-String TaggedScalar distinction where WPMetadata is type-sensitive. */
+  private static final class RoundTripSafeConstructor extends SafeConstructor {
+    private RoundTripSafeConstructor(LoaderOptions options) {
+      super(options);
+    }
+
+    @Override
+    protected Object constructObject(Node node) {
+      if (node instanceof ScalarNode scalar && isTaggedScalar(scalar)) return new TaggedScalar(scalar.getValue());
+      return super.constructObject(node);
+    }
+
+    private static boolean isTaggedScalar(ScalarNode scalar) {
+      if (scalar.isPlain() && scalar.getValue().equals("=")) return true;
+      int[] buffer = scalar.getStartMark().getBuffer();
+      int pointer = scalar.getStartMark().getPointer();
+      return pointer >= 0 && pointer < buffer.length && buffer[pointer] == '!';
+    }
+  }
+
+  private record TaggedScalar(String value) {}
 
   private static int closingFence(String[] lines) {
     for (int index = 1; index < lines.length; index++) {

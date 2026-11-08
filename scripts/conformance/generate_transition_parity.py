@@ -474,6 +474,13 @@ def _guard_intents() -> list[Intent]:
             tasks=nonstring_tasks,
         ),
         _intent(
+            "guard-subtasks-roster-nonstring-ids-complete",
+            "guard",
+            (*path_to("in_progress"), ann({"subtasks": {"1": "done", "1.1": "done"}})),
+            tr("for_review"),
+            tasks=nonstring_tasks,
+        ),
+        _intent(
             "guard-subtasks-roster-padded-id-complete",
             "guard",
             (*path_to("in_progress"), ann({"subtasks": {"T001": "done"}})),
@@ -571,6 +578,26 @@ def _guard_intents() -> list[Intent]:
                 "done_evidence",
                 path_to(source),
                 tr(target, **kwargs),
+            )
+        )
+    for suffix, declaration in (
+        ("str-padded", "' 12 '"),
+        ("float", "12.5"),
+        ("bool", "true"),
+        ("bigstr", "'99999999999'"),
+        ("underscore", "'1_000'"),
+    ):
+        pid_tasks = default_tasks()
+        pid_tasks["WP01.md"] = task_text().replace(
+            "subtasks: []", f"shell_pid: {declaration}\nsubtasks: []"
+        )
+        cases.append(
+            _intent(
+                f"guard-shell-pid-{suffix}",
+                "guard",
+                path_to("in_progress"),
+                tr("for_review"),
+                tasks=pid_tasks,
             )
         )
     return cases
@@ -1230,8 +1257,19 @@ def build_intents() -> tuple[Intent, ...]:
         "dependency-frontmatter-duplicate-key",
     }
     # Keep the deterministic case numbers of every pre-existing core case stable.
-    intents = tuple(intent for intent in intents if intent.case_id not in review_additions) + tuple(
-        intent for intent in intents if intent.case_id in review_additions
+    cycle3_additions = {
+        "guard-subtasks-roster-nonstring-ids-complete",
+        "guard-shell-pid-str-padded",
+        "guard-shell-pid-float",
+        "guard-shell-pid-bool",
+        "guard-shell-pid-bigstr",
+        "guard-shell-pid-underscore",
+    }
+    additions = review_additions | cycle3_additions
+    intents = (
+        tuple(intent for intent in intents if intent.case_id not in additions)
+        + tuple(intent for intent in intents if intent.case_id in review_additions)
+        + tuple(intent for intent in intents if intent.case_id in cycle3_additions)
     )
     ids = [intent.case_id for intent in intents]
     if len(ids) != len(set(ids)):

@@ -1,5 +1,6 @@
 package org.speckitty.commandcli.adapter.out.mission;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -14,12 +15,14 @@ import org.speckitty.missionstatus.domain.model.PyText;
 public final class FactValues {
   private static final Pattern WP_ID = Pattern.compile("^WP\\d{2,}$");
   private static final Pattern COMMIT = Pattern.compile("^[0-9a-f]{7,40}$");
+  private static final Pattern PYTHON_INT = Pattern.compile("^[+-]?\\d+(?:_\\d+)*$", Pattern.UNICODE_CHARACTER_CLASS);
   private static final Set<String> OPTIONAL_STRINGS = Set.of(
       "base_branch", "created_at", "planning_base_branch", "merge_target_branch", "branch_strategy",
       "priority", "execution_mode", "authoritative_surface", "scope", "task_type", "phases", "assignee",
       "model", "agent_profile", "role", "shell_pid_created_at", "feature_slug", "activity_log",
       "review_status", "reviewed_by", "approved_by", "reviewer_agent", "reviewer_shell_pid", "review_feedback", "review_feedback_file",
-      "subtitle", "description", "estimated_duration", "mission_id", "mission_number", "mission_slug", "status", "wp_code");
+      "subtitle", "description", "estimated_duration", "mission_id", "mission_number", "mission_slug", "status", "wp_code",
+      "work_package_title");
   private static final Set<String> STRING_LISTS = Set.of("owned_files", "create_intent", "tags");
   private static final Set<String> ALLOWED = Set.of(
       "work_package_id", "title", "dependencies", "base_branch", "base_commit", "created_at",
@@ -70,8 +73,10 @@ public final class FactValues {
   }
 
   private static boolean validMetadata(Map<String, Object> frontmatter) {
-    if (!ALLOWED.containsAll(frontmatter.keySet()) || !(frontmatter.get("work_package_id") instanceof String id)
-        || !WP_ID.matcher(id).matches()) return false;
+    for (Object key : frontmatter.keySet()) {
+      if (!(key instanceof String name) || !ALLOWED.contains(name)) return false;
+    }
+    if (!(frontmatter.get("work_package_id") instanceof String id) || !WP_ID.matcher(id).matches()) return false;
     return validStrings(frontmatter) && validLists(frontmatter) && validSpecialFields(frontmatter);
   }
 
@@ -109,8 +114,7 @@ public final class FactValues {
   }
 
   private static boolean validDependencyMetadata(Object value) {
-    if (value == null || value instanceof String) return true;
-    return stringList(value);
+    return value instanceof String || stringList(value);
   }
 
   private static boolean stringList(Object value) {
@@ -118,12 +122,25 @@ public final class FactValues {
   }
 
   private static boolean validPid(Object value) {
-    if (value == null || value.equals("")) return true;
+    return switch (value) {
+      case null -> true;
+      case Boolean ignored -> true;
+      case BigInteger ignored -> true;
+      case Number number -> Double.isFinite(number.doubleValue());
+      case String text -> text.isEmpty() || validPythonInteger(text);
+      default -> false;
+    };
+  }
+
+  private static boolean validPythonInteger(String value) {
+    String text = PyText.strip(value);
+    if (!PYTHON_INT.matcher(text).matches()) {
+      return false;
+    }
     try {
-      if (value instanceof Number number) return Double.isFinite(number.doubleValue()) && number.doubleValue() == Math.rint(number.doubleValue());
-      Integer.parseInt((String) value);
+      new BigInteger(text.replace("_", ""));
       return true;
-    } catch (RuntimeException invalid) {
+    } catch (NumberFormatException invalid) {
       return false;
     }
   }

@@ -16,6 +16,7 @@ class FullParityCorpusTest {
       Map.entry("fold-invalid-json", "malformed JSON is rejected while decoding the log"),
       Map.entry("fold-torn-tail", "torn-tail recovery belongs to status-log service input"),
       Map.entry("fold-unknown-kind", "event-kind validation belongs to log decoding"),
+      Map.entry("own-meta-bom", "strict UTF-8 meta.json decoding belongs to Mission discovery"),
       Map.entry("replay-all-replayed-batch", "all-replayed batches need service acknowledgement and fsync behavior"),
       Map.entry("replay-duplicate-id-in-request", "duplicate ids within a request are service replay conflicts"),
       Map.entry("replay-new-then-replayed-conflict", "request replay conflicts precede new-unit authority"),
@@ -25,7 +26,7 @@ class FullParityCorpusTest {
 
   @Test
   void everyLaterLayerCaseHasAProtocolReasonForWp08() {
-    assertThat(LATER_LAYER_REASONS).hasSize(13).allSatisfy((id, reason) -> {
+    assertThat(LATER_LAYER_REASONS).hasSize(14).allSatisfy((id, reason) -> {
       assertThat(id).isNotBlank();
       assertThat(reason).isNotBlank();
     });
