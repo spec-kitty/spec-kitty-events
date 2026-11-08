@@ -260,7 +260,8 @@
         "Cycle 6: R20 + floors 57/38 + digit set hash (6718d4d9); command-cli check 1078/133/11/1; generator drift 0 (199 core); 6475-input diff 0 fail-open; p95 100.6 ms",
         "Cycle 7: key equality, merge dup, R21 flow colon, block scalar indent",
         "Cycle 7: key equality, merge dup, R21, block scalar (1b1e3e55); command-cli check 1086/133/11/1; drift 0 (199 core); 11434-input diff 0 fail-open; p95 108.7 ms",
-        "Cycle 8 (Sonnet 5.5 per maintainer): NaN keys, block-scalar indent, unhashable keys"
+        "Cycle 8 (Sonnet 5.5 per maintainer): NaN keys, block-scalar indent, unhashable keys",
+        "Cycle 8 (Sonnet 5.5): audit rulings R22-R29, YAML 1.2 schema, RootCheckout (4ea029aa); command-cli check 1116/133/11/1; drift 0 (196 core); 46757 static + 349 e2e probes 0 fail-open; p95 98.3 ms"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
