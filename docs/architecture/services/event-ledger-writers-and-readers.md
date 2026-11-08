@@ -2,7 +2,7 @@
 title: Event ledger writers and readers
 description: 'Core-side map of every event log and ledger core writes and reads, the target the event ADRs set, and the cited gaps with remedies. Imported from core with its history.'
 doc_status: active
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -112,6 +112,29 @@ What does not hold:
   none either. #6614 deleted all of them on 2026-10-22 (G-16); `status.events.jsonl` is
   now written only through the atomic primitives in `status/store.py` (the
   `append_*_atomic*` family).
+
+## The write service as a status writer
+
+`command-cli` (#160, #161) now appends `status.events.jsonl` for `checkout_append`, beside
+core's Python writers during the strangler. Its code is in
+[`service/command-cli`](https://github.com/spec-kitty/spec-kitty-events/tree/main/service/command-cli):
+`application.write.WriteService` runs the FR-026 check order, and
+`adapter.out.statuslog.EventLogStatusLog` hands the encoded bytes to `event-log`'s
+`StatusLogAppender`.
+
+- **One lock, both writers.** Python's `feature_status_lock` and the service's
+  `MissionLockPath` both use
+  `<gcd>/spec-kitty-locks/<missionDirectory basename>.status.lock`, so an append from either
+  language excludes the other.
+- **The same bytes.** The service writes what core's one encoder writes
+  (`serialize_event_line`: `sanitize_event_for_log`, then `json.dumps(..., sort_keys=True)`), and
+  the shared `status_append` fixtures hold Python and Java to the same bytes.
+- **A separate write fold.** The authority's fold (`domain.authority.WriteFold`) ports the
+  checks it needs at the pinned core commit; it does not reuse the read service's
+  `StatusReducer` (C-010), and the read side is unchanged.
+- **Not yet the only writer.** Core's client (`#6195`) binds to a release that carries this write
+  core; until then core's Python writers remain the production path, and the service is
+  exercised by its own tests and the parity corpus.
 
 ## Current state: readers
 

@@ -2,7 +2,7 @@
 title: command-cli research note
 description: '(historical — the operator ruled on 2026-10-31; see the outcome block) Research for #156: what the command-cli write service must implement and the open decisions.'
 doc_status: active
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -13,18 +13,22 @@ kind: Explanation
 > 2026-10-31 (see the outcome block below). Kept as the record of the research, not as
 > current documentation.
 
-> **Outcome.** The operator ruled on 2026-10-31. #156 delivers the runnable service and its
-> native and jar release, and writes refuse fail-closed. The canonical writer and the authority
-> port are #160 and #161. The other rulings:
-> - loopback HTTP with a bearer token, on Spring Boot 4 AOT;
-> - one service per git common dir, with an 1800 s idle timeout;
-> - the contract stays `1.0.0-SNAPSHOT`, and `/shutdown` and `draining` are settled;
-> - the `/api/v1` prefix wins (core: spec-kitty/spec-kitty#6910);
-> - a draining service refuses with `SERVICE_DRAINING`;
-> - a torn tail is refused.
+> **Outcome.** The operator ruled on 2026-10-31. #156 delivered the runnable service and its
+> native and jar release; #160 and #161 then landed the write core: the durable status appender
+> (`service/event-log`, `adapter.out.statuslog`), the public Python encoder
+> (`spec_kitty_events.status_log`), the parity corpus, and the lane authority in
+> `service/command-cli` (`domain.authority`, `application.write`, `adapter.out.mission`,
+> `adapter.out.statuslog`). `checkout_append` is served; `coordination_ref_commit` waits for
+> migration step 4. The rulings above still hold: loopback HTTP with a bearer token on Spring
+> Boot 4 AOT; one service per git common dir with an 1800 s idle timeout; the contract on the
+> `1.0.Z` line (`1.0.1-SNAPSHOT` now); the `/api/v1` prefix; `SERVICE_DRAINING`; and a torn tail
+> refused.
 >
-> The service is documented in
-> [`service/command-cli/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/command-cli/README.md).
+> Everything below is the research as written before those rulings, including its then-current
+> plan that the write operations answer a fail-closed refusal in PR 1. It is history, not
+> current behaviour. The current documentation is
+> [`service/command-cli/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/command-cli/README.md)
+> and [write-service protocol](./write-service-protocol.md).
 
 Read-only research done before the `command-cli` mission. The local paths are in this repository. The core paths are in `spec-kitty/spec-kitty` at `d75e0bc5fe`.
 Core issues #6194, #6195 and #6117 could not be read from this session. GitHub API

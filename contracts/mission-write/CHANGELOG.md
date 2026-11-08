@@ -39,7 +39,7 @@ until it moves its pin.
   nothing written, no retry), `COORDINATION_REF_CHECKED_OUT` (409, the coordination branch is
   checked out in a worktree) and `COORDINATION_LEDGER_UNREADABLE` (500, the event log in the tree
   of the branch tip cannot be read or parsed). They are marked provisional in their descriptions
-  while ADR-0007 is Proposed.
+  until migration step 4 serves the surface.
 - `TransitionBatch`: every unit names the same `missionDirectory`, `writeSurface` and
   `destinationRef`, since a batch is one write (one commit for `coordination_ref_commit`);
   `command-cli` refuses a mixed batch as `REQUEST_MALFORMED`.
@@ -71,6 +71,9 @@ until it moves its pin.
   #155).
 - `WriteRefusalReason.unknown_lane` names the persisted `Lane` vocabulary of 11 values, not the nine
   display lanes (spec-kitty/spec-kitty-events#160, #161 and #155).
+- `WriteRefusalReason` records that the CLI raises the core-derived reasons as text today, and that
+  the events-side `stale_from_lane` addition is provisional (spec-kitty/spec-kitty-events#160,
+  #161 and #155).
 - `checkout_append` names the repository root checkout only; a lane worktree is never a status
   surface (operator rulings of 2026-11-06 on spec-kitty/spec-kitty#7276).
 - `RequestContext.checkout` names the caller's checkout; `missionDirectory` is, for
@@ -100,9 +103,10 @@ until it moves its pin.
 ### Provisional
 
 - The protocol-only codes `COORDINATION_REF_MOVED`, `COORDINATION_REF_CHECKED_OUT` and
-  `COORDINATION_LEDGER_UNREADABLE` are provisional while ADR-0007 is Proposed. As with the
-  provisional codes of `1.0.0-SNAPSHOT`, an enum value cannot carry `x-provisional`, so they are
-  marked in their descriptions only and `provisional_check.py` does not see them.
+  `COORDINATION_LEDGER_UNREADABLE` are provisional until migration step 4 serves the surface.
+  As with the provisional codes of `1.0.0-SNAPSHOT`, an enum value cannot
+  carry `x-provisional`, so they are marked in their descriptions only and `provisional_check.py`
+  does not see them.
 - `WriteRefusalReason.stale_from_lane` is a provisional events-side addition with no core
   equivalent. As with the provisional codes above, an enum value cannot carry `x-provisional`, so
   it is marked in its description only and `provisional_check.py` does not see it.
