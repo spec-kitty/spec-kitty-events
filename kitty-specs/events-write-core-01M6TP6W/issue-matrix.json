@@ -227,6 +227,18 @@
       "title": null,
       "verdict": "deferred-with-followup",
       "wp": null
+    },
+    "#7443": {
+      "evidence_ref": "spec-kitty/spec-kitty#7443 core follow-up: locator case; service ruling R26 (decision 19, audit I5)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
     }
   },
   "schema_version": 1
