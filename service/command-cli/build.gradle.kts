@@ -158,6 +158,9 @@ val benchmarkTest = tasks.register<Test>("benchmarkTest") {
         includeTags("benchmark")
         excludeTags("process", "native-binary")
     }
+    val report = layout.buildDirectory.file("benchmark/write-latency.json")
+    outputs.file(report)
+    doFirst { systemProperty("commandCli.benchmarkReport", report.get().asFile.absolutePath) }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------
