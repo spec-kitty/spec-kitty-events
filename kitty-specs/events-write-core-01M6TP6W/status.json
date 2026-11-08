@@ -238,7 +238,7 @@
     },
     "WP08": {
       "actor": "claude",
-      "agent": "claude:claude-sonnet-5-5:java-jenny",
+      "agent": "claude:claude-opus-5-5:reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 10,
@@ -267,7 +267,8 @@
         "Cycle 10 (Sonnet 5.5): R31 RootCheckout asks git",
         "Cycle 10 (Sonnet 5.5): R31 RootCheckout asks git, GitConfig deleted (282825f8); command-cli check 1139/133/11/1; drift 0; config diffs match git; p95 111.7 ms",
         "Re-record the cycle-10 hand-off with the implementer's full identity (Claude Sonnet 5.5) so review independence is provable",
-        "Cycle 10 implementation by Claude Sonnet 5.5 (282825f8, minors caddb77d)"
+        "Cycle 10 implementation by Claude Sonnet 5.5 (282825f8, minors caddb77d)",
+        "Opus review cycle 10 APPROVE: no real fail-open; R31 sound; DoD holds; minors fixed in caddb77d"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
