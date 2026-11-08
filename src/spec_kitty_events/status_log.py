@@ -20,7 +20,7 @@ from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
 
-from spec_kitty_events._iso8601 import normalize_iso8601_shape
+from spec_kitty_events._iso8601 import parse_iso8601_datetime
 
 __all__ = [
     "sanitize_status_row",
@@ -69,7 +69,7 @@ def _parse_session_time(value: Any) -> datetime | None:
     if not isinstance(value, str):
         return None
     try:
-        return datetime.fromisoformat(normalize_iso8601_shape(value))
+        return parse_iso8601_datetime(value)
     except (TypeError, ValueError):
         return None
 
@@ -96,6 +96,15 @@ def sanitize_status_row(row: Mapping[str, Any]) -> dict[str, Any]:
     session timestamps are always removed; when both parse they are replaced
     by their integer-second duration. The input and all nested values remain
     unchanged. A non-object row is outside the status-row protocol.
+
+    Session timestamps use CPython 3.11's exact ``datetime.fromisoformat``
+    grammar on every supported interpreter: 3.11+ natively, and 3.10 through
+    an internal port of that parser. Basic-format dates and times, ISO week
+    dates (``2026-W01-1``), ``Z``, hour-only (``+05``) and second/fraction
+    offsets, reduced precision and any single-character date/time separator
+    therefore produce the same duration on the declared floor as core's
+    interpreter does. Forms 3.11 rejects stay unparseable on every
+    interpreter and leave any existing ``session_duration_s`` untouched.
     """
     if not isinstance(row, Mapping):
         raise StatusRowRefused("a status row must be a JSON object")
@@ -103,7 +112,12 @@ def sanitize_status_row(row: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def encode_status_row(row: Mapping[str, Any]) -> bytes:
-    """Return the sanitized row as core-compatible ASCII JSON plus one LF."""
+    """Return the sanitized row as core-compatible ASCII JSON plus one LF.
+
+    The session-timestamp grammar is identical on 3.10 and 3.11+ (see
+    :func:`sanitize_status_row`), so the encoded bytes -- including
+    ``session_duration_s`` -- do not depend on the interpreter version.
+    """
     sanitized = sanitize_status_row(row)
     try:
         encoded = json.dumps(

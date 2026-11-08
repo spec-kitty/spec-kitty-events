@@ -166,6 +166,20 @@ def test_session_timestamp_grammar_matches_pinned_core(
     assert sanitized == {"session_duration_s": expected}
 
 
+@pytest.mark.parametrize(
+    ("started", "ended", "expected"),
+    [
+        ("2026-01-01T00:00:00+05", "2026-01-01T01:00:00+05", b'{"session_duration_s": 3600}\n'),
+        ("20260101", "20260102", b'{"session_duration_s": 86400}\n'),
+        ("2026-W01-1", "2026-W01-2", b'{"session_duration_s": 86400}\n'),
+    ],
+)
+def test_encoder_matches_core_for_forms_311_added_over_310(
+    started: str, ended: str, expected: bytes
+) -> None:
+    assert encode_status_row({"session_started_at": started, "session_ended_at": ended}) == expected
+
+
 def test_encoder_matches_sanitize_then_default_spaced_sorted_json() -> None:
     row = {
         "z": [1, 1.0, -0.0, True, False, None, {"b": 2, "a": 1}],
