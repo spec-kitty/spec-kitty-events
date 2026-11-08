@@ -274,8 +274,13 @@ class WriteServiceTest {
     assertThat(held.await(30, TimeUnit.SECONDS)).isTrue();
     long before = System.nanoTime();
     assertRefusal(service.write(validRequest()), RefusalCode.SERVICE_BUSY, null);
+    long waited = System.nanoTime() - before;
     assertThat(ports.log.calls).isZero();
-    assertThat(System.nanoTime() - before).isLessThan(Duration.ofSeconds(10).toNanos());
+    // The wait is the budget, not less (a timed wait never returns early) and not the holder's turn: the holder is still inside its turn
+    // here and is released only below, so a service that waited for it would hang until the test's timeout. An upper bound in wall time
+    // cannot be both tight and free of flakes on every runner; the exact deadline arithmetic is pinned below with a frozen clock, and
+    // aHeldTurnIsRefusedAtOnceWhenTheBudgetIsZero pins the no-wait case without any timing.
+    assertThat(waited).isGreaterThanOrEqualTo(Duration.ofMillis(150).toNanos());
     release.countDown();
     holder.join(30_000);
 
@@ -285,6 +290,33 @@ class WriteServiceTest {
         Duration.ofMillis(200), () -> frozen);
     assertThat(frozenClock.write(validRequest())).isInstanceOf(WriteOutcome.Acked.class);
     assertThat(ports.log.deadline).isEqualTo(frozen + Duration.ofMillis(200).toNanos());
+  }
+
+  @Test
+  @org.junit.jupiter.api.Timeout(30)
+  void aHeldTurnIsRefusedAtOnceWhenTheBudgetIsZero() throws Exception {
+    Ports ports = new Ports();
+    WriteTurn turn = new WriteTurn();
+    WriteService service = new WriteService(ports.missions, ports.log, ports.codec, turn, Authority.standard(), Duration.ZERO, System::nanoTime);
+    CountDownLatch held = new CountDownLatch(1);
+    CountDownLatch release = new CountDownLatch(1);
+    Thread holder = new Thread(() -> {
+      try (var ignored = turn.tryAcquire(0).orElseThrow()) {
+        held.countDown();
+        release.await(30, TimeUnit.SECONDS);
+      } catch (InterruptedException exception) {
+        Thread.currentThread().interrupt();
+        throw new AssertionError(exception);
+      }
+    });
+    holder.start();
+    assertThat(held.await(30, TimeUnit.SECONDS)).isTrue();
+    // The holder keeps its turn until after the refusal has come back: no timing, only the order of events.
+    assertRefusal(service.write(validRequest()), RefusalCode.SERVICE_BUSY, null);
+    assertThat(ports.log.calls).isZero();
+    release.countDown();
+    holder.join(30_000);
+    assertThat(service.write(validRequest())).isInstanceOf(WriteOutcome.Acked.class);
   }
 
   @Test

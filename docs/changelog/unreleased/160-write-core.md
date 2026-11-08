@@ -10,6 +10,10 @@ section: Added
     `fsync`, rolled back on a failed write, with a torn tail refused and never repaired.
     `coordination_ref_commit` still answers `422 WRITE_LOCATION_UNVERIFIED` until migration
     step 4, so `statusCommit` is null in the acknowledgements.
+  - A row is acknowledged only when core's reader can read it back: the service refuses, as
+    `400 REQUEST_MALFORMED` naming the field and (in a batch) the unit, every row shape that
+    `read_events` raises on at the pinned core SHA, so one accepted row never makes a Mission's
+    log unreadable to the CLI or to the service's own next write.
   - The lane authority ports the lane machine, the guards, dependency gating, the lifecycle
     claim and start rules, and replay/conflict classification. The optional
     `TransitionUnit.operation` selects core's `transition`, `start_implementation` or

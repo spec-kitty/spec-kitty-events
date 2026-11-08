@@ -13,8 +13,6 @@ import org.speckitty.missionstatus.domain.model.Lane;
 public final class WriteFold {
   private static final Set<String> RETROSPECTIVE_TYPES =
       Set.of("RetrospectiveCaptured", "RetrospectiveCaptureFailed", "RetrospectiveSkipped");
-  private static final List<String> STATUS_REQUIRED =
-      List.of("event_id", "wp_id", "from_lane", "to_lane", "at", "actor", "force", "execution_mode");
 
   private WriteFold() {}
 
@@ -94,6 +92,15 @@ public final class WriteFold {
     return value != null && !String.valueOf(value).isEmpty();
   }
 
+  /** Python's {@code str(value)} for the fields core coerces with it ({@code InnerStateChanged.at} and {@code wp_id}): None and booleans spell as Python does. */
+  static String pyText(Object value) {
+    return switch (value) {
+      case null -> "None";
+      case Boolean flag -> flag ? "True" : "False";
+      default -> String.valueOf(value);
+    };
+  }
+
   static Map<String, Object> immutableMap(Map<String, ?> source) {
     Map<String, Object> result = new LinkedHashMap<>();
     source.forEach((key, value) -> result.put(key, immutable(value)));
@@ -121,16 +128,15 @@ public final class WriteFold {
   record Transition(Map<String, Object> row) {
     Transition {
       row = new LinkedHashMap<>(row);
-      for (String field : STATUS_REQUIRED) {
-        if (!row.containsKey(field)) throw new IllegalArgumentException(field + " is required");
-      }
+      StatusRowShape.transition(row, StatusRowShape.Scope.READ_BACK).ifPresent(field -> { throw new IllegalArgumentException("status row field " + field + " cannot be read"); });
       row.put("actor", Actors.decode(row.get("actor")));
       Lane.fromWire(text(row.get("from_lane")));
       Lane.fromWire(text(row.get("to_lane")));
     }
 
-    String id() { return text(row.get("event_id")); }
-    String wpId() { return text(row.get("wp_id")); }
+    /** Core reads any scalar event id and work-package id; {@code str} spells a null as {@code "None"}, as {@link #pyText} does. */
+    String id() { return pyText(row.get("event_id")); }
+    String wpId() { return pyText(row.get("wp_id")); }
     String at() { return text(row.get("at")); }
     Lane from() { return Lane.fromWire(text(row.get("from_lane"))); }
     Lane to() { return Lane.fromWire(text(row.get("to_lane"))); }
@@ -146,8 +152,13 @@ public final class WriteFold {
   /** Parsed annotation row. */
   record AnnotationRow(String id, String wpId, String at, Object actor, Map<String, Object> delta) {
     AnnotationRow(Map<String, Object> row) {
-      this(text(row.get("event_id")), text(row.get("wp_id")), text(row.get("at")), row.get("actor"),
-          castMap(row.get("delta")));
+      this(shaped(row), pyText(row.get("wp_id")), pyText(row.get("at")), row.get("actor"), castMap(row.get("delta")));
+    }
+
+    /** The row's event id, once the shared rule has accepted the row (core reads it only then). */
+    private static String shaped(Map<String, Object> row) {
+      StatusRowShape.annotation(row, StatusRowShape.Scope.READ_BACK).ifPresent(field -> { throw new IllegalArgumentException("status row field " + field + " cannot be read"); });
+      return text(row.get("event_id"));
     }
   }
 }

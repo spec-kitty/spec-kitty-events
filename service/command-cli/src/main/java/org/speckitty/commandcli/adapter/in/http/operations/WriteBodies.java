@@ -54,7 +54,9 @@ public final class WriteBodies {
 
   /**
    * The request parser takes exactly the limits of the log reader (nesting, integer length, unbounded floats), set explicitly on its own
-   * token factory, so the edge never accepts a row the reader of the log would refuse and never refuses one it would read.
+   * token factory, so the edge never accepts, by those limits, a row the reader of the log would refuse. It can refuse one the reader
+   * would read, and only at the nesting limit: the request wraps a row in its unit (two more levels, four in a batch) that the log line
+   * does not have, so a row nested 255 or 256 deep in a unit's request is refused here (fail closed) although the reader takes it.
    */
   public WriteBodies() {
     JsonFactory factory = JsonFactory.builder().streamReadConstraints(StatusRowDecoder.readConstraints()).build();
@@ -252,6 +254,13 @@ public final class WriteBodies {
 
   private static WriteRequest.Row typedRow(JsonNode row) {
     return new WriteRequest.Row(row.get("event_id").asString(), jsonValue(row));
+  }
+
+  /** The row as decoded values: the form the shared row rule and the fold take. */
+  static Map<String, Object> rowValue(JsonNode row) {
+    @SuppressWarnings("unchecked")
+    Map<String, Object> value = (Map<String, Object>) jsonValue(row);
+    return value;
   }
 
   /** Objects retain document order; integers stay arbitrary precision and floating-point values stay doubles, including -0.0. */

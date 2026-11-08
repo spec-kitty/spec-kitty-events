@@ -41,7 +41,7 @@ final class PythonJson {
 
   private static final StreamReadConstraints CONSTRAINTS = new PythonConstraints();
   /**
-   * The ledger reader's factory, exactly as it was before the write path existed: Jackson's default limits (nesting 1000, number length
+   * The ledger reader's factory, exactly as it was before the write path existed: Jackson's default limits (nesting 500, number length
    * 1000). The read side is unchanged (mission constraint C-010), so nothing here may set limits on it.
    */
   private static final JsonFactory FACTORY = JsonFactory.builder().enable(JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS).build();
