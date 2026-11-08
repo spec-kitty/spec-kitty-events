@@ -247,7 +247,8 @@
       "last_transition_at": "2026-11-08T10:19:23.744556+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Implemented by opencode tokenfactory/kimi-k3 (3 runs); f4c35699 merged as 66ec32f8. :command-cli:check 984 JVM+10 process+1 benchmark+133 native-tagged green; benchmark p50 78.6 ms p95 102.1 ms"
+        "Implemented by opencode tokenfactory/kimi-k3 (3 runs); f4c35699 merged as 66ec32f8. :command-cli:check 984 JVM+10 process+1 benchmark+133 native-tagged green; benchmark p50 78.6 ms p95 102.1 ms",
+        "Cycle 2: fix review-cycle-1 findings"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
