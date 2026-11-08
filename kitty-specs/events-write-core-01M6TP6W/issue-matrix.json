@@ -203,6 +203,18 @@
       "title": null,
       "verdict": "deferred-with-followup",
       "wp": null
+    },
+    "#7441": {
+      "evidence_ref": "spec-kitty/spec-kitty#7441 core follow-up: NaN/Infinity and CRLF in the log; service refuses non-finite and writes LF (decisions 9, 10, audit I3)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
     }
   },
   "schema_version": 1
