@@ -248,11 +248,11 @@
       "criterion_id": "FR-025",
       "description": "A refusal's detail is core's message unless it would echo a request value, then a fixed text.",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "Planned evidence: WP06 DetailPolicy tests; WP08 ProtocolCorpusTest detail comparison"
+      "evidence": "DetailPolicyTest 2 (every reason has a non-echoing detail; lane vocabulary messages verbatim); ParityCorpusTest compares core's message for every core-oracle refusal (239); ProtocolCorpusTest asserts HTTP detail == DetailPolicy.detail(reason, core message) or a fixed text per code (34).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:37:00.272425+00:00",
+      "notes": "Fixed texts for echo risks verified, e.g. 'The Mission was not found.'."
     },
     {
       "criterion_id": "FR-026",
