@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,17 +20,20 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.speckitty.commandcli.adapter.in.http.edge.RawClient;
+import org.speckitty.commandcli.domain.authority.DetailPolicy;
 import org.speckitty.commandcli.domain.service.RefusalCode;
+import org.speckitty.commandcli.domain.service.RefusalReason;
 import org.speckitty.missionstatus.adapter.out.filesystem.codec.StatusRowEncoder;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-/** WP04's edge/service protocol cases and every invalid status_append row over real HTTP. */
+/** WP04's edge/service cases, every guard reason and every invalid status_append row over real HTTP. */
 class ProtocolCorpusTest {
   private static final JsonMapper JSON = JsonMapper.builder().build();
   private static final Path CASES = repositoryPath("src/spec_kitty_events/conformance/status_transition_parity/cases");
   private static final Path APPEND_FIXTURES = repositoryPath("src/spec_kitty_events/conformance/fixtures/status_append/invalid");
   private static final Set<String> PASSED = ConcurrentHashMap.newKeySet();
+  private static final Set<String> GUARD_REASONS = ConcurrentHashMap.newKeySet();
   private static WriteRig rig;
 
   @BeforeAll
@@ -45,6 +49,25 @@ class ProtocolCorpusTest {
           .filter(path -> !"domain".equals(read(path).get("layer").asString())).toList();
     }
     return paths.stream().map(path -> DynamicTest.dynamicTest(path.getFileName().toString(), () -> runCase(rig, path)));
+  }
+
+  @TestFactory
+  Stream<DynamicTest> everyGuardReasonOverHttp() throws IOException {
+    Map<String, Path> guards = new LinkedHashMap<>();
+    try (Stream<Path> listed = Files.list(CASES)) {
+      for (Path path : listed.filter(item -> item.toString().endsWith(".json")).sorted().toList()) {
+        JsonNode testCase = read(path);
+        JsonNode expected = testCase.required("expected");
+        if ("domain".equals(testCase.required("layer").asString())
+            && "refusal".equals(expected.required("result").asString()) && expected.hasNonNull("reason")) {
+          guards.putIfAbsent(expected.required("reason").asString(), path);
+        }
+      }
+    }
+    return guards.entrySet().stream().map(entry -> DynamicTest.dynamicTest("guard " + entry.getKey(), () -> {
+      runCase(rig, entry.getValue());
+      GUARD_REASONS.add(entry.getKey());
+    }));
   }
 
   @TestFactory
@@ -111,6 +134,12 @@ class ProtocolCorpusTest {
   }
 
   private static String fixedDetail(JsonNode testCase, RefusalCode code) {
+    JsonNode expected = testCase.required("expected");
+    if (expected.hasNonNull("reason")) {
+      String urn = expected.required("reason").asString();
+      RefusalReason reason = Arrays.stream(RefusalReason.values()).filter(item -> item.urn().equals(urn)).findFirst().orElseThrow();
+      return DetailPolicy.detail(reason, expected.required("message").asString());
+    }
     if ("alias-noncanonical-row".equals(testCase.required("id").asString())) {
       return "A transition row's lanes must use canonical persisted spellings without aliases.";
     }
@@ -196,7 +225,10 @@ class ProtocolCorpusTest {
   @AfterAll
   static void report() throws Exception {
     rig.close();
-    assertThat(PASSED).hasSize(16);
-    System.out.printf("Protocol/service corpus 11/11; invalid status rows 5/5 passed%n");
+    assertThat(GUARD_REASONS).hasSize(14); // workspace_context_required is recorded unreachable over the wire.
+    JsonNode unreachable = read(CASES.resolveSibling("unreachable.json"));
+    assertThat(unreachable.has("urn:spec-kitty:write-refusal:workspace_context_required")).isTrue();
+    assertThat(PASSED).hasSize(30);
+    System.out.printf("Protocol/service corpus 11/11; guard reasons 14/14 (+1 recorded unreachable); invalid status rows 5/5 passed%n");
   }
 }
