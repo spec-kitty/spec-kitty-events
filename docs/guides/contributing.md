@@ -2,7 +2,7 @@
 title: Contributing
 description: How a change lands in spec-kitty-events — the one-issue-one-branch-one-PR flow, the tests and conformance gate to run, and the adversarial review.
 doc_status: active
-updated: 2026-11-01T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -50,6 +50,28 @@ therefore merges on its own passing checks, without being re-tested against a ne
 
 The conformance gate is the packaged contract other repos consume; the in-repo suite does not
 collect it, so run it explicitly on every PR.
+
+## Nightly SonarCloud scan
+
+An informational [SonarCloud](https://sonarcloud.io/dashboard?id=spec-kitty_spec-kitty-events)
+analysis of project `spec-kitty_spec-kitty-events` (organization `spec-kitty`) runs from
+`.github/workflows/sonar.yml`, configured by `sonar-project.properties`. It listens on
+`schedule` (nightly at 04:17 UTC, clear of the nightly corpus and the CI canary) and
+`workflow_dispatch` **only**: there is no `pull_request` trigger, so it reports no required
+check and never gates a merge. A red quality gate is surfaced in the run summary and in
+SonarCloud, not as a failed workflow.
+
+The job generates its own coverage so it always describes the scanned revision: the Python
+suite writes `coverage.xml`, and `./gradlew verifyAll` writes the JaCoCo XML reports after the
+contract bundle is built, as `service.yml` does. It never downloads another run's reports; if
+one is missing the run warns and scans without that language's coverage rather than reusing
+another commit's. Without the `SONAR_TOKEN` secret (forks) the job skips green with a notice.
+
+Run it by hand against a branch:
+
+```bash
+gh workflow run sonar.yml --ref <branch>
+```
 
 ## Recording the change
 
