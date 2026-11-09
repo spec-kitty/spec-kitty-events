@@ -1,8 +1,8 @@
 ---
 title: 'ADR-0008: the read service reads a coordination ledger from git objects'
-description: 'Proposed: the read service reads a coordination Mission''s event log from the blob at its coordination branch tip, in process, never from a coordination worktree.'
-doc_status: draft
-updated: 2026-11-06T00:00:00Z
+description: 'Accepted: the read service reads a coordination Mission''s event log from the blob at its coordination branch tip, in process, never from a coordination worktree.'
+doc_status: active
+updated: 2026-11-08T00:00:00Z
 type: ADR
 kind: ADR
 authors:
@@ -14,11 +14,10 @@ related:
 
 # ADR-0008: the read service reads a coordination ledger from git objects
 
-**Status:** Proposed. Written for slice S9
+**Status:** Accepted (2026-11-08; accepted by the maintainer on 2026-11-07). Written for slice S9
 ([spec-kitty/spec-kitty#7284](https://github.com/spec-kitty/spec-kitty/issues/7284)) of epic
 [spec-kitty/spec-kitty#7276](https://github.com/spec-kitty/spec-kitty/issues/7276), with
-[ADR-0007](./0007-write-service-commits-coordination-status-by-ref.md). It becomes Accepted with
-ADR-0007 and core **C-3**.
+[ADR-0007](./0007-write-service-commits-coordination-status-by-ref.md).
 
 **Date:** 2026-11-06
 

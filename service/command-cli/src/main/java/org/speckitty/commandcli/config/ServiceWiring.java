@@ -1,12 +1,19 @@
 package org.speckitty.commandcli.config;
 
 import java.time.Clock;
+import java.time.Duration;
 import org.speckitty.commandcli.adapter.out.filesystem.EndpointFile;
+import org.speckitty.commandcli.adapter.out.mission.FilesystemMissionCatalog;
+import org.speckitty.commandcli.adapter.out.statuslog.EventLogRowCodec;
+import org.speckitty.commandcli.adapter.out.statuslog.EventLogStatusLog;
 import org.speckitty.commandcli.application.lifecycle.IdleWatch;
 import org.speckitty.commandcli.application.lifecycle.ServiceIdentity;
 import org.speckitty.commandcli.application.lifecycle.ServiceLifecycle;
-import org.speckitty.commandcli.application.lifecycle.WriteGate;
+import org.speckitty.commandcli.application.write.WriteService;
+import org.speckitty.commandcli.application.write.WriteTurn;
+import org.speckitty.commandcli.domain.authority.Authority;
 import org.speckitty.commandcli.domain.service.WriteToken;
+import org.speckitty.missionstatus.adapter.out.statuslog.StatusLogAppender;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.web.server.context.WebServerInitializedEvent;
 import org.springframework.context.ApplicationContext;
@@ -59,8 +66,12 @@ class ServiceWiring {
   }
 
   @Bean
-  WriteGate writeGate() {
-    return new WriteGate();
+  WriteService writeService(ServeRuntime runtime) {
+    java.nio.file.Path gcd = runtime.options().gitCommonDir();
+    FilesystemMissionCatalog missions = new FilesystemMissionCatalog(gcd);
+    java.nio.file.Path root = missions.root().orElse(gcd.toAbsolutePath().getParent());
+    return new WriteService(missions, new EventLogStatusLog(new StatusLogAppender(), gcd, root), new EventLogRowCodec(),
+        new WriteTurn(), Authority.standard(), Duration.ofSeconds(10), System::nanoTime);
   }
 
   @Bean

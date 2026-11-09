@@ -1,0 +1,6 @@
+{
+  "urn:spec-kitty:write-refusal:workspace_context_required": "transition_pipeline.py:289-304 makes the default-context switch fill a missing workspace at every wire door; core's own same-WP batch path leaves the context empty and does refuse, but that path is not a wire path.",
+  "partial": {
+    "urn:spec-kitty:write-refusal:implementation_evidence_required": "The missing-evidence half is unreachable from rows because emit.py:541-548 derives evidence from any prior transition of the WP, which always exists in in_progress; the incomplete-subtasks half remains reached by guard-subtasks-incomplete."
+  }
+}

@@ -1,9 +1,13 @@
 package org.speckitty.commandcli.adapter.in.http.operations;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -14,15 +18,20 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.speckitty.commandcli.adapter.in.http.edge.EdgeRig;
 import org.speckitty.commandcli.adapter.in.http.edge.RawClient;
 import org.speckitty.commandcli.adapter.out.filesystem.RepositoryIdentity;
+import org.speckitty.commandcli.application.lifecycle.ServiceLifecycle;
+import org.speckitty.commandcli.application.write.WriteOutcome;
+import org.speckitty.commandcli.application.write.WriteService;
+import org.speckitty.commandcli.domain.service.RefusalCode;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The six operations of contracts/mission-write on a running service (spec FR-008 to FR-011, FR-015, SC-003): the handshake and the
- * health answer what the service is, every well-formed write is refused fail-closed with nothing written, a malformed write is
+ * health answer what the service is, a well-formed write to an unknown Mission is refused with nothing written, a malformed write is
  * REQUEST_MALFORMED, and every body validates against the contract's schemas.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -31,15 +40,16 @@ class OperationsTest {
   private static final JsonMapper JSON = JsonMapper.builder().build();
   private static final String MISSION = "01J6XW9KQT7M0YB3N4R5CQZ2EX";
 
-  private EdgeRig server;
+  private WriteRig server;
 
   @BeforeAll
-  void start() {
-    server = EdgeRig.start();
+  void start() throws Exception {
+    server = WriteRig.start();
+    server.removeMission();
   }
 
   @AfterAll
-  void stop() {
+  void stop() throws Exception {
     server.close();
   }
 
@@ -97,17 +107,18 @@ class OperationsTest {
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("validWrites")
-  void everyWellFormedWriteIsRefusedFailClosedAndWritesNothing(String name, String path, Path example) {
+  void aWellFormedCheckoutWriteToAnUnknownMissionWritesNothing(String name, String path, Path example) {
     String body = body(example);
     List<String> before = server.tree();
 
     RawClient.Reply reply = post(path, body);
 
-    assertThat(reply.status()).as(reply.text()).isEqualTo(500);
+    boolean refCommit = body.contains("coordination_ref_commit");
+    assertThat(reply.status()).as(reply.text()).isEqualTo(refCommit ? 422 : 404);
     assertThat(ContractSchemas.violations("WriteRefusal", reply.body())).isEmpty();
     JsonNode refusal = JSON.readTree(reply.body());
-    assertThat(refusal.get("code").asString()).isEqualTo("STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED");
-    assertThat(refusal.get("detail").asString()).isEqualTo("The write core is not built yet; nothing was written.");
+    assertThat(refusal.get("code").asString()).isEqualTo(refCommit ? "WRITE_LOCATION_UNVERIFIED" : "MISSION_NOT_FOUND");
+    if (refCommit) assertThat(refusal.get("detail").asString()).contains("migration step 4");
     assertThat(server.tree()).as("nothing written").isEqualTo(before);
     assertThat(reply.text()).doesNotContain(server.token.reveal()).doesNotContain(server.gitCommonDir.toString());
   }
@@ -115,7 +126,9 @@ class OperationsTest {
   static Stream<Arguments> malformedWrites() {
     String base = "/api/v1/missions/" + MISSION;
     String context = "{\"actor\":\"claude\",\"checkout\":\".\",\"missionDirectory\":\"kitty-specs/m\",\"writeSurface\":\"checkout_append\",\"destinationRef\":null}";
-    String row = "{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\"}";
+    String row = "{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\",\"from_lane\":\"planned\",\"to_lane\":\"claimed\","
+        + "\"at\":\"2026-10-27T18:00:00+00:00\",\"actor\":\"claude\",\"force\":false,\"execution_mode\":\"direct_repo\","
+        + "\"reason\":null,\"review_ref\":null,\"evidence\":null,\"policy_metadata\":null}";
     String unit = "{\"wpId\":\"WP01\",\"rows\":[" + row + "],\"context\":" + context + "}";
     List<Arguments> cases = new ArrayList<>();
     String transitions = base + "/work-package-transitions";
@@ -177,22 +190,28 @@ class OperationsTest {
   void aRowWhoseMissionIdIsNullCountsAsNamingNoMission() {
     String context = "{\"actor\":\"claude\",\"checkout\":\".\",\"missionDirectory\":\"kitty-specs/m\",\"writeSurface\":\"checkout_append\",\"destinationRef\":null}";
     String unit =
-        "{\"wpId\":\"WP01\",\"rows\":[{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\",\"mission_id\":null}],\"context\":" + context + "}";
+        "{\"wpId\":\"WP01\",\"rows\":[{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\",\"mission_id\":null,"
+            + "\"from_lane\":\"planned\",\"to_lane\":\"claimed\",\"at\":\"2026-10-27T18:00:00+00:00\",\"actor\":\"claude\","
+            + "\"force\":false,\"execution_mode\":\"direct_repo\",\"reason\":null,\"review_ref\":null,\"evidence\":null,\"policy_metadata\":null}],\"context\":" + context + "}";
 
     RawClient.Reply reply = post("/api/v1/missions/" + MISSION + "/work-package-transitions", unit);
 
-    assertThat(reply.status()).as("well-formed, so it reaches the fail-closed gate").isEqualTo(500);
+    assertThat(reply.status()).as("well-formed, so it reaches Mission resolution").isEqualTo(404);
   }
 
   @Test
-  void aCoordinationRefCommitIsWellFormedAndReachesTheGate() {
+  void aCoordinationRefCommitIsRefusedBeforeMissionResolution() {
     String context = "{\"actor\":\"claude\",\"checkout\":\".\",\"missionDirectory\":\"kitty-specs/m\",\"writeSurface\":\"coordination_ref_commit\",\"destinationRef\":\"kitty/mission-m\"}";
-    String unit = "{\"wpId\":\"WP01\",\"rows\":[{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\"}],\"context\":" + context + "}";
+    String unit = "{\"wpId\":\"WP01\",\"rows\":[{\"event_id\":\"01J6XW9KQT7M0YB3N4R5CQZ2EY\",\"wp_id\":\"WP01\","
+        + "\"from_lane\":\"planned\",\"to_lane\":\"claimed\",\"at\":\"2026-10-27T18:00:00+00:00\",\"actor\":\"claude\","
+        + "\"force\":false,\"execution_mode\":\"direct_repo\",\"reason\":null,\"review_ref\":null,\"evidence\":null,\"policy_metadata\":null}],\"context\":" + context + "}";
     List<String> before = server.tree();
 
     RawClient.Reply reply = post("/api/v1/missions/" + MISSION + "/work-package-transitions", unit);
 
-    assertThat(reply.status()).as("well-formed, so it reaches the fail-closed gate").isEqualTo(500);
+    assertThat(reply.status()).as("refused at the surface check").isEqualTo(422);
+    assertThat(JSON.readTree(reply.body()).get("code").asString()).isEqualTo("WRITE_LOCATION_UNVERIFIED");
+    assertThat(JSON.readTree(reply.body()).get("detail").asString()).contains("migration step 4");
     assertThat(server.tree()).as("nothing written").isEqualTo(before);
   }
 
@@ -211,6 +230,37 @@ class OperationsTest {
       String wrongStatus = "{\"code\":\"" + code.name() + "\",\"status\":" + (code.status() == 500 ? 501 : 500) + ",\"title\":\"x\"}";
       assertThat(ContractSchemas.violations("WriteRefusal", wrongStatus)).as(code.name() + " with another status").isNotEmpty();
     }
+  }
+
+  @Test
+  void aBusyWriteCarriesRetryAfterOneSecond() {
+    WriteService writes = mock(WriteService.class);
+    when(writes.write(any())).thenReturn(new WriteOutcome.Refused(
+        RefusalCode.SERVICE_BUSY, null, "Another write is still in progress.", null));
+    WriteController controller = new WriteController(new ServiceLifecycle(Clock.systemUTC(), () -> { }), writes,
+        new WriteBodies(), JSON);
+
+    ResponseEntity<byte[]> response = controller.recordWorkPackageTransition(
+        MISSION, WriteRig.unit(WriteRig.claimRow("01J6XW9KQT7M0YB3N4R5CQZ2EY")).getBytes());
+
+    assertThat(response.getStatusCode().value()).isEqualTo(503);
+    assertThat(response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("1");
+  }
+
+  @Test
+  void anUnexpectedFailureOnTheWritePathStillAnswersAContractRefusalWithAFixedDetail() throws Exception {
+    WriteService writes = mock(WriteService.class);
+    when(writes.write(any())).thenThrow(new IllegalStateException("secret-row-value /tmp/path"));
+    WriteController controller = new WriteController(new ServiceLifecycle(Clock.systemUTC(), () -> { }), writes,
+        new WriteBodies(), JSON);
+
+    ResponseEntity<byte[]> response = controller.recordWorkPackageTransition(
+        MISSION, WriteRig.unit(WriteRig.claimRow("01J6XW9KQT7M0YB3N4R5CQZ2EY")).getBytes());
+
+    assertThat(response.getStatusCode().value()).isEqualTo(500);
+    assertThat(JSON.readTree(response.getBody()).get("code").asString()).isEqualTo("STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED");
+    assertThat(new String(response.getBody())).doesNotContain("secret").doesNotContain("/tmp");
+    assertThat(ContractSchemas.violations("WriteRefusal", new String(response.getBody()))).isEmpty();
   }
 
   @Test

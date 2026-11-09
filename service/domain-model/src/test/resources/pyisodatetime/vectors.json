@@ -1,0 +1,606 @@
+[
+  {
+    "text": "2026-01-02",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767312000000000
+  },
+  {
+    "text": "20260102",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767312000000000
+  },
+  {
+    "text": "2026-01-02T03:04:05",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045000000
+  },
+  {
+    "text": "2026-01-02 03:04:05",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045000000
+  },
+  {
+    "text": "2026-01-02x03:04:05",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045000000
+  },
+  {
+    "text": "2026-01-02🦀03:04:05",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045000000
+  },
+  {
+    "text": "2026-01-02T03:04:05Z",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767323045000000
+  },
+  {
+    "text": "2026-01-02T03:04:05+05:30",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767303245000000
+  },
+  {
+    "text": "2026-01-02T03:04:05-00:00",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767323045000000
+  },
+  {
+    "text": "2026-01-02T03:04:05+05:30:15",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767303230000000
+  },
+  {
+    "text": "2026-01-02T03:04:05+05:30:15.123456",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767303229876544
+  },
+  {
+    "text": "2026-01-02T03:04:05+05:30:15.123456789",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767303229876544
+  },
+  {
+    "text": "2026-01-02T03:04:05.1",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045100000
+  },
+  {
+    "text": "2026-01-02T03:04:05.12",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045120000
+  },
+  {
+    "text": "2026-01-02T03:04:05.123",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045123000
+  },
+  {
+    "text": "2026-01-02T03:04:05.1234",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045123400
+  },
+  {
+    "text": "2026-01-02T03:04:05.12345",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045123450
+  },
+  {
+    "text": "2026-01-02T03:04:05.123456",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045123456
+  },
+  {
+    "text": "2026-01-02T03:04:05.1234567",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045123456
+  },
+  {
+    "text": "2026-01-02T03:04:05.123456789",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045123456
+  },
+  {
+    "text": "2026-01-02T03:04:05,5",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045500000
+  },
+  {
+    "text": "2026-01-02T03",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767322800000000
+  },
+  {
+    "text": "2026-01-02T03:04",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323040000000
+  },
+  {
+    "text": "2026-01-02T0304",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323040000000
+  },
+  {
+    "text": "2026-01-02T030405",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045000000
+  },
+  {
+    "text": "2026-01-02T03+05:30",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767303000000000
+  },
+  {
+    "text": "2026-01-02T03:04:05+05",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767305045000000
+  },
+  {
+    "text": "2026-01-02T03:04:05+0530",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767303245000000
+  },
+  {
+    "text": "2026-01-02T03:04:05-05:30",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767342845000000
+  },
+  {
+    "text": "2026-01-02T03:04:05-00:00:00.000000",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767323045000000
+  },
+  {
+    "text": "20260102T030405Z",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767323045000000
+  },
+  {
+    "text": "0001-01-01T00:00:00Z",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": -62135596800000000
+  },
+  {
+    "text": "9999-12-31T23:59:59.999999+00:00",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 253402300799999999
+  },
+  {
+    "text": "2026-W01-1",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1766966400000000
+  },
+  {
+    "text": "2026W011",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1766966400000000
+  },
+  {
+    "text": "2026-W01",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1766966400000000
+  },
+  {
+    "text": "2026W01",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1766966400000000
+  },
+  {
+    "text": "2020-W53-7",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1609632000000000
+  },
+  {
+    "text": "2021-W01-1",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1609718400000000
+  },
+  {
+    "text": "2022-W01-1",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1641168000000000
+  },
+  {
+    "text": "2023-W01-1",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1672617600000000
+  },
+  {
+    "text": "2027-W01-1",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1799020800000000
+  },
+  {
+    "text": "2010-W52-7",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1293926400000000
+  },
+  {
+    "text": "2026-W53",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1798416000000000
+  },
+  {
+    "text": "2026-01-02T03.5",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767322800500000
+  },
+  {
+    "text": "2026-01-02T0304.5",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323040500000
+  },
+  {
+    "text": "2026-01-02T03:04:05+05.5",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767305044500000
+  },
+  {
+    "text": "2026-01-02T03:04:05+05:30.5",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767303244500000
+  },
+  {
+    "text": "2026-01-02T03:04:05:06",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045060000
+  },
+  {
+    "text": "2026-01-02T03:04:05\u0000",
+    "branch": "valid",
+    "parses": true,
+    "aware": false,
+    "naive_micros": 1767323045000000
+  },
+  {
+    "text": "2026W013 130Z",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767186000000000
+  },
+  {
+    "text": "2026-01-02T03:04:05+00:00:00.000001",
+    "branch": "valid",
+    "parses": true,
+    "aware": true,
+    "utc_epoch_micros": 1767323045000000
+  },
+  {
+    "text": "",
+    "branch": "date_length",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026",
+    "branch": "date_length",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-1-01",
+    "branch": "date_digits",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "٢٠٢٦-٠١-٠٢",
+    "branch": "non_ascii_digits",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "２０２６０１０２",
+    "branch": "non_ascii_digits",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-00-02",
+    "branch": "month",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-13-02",
+    "branch": "month",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-00",
+    "branch": "day",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-32",
+    "branch": "day",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2025-02-29",
+    "branch": "day",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "0000-01-01",
+    "branch": "year",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2021-W53-1",
+    "branch": "week",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-W00-1",
+    "branch": "week",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-W54-1",
+    "branch": "week",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-W01-0",
+    "branch": "weekday",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-W01-8",
+    "branch": "weekday",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-W01-",
+    "branch": "separator",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026W01-1",
+    "branch": "time_short",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-0102",
+    "branch": "date_separator",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T",
+    "branch": "time_short",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T0",
+    "branch": "time_short",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:0",
+    "branch": "time_incomplete",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T0@:00",
+    "branch": "time_digits",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:0405",
+    "branch": "time_separator",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T24:00",
+    "branch": "hour",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T23:60",
+    "branch": "minute",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T23:59:60",
+    "branch": "second",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:04:05.",
+    "branch": "trailing_text",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:04:05.x",
+    "branch": "fraction",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:04:05.123456x",
+    "branch": "fraction_digits",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:04:05junk",
+    "branch": "time_separator",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:04:05z",
+    "branch": "trailing_text",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:04Z05",
+    "branch": "offset_z_position",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:00+",
+    "branch": "offset",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:00+0",
+    "branch": "offset",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:00+000",
+    "branch": "offset",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:00+0x",
+    "branch": "offset_digits",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:00+24:00",
+    "branch": "offset_range",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:00+00:00:00.x",
+    "branch": "offset_fraction",
+    "parses": false,
+    "aware": false
+  },
+  {
+    "text": "2026-01-02T03:00+00:00junk",
+    "branch": "offset_trailing_text",
+    "parses": false,
+    "aware": false
+  }
+]

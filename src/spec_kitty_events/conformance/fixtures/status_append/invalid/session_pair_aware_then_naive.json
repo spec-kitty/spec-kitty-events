@@ -1,0 +1,8 @@
+{
+  "input_json": "{\"session_started_at\":\"2026-01-01T00:00:00Z\",\"session_ended_at\":\"2026-01-01T00:00:01\"}",
+  "expected_error": "SessionTimesNotSubtractable",
+  "core_behaviour": "raises TypeError",
+  "covers": [
+    "session_pair_mixed_awareness"
+  ]
+}

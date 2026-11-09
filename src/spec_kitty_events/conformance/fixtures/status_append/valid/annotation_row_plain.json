@@ -1,0 +1,7 @@
+{
+  "input_json": "{\"event_id\":\"01M5Z7A1B2C3D4E5F6G7H8J9KM\",\"kind\":\"annotation\",\"wp_id\":\"WP01\",\"at\":\"2026-10-27T18:00:00+00:00\",\"actor\":\"claude\",\"delta\":{\"note\":\"claimed\",\"subtasks\":{\"T001\":true}}}",
+  "expected_line": "{\"actor\": \"claude\", \"at\": \"2026-10-27T18:00:00+00:00\", \"delta\": {\"note\": \"claimed\", \"subtasks\": {\"T001\": true}}, \"event_id\": \"01M5Z7A1B2C3D4E5F6G7H8J9KM\", \"kind\": \"annotation\", \"wp_id\": \"WP01\"}\n",
+  "covers": [
+    "annotation_row_plain"
+  ]
+}

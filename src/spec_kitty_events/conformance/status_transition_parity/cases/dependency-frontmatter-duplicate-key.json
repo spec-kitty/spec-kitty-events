@@ -1,0 +1,83 @@
+{
+  "area": "dependency",
+  "core_call": {
+    "entry_point": "specify_cli.status.emit.emit_status_transition",
+    "kwargs": {
+      "actor": "implementer-a",
+      "fan_out": false,
+      "feature_dir": "${MISSION_DIR}",
+      "mission_slug": "999-status-transition-parity",
+      "refresh_projection": false,
+      "repo_root": "${REPO_ROOT}",
+      "to_lane": "claimed",
+      "wp_id": "WP02"
+    }
+  },
+  "expected": {
+    "code": "DEPENDENCIES_NOT_SATISFIED",
+    "message": "Transition planned -> claimed blocked: unsatisfied dependencies (force with reason to override)",
+    "reason": "urn:spec-kitty:write-refusal:dependencies_unsatisfied",
+    "result": "refusal",
+    "unit": null
+  },
+  "id": "dependency-frontmatter-duplicate-key",
+  "layer": "domain",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-23T08:06:42+00:00",
+      "event_id": "000000000000000000001D7311",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "genesis",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "planned",
+      "wp_id": "WP02"
+    }
+  ],
+  "mission": {
+    "directory": "999-status-transition-parity",
+    "mission_id": "01J00000000000000000000000",
+    "mission_slug": "999-status-transition-parity"
+  },
+  "notes": "Core entry-point parity for dependency frontmatter duplicate key.",
+  "operation": "transition",
+  "oracle": "core",
+  "request": {
+    "kind": "unit",
+    "units": [
+      {
+        "operation": "transition",
+        "rows": [
+          {
+            "actor": "implementer-a",
+            "at": "2026-01-23T08:06:44+00:00",
+            "event_id": "000000000000000000001D7313",
+            "evidence": null,
+            "execution_mode": "worktree",
+            "force": false,
+            "from_lane": "planned",
+            "mission_id": "01J00000000000000000000000",
+            "mission_slug": "999-status-transition-parity",
+            "policy_metadata": null,
+            "reason": null,
+            "review_ref": null,
+            "to_lane": "claimed",
+            "wp_id": "WP02"
+          }
+        ],
+        "wpId": "WP02"
+      }
+    ]
+  },
+  "tasks": {
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ndependencies: [WP01]\ndependencies: []\nsubtasks: []\n---\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP03\n"
+  }
+}

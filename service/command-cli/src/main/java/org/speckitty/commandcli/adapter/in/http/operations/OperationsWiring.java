@@ -20,8 +20,8 @@ class OperationsWiring {
   static final int ACTIVITY = Ordered.HIGHEST_PRECEDENCE + 4;
 
   @Bean
-  WriteBodies writeBodies(JsonMapper mapper) {
-    return new WriteBodies(mapper);
+  WriteBodies writeBodies() {
+    return new WriteBodies();
   }
 
   @Bean

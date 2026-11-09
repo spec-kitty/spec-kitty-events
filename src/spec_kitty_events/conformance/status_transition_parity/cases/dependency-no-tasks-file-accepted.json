@@ -1,0 +1,81 @@
+{
+  "area": "dependency",
+  "core_call": {
+    "entry_point": "specify_cli.status.emit.emit_status_transition",
+    "kwargs": {
+      "actor": "implementer-a",
+      "fan_out": false,
+      "feature_dir": "${MISSION_DIR}",
+      "mission_slug": "999-status-transition-parity",
+      "refresh_projection": false,
+      "repo_root": "${REPO_ROOT}",
+      "to_lane": "claimed",
+      "wp_id": "WP02"
+    }
+  },
+  "expected": {
+    "result": "ack",
+    "units": [
+      {
+        "appendedLines": 1,
+        "replayed": false
+      }
+    ]
+  },
+  "id": "dependency-no-tasks-file-accepted",
+  "layer": "domain",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-08T09:46:42+00:00",
+      "event_id": "0000000000000000000009C401",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "genesis",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "planned",
+      "wp_id": "WP02"
+    }
+  ],
+  "mission": {
+    "directory": "999-status-transition-parity",
+    "mission_id": "01J00000000000000000000000",
+    "mission_slug": "999-status-transition-parity"
+  },
+  "notes": "Core entry-point parity for dependency no tasks file accepted.",
+  "operation": "transition",
+  "oracle": "core",
+  "request": {
+    "kind": "unit",
+    "units": [
+      {
+        "operation": "transition",
+        "rows": [
+          {
+            "actor": "implementer-a",
+            "at": "2026-01-08T09:46:44+00:00",
+            "event_id": "0000000000000000000009C403",
+            "evidence": null,
+            "execution_mode": "worktree",
+            "force": false,
+            "from_lane": "planned",
+            "mission_id": "01J00000000000000000000000",
+            "mission_slug": "999-status-transition-parity",
+            "policy_metadata": null,
+            "reason": null,
+            "review_ref": null,
+            "to_lane": "claimed",
+            "wp_id": "WP02"
+          }
+        ],
+        "wpId": "WP02"
+      }
+    ]
+  },
+  "tasks": {}
+}

@@ -22,6 +22,7 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj.core)
     testImplementation(libs.archunit.junit5)
+    testImplementation(libs.jackson.databind.bootmanaged)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 

@@ -2,7 +2,7 @@
 title: Service protocol and releases
 description: 'The CLI-to-write-service protocol in practice, the two release lines, the service-v* assets and tarball layouts, how core pins a release, and how to cut one.'
 doc_status: active
-updated: 2026-11-07T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -16,8 +16,10 @@ related:
 > under `service/` and `contracts/`, imported from core at `512567eee71e31bb39f580c4f7acf8b865e9d1b2` with their history
 > ([ADR-0002](../adr/0002-events-domain-owns-its-services.md)).
 > - The write service, `command-cli`, is built (#156) and ships on the `service-v*` line since
->   `service-v0.1.0-rc.2`. Its writes refuse fail-closed while the write core lands in #160
->   and #161. See
+>   `service-v0.1.0-rc.2`. Its write core (#160, #161) is built: `checkout_append` is served
+>   (durable, byte-exact status appends), while `coordination_ref_commit` waits for migration
+>   step 4. A release that carries this write core is what core's binding (#6195) pins; this
+>   work cuts no tag. See
 >   [`service/command-cli/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/command-cli/README.md).
 > - The rc line exists: `service-v0.1.0-rc.1` carries the read service only;
 >   `service-v0.1.0-rc.2` adds the `command-cli` assets
@@ -81,29 +83,38 @@ Check the handshake the way the CLI does:
 
 ### Read a refusal
 
-A refusal is a `Problem` whose `code` is one of the 29 in `WriteRefusalCode.yaml`. The checks
+A refusal is a `Problem` whose `code` is one of the 27 in `WriteRefusalCode.yaml`. The checks
 run in a fixed order, so the status tells you which one failed:
 
 | Status | Check | Typical code |
 |---|---|---|
 | 403 | Host and Origin guard | `REQUEST_REFUSED` |
 | 401 | bearer token | `WRITE_TOKEN_INVALID` |
+| 400 | canonical request target | `REQUEST_MALFORMED` |
 | 400 | protocol header | `PROTOCOL_VERSION_UNSUPPORTED` |
 | 413 | size cap | `REQUEST_TOO_LARGE` |
 | 503 | the service drains before it exits (after `/shutdown` or its idle timeout) | `SERVICE_DRAINING` |
 | 400 | body shape (a batch over 64 units included) | `REQUEST_MALFORMED` |
-| 404, 409, 422 | the domain | the CLI's own codes, such as `TRANSITION_REJECTED` or `WP_ALREADY_CLAIMED` |
+| 404, 409, 422, 500 | the domain | the CLI's codes and the protocol-only domain codes, such as `TRANSITION_REJECTED`, `WP_ALREADY_CLAIMED` or `EVENT_ID_CONFLICT` |
 
 There are two `503` codes:
 - `SERVICE_DRAINING`, settled with `command-cli` (#156): re-read the endpoint file and retry
   against the service it names. It carries no `Retry-After`.
 - `SERVICE_BUSY`, still provisional: retry the same service after `Retry-After` seconds.
 
-The write gate is fail-closed by design: a write is refused unless the whole gate contract
-holds (see the glossary's [fail-closed write gate](/glossary/) term). Today the write core
-(#160, #161) has not landed, so a write that passes every check is still refused
-`500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`, and nothing is written. A write answered
-`201` has been synced to disk; a refused write wrote nothing.
+The service is authoritative. A write that passes every check is appended and synced before the
+`201`, or replayed when every row is already persisted with identical bytes. A `201` therefore
+means durable: for `checkout_append`, one `O_APPEND` write and one `fsync` (plus a parent
+directory sync when the log is created), rolled back and refused `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`
+on a failed write. A refused write wrote nothing. A torn tail is refused, never repaired.
+`coordination_ref_commit` answers `422 WRITE_LOCATION_UNVERIFIED` until migration step 4, and
+`statusCommit` stays null.
+
+The client-side checks that stay advisory (C-004) are `move-task`'s agent-mismatch guard and the
+lane-specific for-review commit gate; they run above core's emit pipeline and do not replace the
+service's checks. The full check order, the refusals and the deliberate divergences from core
+are in [write-service protocol](../architecture/services/write-service-protocol.md) and
+[`service/command-cli/README.md`](https://github.com/spec-kitty/spec-kitty-events/blob/main/service/command-cli/README.md).
 
 ## Releases
 

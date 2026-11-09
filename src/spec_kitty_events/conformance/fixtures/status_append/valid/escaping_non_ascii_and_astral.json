@@ -1,0 +1,7 @@
+{
+  "input_json": "{\"text\":\"é—😀\"}",
+  "expected_line": "{\"text\": \"\\u00e9\\u2014\\ud83d\\ude00\"}\n",
+  "covers": [
+    "escaping_non_ascii_and_astral"
+  ]
+}

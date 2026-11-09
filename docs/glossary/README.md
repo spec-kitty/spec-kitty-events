@@ -2,7 +2,7 @@
 title: Glossary
 description: The vocabulary of the Spec Kitty event contract and its services — envelope, aggregate, reducer, journal and volatile, the strict profile, the relay, the service-v* line.
 doc_status: active
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 kind: Glossary
 okf_version: "0.2"
 ---
@@ -132,8 +132,7 @@ refuses an exposed, malformed or non-loopback file. See
 [finding and checking the endpoint file](/guides/service-protocol-and-releases/).
 
 ### Fail-closed write gate
-The write service's posture: a write is refused unless the whole gate contract holds — Host and
-Origin guard, bearer token, protocol header, size cap, body shape — and a refusal writes nothing.
-The domain checks and the durable-write verification join the gate with the write core
-(#160/#161, open). See
+The write service's request gate: a write is refused unless the whole gate contract holds (Host
+and Origin guard, bearer token, protocol header, size cap, body shape), and a refusal writes
+nothing. The domain checks and the durable append follow the gate (#160, #161); see
 [reading a refusal](/guides/service-protocol-and-releases/).

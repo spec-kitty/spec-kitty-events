@@ -1,0 +1,7 @@
+{
+  "input_json": "{\"one_float\":1.0,\"negative_zero\":-0.0,\"tenth\":0.1,\"small_scientific\":1e-05,\"small_decimal\":0.0001,\"large_scientific\":1e+16,\"large_decimal\":1000000000000000.0,\"subnormal\":5e-324,\"max_float\":1.7976931348623157e+308}",
+  "expected_line": "{\"large_decimal\": 1000000000000000.0, \"large_scientific\": 1e+16, \"max_float\": 1.7976931348623157e+308, \"negative_zero\": -0.0, \"one_float\": 1.0, \"small_decimal\": 0.0001, \"small_scientific\": 1e-05, \"subnormal\": 5e-324, \"tenth\": 0.1}\n",
+  "covers": [
+    "numbers_float_repr"
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "area": "fold",
+  "core_call": {
+    "entry_point": "specify_cli.status.emit.emit_status_transition",
+    "kwargs": {
+      "actor": "implementer-a",
+      "fan_out": false,
+      "feature_dir": "${MISSION_DIR}",
+      "mission_slug": "999-status-transition-parity",
+      "refresh_projection": false,
+      "repo_root": "${REPO_ROOT}",
+      "to_lane": "claimed",
+      "wp_id": "WP01"
+    }
+  },
+  "expected": {
+    "result": "ack",
+    "units": [
+      {
+        "appendedLines": 1,
+        "replayed": false
+      }
+    ]
+  },
+  "id": "fold-retrospective-capture-failed",
+  "layer": "domain",
+  "log": [
+    {
+      "type": "RetrospectiveCaptureFailed"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-21T03:20:02+00:00",
+      "event_id": "000000000000000000001A8CE1",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "genesis",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "planned",
+      "wp_id": "WP01"
+    }
+  ],
+  "mission": {
+    "directory": "999-status-transition-parity",
+    "mission_id": "01J00000000000000000000000",
+    "mission_slug": "999-status-transition-parity"
+  },
+  "notes": "Core entry-point parity for fold retrospective capture failed.",
+  "operation": "transition",
+  "oracle": "core",
+  "request": {
+    "kind": "unit",
+    "units": [
+      {
+        "operation": "transition",
+        "rows": [
+          {
+            "actor": "implementer-a",
+            "at": "2026-01-21T03:20:04+00:00",
+            "event_id": "000000000000000000001A8CE3",
+            "evidence": null,
+            "execution_mode": "worktree",
+            "force": false,
+            "from_lane": "planned",
+            "mission_id": "01J00000000000000000000000",
+            "mission_slug": "999-status-transition-parity",
+            "policy_metadata": null,
+            "reason": null,
+            "review_ref": null,
+            "to_lane": "claimed",
+            "wp_id": "WP01"
+          }
+        ],
+        "wpId": "WP01"
+      }
+    ]
+  },
+  "tasks": {
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP03\n"
+  }
+}

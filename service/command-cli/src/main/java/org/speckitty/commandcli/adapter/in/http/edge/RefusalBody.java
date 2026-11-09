@@ -18,18 +18,23 @@ import tools.jackson.databind.json.JsonMapper;
  * Spring's AOT never registers the record, and in the native image Jackson cannot read its components (the first native CI run of
  * #156 failed 46 native-tag tests that way). A map of strings and ints needs no reflection in either image.
  */
-public record RefusalBody(String code, String detail, String instance, int status, String title) {
+public record RefusalBody(String code, String detail, String instance, int status, String title, String type) {
 
   public static RefusalBody of(RefusalCode code) {
-    return new RefusalBody(code.name(), null, null, code.status(), code.title());
+    return new RefusalBody(code.name(), null, null, code.status(), code.title(), null);
   }
 
   public static RefusalBody of(RefusalCode code, String detail) {
-    return new RefusalBody(code.name(), detail, null, code.status(), code.title());
+    return new RefusalBody(code.name(), detail, null, code.status(), code.title(), null);
   }
 
   public RefusalBody withInstance(String pointer) {
-    return new RefusalBody(code, detail, pointer, status, title);
+    return new RefusalBody(code, detail, pointer, status, title, type);
+  }
+
+  /** Carries a guard reason URN in the contract's optional {@code type} member. */
+  public RefusalBody withType(String urn) {
+    return new RefusalBody(code, detail, instance, status, title, urn);
   }
 
   /** The canonical bytes: compact members, then exactly one newline. */
@@ -37,7 +42,7 @@ public record RefusalBody(String code, String detail, String instance, int statu
     return (mapper.writeValueAsString(members()) + "\n").getBytes(StandardCharsets.UTF_8);
   }
 
-  /** The members in the record's order, with only the ones that are set. */
+  /** The members in alphabetical order, with only the ones that are set. */
   Map<String, Object> members() {
     Map<String, Object> members = new LinkedHashMap<>();
     members.put("code", code);
@@ -49,6 +54,9 @@ public record RefusalBody(String code, String detail, String instance, int statu
     }
     members.put("status", status);
     members.put("title", title);
+    if (type != null) {
+      members.put("type", type);
+    }
     return members;
   }
 
