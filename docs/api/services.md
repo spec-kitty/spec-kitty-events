@@ -2,7 +2,7 @@
 title: Service APIs
 description: 'The mission-status read service and mission-write write service: what they are, the service-v* release line they ship on, and their (unreleased) OpenAPI reference pages.'
 doc_status: active
-updated: 2026-11-04T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: API
 kind: Hub
 related:
@@ -23,8 +23,9 @@ package's contract surface.
   loopback, read-only status service: it reads a project's missions and serves their
   status over HTTP.
 - The **write service**, `command-cli` (contract module `mission-write`), is the loopback
-  write service the CLI drives. Every write refuses fail-closed until the write core lands
-  (#160, #161).
+  write service the CLI drives. Its write core is built (#160, #161): it appends and syncs
+  `status.events.jsonl` under the per-Mission lock, and `coordination_ref_commit` waits for
+  migration step 4.
 
 Both live under [`service/`](https://github.com/spec-kitty/spec-kitty-events/tree/main/service)
 and ship on the `service-v*` line, versioned and released apart from the Python package

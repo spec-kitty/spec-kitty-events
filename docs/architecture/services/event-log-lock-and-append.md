@@ -2,7 +2,7 @@
 title: Event-log lock and append
 description: 'How command-cli appends to the CLI-shared event log under its lock; the write ordering, the Windows atomicity caveat, torn-tail repair, and the core-SHA CI pin.'
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -56,6 +56,24 @@ The `event-log` library's `adapter.out.ledger` package holds the Java half
   `kernel.locks` holder.
 - **`TornTailRepair`** is the Java port of the glossary ledger's `_repair_torn_tail`.
 
+The #160 work added the status-log appender as a fourth package, `adapter.out.statuslog`:
+
+- **`StatusLogAppender`** takes `<gcd>/spec-kitty-locks/<missionDirectory basename>.status.lock`
+  — the key core's `feature_status_lock` takes, from the directory's basename rather than its
+  slug or mission id — with the time left to the caller's deadline, and yields one
+  `LockedStatusLogSession` for `<missionDirectory>/status.events.jsonl`.
+- **`LockedStatusLogSession`** reads the whole log under the lock, refuses a torn tail, then
+  writes every new row in one `O_APPEND` write of full JSON lines and `force()`s it. When the
+  log is created it syncs the parent directory too. A failed or short write is rolled back by
+  truncating to the size before the write and forcing again. One session permits one append.
+- **`EventLogBoundaryTest`** holds the package to itself, `adapter.out.ledger` and `java..`; the
+  FR-010 architecture rule makes it the only package that opens a status event log for writing.
+- **Native metadata.** The FFM downcalls (`open`, `flock`, `close`) are registered in
+  `service/command-cli/src/main/resources/META-INF/native-image/org.speckitty/command-cli/reachability-metadata.json`,
+  and `NativeDowncallMetadataTest` guards the three descriptors. The jar manifest carries
+  `Enable-Native-Access: ALL-UNNAMED`, and the native build passes
+  `--enable-native-access=ALL-UNNAMED`.
+
 ### What the lock-interop spike found (#6193)
 
 Verdict: **GO** on all three operating systems, from CI run
@@ -72,10 +90,12 @@ spike page's evidence table):
 
 Under load, appends from both languages landed as whole lines, each byte-identical to what
 its writer wrote, and both the Python reader and the Java `LedgerLineDecoder` accepted the
-whole log. The spike lists what the write service still needs, among them: computing the
+whole log. The spike listed what the write service still needed, among them: computing the
 lock path itself, porting the status lock's path rule, `O_CLOEXEC` and `O_NOFOLLOW` on the
 lock file, checking and writing through one descriptor, and registering the FFM downcall
-for the native image.
+for the native image. The production appender above does all five; `StatusLogInteropTest`
+now proves the same cross-process exclusion and byte framing against core's real status
+writer, and the `lock-interop` job runs it with `LockInteropSpikeTest`.
 
 ## Atomic, durable append
 
@@ -91,10 +111,12 @@ D-5:
 - On Windows there is no `O_APPEND` atomicity between processes, so the service holds the
   repository's write lock around the write.
 
-The production Java append does not exist yet. The spike's harness appends under its lock
-(refuse a torn tail, write the line and its LF in one write on an `APPEND` channel, force it
-to disk), and lives in the `event-log` test sources, package
-`org.speckitty.missionstatus.spike.lockinterop`.
+The production Java append is the `adapter.out.statuslog` package above
+(`StatusLogAppender` + `LockedStatusLogSession`). It appends the encoded bytes the CLI's
+encoder writes, under the Mission status lock, one write and one sync per request. The
+spike's harness remains in the `event-log` test sources, package
+`org.speckitty.missionstatus.spike.lockinterop`; `StatusLogInteropTest` is the production
+counterpart and runs in the same `lock-interop` job.
 
 ## Torn-tail detection and repair
 
@@ -115,10 +137,13 @@ A torn tail is what a write cut short by a crash leaves after the last newline.
   It ships in the `conformance-fixtures` release asset
   ([ADR-0003](../../adr/0003-gradle-build-and-service-release-line.md)).
 
-Which policy the write service applies, refuse or repair, is open: the glossary writer
-repairs, while the spike's Java append refuses (spike page, "What the write service
-needs"). Core ADR 2026-10-27-1 open question 2 defaults to refusing until the tail is
-repaired.
+Which policy the write service applies is now decided: **it refuses**. A torn tail answers
+`500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED` and nothing is written; the write path never
+repairs. The operator ruling of 2026-10-31 keeps that, and an explicit repair command after
+core #6195 is the follow-up in
+[spec-kitty-events#222](https://github.com/spec-kitty/spec-kitty-events/issues/222). The
+glossary writer's `TornTailRepair` described above stays available to the caller that chooses
+to repair a ledger; the status log's write path does not.
 
 ## Why CI pins a core SHA for the interop test
 

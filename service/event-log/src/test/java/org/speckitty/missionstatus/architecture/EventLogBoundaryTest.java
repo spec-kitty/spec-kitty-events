@@ -3,7 +3,9 @@ package org.speckitty.missionstatus.architecture;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideOutsideOfPackage;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideOutsideOfPackages;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.tngtech.archunit.base.DescribedPredicate;
@@ -25,9 +27,13 @@ import org.speckitty.missionstatus.architecture.fixture.ledger.ConformingLedgerF
 import org.speckitty.missionstatus.architecture.fixture.ledger.DecodingLedgerFile;
 import org.speckitty.missionstatus.architecture.fixture.reducer.ConformingFold;
 import org.speckitty.missionstatus.architecture.fixture.reducer.ParsingFold;
+import org.speckitty.missionstatus.architecture.fixture.statuslog.ConformingAppender;
+import org.speckitty.missionstatus.architecture.fixture.statuslog.RowParsingAppender;
+import org.speckitty.missionstatus.architecture.fixture.unowned.ChannelOpenOutsideStatusLog;
+import org.speckitty.missionstatus.architecture.fixture.unowned.FilesWriteOutsideStatusLog;
 
 /**
- * The event-log boundary (#6192). Among project code the module depends on domain-model only, and each of its three packages has its own
+ * The event-log boundary (#6192). Among project code the module depends on domain-model only, and each of its four packages has its own
  * allowlist:
  *
  * <ul>
@@ -37,10 +43,12 @@ import org.speckitty.missionstatus.architecture.fixture.reducer.ParsingFold;
  *   <li>the reducer ({@code domain.readmodel.reducer}, the event ordering and fold) may use domain-model and the rule 1b JDK packages, and
  *       nothing else: no parser, no codec;
  *   <li>the ledger file mechanics ({@code adapter.out.ledger}: the ledger lock and the torn-tail repair, a #6193 follow-up)
- *       may use the JDK only. They open and lock files and move bytes, but read no row, so no parser, no codec and no domain-model.
+ *       may use the JDK only. They open and lock files and move bytes, but read no row, so no parser, no codec and no domain-model;
+ *   <li>the status-log appender ({@code adapter.out.statuslog}) takes bytes, never rows, and may use only itself, the ledger locks
+ *       and the JDK.
  * </ul>
  *
- * The module holds those three packages only, so a new one needs its own rule here instead of slipping under a module-wide allowlist.
+ * The module holds those four packages only, so a new one needs its own rule here instead of slipping under a module-wide allowlist.
  *
  * <p>Non-vacuity: the rules import exactly this module's production classes (the {@code module.mainClasses} property the build sets)
  * and every type in {@link #EXTRACTED_TYPES} must be among them; planted violations prove each rule fires.
@@ -54,11 +62,15 @@ class EventLogBoundaryTest {
           "adapter.out.filesystem.codec.SeedKey", "domain.readmodel.reducer.AtThenEventId", "domain.readmodel.reducer.EventOrdering",
           "domain.readmodel.reducer.StatusReducer", "domain.readmodel.reducer.UnreducibleLedgerException");
 
+  static final List<String> STATUSLOG_TYPES =
+      List.of("adapter.out.statuslog.StatusLogAppender", "adapter.out.statuslog.StatusLogSession", "adapter.out.statuslog.MissionLockPath");
+
   static final String ROOT = "org.speckitty.missionstatus";
   static final String MODEL = ROOT + ".domain.model..";
   static final String CODEC = ROOT + ".adapter.out.filesystem.codec..";
   static final String REDUCER = ROOT + ".domain.readmodel.reducer..";
   static final String LEDGER = ROOT + ".adapter.out.ledger..";
+  static final String STATUSLOG = ROOT + ".adapter.out.statuslog..";
 
   /** The JDK packages of the query service's rule 1b: java.lang, java.util (not concurrent), java.time, java.math, java.security, java.nio.charset. */
   static final DescribedPredicate<JavaClass> RULE_1B_JDK =
@@ -85,9 +97,23 @@ class EventLogBoundaryTest {
         .as("the event-log ledger file mechanics depend only on themselves and the JDK (no parser, no codec, no domain-model)");
   }
 
-  static final ArchRule ONLY_THE_THREE_PACKAGES =
-      classes().should().resideInAnyPackage(CODEC, REDUCER, LEDGER)
-          .as("event-log holds the codec, the reducer and the ledger file mechanics only; a new package needs its own boundary rule here");
+  /** The status-log rule over the package {@code statuslog}. */
+  static ArchRule statusLogRule(String statuslog) {
+    return classes().that().resideInAPackage(statuslog).should().onlyDependOnClassesThat(resideInAnyPackage(statuslog, LEDGER, "java.."))
+        .as("the event-log status-log appender depends only on itself, adapter.out.ledger and the JDK (no domain-model, codec or Jackson)");
+  }
+
+  static final ArchRule ONLY_THE_FOUR_PACKAGES =
+      classes().should().resideInAnyPackage(CODEC, REDUCER, LEDGER, STATUSLOG)
+          .as("event-log holds the codec, the reducer, the ledger file mechanics and the status-log appender only; a new package needs its own boundary rule here");
+
+  /**
+   * FR-010 write ownership for event-log. The command-cli half is WP08's; read-service rule 7 is the third enforcement point. The
+   * pre-existing ledger exception covers lock files and ledger torn-tail repair, never a status log (research section 11, decision 16).
+   */
+  static final ArchRule WRITE_OWNERSHIP =
+      noClasses().that().resideOutsideOfPackages(STATUSLOG, LEDGER).should().callCodeUnitWhere(FileWriteApis.jdkOpenForWriteApi())
+          .because("only statuslog writes status logs; ledger alone retains its necessary lock-file and ledger-repair writes");
 
   static JavaClasses moduleClasses() {
     String path = System.getProperty("module.mainClasses");
@@ -107,12 +133,17 @@ class EventLogBoundaryTest {
     for (String type : EXTRACTED_TYPES) {
       assertThat(classes.contain(ROOT + "." + type)).as("%s is imported and checked", type).isTrue();
     }
+    for (String type : STATUSLOG_TYPES) {
+      assertThat(classes.contain(ROOT + "." + type)).as("%s is imported and checked", type).isTrue();
+    }
     assertThat(classes.contain(ROOT + ".domain.model.Lane")).as("domain-model classes are not this module's").isFalse();
 
     assertHolds(codecRule(CODEC), classes);
     assertHolds(reducerRule(REDUCER), classes);
     assertHolds(ledgerRule(LEDGER), classes);
-    assertHolds(ONLY_THE_THREE_PACKAGES, classes);
+    assertHolds(statusLogRule(STATUSLOG), classes);
+    assertHolds(WRITE_OWNERSHIP, classes);
+    assertHolds(ONLY_THE_FOUR_PACKAGES, classes);
     assertThat(classes.contain(ROOT + ".adapter.out.ledger.TornTailRepair")).as("the ledger package is imported and checked").isTrue();
   }
 
@@ -164,7 +195,28 @@ class EventLogBoundaryTest {
   }
 
   @Test
-  void aClassOutsideTheThreePackagesBreaksTheModuleRule() {
-    assertThat(ONLY_THE_THREE_PACKAGES.evaluate(new ClassFileImporter().importClasses(ConformingDecoder.class)).hasViolation()).isTrue();
+  void aParserDependencyBreaksTheStatusLogRule() {
+    assertThat(statusLogRule(FIXTURE + ".statuslog").evaluate(new ClassFileImporter().importClasses(RowParsingAppender.class)).hasViolation())
+        .isTrue();
+  }
+
+  @Test
+  void conformingStatusLogMechanicsHoldTheStatusLogRule() {
+    assertHolds(statusLogRule(FIXTURE + ".statuslog"), new ClassFileImporter().importClasses(ConformingAppender.class));
+  }
+
+  @Test
+  void filesWriteOutsideTheWriterPackagesBreaksWriteOwnership() {
+    assertThat(WRITE_OWNERSHIP.evaluate(new ClassFileImporter().importClasses(FilesWriteOutsideStatusLog.class)).hasViolation()).isTrue();
+  }
+
+  @Test
+  void fileChannelOpenOutsideTheWriterPackagesBreaksWriteOwnership() {
+    assertThat(WRITE_OWNERSHIP.evaluate(new ClassFileImporter().importClasses(ChannelOpenOutsideStatusLog.class)).hasViolation()).isTrue();
+  }
+
+  @Test
+  void aClassOutsideTheFourPackagesBreaksTheModuleRule() {
+    assertThat(ONLY_THE_FOUR_PACKAGES.evaluate(new ClassFileImporter().importClasses(ConformingDecoder.class)).hasViolation()).isTrue();
   }
 }

@@ -1,0 +1,7 @@
+{
+  "input_json": "{\"session_started_at\":\"20260101T000000Z\",\"session_ended_at\":\"20260101T000002Z\"}",
+  "expected_line": "{\"session_duration_s\": 2}\n",
+  "covers": [
+    "session_pair_zulu_and_basic"
+  ]
+}

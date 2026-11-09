@@ -1,0 +1,8 @@
+{
+  "input_json": "{\"n\":NaN,\"nested\":[0]}",
+  "expected_error": "NonFiniteNumber",
+  "core_behaviour": "writes NaN",
+  "covers": [
+    "non_finite_number"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "input_json": "{\"session_started_at\":\"2026-01-01T00:00:00+00:00\",\"session_duration_s\":17}",
+  "expected_line": "{\"session_duration_s\": 17}\n",
+  "covers": [
+    "session_pair_one_missing_keeps_duration"
+  ]
+}

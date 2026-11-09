@@ -3873,6 +3873,231 @@
       "fixture_type": "ledger_append"
     },
     {
+      "id": "transition_row_plain",
+      "path": "status_append/valid/transition_row_plain.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "A realistic planned-to-claimed transition row preserves every ordinary field.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "annotation_row_plain",
+      "path": "status_append/valid/annotation_row_plain.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "An annotation row with a nested delta uses the same byte encoder.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "pii_top_level",
+      "path": "status_append/valid/pii_top_level.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "Every registered PII key is stripped at the top level.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "pii_nested_and_in_lists",
+      "path": "status_append/valid/pii_nested_and_in_lists.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "PII is stripped from nested objects and objects at any list depth.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "session_pair_both_parse",
+      "path": "status_append/valid/session_pair_both_parse.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "An aware session pair becomes a positive duration truncated toward zero.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "session_pair_negative",
+      "path": "status_append/valid/session_pair_negative.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "A reversed aware session pair produces a negative duration truncated toward zero.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "session_pair_long_span",
+      "path": "status_append/valid/session_pair_long_span.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "A span past 2^34 seconds keeps CPython's float rounding before int() truncates.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "session_pair_overwrites_duration",
+      "path": "status_append/valid/session_pair_overwrites_duration.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "A parseable session pair overwrites an existing duration.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "session_pair_one_missing_keeps_duration",
+      "path": "status_append/valid/session_pair_one_missing_keeps_duration.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "One missing timestamp is removed without replacing the existing duration.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "session_pair_unparseable",
+      "path": "status_append/valid/session_pair_unparseable.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "An unparseable timestamp causes both keys to be removed without a duration.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "session_pair_zulu_and_basic",
+      "path": "status_append/valid/session_pair_zulu_and_basic.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "Basic-format Zulu timestamps parse through the shared interpreter-normalizing subset.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "session_pair_both_naive",
+      "path": "status_append/valid/session_pair_both_naive.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "Two naive timestamps with a space separator are subtractable.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "nested_session_keys_untouched",
+      "path": "status_append/valid/nested_session_keys_untouched.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "Session-shaped keys below the top level remain untouched.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "escaping_non_ascii_and_astral",
+      "path": "status_append/valid/escaping_non_ascii_and_astral.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "Non-ASCII BMP characters and astral characters use ASCII escapes and surrogate pairs.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "escaping_control_characters",
+      "path": "status_append/valid/escaping_control_characters.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "Controls, DEL, quotes, backslashes, slashes and lone surrogates pin Python escaping.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "key_order_code_points",
+      "path": "status_append/valid/key_order_code_points.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "Objects sort keys by Unicode code point rather than UTF-16 code units.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "numbers_float_repr",
+      "path": "status_append/valid/numbers_float_repr.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "Finite floats preserve Python's signed-zero and shortest round-trip representations.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "numbers_big_integers",
+      "path": "status_append/valid/numbers_big_integers.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "Arbitrary-size positive and negative JSON integers remain integers.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "nulls_bools_empty_containers",
+      "path": "status_append/valid/nulls_bools_empty_containers.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "Nulls, booleans and empty containers use their ordinary JSON spellings.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "session_value_non_string",
+      "path": "status_append/valid/session_value_non_string.json",
+      "expected_result": "valid",
+      "event_type": "StatusRow",
+      "notes": "A non-string session value is unparseable and preserves an existing duration.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "non_finite_nan",
+      "path": "status_append/invalid/non_finite_nan.json",
+      "expected_result": "invalid",
+      "event_type": "StatusRow",
+      "notes": "The protocol refuses a NaN token that core would write.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "non_finite_infinity",
+      "path": "status_append/invalid/non_finite_infinity.json",
+      "expected_result": "invalid",
+      "event_type": "StatusRow",
+      "notes": "The protocol refuses an Infinity token nested inside objects and arrays.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "non_finite_overflow",
+      "path": "status_append/invalid/non_finite_overflow.json",
+      "expected_result": "invalid",
+      "event_type": "StatusRow",
+      "notes": "The protocol refuses a finite JSON token that json.loads overflows to infinity.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "session_pair_naive_then_aware",
+      "path": "status_append/invalid/session_pair_naive_then_aware.json",
+      "expected_result": "invalid",
+      "event_type": "StatusRow",
+      "notes": "A naive start and aware end are refused instead of leaking core's TypeError.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
+      "id": "session_pair_aware_then_naive",
+      "path": "status_append/invalid/session_pair_aware_then_naive.json",
+      "expected_result": "invalid",
+      "event_type": "StatusRow",
+      "notes": "An aware start and naive end are refused instead of leaking core's TypeError.",
+      "min_version": "11.4.0",
+      "fixture_type": "status_append"
+    },
+    {
       "id": "decisionpoint-replay-reopen-deferred-first",
       "path": "decisionpoint/replay/reopen_deferred_first.jsonl",
       "fixture_type": "replay_stream",

@@ -2,12 +2,12 @@ title: WriteRefusalReason
 description: >-
   Why a guard of the lane state machine refused a transition, as a URN carried in the refusal's
   type. Only a refusal whose code is TRANSITION_REJECTED, WP_ALREADY_CLAIMED or
-  DEPENDENCIES_NOT_SATISFIED carries one. The CLI raises these reasons as text today; the
-  vocabulary is minted by this contract and is provisional.
+  DEPENDENCIES_NOT_SATISFIED carries one. The CLI raises the core-derived reasons as text today;
+  their vocabulary and the events-side stale_from_lane addition are provisional.
 type: string
 oneOf:
   - const: 'urn:spec-kitty:write-refusal:unknown_lane'
-    description: 'The from or to status lane is not one of the nine.'
+    description: 'The from or to status lane is not one of the 11 persisted Lane values.'
   - const: 'urn:spec-kitty:write-refusal:illegal_transition'
     description: 'The edge is not in the lane state machine, or leaves a terminal lane without force.'
   - const: 'urn:spec-kitty:write-refusal:force_requires_actor_and_reason'
@@ -15,7 +15,7 @@ oneOf:
   - const: 'urn:spec-kitty:write-refusal:actor_required'
     description: 'The transition needs an actor identity (a claim, a review claim).'
   - const: 'urn:spec-kitty:write-refusal:dependencies_unsatisfied'
-    description: 'A dependency of the work package is neither approved nor done.'
+    description: 'A dependency of the work package is not approved, done, or canceled with operator provenance.'
   - const: 'urn:spec-kitty:write-refusal:workspace_context_required'
     description: 'claimed to in_progress carries no workspace context.'
   - const: 'urn:spec-kitty:write-refusal:implementation_evidence_required'
@@ -36,6 +36,10 @@ oneOf:
     description: 'Another actor holds the claim (travels under WP_ALREADY_CLAIMED).'
   - const: 'urn:spec-kitty:write-refusal:start_rejected'
     description: 'The work package cannot start: not finalized, in the wrong status lane, or force misused.'
+  - const: 'urn:spec-kitty:write-refusal:stale_from_lane'
+    description: >-
+      The unit's from_lane is not the work package's current lane. Provisional events-side
+      addition with no core equivalent (spec-kitty/spec-kitty-events#161).
 x-source:
   path: src/specify_cli/status/write_service_protocol.py
   symbol: WriteRefusalReason

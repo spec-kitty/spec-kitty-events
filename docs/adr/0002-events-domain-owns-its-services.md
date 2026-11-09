@@ -115,7 +115,8 @@ and the existing code moves here with its history.
    - the Java binding;
    - the Mission Status Read API service;
    - the Mission Write API / event-log write core (the `command-cli` deployable, built since
-     2026-10-31: spec-kitty-events#156; its writes refuse fail-closed until #160 and #161);
+     2026-10-31: spec-kitty-events#156; its writes refused fail-closed until #160 and #161
+     landed the write core);
    - their OpenAPI contracts, `contracts/mission-status` and `contracts/mission-write`.
 
    A change to any of these is made here and is canonical. Consumers, core included, adapt to

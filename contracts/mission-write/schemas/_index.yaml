@@ -12,6 +12,7 @@ files:
   - TransitionBatch.yaml
   - TransitionUnit.yaml
   - WpId.yaml
+  - WriteOperation.yaml
   - WriteRefusal.yaml
   - WriteRefusalCode.yaml
   - WriteRefusalReason.yaml

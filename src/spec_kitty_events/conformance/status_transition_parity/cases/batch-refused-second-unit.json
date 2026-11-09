@@ -1,0 +1,141 @@
+{
+  "area": "batch",
+  "core_call": {
+    "entry_point": "sequential-batch",
+    "kwargs": {
+      "calls": [
+        {
+          "entry_point": "specify_cli.status.emit.emit_status_transition",
+          "kwargs": {
+            "actor": "implementer-a",
+            "fan_out": false,
+            "feature_dir": "${MISSION_DIR}",
+            "mission_slug": "999-status-transition-parity",
+            "refresh_projection": false,
+            "repo_root": "${REPO_ROOT}",
+            "to_lane": "claimed",
+            "wp_id": "WP01"
+          }
+        },
+        {
+          "entry_point": "specify_cli.status.emit.emit_status_transition",
+          "kwargs": {
+            "actor": "implementer-a",
+            "fan_out": false,
+            "feature_dir": "${MISSION_DIR}",
+            "mission_slug": "999-status-transition-parity",
+            "refresh_projection": false,
+            "repo_root": "${REPO_ROOT}",
+            "to_lane": "done",
+            "wp_id": "WP02"
+          }
+        }
+      ]
+    }
+  },
+  "expected": {
+    "code": "TRANSITION_REJECTED",
+    "message": "Illegal transition: planned -> done",
+    "reason": "urn:spec-kitty:write-refusal:illegal_transition",
+    "result": "refusal",
+    "unit": 1
+  },
+  "id": "batch-refused-second-unit",
+  "layer": "domain",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-13T17:33:22+00:00",
+      "event_id": "0000000000000000000010C8E1",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "genesis",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "planned",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-13T17:33:24+00:00",
+      "event_id": "0000000000000000000010C8E3",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "genesis",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "planned",
+      "wp_id": "WP02"
+    }
+  ],
+  "mission": {
+    "directory": "999-status-transition-parity",
+    "mission_id": "01J00000000000000000000000",
+    "mission_slug": "999-status-transition-parity"
+  },
+  "notes": "Core entry-point parity for batch refused second unit.",
+  "operation": "transition",
+  "oracle": "core",
+  "request": {
+    "kind": "batch",
+    "units": [
+      {
+        "operation": "transition",
+        "rows": [
+          {
+            "actor": "implementer-a",
+            "at": "2026-01-13T17:33:26+00:00",
+            "event_id": "0000000000000000000010C8E5",
+            "evidence": null,
+            "execution_mode": "worktree",
+            "force": false,
+            "from_lane": "planned",
+            "mission_id": "01J00000000000000000000000",
+            "mission_slug": "999-status-transition-parity",
+            "policy_metadata": null,
+            "reason": null,
+            "review_ref": null,
+            "to_lane": "claimed",
+            "wp_id": "WP01"
+          }
+        ],
+        "wpId": "WP01"
+      },
+      {
+        "operation": "transition",
+        "rows": [
+          {
+            "actor": "implementer-a",
+            "at": "2026-01-13T17:33:28+00:00",
+            "event_id": "0000000000000000000010C8E7",
+            "evidence": null,
+            "execution_mode": "worktree",
+            "force": false,
+            "from_lane": "planned",
+            "mission_id": "01J00000000000000000000000",
+            "mission_slug": "999-status-transition-parity",
+            "policy_metadata": null,
+            "reason": null,
+            "review_ref": null,
+            "to_lane": "done",
+            "wp_id": "WP02"
+          }
+        ],
+        "wpId": "WP02"
+      }
+    ]
+  },
+  "tasks": {
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP03\n"
+  }
+}

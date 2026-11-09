@@ -30,8 +30,19 @@ class RefusalBodyTest {
   }
 
   @Test
+  void aReasonTypeFollowsTheTitleInTheCanonicalBytes() {
+    RefusalBody body = RefusalBody.of(RefusalCode.TRANSITION_REJECTED, "d").withInstance("#/units/2").withType("urn:spec-kitty:write-refusal:unknown_lane");
+
+    assertThat(new String(body.bytes(mapper), StandardCharsets.UTF_8))
+        .isEqualTo(
+            "{\"code\":\"TRANSITION_REJECTED\",\"detail\":\"d\",\"instance\":\"#/units/2\",\"status\":409,"
+                + "\"title\":\"Transition rejected\",\"type\":\"urn:spec-kitty:write-refusal:unknown_lane\"}\n");
+    assertThat(RefusalBody.of(RefusalCode.TRANSITION_REJECTED).type()).isNull();
+  }
+
+  @Test
   void theSerialisedFormHoldsOnlyJdkValuesSoNoRecordIntrospectionIsNeeded() {
-    RefusalBody body = RefusalBody.of(RefusalCode.REQUEST_MALFORMED, "d").withInstance("/rows/0");
+    RefusalBody body = RefusalBody.of(RefusalCode.REQUEST_MALFORMED, "d").withInstance("/rows/0").withType("urn:spec-kitty:write-refusal:unknown_lane");
     assertThat(body.members().values()).allSatisfy(value -> assertThat(value).isInstanceOfAny(String.class, Integer.class));
   }
 }

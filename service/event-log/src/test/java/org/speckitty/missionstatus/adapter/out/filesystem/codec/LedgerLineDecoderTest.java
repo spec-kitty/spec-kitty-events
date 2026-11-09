@@ -222,6 +222,37 @@ class LedgerLineDecoderTest {
     }
   }
 
+  /**
+   * C-010: the read service's ledger reading is unchanged. The write path's limits (nesting 256, integers 4300 digits, floats unbounded)
+   * live on the status-row decoder's factory only; the ledger reader keeps Jackson's defaults (Jackson 3: nesting 500, number length 1000).
+   */
+  @Test
+  void theLedgerReaderKeepsJacksonsDefaultLimitsNotTheWritePathsPythonLimits() {
+    var defaults = tools.jackson.core.StreamReadConstraints.defaults();
+    var ledger = PythonJson.ledgerConstraints();
+    assertThat(ledger.getMaxNestingDepth()).isEqualTo(defaults.getMaxNestingDepth()).isGreaterThan(PythonJson.MAX_NESTING_DEPTH);
+    assertThat(ledger.getMaxNumberLength()).isEqualTo(defaults.getMaxNumberLength()).isLessThan(PythonJson.MAX_INTEGER_DIGITS);
+    assertThat(PythonJson.constraints().getMaxNestingDepth()).isEqualTo(256);
+    assertThat(PythonJson.constraints().getMaxNumberLength()).isEqualTo(4300);
+
+    // Behaviour, through the decoder: nesting 300 reads (the write path refuses it), twice the default does not; a 2000-digit integer or float is
+    // malformed here (the write path accepts it).
+    String deep300 = "[".repeat(300) + "]".repeat(300);
+    int over = 2 * ledger.getMaxNestingDepth();
+    String deepOverDefault = "[".repeat(over) + "]".repeat(over);
+    assertThat(kindOf("{\"event_type\":\"X\",\"a\":" + deep300 + "}")).isEqualTo(new LineKind.Ignored());
+    assertThat(kindOf("{\"event_type\":\"X\",\"a\":" + deepOverDefault + "}")).isEqualTo(new LineKind.Malformed(MalformedReason.NOT_JSON));
+    assertThat(kindOf("{\"event_type\":\"X\",\"a\":" + "9".repeat(1000) + "}")).isEqualTo(new LineKind.Ignored());
+    assertThat(kindOf("{\"event_type\":\"X\",\"a\":" + "9".repeat(2000) + "}")).isEqualTo(new LineKind.Malformed(MalformedReason.NOT_JSON));
+    assertThat(kindOf("{\"event_type\":\"X\",\"a\":0." + "9".repeat(2000) + "}")).isEqualTo(new LineKind.Malformed(MalformedReason.NOT_JSON));
+
+    // And the write path's decoder is the one with Python's limits.
+    assertThatThrownBy(() -> StatusRowDecoder.parse(deep300)).isInstanceOf(RuntimeException.class);
+    assertThat(StatusRowDecoder.parse("9".repeat(4300))).isNotNull();
+    assertThatThrownBy(() -> StatusRowDecoder.parse("9".repeat(4301))).isInstanceOf(RuntimeException.class);
+    assertThat(StatusRowDecoder.parse("0." + "9".repeat(5000))).isNotNull();
+  }
+
   @Test
   void numberFormsFollowPythonsGrammarAndLargeValuesAreFine() {
     for (String accepted : List.of("0", "-0", "1e5", "1E+2", "1.5e-3", "123456789012345678901234567890", "1e999", "-1.0")) {

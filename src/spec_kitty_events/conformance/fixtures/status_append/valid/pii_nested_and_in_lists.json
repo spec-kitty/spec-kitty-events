@@ -1,0 +1,7 @@
+{
+  "input_json": "{\"nested\":{\"hostname\":\"nested\",\"keep\":1},\"objects\":[{\"workspace_path\":\"/secret\",\"keep\":2}],\"lists\":[[{\"developer_email\":\"deep\",\"keep\":3}]],\"developer_name\":\"top\"}",
+  "expected_line": "{\"lists\": [[{\"keep\": 3}]], \"nested\": {\"keep\": 1}, \"objects\": [{\"keep\": 2}]}\n",
+  "covers": [
+    "pii_nested_and_in_lists"
+  ]
+}

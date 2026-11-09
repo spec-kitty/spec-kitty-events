@@ -1,0 +1,8 @@
+{
+  "input_json": "{\"n\":1e400}",
+  "expected_error": "NonFiniteNumber",
+  "core_behaviour": "writes Infinity",
+  "covers": [
+    "non_finite_number"
+  ]
+}

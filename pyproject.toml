@@ -1,6 +1,6 @@
 [project]
 name = "spec-kitty-events"
-version = "11.3.0"
+version = "11.4.0"
 description = "Event log library with Lamport clocks and systematic error tracking"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -109,6 +109,12 @@ spec_kitty_events = [
     "conformance/fixtures/ledger_append/README.md",
     "conformance/fixtures/ledger_append/valid/*.json",
     "conformance/fixtures/ledger_append/invalid/*.json",
+    "conformance/fixtures/status_append/README.md",
+    "conformance/fixtures/status_append/valid/*.json",
+    "conformance/fixtures/status_append/invalid/*.json",
+    "conformance/status_transition_parity/README.md",
+    "conformance/status_transition_parity/*.json",
+    "conformance/status_transition_parity/cases/*.json",
     "conformance/fixtures/status_diary/replay/*.jsonl",
     "conformance/fixtures/status_diary/replay/*.json",
     "conformance/fixtures/work_observation/valid/*.json",

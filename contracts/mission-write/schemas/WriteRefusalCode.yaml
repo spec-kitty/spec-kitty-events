@@ -9,11 +9,11 @@ description: >-
 type: string
 oneOf:
   - const: TRANSITION_REJECTED
-    description: '409. The lane state machine or one of its guards refused the transition. The type names the reason. The CLI''s orchestrator-api code for a TransitionError.'
+    description: '409. The lane state machine or one of its guards refused the transition. The type names the reason, including stale_from_lane for a stale unit whose from_lane is not the work package''s current lane. The CLI''s orchestrator-api code for a TransitionError.'
   - const: WP_ALREADY_CLAIMED
     description: '409. Another actor holds the claim on the work package. The CLI''s orchestrator-api code for a WorkPackageClaimConflict.'
   - const: DEPENDENCIES_NOT_SATISFIED
-    description: '409. A dependency of the work package is neither approved nor done, and the transition is gated on it.'
+    description: '409. A dependency of the work package is not approved, done or canceled with operator provenance, and the transition is gated on it.'
   - const: WP_NOT_FOUND
     description: '404. The Mission has no work package with this wpId.'
   - const: MISSION_NOT_FOUND
@@ -23,9 +23,9 @@ oneOf:
   - const: BOOKKEEPING_DOUBLE_EVENT_ID
     description: '409. The request repeats an event_id inside one unit or batch.'
   - const: COORDINATION_REF_MOVED
-    description: '409. Protocol-only. The coordination branch moved between the read of its tip and the compare-and-swap update of the ref, so another writer committed to it; nothing is written and the service does not retry (ADR-0007). Provisional: ADR-0007 is Proposed.'
+    description: '409. Protocol-only. The coordination branch moved between the read of its tip and the compare-and-swap update of the ref, so another writer committed to it; nothing is written and the service does not retry (ADR-0007). Provisional until migration step 4 serves the surface.'
   - const: COORDINATION_REF_CHECKED_OUT
-    description: '409. Protocol-only. The coordination branch is checked out in a worktree of the repository, so a commit to its ref would leave that checkout behind; nothing is written (ADR-0007). Provisional: ADR-0007 is Proposed.'
+    description: '409. Protocol-only. The coordination branch is checked out in a worktree of the repository, so a commit to its ref would leave that checkout behind; nothing is written (ADR-0007). Provisional until migration step 4 serves the surface.'
   - const: PROTECTED_BRANCH_REFUSED
     description: '422. The write would commit to a protected branch.'
   - const: DESTINATION_REF_NOT_FOUND
@@ -39,15 +39,15 @@ oneOf:
   - const: OWNED_MISSION_PATH_REFUSED
     description: '422. The caller''s owned checkout does not hold the Mission of the request.'
   - const: COORDINATION_LEDGER_UNREADABLE
-    description: '500. Protocol-only. The Mission''s event log in the tree of the coordination branch tip cannot be read or parsed, so the append cannot be judged against it; nothing is written (ADR-0007). Provisional: ADR-0007 is Proposed.'
+    description: '500. Protocol-only. The Mission''s event log in the tree of the coordination branch tip cannot be read or parsed, so the append cannot be judged against it; nothing is written (ADR-0007). Provisional until migration step 4 serves the surface.'
   - const: STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED
-    description: '500. The append, or its read-back verification, failed; the unit is not acknowledged.'
+    description: '500. The append, or its read-back verification, failed; the unit is not acknowledged. Also answers a torn tail (refused, not repaired), a log the write fold cannot reduce, and a failed write or sync after which the append was cut back.'
   - const: BOOKKEEPING_COMMIT_FAILED
     description: '500. The status commit of the unit failed and the append was cut.'
   - const: WRITE_LOCATION_UNVERIFIED
-    description: '422. Protocol-only. The service could not verify the missionDirectory and writeSurface of the request context against its own resolution. Provisional: the verification rule is open until write-location resolution moves into the service (ADR 2026-10-22-1 open question 2).'
+    description: '422. Protocol-only. The service could not verify the missionDirectory and writeSurface of the request context against its own resolution. A coordination_ref_commit unit is refused before migration step 4, ahead of any Mission lookup. On checkout_append, also answers when checkout is not ., destinationRef is not null, or missionDirectory is not the directory of the Mission named by missionId. Provisional: the verification rule is open until write-location resolution moves into the service (ADR 2026-10-22-1 open question 2).'
   - const: REQUEST_MALFORMED
-    description: '400. Protocol-only. The body does not have the contract''s shape (an empty unit, more than 64 units, a missing field), or a row names another work package or Mission than the request.'
+    description: '400. Protocol-only. The body does not have the contract''s shape (an empty unit, more than 64 units, a missing field), or a row names another work package or Mission than the request. Also answers a row of the wrong kind for its position, a lane alias or non-canonical lane spelling, a non-finite number, and a session-time pair that cannot be subtracted.'
   - const: PROTOCOL_VERSION_UNSUPPORTED
     description: '400. Protocol-only. The Spec-Kitty-Write-Protocol header is missing, is not an integer, or names a major the service does not speak; the detail lists the supported majors.'
   - const: WRITE_TOKEN_INVALID
@@ -59,7 +59,7 @@ oneOf:
   - const: REQUEST_TOO_LARGE
     description: '413. Protocol-only. The body exceeds the size cap (1 MiB, provisional).'
   - const: SERVICE_BUSY
-    description: '503. Protocol-only. The service is serializing other writes beyond its queue bound; retry the same service after the Retry-After seconds. Provisional (backpressure).'
+    description: '503. Protocol-only. The service is serializing other writes beyond its queue bound; retry the same service after the Retry-After seconds. The in-process turn and the Mission lock share one 10 s budget. Provisional (backpressure).'
   - const: SERVICE_DRAINING
     description: '503. Protocol-only. The service is draining before it exits; re-read the endpoint file and retry against the service it names (the launcher starts one when none runs).'
 x-source:

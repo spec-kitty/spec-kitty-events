@@ -1,0 +1,289 @@
+{
+  "mission_slug": "events-write-core-01M6TP6W",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "The Python reference and the Java encoder write each status row as core does (sanitize, sorted-key json.dumps with ', '/': ', ASCII escapes, Python float repr, one LF).",
+      "proof_type": "automated_test",
+      "evidence": "Python: tests/test_status_log.py 47 pass; conformance test_status_append.py 25 fixtures pass. Java: StatusRowEncoderTest 10, StatusAppendFixtureTest 26 (20 valid byte-exact, 5 invalid, corpus floor), StatusRowSanitizerTest 7; WriteIntegrationTest.escapingSessionTimesNumbersAndNestedIdentityFieldsAreByteExact.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:16.737873+00:00",
+      "notes": "Encoder asserts sorted code-point keys, ', '/': ' separators, ASCII escapes, Python float repr, one LF. generate_status_append.py --check against the core pin: exit 0."
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "The sanitizer matches core's sanitize_event_for_log: PII keys stripped at every depth, top-level session pair folded into a truncated session_duration_s.",
+      "proof_type": "automated_test",
+      "evidence": "StatusRowSanitizerTest (7 pass): stripsEveryPiiKeyAtEveryDepth, bothParseableTimesReplaceAndOverwriteDuration (negative truncation), missingMalformedOrNonStringTimesLeaveAnExistingDurationUntouched, nestedSessionKeysAreNotSessionFields; Python tests/test_status_log.py (47 pass); session_* status_append fixtures.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:18.486364+00:00",
+      "notes": "Covers PII at every depth incl. lists, session pair fold, nested keys untouched. Core-generated oracle drift check exit 0."
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "The status_append family ships with >= 12 valid and >= 4 invalid cases; both bindings pass all; the generator's --check against core at the pin exits 0 locally and in CI.",
+      "proof_type": "automated_test",
+      "evidence": "Fixtures: 20 valid + 5 invalid (>=12/>=4). Python test_status_append.py 25 pass (+ README class-coverage test); Java StatusAppendFixtureTest 26 pass. generate_status_append.py --check at the pin (core-pin venv): exit 0. CI job write-core-parity in service.yml runs the same --check.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:20.260223+00:00",
+      "notes": "Local --check exit 0 verified here. The CI leg exists (service.yml write-core-parity) and was not run here."
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "An accepted unit or batch is one O_APPEND write plus a sync (and a parent-directory sync on create) before 201; refused or fully replayed requests write and sync nothing.",
+      "proof_type": "automated_test",
+      "evidence": "StatusLogSessionTest (4): appendsEveryByteInOneCallThenForcesTheFile [open,size,write,force,close], syncingANewFile...ParentDirectory; JdkFileOps opens with APPEND. WriteServiceTest (14): aBatchUsesOneAppendAndAnAllReplayedBatchUsesNone, authorityAndPersistenceFailuresNeverAcknowledge; WriteIntegrationTest (24) us1-2, us3-1 (fsync 1 then 0).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:22.038949+00:00",
+      "notes": "Refused and replayed requests: appendCalls == 0 asserted in WriteServiceTest; bytes unchanged asserted over HTTP in WriteIntegrationTest."
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Every write holds <gcd>/spec-kitty-locks/<dir>.status.lock with core's lock semantics; a lock held past the 10 s budget answers 409 STATUS_LOCK_HELD.",
+      "proof_type": "automated_test",
+      "evidence": "MissionLockPathTest 8; StatusLogAppenderTest 9 (timesOutAgainstAnotherHolder..., release on throw); StatusLogInteropTest run with SPEC_KITTY_LOCK_INTEROP_PYTHON=core-pin venv: 1 pass (3 core Python writers + Java, 400 rows intact, java_contended 5); WriteServiceTest ...LockTimeouts (STATUS_LOCK_HELD); WriteIntegrationTest us1-5.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:23.810712+00:00",
+      "notes": "Interop test is env-gated (skipped in the default run); I ran it against core at the pin. 409 mapping pinned by DomainValuesTest and OperationsTest all-code schema check. Windows channel-lock leg runs only in the CI matrix."
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "The open/flock/close downcalls are registered for the native image and the native smoke performs a real locked write.",
+      "proof_type": "ci",
+      "evidence": "NativeDowncallMetadataTest 1 pass (reachability-metadata.json: open/flock/close descriptors, variadic, captureCallState); command-cli build.gradle.kts buildArgs --enable-native-access=ALL-UNNAMED; NativeSmokeTest source asserts a real 201 write, byte-exact log and the .git/spec-kitty-locks/m.status.lock file; CI native-command-cli runs nativeCompile, nativeTest, nativeSmoke.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:25.571622+00:00",
+      "notes": "The native leg is verified in CI. native-image is not installed locally, so NativeSmokeTest (@Tag native-binary) did not run here. Passed on the local evidence: metadata, drift test, build args, smoke source, CI wiring."
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "A torn tail or unreducible log is refused with 500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED and the file is unchanged.",
+      "proof_type": "automated_test",
+      "evidence": "StatusLogAppenderTest.refusesATornTailOnReadAndAppendWithoutRepairingIt (9 pass); WriteServiceTest.tornOrUnreducibleLogsAndLockTimeoutsAreNotWritten (appendCalls 0); WriteIntegrationTest.us1ScenarioSixATornTailIsRefusedUnchanged (500, bytes equal), interiorLogLinesFollowTheFold...; corpus fold-torn-tail and fold-invalid-json; WriteFoldTest 18.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:27.365031+00:00",
+      "notes": "Torn tail and unreducible-log paths both asserted file-unchanged."
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "event_id idempotency: identical retry is replayed (appendedLines 0), partial or differing ids are EVENT_ID_CONFLICT, a repeated id in a request is BOOKKEEPING_DOUBLE_EVENT_ID, first occurrence wins.",
+      "proof_type": "automated_test",
+      "evidence": "ReplayClassifierTest 3 (first duplicate wins; partial and replay-after-new are conflicts); WriteIntegrationTest us1-2 (replayed true, appendedLines 0, bytes unchanged), us1-3 (EVENT_ID_CONFLICT), us1-4 (BOOKKEEPING_DOUBLE_EVENT_ID), aCrLfLogReplays...; ProtocolCorpusTest 34 incl. 6 replay-* cases over HTTP.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:29.130897+00:00",
+      "notes": "Byte-equality replay incl. trailing CR in log. Replay classification precedes authority (decision 1), pinned by replay-stale-from-is-still-replay."
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Write location verified against the service's own resolution; mismatches, bare repositories, lane worktrees and coordination_ref_commit answer 422 WRITE_LOCATION_UNVERIFIED.",
+      "proof_type": "automated_test",
+      "evidence": "RootCheckoutTest 10 (git rev-parse: bare, sparse-checkout bare, config.worktree, linked-worktree gitdir, missing/hung git fail closed; agrees with installed git); FilesystemMissionCatalogTest 6 (checkout 'lane', destinationRef, wrong dir, symlink escape); WriteIntegrationTest us4 x3 (422, tree hash unchanged; coordination_ref_commit detail names migration step 4).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:30.903001+00:00",
+      "notes": "Decision 21 (R31): root checkout verified by asking git; GitConfig port deleted. R16 coordination-routed Mission refused 422 before any lock. Decisions 18-21 are the deliberate divergences from core on this criterion."
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "No class outside the three allowlisted packages calls a JDK open-for-write API, enforced by ArchUnit with one shared predicate list and planted violations.",
+      "proof_type": "automated_test",
+      "evidence": "command-cli WriteOwnershipRulesTest 2 (planted RogueWriter fires, ConformingReader holds); event-log EventLogBoundaryTest 15 (WRITE_OWNERSHIP, ONLY_THE_FOUR_PACKAGES, planted FilesWriteOutsideStatusLog and ChannelOpenOutsideStatusLog); shared predicate testFixtures FileWriteApis; root ArchitectureRulesTest 17 (rule 7 incl. statuslog package).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:32.682530+00:00",
+      "notes": "Root :mission-status-api:test (1980 tests, 0 failures) ran inside scripts/verify_all.sh."
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "The lane machine (11 lanes, 29 edges, terminals, force semantics) and the write fold are ported from core at the pin, separate from StatusReducer.",
+      "proof_type": "automated_test",
+      "evidence": "LaneMachineTest 4 (exactly 29 edges, every other pair illegal, terminals have no targets, genesis illegal under force, force reaches any other target incl. same lane and uninitialized); WriteFoldTest 18 (separate WriteFold); ParityCorpusTest 239; StatusReducerTest 30 pass (no service/src/main diff, read side untouched).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:34.461158+00:00",
+      "notes": "Uses domain-model Lane. Parity generator --check against the core pin: exit 0 (196 core cases, drift 0)."
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Every guard refusal carries the contract code and reason URN core raises; each of the 15 reasons is reached by a parity case or recorded unreachable with its cause.",
+      "proof_type": "automated_test",
+      "evidence": "ProtocolCorpusTest 34 (everyGuardReasonOverHttp: 15 reasons reached; workspace_context_required recorded unreachable); ReasonLedgerTest 1 (all 16 RefusalReason entries have a corpus case or a non-blank unreachable cause); Python test_every_reason_is_reached_or_has_an_unreachable_cause and test_refusal_vocabulary_is_closed (16 URNs); ParityCorpusTest 239 compares code, reason and unit.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:36.234161+00:00",
+      "notes": "Decision 17: the vocabulary is 16 (stale_from_lane added), not FR-012's 15; judged against 16. unreachable.json holds the cause and a 'partial' cause for implementation_evidence_required."
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Dependency gating on planned->claimed and claimed->in_progress follows core's verdict (approved, done, operator-canceled; unresolvable is unsatisfied; force bypasses).",
+      "proof_type": "automated_test",
+      "evidence": "DependencyVerdictTest 4; ParityCorpusTest 239 incl. dependency-* cases (approved/done/operator-canceled accepted; synthetic-cancel, missing, ambiguous, malformed, unreadable unsatisfied; dependency-force-bypass); DiskMissionFactsTest 31; DiskMissionFactsParityTest 239; WriteIntegrationTest us2-2.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:38.022911+00:00",
+      "notes": "Decisions 18-21 (R19 tags, R20 anchors/directives, R25-R30) fail closed where core's ruamel accepts exotic forms; frontmatter reading judged under those rulings."
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "A batch judges each unit against the state earlier units leave, may span work packages, and a refusal names #/units/<i> and writes nothing.",
+      "proof_type": "automated_test",
+      "evidence": "BatchJudgeTest 5 (second unit judged after first; first refusal at original index; earlier unit satisfies another WP's dependency; annotations join the fold; 64 units); WriteIntegrationTest us3-1 (one fsync, replay 0), us3-2 (illegal fourth unit names unit three, writes nothing); batch-cross-wp-* corpus cases; ProtocolCorpusTest asserts instance '#/units/<i>'.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:39.979500+00:00",
+      "notes": "Cross-WP batches: batch-cross-wp-claims and batch-cross-wp-three-units."
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "The parity corpus (>= 150 cases, NFR-002 coverage) ships at conformance/status_transition_parity/, is validated by the packaged test, regenerated from core locally and checked by the CI drift job.",
+      "proof_type": "automated_test",
+      "evidence": "253 cases (196 core + 57 protocol) in conformance/status_transition_parity/cases. Python test_status_transition_parity.py 5 pass (schema, all 29 edges, >=5 batches, >=2 cross-WP, >=150). Java ParityCorpusTest 239 + ProtocolCorpusTest 34 = 253 (FullParityCorpusTest 1 pins the 14 later-layer cases). generate_transition_parity.py --check at pin: exit 0, drift 0.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:41.857586+00:00",
+      "notes": "CI drift job is write-core-parity (service.yml). Local --check against the core pin: 196 core cases, drift 0."
+    },
+    {
+      "criterion_id": "FR-016",
+      "description": "The write domain is framework-free, I/O-free and concurrency-free, enforced by an ArchUnit rule with planted violations.",
+      "proof_type": "automated_test",
+      "evidence": "AuthorityPurityTest 7 pass: real domain.authority holds (non-vacuous: UnitJudge, WriteFold present); planted violations rejected: FileAuthority, NioAuthority, ConcurrentAuthority, FrameworkAuthority, ClockAuthority; ConformingAuthority holds.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:43.731284+00:00",
+      "notes": "Rule also bans clocks, stricter than the spec."
+    },
+    {
+      "criterion_id": "FR-017",
+      "description": "Transition, batch and annotation operations acknowledge legal writes with contract-valid DurabilityAck/BatchDurabilityAck; fsyncs is 0 only for an all-replayed batch; the fail-closed refusal is gone.",
+      "proof_type": "automated_test",
+      "evidence": "AckBodyTest 2 (DurabilityAck and BatchDurabilityAck validate against contract schemas, statusCommit null, new and fully-replayed); WriteIntegrationTest 24 (201 acks; us3-1 fsyncs 1 then 0; us5 annotation); OperationsTest 40 (fail-closed 500 replaced by 404 MISSION_NOT_FOUND / 422).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:45.579441+00:00",
+      "notes": "The 'write core is not built yet' refusal is gone from the operations tests (diff vs base)."
+    },
+    {
+      "criterion_id": "FR-018",
+      "description": "MISSION_NOT_FOUND and WP_NOT_FOUND answer before the lock, as core's lookup does (ambiguous mission ids refuse).",
+      "proof_type": "automated_test",
+      "evidence": "FilesystemMissionCatalogTest 6 (duplicate mission ids -> NotFound; task lookup WP01.md and WP02-*.md only); WriteServiceTest missingMission...BeforeLaterPorts, locationAndWorkPackageRefusalsPrecedeTheTurn (log.calls 0); WriteIntegrationTest us2-5 (404 MISSION_NOT_FOUND and WP_NOT_FOUND), us5 (WP99 404).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:47.473352+00:00",
+      "notes": "Before-the-lock ordering asserted by the log port seeing zero calls."
+    },
+    {
+      "criterion_id": "FR-019",
+      "description": "The edge order and every existing edge refusal are unchanged; existing edge and operations tests stay green except the declared fail-closed and row-shape exceptions.",
+      "proof_type": "automated_test",
+      "evidence": "EdgeOrderTest 35, BearerAndProtocolFilterTest, BodySizeFilterTest, HostOriginFilterTest 42, DrainTest 4 all pass. Diff vs base touches only RefusalBodyTest (+1 additive test; optional withType on one call) and OperationsTest (fail-closed -> 404/422 assertions; well-formed rows now carry transition fields). Other edge tests unmodified.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:49.342768+00:00",
+      "notes": "The changes are the declared fail-closed and row-shape exceptions; RefusalBodyTest only adds the optional reason type member."
+    },
+    {
+      "criterion_id": "FR-020",
+      "description": "Writes are serialized by one fair in-process turn; turn and lock share one 10 s deadline; a missed turn answers 503 SERVICE_BUSY with Retry-After: 1.",
+      "proof_type": "automated_test",
+      "evidence": "WriteTurnTest 2 (fair ReentrantLock(true); timeout then reacquire; interrupt flag); WriteServiceTest aHeldTurnIsBusy...OriginalAbsoluteDeadline (SERVICE_BUSY, one deadline shared with the lock), concurrentWritesAreSerialized...; ServiceWiringTest 1 (budget exactly 10 s); OperationsTest.aBusyWriteCarriesRetryAfterOneSecond (503, Retry-After: 1).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:51.149860+00:00",
+      "notes": "Retry-After set in WriteController via HttpHeaders.RETRY_AFTER; SERVICE_DRAINING stays without it (DrainTest)."
+    },
+    {
+      "criterion_id": "FR-021",
+      "description": "Service README, architecture pages, contract CHANGELOG and a changelog fragment describe the write core as built; docs and changelog gates pass.",
+      "proof_type": "automated_test",
+      "evidence": "cd site && npm run validate: exit 0 (235 files valid, 216 links resolve; warnings only); scripts/changelog.py check exit 0 and guard exit 0; fragments docs/changelog/unreleased/160-write-core.md and 160-write-core-contract.md; contracts/mission-write/CHANGELOG.md 1.0.1-SNAPSHOT; service/README.md and docs/architecture/services/* diffs.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:52.978051+00:00",
+      "notes": "npm run validate regenerated two index blocks in tracked docs README files as a side effect; I restored them with git checkout, so the tree is clean."
+    },
+    {
+      "criterion_id": "FR-022",
+      "description": "Guard inputs a row does not carry (workspace context, subtasks complete, implementation evidence, dependency readiness) are derived as core derives them.",
+      "proof_type": "automated_test",
+      "evidence": "GuardContextTest 2; UnitJudgeTest 10 (dependencies feed tri-state context, subtasks from roster); DependencyVerdictTest 4; DiskMissionFactsTest 31; ParityCorpusTest 239 (guard-subtasks-*, annotation-subtasks-complete-unlocks-review); DiskMissionFactsParityTest 239.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:54.785140+00:00",
+      "notes": "R15 (unresolvable roster refuses implementation_evidence_required) and R19-R30 are deliberate fail-closed rulings (decisions 18-21). workspace_context_required is unreachable over the wire (unreachable.json)."
+    },
+    {
+      "criterion_id": "FR-023",
+      "description": "A stale from_lane is refused 409 TRANSITION_REJECTED without a URN; lane aliases and non-canonical spellings are 400 REQUEST_MALFORMED.",
+      "proof_type": "automated_test",
+      "evidence": "WriteBodiesTest 17 ('doing', 'Planned', ' planned', 'IN_PROGRESS' -> REQUEST_MALFORMED; canonical lanes pass); corpus stale-single-from-lane (TRANSITION_REJECTED + urn:...:stale_from_lane, oracle protocol), stale-batch-after-earlier-unit, alias-noncanonical-row (400) via ProtocolCorpusTest 34; UnitJudgeTest stalePrecedes... (10).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:56.594629+00:00",
+      "notes": "Decision 17 (maintainer ruling 2026-11-08) supersedes FR-023's 'without a URN': the stale refusal carries stale_from_lane. Judged against the amended criterion."
+    },
+    {
+      "criterion_id": "FR-024",
+      "description": "TransitionUnit.operation selects core's door; the lifecycle claim rules (actor compatibility, placeholders, implementer of record, role-aware review re-claim, start_rejected) apply per research decision 15.",
+      "proof_type": "automated_test",
+      "evidence": "WriteBodiesTest.theLifecycleOperationIsTypedAndAbsentMeansTransition; contracts TransitionUnit.yaml operation, WriteOperation.yaml, CHANGELOG 1.0.1-SNAPSHOT; ClaimRulesTest 12, ActorCompatibilityTest 3, UnitJudgeTest 10; ParityCorpusTest 239 (claim-*, claim-start-*, 3 decision15-* cases); WriteIntegrationTest us2-3 (WP_ALREADY_CLAIMED).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:36:58.449046+00:00",
+      "notes": "Per research decision 15 and the maintainer ruling keeping the optional operation field. A start from planned is two batch units (batch-start-planned)."
+    },
+    {
+      "criterion_id": "FR-025",
+      "description": "A refusal's detail is core's message unless it would echo a request value, then a fixed text.",
+      "proof_type": "automated_test",
+      "evidence": "DetailPolicyTest 2 (every reason has a non-echoing detail; lane vocabulary messages verbatim); ParityCorpusTest compares core's message for every core-oracle refusal (239); ProtocolCorpusTest asserts HTTP detail == DetailPolicy.detail(reason, core message) or a fixed text per code (34).",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:37:00.272425+00:00",
+      "notes": "Fixed texts for echo risks verified, e.g. 'The Mission was not found.'."
+    },
+    {
+      "criterion_id": "FR-026",
+      "description": "Checks run in the spec's eleven-step order and the first failure answers.",
+      "proof_type": "automated_test",
+      "evidence": "WriteServiceTest (14): malformedRowStopsBeforeMissionLookup, coordinationSurfacePrecedesAnUnknownMission, missingMission...BeforeLaterPorts, locationAndWorkPackageRefusalsPrecedeTheTurn, locationMismatchPrecedesUnknownWorkPackage, unknownWorkPackagePrecedesDuplicateRequestIds, duplicateRequestIdPrecedesTheTurn, tornOrUnreducible..., authorityAndPersistence...; ReplayClassifierTest 3.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:37:02.105339+00:00",
+      "notes": "Each test asserts the later port's call counter is zero. Replay (step 9) before authority (step 10) is pinned by replay-stale-from-is-still-replay."
+    },
+    {
+      "criterion_id": "FR-027",
+      "description": "Row kinds are checked at the edge: a transition row first, then annotation rows with wp_id and a non-empty delta; anything else is 400.",
+      "proof_type": "automated_test",
+      "evidence": "WriteBodiesTest (17): rowZeroMustBeATransitionEvenIfKindIsNull, laterAndStandaloneRowsMustBeUsefulAnnotations (wp_id pattern, non-empty delta), aRowRequiresAnObjectValue, aBatchRuleFailureNamesItsUnit, everyContractExampleWithRowsPassesTheNewRules; ProtocolCorpusTest 34; WriteIntegrationTest us5.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:37:03.911953+00:00",
+      "notes": "All contract examples pass the new row rules; OperationsTest rows updated accordingly."
+    },
+    {
+      "criterion_id": "FR-028",
+      "description": "Failed writes or syncs are truncated back and answer 500; non-finite numbers and unsubtractable session pairs are 400 and pinned by invalid fixtures.",
+      "proof_type": "automated_test",
+      "evidence": "StatusLogFaultInjectionTest 6 (120-iteration, 4-fault matrix: truncated back, never durable on failure; rollbackTruncatesThenForces, failedParentDirectorySyncRollsBackANewFile, rollbackFailureIsSuppressed...); ProtocolCorpusTest.invalidStatusRows 5/5 -> 400 REQUEST_MALFORMED, log bytes unchanged; invalid fixtures non_finite_{nan,infinity,overflow}, session_pair_{aware_then_naive,naive_then_aware}.",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-sonnet-5-5:reviewer",
+      "verified_at": "2026-11-08T21:37:05.722114+00:00",
+      "notes": "Non-finite and mixed-awareness pinned as invalid fixtures in both bindings (StatusAppendFixtureTest 26, Python test_status_append 25)."
+    }
+  ],
+  "negative_invariants": []
+}

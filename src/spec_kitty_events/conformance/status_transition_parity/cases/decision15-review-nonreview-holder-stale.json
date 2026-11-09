@@ -1,0 +1,144 @@
+{
+  "area": "review_claim",
+  "expected": {
+    "code": "TRANSITION_REJECTED",
+    "message": "The unit's from_lane is not the work package's current lane.",
+    "reason": "urn:spec-kitty:write-refusal:stale_from_lane",
+    "result": "refusal",
+    "unit": null
+  },
+  "id": "decision15-review-nonreview-holder-stale",
+  "layer": "domain",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-11T10:00:02+00:00",
+      "event_id": "000000000000000000000DBBA1",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "genesis",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "planned",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-11T10:00:04+00:00",
+      "event_id": "000000000000000000000DBBA3",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "planned",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "claimed",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-11T10:00:06+00:00",
+      "event_id": "000000000000000000000DBBA5",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "claimed",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "in_progress",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-11T10:00:08+00:00",
+      "event_id": "000000000000000000000DBBA7",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "in_progress",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "for_review",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "reviewer-a",
+      "at": "2026-01-11T10:00:10+00:00",
+      "event_id": "000000000000000000000DBBA9",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "for_review",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": "review/WP01/claim",
+      "to_lane": "in_review",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "reviewer-a",
+      "at": "2026-01-11T10:00:11+00:00",
+      "delta": {
+        "role": "implementer"
+      },
+      "event_id": "000000000000000000000DBBAC",
+      "kind": "annotation",
+      "wp_id": "WP01"
+    }
+  ],
+  "mission": {
+    "directory": "999-status-transition-parity",
+    "mission_id": "01J00000000000000000000000",
+    "mission_slug": "999-status-transition-parity"
+  },
+  "notes": "Research §11 decision 15: a non-reviewer in_review holder makes core no-op, so the for_review -> in_review row is a stale protocol refusal.",
+  "operation": "start_review",
+  "oracle": "protocol",
+  "request": {
+    "kind": "unit",
+    "units": [
+      {
+        "operation": "start_review",
+        "rows": [
+          {
+            "actor": "reviewer-b",
+            "at": "2026-01-11T10:00:14+00:00",
+            "event_id": "000000000000000000000DBBAD",
+            "evidence": null,
+            "execution_mode": "worktree",
+            "force": false,
+            "from_lane": "for_review",
+            "mission_id": "01J00000000000000000000000",
+            "mission_slug": "999-status-transition-parity",
+            "policy_metadata": null,
+            "reason": "Started review via action command",
+            "review_ref": "action-review-claim",
+            "to_lane": "in_review",
+            "wp_id": "WP01"
+          }
+        ],
+        "wpId": "WP01"
+      }
+    ]
+  },
+  "tasks": {
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP03\n"
+  }
+}

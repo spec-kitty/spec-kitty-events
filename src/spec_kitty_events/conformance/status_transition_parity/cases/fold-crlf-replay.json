@@ -1,0 +1,55 @@
+{
+  "area": "fold",
+  "expected": {
+    "result": "ack",
+    "units": [
+      {
+        "appendedLines": 0,
+        "replayed": true
+      }
+    ]
+  },
+  "id": "fold-crlf-replay",
+  "layer": "service",
+  "log_text": "{\"actor\": \"implementer-a\", \"at\": \"2026-01-01T08:20:02+00:00\", \"event_id\": \"00000000000000000000007531\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"genesis\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"planned\", \"wp_id\": \"WP01\"}\r\n{\"actor\": \"implementer-a\", \"at\": \"2026-01-01T08:20:04+00:00\", \"event_id\": \"00000000000000000000007533\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP01\"}\r\n",
+  "mission": {
+    "directory": "999-status-transition-parity",
+    "mission_id": "01J00000000000000000000000",
+    "mission_slug": "999-status-transition-parity"
+  },
+  "notes": "Research \u00a711 decision 10: a trailing CR in each logged line is ignored for replay, which appends and fsyncs nothing.",
+  "operation": "transition",
+  "oracle": "protocol",
+  "request": {
+    "kind": "unit",
+    "units": [
+      {
+        "operation": "transition",
+        "rows": [
+          {
+            "actor": "implementer-a",
+            "at": "2026-01-01T08:20:04+00:00",
+            "event_id": "00000000000000000000007533",
+            "evidence": null,
+            "execution_mode": "worktree",
+            "force": false,
+            "from_lane": "planned",
+            "mission_id": "01J00000000000000000000000",
+            "mission_slug": "999-status-transition-parity",
+            "policy_metadata": null,
+            "reason": null,
+            "review_ref": null,
+            "to_lane": "claimed",
+            "wp_id": "WP01"
+          }
+        ],
+        "wpId": "WP01"
+      }
+    ]
+  },
+  "tasks": {
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP03\n"
+  }
+}
