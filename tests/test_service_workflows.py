@@ -107,6 +107,14 @@ def test_only_the_publish_job_can_write() -> None:
     assert jobs["publish"]["if"] == "github.event_name == 'push'"
 
 
+def test_publish_runs_in_the_protected_release_environment() -> None:
+    # #152: the environment carries the required reviewers and the service-v* tag policy, so the
+    # write token is only issued after a reviewer approves the run.
+    jobs = _load(RELEASE)["jobs"]
+    assert jobs["publish"]["environment"] == "service-release"
+    assert all("environment" not in job for name, job in jobs.items() if name != "publish")
+
+
 def test_release_triggers_only_on_service_tags() -> None:
     on = _on(_load(RELEASE))
     assert set(on) == {"push", "workflow_dispatch"}
