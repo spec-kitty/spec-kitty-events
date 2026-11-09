@@ -10,6 +10,7 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 plugins {
     id("events.service")
     `java-library`
+    `java-test-fixtures`
     id("io.spring.dependency-management")
 }
 
@@ -24,6 +25,8 @@ dependencies {
     api(project(":domain-model"))
     implementation(libs.jackson.core)
 
+    testFixturesImplementation(libs.archunit.junit5)
+
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj.core)
     testImplementation(libs.archunit.junit5)
@@ -32,12 +35,37 @@ dependencies {
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
+tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    violationRules {
+        rule {
+            element = "METHOD"
+            includes = listOf(
+                "org.speckitty.missionstatus.adapter.out.statuslog.*",
+                "org.speckitty.missionstatus.adapter.out.filesystem.codec.StatusRow*",
+                "org.speckitty.missionstatus.adapter.out.filesystem.codec.PythonFloatRepr",
+            )
+            limit {
+                counter = "COMPLEXITY"
+                value = "TOTALCOUNT"
+                maximum = "15".toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn("jacocoTestCoverageVerification")
+}
+
 tasks.named<Test>("test") {
     useJUnitPlatform()
     // A root-level `./gradlew test --tests <pattern>` selects this task too; a pattern that names a root test must not fail it.
     filter.isFailOnNoMatchingTests = false
     // The boundary test imports exactly this module's production classes.
     systemProperty("module.mainClasses", sourceSets.main.get().output.classesDirs.asPath)
+    val statusAppendFixtures = rootProject.file("src/spec_kitty_events/conformance/fixtures/status_append")
+    inputs.dir(statusAppendFixtures).withPathSensitivity(org.gradle.api.tasks.PathSensitivity.RELATIVE)
+    systemProperty("eventLog.statusAppendFixtures", statusAppendFixtures.absolutePath)
     // The ledger lock calls flock(2) through the FFM API (a restricted method); without this the JDK warns on every run.
     jvmArgs("--enable-native-access=ALL-UNNAMED")
 }

@@ -1,0 +1,7 @@
+{
+  "input_json": "{\"text\":\"\\b\\f\\n\\r\\t\\u0000\\u001f\\u007f\\\"\\\\/\\ud800\"}",
+  "expected_line": "{\"text\": \"\\b\\f\\n\\r\\t\\u0000\\u001f\\u007f\\\"\\\\/\\ud800\"}\n",
+  "covers": [
+    "escaping_control_characters"
+  ]
+}

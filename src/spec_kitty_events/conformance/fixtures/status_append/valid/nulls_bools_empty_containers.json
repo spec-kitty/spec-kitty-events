@@ -1,0 +1,7 @@
+{
+  "input_json": "{\"null\":null,\"true\":true,\"false\":false,\"empty_object\":{},\"empty_array\":[]}",
+  "expected_line": "{\"empty_array\": [], \"empty_object\": {}, \"false\": false, \"null\": null, \"true\": true}\n",
+  "covers": [
+    "nulls_bools_empty_containers"
+  ]
+}

@@ -192,25 +192,37 @@ The service is released on this repository's `service-v*` line, separate from th
 
 ## Package layout
 
-Root package `org.speckitty.missionstatus`. The service is a read-only query side; the command side is reserved and does not exist.
+Root package `org.speckitty.missionstatus`. The service is a read-only query side; the write side is `command-cli`.
 
-The build has three Gradle projects, the first three of the four modules of #6117 decision 12. The root project is the `query-service` deployable (this service); the two libraries were extracted from it by #6192 and keep their package names, so the architecture rules below still cover their classes:
+The build holds the four modules of #6117 decision 12: this `query-service` deployable (`:mission-status-api`), the two libraries extracted from it by #6192 (`domain-model/`, `event-log/`), and the write service (`command-cli/`). The two libraries keep their package names, so the architecture rules below still cover their classes:
 
 - `domain-model/` holds `domain.model`: the Mission status types (Mission, work package, lane, status event and snapshot). It declares no dependency and uses no `java.io` or `java.nio.file`; `DomainModelBoundaryTest` holds it to the JDK packages of rule 1b.
-- `event-log/` holds the event-log reader and fold, and the ledger file mechanics:
+- `event-log/` holds the event-log reader and fold, the ledger file mechanics, and the status-log appender:
   - `adapter.out.filesystem.codec` is the line decoder and its byte rules;
   - `domain.readmodel.reducer` is the event ordering and `StatusReducer`;
   - `adapter.out.ledger` holds the ledger lock and the torn-tail repair (#6193 follow-up). The lock is `LedgerLocks.forThisOs()`: `flock(2)` through FFM on Linux and macOS, `FileChannel.lock` on Windows, so it excludes the CLI's `kernel.locks` holder. `TornTailRepair` is the Java port of the glossary ledger's `_repair_torn_tail`, held byte for byte to the goldens in `src/test/resources/torn-tail/repair-cases.json`, which Python is tested against too.
+  - `adapter.out.statuslog` is the status-log appender #160 added: `StatusLogAppender` takes `<gcd>/spec-kitty-locks/<missionDirectory basename>.status.lock` and yields one `LockedStatusLogSession` for `<mission>/status.events.jsonl`; that session refuses a torn tail and permits one LF-terminated append plus sync, with a parent-directory sync when the log is created and a truncate-and-force rollback on failure. It takes encoded bytes, never rows. `EventLogBoundaryTest` holds it to itself, `adapter.out.ledger` and `java..`, and the FR-010 rule makes it the only package that opens a status event log for writing.
 
-  Among project modules it depends on `domain-model` only; its one library is the Jackson streaming parser, which only the codec may use. `EventLogBoundaryTest` holds each of the three packages to its own allowlist and the module to those three packages. The codec and the reducer open no file; the ledger package opens and locks files with the JDK alone and reads no row, and it is the one package outside `adapter.out.filesystem` that the query service's architecture rule 7 lets use file APIs (the query service sees it only because `event-log` is on its classpath). The read side's file reading (`FilesystemMissionEventSourceLedger`, with the tail-cursor byte rules) stays in this service for now; the write side's append adapter (#6193) goes into this module under a rule of its own.
+  Among project modules it depends on `domain-model` only; its one library is the Jackson streaming parser, which only the codec may use. `EventLogBoundaryTest` holds each of the four packages to its own allowlist and the module to those four packages. The codec and the reducer open no file; the ledger package opens and locks files with the JDK alone and reads no row, and it is the one package outside `adapter.out.filesystem` that the query service's architecture rule 7 lets use file APIs (the query service sees it only because `event-log` is on its classpath). The read side's file reading (`FilesystemMissionEventSourceLedger`, with the tail-cursor byte rules) stays in this service for now; the write side's append adapter is the `statuslog` package above.
 
 The service project (`:mission-status-api`, this directory) holds everything else:
 
 - `application.query`: `MissionStatusQueryService`, `ProjectionCache`, and `stream` (`ChangeFeed`, `StreamSubscriber`, `Resume`, `StreamSettings`).
 - `application.query.port.in` and `application.query.port.out` hold interfaces only (`MissionStatusQuery`, `Subscription`; `MissionEventSource`). Their value types are in `dto`, their failures in `exceptions`.
-- `application.command`: reserved. Nothing in `application.query` may depend on it (an architecture rule).
+- `application.command`: reserved for the read service. Nothing in `application.query` may depend on it (an architecture rule).
 - `domain.readmodel` (`overview`, `paging`, `cursor`, `artifact`) and `domain.redaction`.
 - `adapter.in.http`, `adapter.out.filesystem` and `config`.
+
+### `command-cli/`
+
+The write service is a separate deployable with its own package tree (`org.speckitty.commandcli`), documented in [`command-cli/README.md`](./command-cli/README.md):
+
+- `domain.authority`: the pure write authority — the fold (`WriteFold`), the lane machine (`LaneMachine`, `Guards`), pipeline guards, dependency readiness, the claim and start rules (`claim/`), and the per-unit/batch judging. `AuthorityPurityTest` keeps it free of IO and frameworks.
+- `application.write`: `WriteService` (the FR-026 check order), `WriteTurn`, `ReplayClassifier`, and the `port` interfaces (`MissionCatalog`, `StatusLog`, `RowCodec`).
+- `adapter.out.mission`: Mission discovery and work-package facts on the verified root checkout (`RootCheckout`, `FilesystemMissionCatalog`, `DiskMissionFacts`, `Frontmatter`, `Yaml12Schema`, `TasksFiles`).
+- `adapter.out.statuslog`: `EventLogStatusLog` and `EventLogRowCodec`, the application ports over event-log's appender and canonical row codec.
+- `adapter.out.filesystem` is the only `command-cli` package that writes files — the endpoint and service-lock files — held by `WriteOwnershipRulesTest` (FR-010); status logs go through event-log's `statuslog` package.
+- `adapter.in.http` (the edge filters and the write controller) and `config` (the composition root and lifecycle).
 
 ## Tests
 

@@ -1,0 +1,356 @@
+{
+  "event_count": 122,
+  "last_event_id": "01M6YG4DBHC37HQH1K17F45R4H",
+  "materialized_at": "2026-11-08T21:13:21.009314+00:00",
+  "mission_number": "",
+  "mission_slug": "events-write-core-01M6TP6W",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 10,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "lane": "approved",
+      "last_event_id": "01M6V2DEZXFNMA7ZGCANQNTPJH",
+      "last_transition_at": "2026-11-07T13:15:54.237997+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Opus review APPROVE: 0 mismatches over 3006 differential rows vs core; minors 1-2 fixed in a follow-up commit, 3 accepted (core's own Python 3.11), 4 left as a minor"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://events-write-core-01M6TP6W/WP01-python-reference-encoder/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done",
+        "T005": "done",
+        "T006": "done"
+      }
+    },
+    "WP02": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "lane": "approved",
+      "last_event_id": "01M6V668N48NXHPN43BQZBSYP3",
+      "last_transition_at": "2026-11-07T14:21:52.676200+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Cycle 2: Opus MAJOR (symlinked log) and minors 1-5 fixed in 0cd518ca; diff reviewed by orchestrator; :event-log:check 492 green"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "review-cycle://events-write-core-01M6TP6W/WP02-status-log-appender/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done",
+        "T011": "done",
+        "T012": "done",
+        "T013": "done"
+      }
+    },
+    "WP03": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "lane": "approved",
+      "last_event_id": "01M6VKMGPD8Y6AHXM4TQMW6BK2",
+      "last_transition_at": "2026-11-07T18:16:51.149632+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Cycle 2: Opus MAJORs (ISO week 1, C-parser divergences) and minors fixed in 043ad534; orchestrator re-ran the committed differential: 1455 forms, 0 mismatches vs CPython 3.11.15"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "review-cycle://events-write-core-01M6TP6W/WP03-contract-and-typed-edge/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T014": "done",
+        "T015": "done",
+        "T016": "done",
+        "T017": "done",
+        "T018": "done",
+        "T019": "done"
+      }
+    },
+    "WP04": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "lane": "approved",
+      "last_event_id": "01M6VJ5XA7G179XYKJD5RA1ZXN",
+      "last_transition_at": "2026-11-07T17:51:23.975590+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Cycle 2: all 3 Opus MAJORs and 8 minors fixed in a9e6909e; orchestrator verified core --check exit 0 (166 core, 0 drift), clock-ahead lift case has approval ahead of departure, legacy unmet dependency and no-tasks-file cases present"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "review-cycle://events-write-core-01M6TP6W/WP04-parity-corpus/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T020": "done",
+        "T021": "done",
+        "T022": "done",
+        "T023": "done",
+        "T024": "done",
+        "T025": "done"
+      }
+    },
+    "WP05": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "lane": "approved",
+      "last_event_id": "01M6VRKE8EP5DE3KAPQMV853MQ",
+      "last_transition_at": "2026-11-07T19:43:38.766294+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Opus review: independent 2572-row differential; the one MAJOR (CPython total_seconds float rounding on >2^34 s spans) fixed by the orchestrator in the follow-up commit with a core-generated fixture; minor (4300-digit ints) filed as a follow-up"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://events-write-core-01M6TP6W/WP05-java-encoder/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T027": "done",
+        "T028": "done",
+        "T029": "done",
+        "T030": "done",
+        "T031": "done"
+      }
+    },
+    "WP06": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "lane": "approved",
+      "last_event_id": "01M6W848JYJ9VZ1FKQNMCMFZMQ",
+      "last_transition_at": "2026-11-08T00:14:58.654305+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Cycle 2: Opus MAJORs (done evidence on every lane with Python truthiness; retrospective non-lane rows) and minors fixed in e5118115 with 9 new core-generated cases; orchestrator verified --check 175 core / 0 drift and ParityCorpusTest/PipelineGuards/WriteFold green; fold fuzz 3000 logs 0 mismatches"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "review-cycle://events-write-core-01M6TP6W/WP06-write-domain-fsm-guards/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T032": "done",
+        "T033": "done",
+        "T034": "done",
+        "T035": "done",
+        "T036": "done",
+        "T037": "done",
+        "T038": "done"
+      }
+    },
+    "WP07": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "lane": "approved",
+      "last_event_id": "01M6WRWGT3YK3RT6H1H0YNY4VH",
+      "last_transition_at": "2026-11-08T05:07:50.723728+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Cycle 2: both Opus MAJORs (start_implementation force reaches guards only from review lanes; latest implementer in raw log order) and 3 minors fixed in 005cb0f3; reviewer probe rerun 1603 scenarios 0 mismatches; orchestrator verified --check 185 core / 0 drift"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "review-cycle://events-write-core-01M6TP6W/WP07-write-domain-deps-claims-batch/review-cycle-2.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T039": "done",
+        "T040": "done",
+        "T041": "done",
+        "T042": "done",
+        "T043": "done"
+      }
+    },
+    "WP08": {
+      "actor": "claude",
+      "agent": "claude:claude-opus-5-5:reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 10,
+      "lane": "approved",
+      "last_event_id": "01M6YDAYS7MBBDJQ0WKJHS7Y2F",
+      "last_transition_at": "2026-11-08T20:24:29.735720+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Implemented by opencode tokenfactory/kimi-k3 (3 runs); f4c35699 merged as 66ec32f8. :command-cli:check 984 JVM+10 process+1 benchmark+133 native-tagged green; benchmark p50 78.6 ms p95 102.1 ms",
+        "Cycle 2: fix review-cycle-1 findings",
+        "Cycle 2: all 15 review-cycle-1 findings fixed (154eead7), merged with stale_from_lane ruling; merged tree command-cli check 1025/133/11/1 green; p50 85.8 ms p95 110.5 ms",
+        "Cycle 3: fix review-cycle-2 findings",
+        "Cycle 3: review-cycle-2 findings 1-8 fixed (37b9c3a5); command-cli check 1052/133/11/1; generator drift 0 (199 core); p95 118.8 ms",
+        "Cycle 4: fix review-cycle-3 findings",
+        "Cycle 4: review-cycle-3 findings 1-6 fixed; command-cli check 1064/133/11/1; generator drift 0 (202 core); gen_cases 302->73 (out-of-scope groups only); p95 130.6 ms",
+        "Cycle 5: R19 explicit tags fail closed; digit set parity",
+        "Cycle 5: R19 + digit set (639c2486); command-cli check 1072/133/11/1; generator drift 0 (200 core); direct diff 2024 cases, 0 fail-open; p95 115.4 ms",
+        "Cycle 6: R20 plain-YAML subset; class floor; digit test",
+        "Cycle 6: R20 + floors 57/38 + digit set hash (6718d4d9); command-cli check 1078/133/11/1; generator drift 0 (199 core); 6475-input diff 0 fail-open; p95 100.6 ms",
+        "Cycle 7: key equality, merge dup, R21 flow colon, block scalar indent",
+        "Cycle 7: key equality, merge dup, R21, block scalar (1b1e3e55); command-cli check 1086/133/11/1; drift 0 (199 core); 11434-input diff 0 fail-open; p95 108.7 ms",
+        "Cycle 8 (Sonnet 5.5 per maintainer): NaN keys, block-scalar indent, unhashable keys",
+        "Cycle 8 (Sonnet 5.5): audit rulings R22-R29, YAML 1.2 schema, RootCheckout (4ea029aa); command-cli check 1116/133/11/1; drift 0 (196 core); 46757 static + 349 e2e probes 0 fail-open; p95 98.3 ms",
+        "Cycle 9 (Sonnet 5.5): RootCheckout crash + fail-closed, R29 widened, R30",
+        "Cycle 9 (Sonnet 5.5): GitConfig port, R29 widened, R30 (214b8109); command-cli check 1132/133/11/1; drift 0; 98426 static + 265 e2e + 15000 config fuzz, 0 fail-open; p95 97.0 ms",
+        "Cycle 10 (Sonnet 5.5): R31 RootCheckout asks git",
+        "Cycle 10 (Sonnet 5.5): R31 RootCheckout asks git, GitConfig deleted (282825f8); command-cli check 1139/133/11/1; drift 0; config diffs match git; p95 111.7 ms",
+        "Re-record the cycle-10 hand-off with the implementer's full identity (Claude Sonnet 5.5) so review independence is provable",
+        "Cycle 10 implementation by Claude Sonnet 5.5 (282825f8, minors caddb77d)",
+        "Opus review cycle 10 APPROVE: no real fail-open; R31 sound; DoD holds; minors fixed in caddb77d"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "review-cycle://events-write-core-01M6TP6W/WP08-write-service-cut-over/review-cycle-10.md",
+        "reviewer": "claude:claude-opus-5-5:reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T044": "done",
+        "T045": "done",
+        "T046": "done",
+        "T047": "done",
+        "T048": "done",
+        "T049": "done",
+        "T050": "done",
+        "T051": "done"
+      }
+    },
+    "WP09": {
+      "actor": "claude",
+      "agent": "claude:claude-opus-5-5:reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "lane": "approved",
+      "last_event_id": "01M6YG4DBHC37HQH1K17F45R4H",
+      "last_transition_at": "2026-11-08T21:13:21.009314+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP09 docs and changelog, opencode tokenfactory/kimi-k3",
+        "WP09 by opencode tokenfactory/deepseek-v4.1-flash-1017 (kimi-k3 unavailable): f248890a merged as 810eab66; validate, changelog check/guard, docs tests 74, contract tests 379, ruff green",
+        "Cycle 2: fix review-cycle-1 findings",
+        "Cycle 2: all review-cycle-1 findings fixed (4befdaec)",
+        "Review cycle 2 APPROVE (orchestrator diff review after Sonnet cycle-1 review)"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "reference": "review-cycle://events-write-core-01M6TP6W/WP09-docs-and-changelog/review-cycle-2.md",
+        "reviewer": "claude:claude-opus-5-5:reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T052": "done",
+        "T053": "done",
+        "T054": "done",
+        "T055": "done",
+        "T056": "done"
+      }
+    },
+    "WP10": {
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "lane": "approved",
+      "last_event_id": "01M6VN71PYGTW1R266FQZ7BHX5",
+      "last_transition_at": "2026-11-07T18:44:26.975001+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Orchestrator review: job SHA-pinned with existing pins, release-run skip, in service-gate needs, detect paths cover generators and oracles; runs core's own venv (3.11); all three --check exit 0 locally with the exact CI invocation (no PYTHONPATH); workflow tests 123 passed"
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://events-write-core-01M6TP6W/WP10-write-core-parity-ci/review-cycle-1.md",
+        "reviewer": "claude",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T026": "done",
+        "T057": "done",
+        "T058": "done"
+      }
+    }
+  }
+}

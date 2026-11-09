@@ -1,0 +1,7 @@
+{
+  "input_json": "{\"😀\":\"astral\",\"￿\":\"bmp\",\"a\":{\"é\":2,\"z\":1}}",
+  "expected_line": "{\"a\": {\"z\": 1, \"\\u00e9\": 2}, \"\\uffff\": \"bmp\", \"\\ud83d\\ude00\": \"astral\"}\n",
+  "covers": [
+    "key_order_code_points"
+  ]
+}

@@ -231,6 +231,17 @@ DOCS_DETECT = (DOCS, "build", "Decide whether the change touches the docs")
         (SERVICE_DETECT, "contracts/mission-write/openapi.yaml", "true"),
         (SERVICE_DETECT, "gradlew", "true"),
         (SERVICE_DETECT, "src/spec_kitty_events/producer_contract/rows.py", "true"),
+        (
+            SERVICE_DETECT,
+            "src/spec_kitty_events/conformance/fixtures/status_append/valid/case.json",
+            "true",
+        ),
+        (
+            SERVICE_DETECT,
+            "src/spec_kitty_events/conformance/status_transition_parity/case.json",
+            "true",
+        ),
+        (SERVICE_DETECT, "scripts/conformance/generate_status_append.py", "true"),
         (SERVICE_DETECT, "docs/guides/contributing.md", "false"),
         (SERVICE_DETECT, "src/spec_kitty_events/status.py", "false"),
         (DOCS_DETECT, "docs/guides/contributing.md", "true"),
@@ -311,7 +322,14 @@ def test_service_detect_covers_every_push_path() -> None:
 def test_service_jobs_skip_through_detect_and_the_gate_still_always_reports() -> None:
     jobs = _load(SERVICE)["jobs"]
     assert jobs["detect"]["outputs"]["run"] == "${{ steps.changes.outputs.run }}"
-    for name in ("contract-bundle", "gradle", "native", "native-command-cli", "lock-interop"):
+    for name in (
+        "contract-bundle",
+        "gradle",
+        "native",
+        "native-command-cli",
+        "lock-interop",
+        "write-core-parity",
+    ):
         assert "needs.detect.outputs.run == 'true'" in jobs[name]["if"], name
     assert jobs["service-gate"]["if"] == "always()"
 

@@ -2,7 +2,7 @@
 title: Services
 description: The services of the events domain, the Mission Status Read API and the write service (command-cli), and how they read and write the event logs. The code lives here.
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Architecture
 kind: Hub
 okf_version: "0.2"
@@ -11,7 +11,8 @@ okf_version: "0.2"
 # Services
 
 The events domain has a read service and a write service, `command-cli`. The write service runs
-and its writes refuse fail-closed until the write core lands (#160, #161). Their code and
+and its write core serves `checkout_append`: durable, byte-exact status appends under the same
+per-Mission lock core's Python writer takes (#160, #161). Their code and
 contracts live in this repository, under `service/` and `contracts/`, imported from core
 (`spec-kitty/spec-kitty`) at `512567eee71e31bb39f580c4f7acf8b865e9d1b2` with their history
 ([ADR-0002](../../adr/0002-events-domain-owns-its-services.md)). These pages describe them

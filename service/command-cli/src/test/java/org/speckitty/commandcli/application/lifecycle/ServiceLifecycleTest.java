@@ -153,14 +153,6 @@ class ServiceLifecycleTest {
   }
 
   @Test
-  void theGateRefusesEveryWriteFailClosed() {
-    WriteGate.Refusal refusal = new WriteGate().persist();
-
-    assertThat(refusal.code()).isEqualTo(RefusalCode.STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED);
-    assertThat(refusal.detail()).isEqualTo(WriteGate.NOT_BUILT);
-  }
-
-  @Test
   void theIdentityChecksTheVersionAndListsTheProtocol() {
     InstanceId instance = InstanceId.mint(1L, new SecureRandom());
     RepositoryId repository = new RepositoryId("6b4ca2db35cfaf43d6963005a8445402c4ea6f70b038086ad0d6decda64670c0");

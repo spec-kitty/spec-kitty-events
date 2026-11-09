@@ -2,7 +2,7 @@
 title: System context
 description: The systems around the event contract — the CLI core that produces events, the transports they travel on, the consumers that reduce them, and the loopback read and write services.
 doc_status: active
-updated: 2026-11-03T00:00:00Z
+updated: 2026-11-08T00:00:00Z
 type: Context
 kind: Explanation
 related:
@@ -37,7 +37,7 @@ flowchart TB
     writesvc["command-cli<br/>write service"]
   end
   cli -->|launcher starts and drives| writesvc
-  writesvc -->|append — fail-closed gate<br/>until the write core lands| diary
+  writesvc -->|append — durable status appends| diary
   diary -->|reads| readsvc
   readsvc -->|status over loopback HTTP| cli
 
@@ -89,9 +89,10 @@ address.
   [Running the Mission Status Read API](/guides/running-the-service/).
 - **The write service, `command-cli`**, is the canonical event writer. The CLI's launcher
   starts one process per git common dir and drives it; the service publishes its host, its
-  OS-picked port and its bearer token to the launcher alone in `endpoint.json`. Until the
-  write core lands, every write carries the **fail-closed write gate**: the request's shape
-  is checked, then refused, and nothing is appended. The protocol is in
+  OS-picked port and its bearer token to the launcher alone in `endpoint.json`. Its write core
+  is built (#160, #161): a write that passes every check is appended and synced, or replayed,
+  and the service answers a `DurabilityAck`; `coordination_ref_commit` waits for migration
+  step 4. The protocol is in
   [write-service protocol](/architecture/services/write-service-protocol/); both services
   are mapped in [Services](/architecture/services/).
 

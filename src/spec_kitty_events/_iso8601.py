@@ -1,4 +1,4 @@
-"""Shared ISO-8601/RFC-3339 timestamp shape normalization.
+"""Shared ISO-8601/RFC-3339 timestamp shape normalization and parsing.
 
 Private module (spec-kitty-events#143): factored out of ``strict.py``,
 ``retrospective.py``, and ``conformance/timestamp_semantics.py``, which each
@@ -11,11 +11,27 @@ this module is the one place it lives now. Stays private (leading
 underscore) so no public API surface is added -- each importing module
 re-exports it under its own existing private name, so no consumer or test
 import path changes.
+
+:func:`parse_iso8601_datetime` (spec-kitty-events#160, PR #230 squad
+finding) is the one full parser here, used by ``status_log`` for session
+timestamps. On Python 3.11+ it is exactly
+``datetime.fromisoformat(normalize_iso8601_shape(value))``, the behaviour
+``status_log`` shipped with. On the declared floor (3.10) it is a faithful
+port of CPython 3.11's ``datetime.fromisoformat`` grammar
+(:func:`_parse_isoformat_311`), so every form 3.11 accepts -- basic-format
+dates and times, ISO week dates, ``Z``, hour-only and second/fraction
+offsets, reduced precision, comma fractions and any single-character
+date/time separator -- yields the same ``datetime`` on 3.10 as core's
+interpreter produces. Its oracle is the CPython 3.11 vector set shared with
+the Java port (``service/domain-model/src/test/resources/pyisodatetime/
+vectors.json``).
 """
 
 from __future__ import annotations
 
 import re
+import sys
+from datetime import date, datetime, timedelta, timezone
 
 #: Matches an ISO-8601/RFC-3339 timestamp in either extended
 #: (``2026-08-25T09:00:00.123456+00:00``) or basic (``20260825T090000Z``)
@@ -102,3 +118,306 @@ def normalize_iso8601_shape(value: str) -> str:
     elif ":" not in offset:
         offset = f"{offset[:3]}:{offset[3:]}"
     return f"{date}T{time}{fraction}{offset}"
+
+
+class _InvalidIsoFormat(ValueError):
+    """Internal refusal mirroring ``datetime.fromisoformat``'s ``ValueError``."""
+
+
+#: CPython's ``correction[]`` table in``parse_hh_mm_ss_ff``: a fraction of
+#: fewer than six digits is scaled up to microseconds by this factor.
+_FRACTION_CORRECTION = (100_000, 10_000, 1_000, 100, 10)
+
+_MICROS_PER_DAY = 86_400 * 1_000_000
+
+
+def _is_ascii_digit(character: str) -> bool:
+    """``'0' <= character <= '9'`` without Unicode's wider ``isdigit``."""
+
+    return "0" <= character <= "9"
+
+
+def _is_ascii_digit_byte(value: int) -> bool:
+    return 48 <= value <= 57
+
+
+def _character_at(text: str, index: int) -> str:
+    """Return ``text[index]`` or CPython's NUL terminator past the end.
+
+    CPython's C parser reads a NUL byte one past the UTF-8 buffer, so a
+    check like ``*p != '\\0'`` conflates "past the end" with an embedded
+    NUL. This helper reproduces that for a Python string.
+    """
+
+    if 0 <= index < len(text):
+        return text[index]
+    return "\0"
+
+
+def _byte_at(data: bytes, index: int) -> int:
+    """Return ``data[index]`` or CPython's NUL terminator past the end."""
+
+    if 0 <= index < len(data):
+        return data[index]
+    return 0
+
+
+def _ascii_digits(text: str, start: int, count: int) -> int:
+    """CPython's ``parse_digits``: exactly *count* ASCII digits, no more."""
+
+    value = 0
+    for index in range(start, start + count):
+        character = _character_at(text, index)
+        if not _is_ascii_digit(character):
+            raise _InvalidIsoFormat("expected an ASCII digit")
+        value = value * 10 + (ord(character) - ord("0"))
+    return value
+
+
+def _ascii_digit_bytes(data: bytes, start: int, count: int) -> int:
+    """CPython's ``parse_digits`` over the UTF-8 bytes of the time part."""
+
+    value = 0
+    for index in range(start, start + count):
+        byte = _byte_at(data, index)
+        if not _is_ascii_digit_byte(byte):
+            raise _InvalidIsoFormat("expected an ASCII digit")
+        value = value * 10 + byte - 48
+    return value
+
+
+def _sanitize_isoformat_str(value: str) -> str:
+    """CPython's ``_sanitize_isoformat_str``: allow one surrogate separator.
+
+    ``fromisoformat`` permits a lone surrogate in exactly one position --
+    the date/time separator at index 7, 8 or 10 -- and replaces it with
+    ``T`` before encoding the string as UTF-8. A surrogate anywhere else
+    makes the UTF-8 encode fail, which CPython turns into ``ValueError``.
+    """
+
+    if len(value) < 7:
+        raise _InvalidIsoFormat("ISO-8601 string is shorter than seven characters")
+    for position in (7, 8, 10):
+        if position >= len(value):
+            break
+        if 0xD800 <= ord(value[position]) <= 0xDFFF:
+            value = f"{value[:position]}T{value[position + 1 :]}"
+            break
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise _InvalidIsoFormat("ISO-8601 string is not UTF-8 encodable") from exc
+    return value
+
+
+def _find_datetime_separator(text: str) -> int:
+    """CPython's ``_find_isoformat_datetime_separator`` on code points."""
+
+    length = len(text)
+    if length == 7:
+        return 7
+    if text[4] == "-":
+        if text[5] == "W":
+            if length < 8:
+                raise _InvalidIsoFormat("invalid ISO week date")
+            if length > 8 and text[8] == "-":
+                if length == 9:
+                    raise _InvalidIsoFormat("invalid ISO week date")
+                if length > 10 and _is_ascii_digit(text[10]):
+                    return 8
+                return 10
+            return 8
+        return 10
+    if text[4] == "W":
+        index = 7
+        while index < length and _is_ascii_digit(text[index]):
+            index += 1
+        if index < 9:
+            return index
+        return 7 if index % 2 == 0 else 8
+    return 8
+
+
+def _require_dash(text: str, position: int, dashed: bool) -> None:
+    found = position < len(text) and text[position] == "-"
+    if found != dashed:
+        raise _InvalidIsoFormat("inconsistent date separator")
+
+
+def _calendar_date(year: int, month: int, day: int) -> date:
+    try:
+        return date(year, month, day)
+    except ValueError as exc:
+        raise _InvalidIsoFormat("invalid calendar date") from exc
+
+
+def _parse_iso_week_date(text: str, year: int, dashed: bool, position: int) -> date:
+    week = _ascii_digits(text, position, 2)
+    position += 2
+    day = 1
+    if len(text) > position:
+        _require_dash(text, position, dashed)
+        position += 1 if dashed else 0
+        day = _ascii_digits(text, position, 1)
+    try:
+        return date.fromisocalendar(year, week, day)
+    except ValueError as exc:
+        raise _InvalidIsoFormat("invalid ISO week date") from exc
+
+
+def _parse_isoformat_date(text: str) -> date:
+    """CPython's ``parse_isoformat_date`` for a length-7/8/10 date slice."""
+
+    if len(text) not in (7, 8, 10):
+        raise _InvalidIsoFormat("invalid date length")
+    year = _ascii_digits(text, 0, 4)
+    if year < 1:
+        raise _InvalidIsoFormat("year is out of range")
+    dashed = text[4] == "-"
+    position = 5 if dashed else 4
+    if position < len(text) and text[position] == "W":
+        return _parse_iso_week_date(text, year, dashed, position + 1)
+    month = _ascii_digits(text, position, 2)
+    position += 2
+    _require_dash(text, position, dashed)
+    position += 1 if dashed else 0
+    day = _ascii_digits(text, position, 2)
+    return _calendar_date(year, month, day)
+
+
+def _parse_hh_mm_ss_ff(
+    data: bytes, start: int, end: int, *, offset: bool
+) -> tuple[list[int], bool, bool]:
+    """CPython's ``parse_hh_mm_ss_ff`` over ``data[start:end]``.
+
+    CPython advances a ``char *`` over the UTF-8 bytes, not Unicode code
+    points, so a multi-byte character consumes several positions. Returns
+    ``(components, has_trailing_text, parsed_fraction)``. *offset* only
+    selects the error branch name, as in CPython.
+    """
+
+    components = [0, 0, 0, 0]
+    position = start
+    colon = False
+    for component in range(3):
+        components[component] = _ascii_digit_bytes(data, position, 2)
+        position += 2
+        next_byte = _byte_at(data, position)
+        position += 1
+        if component == 0:
+            colon = next_byte == 58  # ":"
+        if position >= end:
+            return components, next_byte != 0, False
+        if colon and next_byte == 58:  # ":"
+            continue
+        if next_byte in (44, 46):  # "," or "."
+            break
+        if not colon:
+            position -= 1
+        else:
+            raise _InvalidIsoFormat("malformed time separator")
+    count = min(6, end - position)
+    if count <= 0:
+        raise _InvalidIsoFormat("invalid microsecond component")
+    components[3] = _ascii_digit_bytes(data, position, count)
+    if count < 6:
+        components[3] *= _FRACTION_CORRECTION[count - 1]
+    position += count
+    while _is_ascii_digit_byte(_byte_at(data, position)):
+        position += 1
+    return components, _byte_at(data, position) != 0, True
+
+
+def _parse_iso_timezone(data: bytes, position: int) -> int:
+    """CPython's ``parse_timezone``: signed offset as microseconds."""
+
+    start = position + 1
+    if len(data) - start in (0, 1, 3):
+        raise _InvalidIsoFormat("malformed time zone string")
+    components, trailing, _ = _parse_hh_mm_ss_ff(data, start, len(data), offset=True)
+    if trailing:
+        raise _InvalidIsoFormat("trailing text in time zone")
+    hours, minutes, seconds, micros = components
+    whole_seconds = hours * 3_600 + minutes * 60 + seconds
+    if whole_seconds == 0:
+        # CPython's tzinfo_from_isoformat_results returns UTC whenever the
+        # whole-second offset is zero, discarding a sub-second component.
+        return 0
+    magnitude = whole_seconds * 1_000_000 + micros
+    if magnitude >= _MICROS_PER_DAY:
+        raise _InvalidIsoFormat("time zone offset is not strictly within a day")
+    sign = -1 if data[position] == 45 else 1  # "-"
+    return sign * magnitude
+
+
+def _parse_iso_time(text: str) -> tuple[int, int, int, int, int | None]:
+    """CPython's ``parse_isoformat_time`` returning fields and offset micros."""
+
+    if len(text) < 2:
+        raise _InvalidIsoFormat("ISO-8601 time is too short")
+    # CPython parses the time from the UTF-8 encoding, so byte offsets (not
+    # code points) decide where a multi-byte character ends the component.
+    data = text.encode("utf-8")
+    timezone_position = -1
+    for index, byte in enumerate(data):
+        if byte in (43, 45, 90):  # "+", "-", "Z"
+            timezone_position = index
+            break
+    clock_end = timezone_position if timezone_position >= 0 else len(data)
+    components, trailing, _ = _parse_hh_mm_ss_ff(data, 0, clock_end, offset=False)
+    if timezone_position < 0:
+        if trailing:
+            raise _InvalidIsoFormat("trailing text after ISO-8601 time")
+        return components[0], components[1], components[2], components[3], None
+    if data[timezone_position] == 90:  # "Z"
+        if _byte_at(data, timezone_position + 1) != 0:
+            raise _InvalidIsoFormat("text after the UTC designator")
+        return components[0], components[1], components[2], components[3], 0
+    offset = _parse_iso_timezone(data, timezone_position)
+    return components[0], components[1], components[2], components[3], offset
+
+
+def _parse_isoformat_311(value: str) -> datetime:
+    """Parse exactly like CPython 3.11's ``datetime.fromisoformat``.
+
+    This is the 3.10 fallback for :func:`parse_iso8601_datetime`; it is the
+    grammar ported from CPython's C implementation (the same one the Java
+    ``PyIsoDateTime`` binding follows), so it accepts and rejects the same
+    strings and produces the same naive/aware value.
+    """
+
+    text = _sanitize_isoformat_str(value)
+    separator = _find_datetime_separator(text)
+    day = _parse_isoformat_date(text[:separator])
+    if separator >= len(text):
+        return datetime(day.year, day.month, day.day)
+    hour, minute, second, microsecond, offset = _parse_iso_time(text[separator + 1 :])
+    if hour > 23 or minute > 59 or second > 59:
+        raise _InvalidIsoFormat("time component is out of range")
+    if offset is None:
+        return datetime(day.year, day.month, day.day, hour, minute, second, microsecond)
+    return datetime(
+        day.year,
+        day.month,
+        day.day,
+        hour,
+        minute,
+        second,
+        microsecond,
+        tzinfo=timezone(timedelta(microseconds=offset)),
+    )
+
+
+def parse_iso8601_datetime(value: str) -> datetime:
+    """Parse *value* exactly as CPython 3.11's ``datetime.fromisoformat``.
+
+    On 3.11 and later this delegates to ``datetime.fromisoformat`` after
+    :func:`normalize_iso8601_shape`, preserving the byte-for-byte behaviour
+    ``status_log`` has always had. On 3.10 it uses
+    :func:`_parse_isoformat_311`, which closes the grammar gap between
+    3.10's narrower parser and core's 3.11 interpreter.
+    """
+
+    if sys.version_info >= (3, 11):
+        return datetime.fromisoformat(normalize_iso8601_shape(value))
+    return _parse_isoformat_311(value)

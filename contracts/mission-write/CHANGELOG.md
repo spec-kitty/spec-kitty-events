@@ -19,6 +19,17 @@ until it moves its pin.
 
 ### Added
 
+- `WriteOperation`: the values `transition` (core's emit pipeline, as `move-task`, `mark-status` and
+  `status emit` use it), `start_implementation` and `start_review` (core's lifecycle starts, which
+  carry the claim rules). A start from `planned` travels as two units of a batch (spec-kitty/spec-kitty-events#160,
+  #161 and #155).
+- Optional `TransitionUnit.operation`, referencing `WriteOperation`; absent means `transition`. The
+  field is additive, and a client that omits it is unaffected (spec-kitty/spec-kitty-events#160, #161
+  and #155).
+- Example `TransitionUnit.start-implementation.yaml`, a claimed work package resumed by
+  `start_implementation` with one `claimed` to `in_progress` row (spec-kitty/spec-kitty-events#160,
+  #161 and #155).
+- The `WriteOperation` enum pin (spec-kitty/spec-kitty-events#160, #161 and #155).
 - `WriteSurface` value `coordination_ref_commit`: the service commits the appended event log
   straight onto the coordination branch named by `destinationRef`, from git objects, with a
   compare-and-swap update of the ref; no coordination worktree is read or written.
@@ -28,14 +39,42 @@ until it moves its pin.
   nothing written, no retry), `COORDINATION_REF_CHECKED_OUT` (409, the coordination branch is
   checked out in a worktree) and `COORDINATION_LEDGER_UNREADABLE` (500, the event log in the tree
   of the branch tip cannot be read or parsed). They are marked provisional in their descriptions
-  while ADR-0007 is Proposed.
+  until migration step 4 serves the surface.
 - `TransitionBatch`: every unit names the same `missionDirectory`, `writeSurface` and
   `destinationRef`, since a batch is one write (one commit for `coordination_ref_commit`);
   `command-cli` refuses a mixed batch as `REQUEST_MALFORMED`.
 - Examples `WriteRefusal.coordination-ref-moved.yaml` and `DurabilityAck.ref-commit.yaml`.
+- `WriteRefusalReason.stale_from_lane` (`TRANSITION_REJECTED`): a unit's `from_lane` is not the
+  work package's current lane, and `WriteRefusal` binds its `type` to `TRANSITION_REJECTED`. This
+  is an events-side addition with no core equivalent (spec-kitty/spec-kitty-events#160, #161 and
+  #155).
 
 ### Changed
 
+- `STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED` also describes a torn tail (refused, not repaired),
+  a log the write fold cannot reduce, and a failed write or sync after which the append was cut
+  back (spec-kitty/spec-kitty-events#160, #161 and #155).
+- `WRITE_LOCATION_UNVERIFIED` also describes a `coordination_ref_commit` refusal before migration
+  step 4, ahead of any Mission lookup, and the `checkout_append` mismatches of `checkout`,
+  `destinationRef` and `missionDirectory` (spec-kitty/spec-kitty-events#160, #161 and #155).
+- `TRANSITION_REJECTED` carries `WriteRefusalReason.stale_from_lane` for a stale unit whose
+  `from_lane` is not the work package's current lane (spec-kitty/spec-kitty-events#160, #161 and
+  #155).
+- `REQUEST_MALFORMED` also describes a row of the wrong kind for its position, a lane alias or
+  non-canonical lane spelling, a non-finite number, and a session-time pair that cannot be
+  subtracted (spec-kitty/spec-kitty-events#160, #161 and #155).
+- `SERVICE_BUSY` names the 10 s budget shared by the in-process turn and the Mission lock
+  (spec-kitty/spec-kitty-events#160, #161 and #155).
+- `DEPENDENCIES_NOT_SATISFIED` records that a dependency is satisfied when `approved`, `done`, or
+  `canceled` with operator provenance (spec-kitty/spec-kitty-events#160, #161 and #155).
+- `WriteRefusalReason.dependencies_unsatisfied` records the same `approved`, `done`, or
+  operator-provenanced `canceled` satisfaction rule (spec-kitty/spec-kitty-events#160, #161 and
+  #155).
+- `WriteRefusalReason.unknown_lane` names the persisted `Lane` vocabulary of 11 values, not the nine
+  display lanes (spec-kitty/spec-kitty-events#160, #161 and #155).
+- `WriteRefusalReason` records that the CLI raises the core-derived reasons as text today, and that
+  the events-side `stale_from_lane` addition is provisional (spec-kitty/spec-kitty-events#160,
+  #161 and #155).
 - `checkout_append` names the repository root checkout only; a lane worktree is never a status
   surface (operator rulings of 2026-11-06 on spec-kitty/spec-kitty#7276).
 - `RequestContext.checkout` names the caller's checkout; `missionDirectory` is, for
@@ -65,17 +104,22 @@ until it moves its pin.
 ### Provisional
 
 - The protocol-only codes `COORDINATION_REF_MOVED`, `COORDINATION_REF_CHECKED_OUT` and
-  `COORDINATION_LEDGER_UNREADABLE` are provisional while ADR-0007 is Proposed. As with the
-  provisional codes of `1.0.0-SNAPSHOT`, an enum value cannot carry `x-provisional`, so they are
-  marked in their descriptions only and `provisional_check.py` does not see them.
+  `COORDINATION_LEDGER_UNREADABLE` are provisional until migration step 4 serves the surface.
+  As with the provisional codes of `1.0.0-SNAPSHOT`, an enum value cannot
+  carry `x-provisional`, so they are marked in their descriptions only and `provisional_check.py`
+  does not see them.
+- `WriteRefusalReason.stale_from_lane` is a provisional events-side addition with no core
+  equivalent. As with the provisional codes above, an enum value cannot carry `x-provisional`, so
+  it is marked in its description only and `provisional_check.py` does not see it.
 - `statusCommit` of `DurabilityAck` stays provisional until migration step 4 lands.
 
 ### Compatibility
 
 - The protocol major stays 1: a client of the `rc.1`/`rc.2` bundle sending
   `coordination_transaction_append` gets `REQUEST_MALFORMED`, not
-  `PROTOCOL_VERSION_UNSUPPORTED`. Accepted because no client transport exists yet and every write
-  still fails closed (ADR-0007 D-7).
+  `PROTOCOL_VERSION_UNSUPPORTED`. Accepted because no client transport exists yet, and
+  `coordination_ref_commit`, the surface that changes, is refused until migration step 4
+  (ADR-0007 D-7).
 - Core is unaffected until it moves its pin (`service-v0.1.0-rc.1` today). That one tag also
   carries the read-service build, so a read-service pin bump takes this contract change too.
   Core then changes:

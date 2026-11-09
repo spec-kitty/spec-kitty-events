@@ -1,0 +1,18 @@
+title: WriteOperation
+description: >-
+  The core operation that produced the unit. transition is core's emit pipeline, as move-task,
+  mark-status and status emit use it. start_implementation and start_review are core's
+  work_package_lifecycle.start_implementation_status and start_review_status doors, which carry the
+  claim rules. A unit holds one transition row: a start_implementation from planned emits two
+  transitions, which travel as a batch of two units, each with operation start_implementation.
+type: string
+enum:
+  - transition
+  - start_implementation
+  - start_review
+x-derived:
+  rule: >-
+    This contract mints a closed operation vocabulary from core's emit pipeline and its two lifecycle
+    start doors; no single core symbol defines the enum.
+  inputs:
+    - TransitionUnit.operation

@@ -1,0 +1,7 @@
+{
+  "input_json": "{\"two_to_64\":18446744073709551616,\"negative_two_to_70\":-1180591620717411303424,\"zero\":0}",
+  "expected_line": "{\"negative_two_to_70\": -1180591620717411303424, \"two_to_64\": 18446744073709551616, \"zero\": 0}\n",
+  "covers": [
+    "numbers_big_integers"
+  ]
+}

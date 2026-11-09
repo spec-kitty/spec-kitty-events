@@ -102,6 +102,16 @@ class DomainValuesTest {
     assertThat(RefusalCode.REQUEST_MALFORMED.status()).isEqualTo(400);
     assertThat(RefusalCode.SERVICE_DRAINING.status()).isEqualTo(503);
     assertThat(RefusalCode.STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED.status()).isEqualTo(500);
+    assertThat(RefusalCode.TRANSITION_REJECTED.status()).isEqualTo(409);
+    assertThat(RefusalCode.WP_ALREADY_CLAIMED.status()).isEqualTo(409);
+    assertThat(RefusalCode.DEPENDENCIES_NOT_SATISFIED.status()).isEqualTo(409);
+    assertThat(RefusalCode.WP_NOT_FOUND.status()).isEqualTo(404);
+    assertThat(RefusalCode.MISSION_NOT_FOUND.status()).isEqualTo(404);
+    assertThat(RefusalCode.STATUS_LOCK_HELD.status()).isEqualTo(409);
+    assertThat(RefusalCode.BOOKKEEPING_DOUBLE_EVENT_ID.status()).isEqualTo(409);
+    assertThat(RefusalCode.EVENT_ID_CONFLICT.status()).isEqualTo(409);
+    assertThat(RefusalCode.WRITE_LOCATION_UNVERIFIED.status()).isEqualTo(422);
+    assertThat(RefusalCode.SERVICE_BUSY.status()).isEqualTo(503);
     for (RefusalCode code : RefusalCode.values()) {
       assertThat(code.title()).isNotBlank();
     }
