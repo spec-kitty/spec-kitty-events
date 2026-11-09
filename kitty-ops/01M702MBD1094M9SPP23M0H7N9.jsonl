@@ -1,0 +1,2 @@
+{"event": "started", "invocation_id": "01M702MBD1094M9SPP23M0H7N9", "profile_id": "generic-agent", "action": "generate", "request_text": "Implement #232: nightly SonarCloud scan (Python + Java) for spec-kitty-events", "actor": "operator", "mode_of_work": "task_execution", "governance_context_hash": "67e5df7effd91c02", "governance_context_available": true, "started_at": "2026-11-09T11:55:54.722775+00:00"}
+{"event": "completed", "invocation_id": "01M702MBD1094M9SPP23M0H7N9", "completed_at": "2026-11-09T12:27:02.853544+00:00", "outcome": "done", "closed_by": "agent"}

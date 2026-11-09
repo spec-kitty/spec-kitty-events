@@ -1,0 +1,211 @@
+# Informational nightly SonarCloud analysis (#232), modelled on core's sonar.yml.
+#
+# Separate from every merge-blocking workflow: it listens on `schedule` and
+# `workflow_dispatch` only, with NO `pull_request` trigger, so it structurally
+# cannot gate a merge. The four required checks are unaffected.
+#
+# Fork-safe: without the `SONAR_TOKEN` repository secret the job skips green with
+# an advisory notice instead of failing.
+#
+# Coverage provenance: `.github/workflows/sonar.yml` does not consume another
+# run's artefacts. It generates Python coverage (`coverage.xml`) and the Gradle
+# JaCoCo XML reports in this same job, from the checked-out revision
+# (`git rev-parse HEAD`), so coverage always describes the revision that is
+# scanned. If a report is missing the scan still runs, without that report, and
+# the run shows a `::warning::`. It never substitutes another commit's coverage.
+#
+# Nightly cron: 04:17 UTC, off the hour and clear of `service.yml`'s
+# nightly-corpus (03:41 UTC) and the CI canary (05:23 UTC).
+name: sonar
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonar-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    name: SonarCloud scan (informational)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check Sonar token availability (fork-safe skip-green)
+        id: sonar_token
+        shell: bash
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -n "$SONAR_TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "SONAR_TOKEN is configured: the scan runs" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::sonar.yml: SONAR_TOKEN is not configured -- skipping the analysis (advisory-only, green)."
+            echo "SONAR_TOKEN is not configured: the scan was skipped (advisory-only)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Check out repository
+        if: steps.sonar_token.outputs.enabled == 'true'
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          # Full history for Sonar's SCM blame.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up uv
+        if: steps.sonar_token.outputs.enabled == 'true'
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.13.6"
+          python-version: "3.12"
+
+      - name: Install the locked Python environment
+        if: steps.sonar_token.outputs.enabled == 'true'
+        run: uv sync --frozen
+
+      - name: Python tests with coverage.xml
+        id: pytest
+        if: steps.sonar_token.outputs.enabled == 'true'
+        # Informational: a red suite is reported on the step, but the scan still runs.
+        continue-on-error: true
+        run: uv run --frozen pytest --cov-report=xml:coverage.xml
+
+      - name: Set up JDK 25 (Temurin)
+        id: jdk
+        if: steps.sonar_token.outputs.enabled == 'true'
+        continue-on-error: true
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          # The exact JDK `service.yml` and `scripts/ensure_jdk25.sh` pin.
+          java-version: "25.0.5"
+
+      - name: Validate the Gradle wrapper
+        if: steps.sonar_token.outputs.enabled == 'true' && steps.jdk.outcome == 'success'
+        uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Set up Gradle
+        if: steps.sonar_token.outputs.enabled == 'true' && steps.jdk.outcome == 'success'
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Build the contract bundle
+        id: bundle
+        if: steps.sonar_token.outputs.enabled == 'true' && steps.jdk.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run --frozen --no-sync python contracts/tools/bundle.py \
+            --root contracts --out "$RUNNER_TEMP/bundle-out" --module mission-status --bundle-only
+          bundle="$RUNNER_TEMP/bundle-out/bundle/mission-status/openapi.yaml"
+          echo "CONTRACT_BUNDLE=$bundle" >> "$GITHUB_ENV"
+          echo "CONTRACT_BUNDLE_SHA256=$(sha256sum "$bundle" | cut -d' ' -f1)" >> "$GITHUB_ENV"
+
+      - name: Build every Gradle module and its JaCoCo reports
+        id: gradle
+        if: steps.sonar_token.outputs.enabled == 'true' && steps.jdk.outcome == 'success' && steps.bundle.outcome == 'success'
+        # Informational: the scan still runs (without Java binaries if this failed).
+        continue-on-error: true
+        timeout-minutes: 60
+        run: ./gradlew --no-daemon verifyAll
+
+      - name: Collect the revision's coverage and Java analysis paths
+        id: coverage
+        if: always() && steps.sonar_token.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse HEAD)"
+          echo "source-sha=$sha" >> "$GITHUB_OUTPUT"
+
+          python_report=""
+          if [ -s coverage.xml ]; then
+            python_report="coverage.xml"
+          else
+            echo "::warning::sonar: no coverage.xml from the pytest step; scanning without Python coverage (never reusing another revision's report)."
+          fi
+          echo "python-report=$python_report" >> "$GITHUB_OUTPUT"
+
+          jacoco="$(find . \( -path ./.git -o -path ./.venv \) -prune -o \
+            -type f -path '*/build/reports/jacoco/test/jacocoTestReport.xml' -print \
+            | sed 's#^\./##' | sort | paste -sd, -)"
+          if [ -z "$jacoco" ]; then
+            echo "::warning::sonar: no JaCoCo XML report from the Gradle build; scanning without Java coverage (never reusing another revision's report)."
+          fi
+          echo "jacoco-reports=$jacoco" >> "$GITHUB_OUTPUT"
+
+          main_binaries="$(find . \( -path ./.git -o -path ./.venv \) -prune -o \
+            -type d -path '*/build/classes/java/main' -print | sed 's#^\./##' | sort | paste -sd, -)"
+          test_binaries="$(find . \( -path ./.git -o -path ./.venv \) -prune -o \
+            -type d -path '*/build/classes/java/test' -print | sed 's#^\./##' | sort | paste -sd, -)"
+          echo "java-binaries=$main_binaries" >> "$GITHUB_OUTPUT"
+          echo "java-test-binaries=$test_binaries" >> "$GITHUB_OUTPUT"
+
+          version="$(python3 - <<'PY'
+          import re
+          text = open('pyproject.toml', encoding='utf-8').read()
+          match = re.search(r'(?m)^version\s*=\s*"([^"]+)"', text)
+          if not match:
+              raise SystemExit('sonar.projectVersion could not be derived: no version= in pyproject.toml')
+          print(match.group(1))
+          PY
+          )"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+          args=("-Dsonar.projectVersion=$version")
+          [ -n "$python_report" ] && args+=("-Dsonar.python.coverage.reportPaths=$python_report")
+          [ -n "$jacoco" ] && args+=("-Dsonar.coverage.jacoco.xmlReportPaths=$jacoco")
+          [ -n "$main_binaries" ] && args+=("-Dsonar.java.binaries=$main_binaries")
+          [ -n "$test_binaries" ] && args+=("-Dsonar.java.test.binaries=$test_binaries")
+          args+=("-Dsonar.java.libraries=$HOME/.gradle/caches/modules-2/files-2.1/**/*.jar")
+          args+=("-Dsonar.java.test.libraries=$HOME/.gradle/caches/modules-2/files-2.1/**/*.jar")
+          printf 'scan-args=%s\n' "${args[*]}" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### SonarCloud scan"
+            echo
+            echo "- source revision: \`$sha\`"
+            echo "- Python coverage: \`${python_report:-none}\`"
+            echo "- Java coverage: \`${jacoco:-none}\`"
+            echo "- sonar.projectVersion: \`$version\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: SonarCloud Scan
+        if: always() && steps.sonar_token.outputs.enabled == 'true'
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
+        with:
+          args: ${{ steps.coverage.outputs.scan-args }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Informational, like core's: a red quality gate is reported on the step and in
+      # SonarCloud, but it does not turn the nightly run red.
+      - name: SonarCloud Quality Gate (informational)
+        id: quality_gate
+        if: always() && steps.sonar_token.outputs.enabled == 'true'
+        continue-on-error: true
+        timeout-minutes: 5
+        uses: SonarSource/sonarqube-quality-gate-action@7a5fffe8e523c40e0c740b6bc2712ab503e52efa # v1.2.1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Report the quality-gate verdict
+        if: always() && steps.sonar_token.outputs.enabled == 'true'
+        shell: bash
+        env:
+          GATE_STATUS: ${{ steps.quality_gate.outputs.quality-gate-status }}
+          GATE_OUTCOME: ${{ steps.quality_gate.outcome }}
+        run: |
+          status="${GATE_STATUS:-unknown (gate step outcome: ${GATE_OUTCOME})}"
+          echo "### SonarCloud quality gate: ${status}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${GATE_STATUS}" != "PASSED" ]; then
+            echo "::warning::SonarCloud quality gate: ${status} (informational; this workflow never fails on the gate)"
+          fi
