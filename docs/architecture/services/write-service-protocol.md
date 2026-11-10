@@ -2,7 +2,7 @@
 title: Write-service protocol
 description: 'How the CLI reaches its write service: loopback HTTP, a bearer token, the handshake, durability-acked writes, refusal codes and the launcher contract.'
 doc_status: active
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -109,7 +109,12 @@ answers, and nothing before the append is written:
    rows.
 10. **The authority** — the lane machine and its guards, dependencies, the claim/start rules and
     the pipeline guards, over the new units in order.
-11. **One append and one sync**, then `201`.
+11. **Read-back** — before anything is appended, the encoded bytes of every new row must decode, with
+    the log reader's codec, to exactly one row, and the log plus those rows must fold with the fold
+    the next write uses. A row that fails either, or nests JSON beyond 256, carries an integer beyond
+    4300 digits or an actor object the fold cannot decode, is `400 REQUEST_MALFORMED`; a batch
+    names the unit. Nothing is written.
+12. **One append and one sync**, then `201`. The append is the last step.
 
 ### Durability and idempotency
 
@@ -117,15 +122,35 @@ All new rows — one unit or a whole batch — go out in one `O_APPEND` write of
 lines, then `fsync`; when the log is created its parent directory is synced too. A failed or
 short write is rolled back (the log is truncated to its size before the write and forced) and
 answers `500`; one lock hold permits one append. Writes are LF-only, and a CR before the LF is
-tolerated on read. A log whose last byte is not LF is a torn tail and is refused, never repaired
-([#222](https://github.com/spec-kitty/spec-kitty-events/issues/222) is the follow-up repair
-command). A log holding a raw U+0085, U+2028, U+2029, VT, FF, FS, GS or RS is unreducible (R24).
+tolerated on read. A log whose last byte is not LF is a torn tail. Every write refuses it, and no write repairs it.
+The explicit repair operation repairs it under the same lock
+([#222](https://github.com/spec-kitty/spec-kitty-events/issues/222)); see the
+[status-log repair](#status-log-repair) below. A log holding a raw U+0085, U+2028, U+2029, VT, FF, FS, GS or RS is unreducible (R24).
 
 A retry whose rows are all present with identical bytes is a replay: `201` with
 `replayed: true` and `appendedLines: 0`, writing and syncing nothing. Some ids present and some
 absent, or any present row differing in bytes, is `409 EVENT_ID_CONFLICT` (a batch names the
 unit). The first occurrence of an id in the log is the one compared. A fully replayed batch
 answers `fsyncs: 0`.
+
+### Status-log repair
+
+`POST /missions/{missionId}/status-log-repairs` (`repairStatusLog`, #222) is the only operation
+that changes a torn status log. It is explicit and operator-invoked, and it is never part of a
+write. It verifies the write location as a write does, takes the same in-process turn and Mission
+lock under the same budget, and answers one action:
+
+- `none`: the log is missing, empty or ends in LF. Nothing is touched and no file is created.
+- `completed`: the tail is exactly one status row, with an `event_id` no earlier row has, that folds after the log's prefix. One LF is
+  appended.
+- `quarantined`: any other tail. The fragment goes to `status.events.jsonl.torn` beside the log,
+  and the log is cut back to its last LF. The quarantine copy is written and synced before the
+  truncate, which is the only step that removes bytes from the log.
+
+`readableAfterRepair` reports whether the log now decodes and folds as the next write would. A
+coordination-routed Mission answers `422 WRITE_LOCATION_UNVERIFIED` until migration step 4. The
+request and the answer are in [`StatusLogRepairRequest`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/schemas/StatusLogRepairRequest.yaml)
+and [`StatusLogRepairAck`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/schemas/StatusLogRepairAck.yaml).
 
 ### The acknowledgement
 
@@ -168,8 +193,8 @@ serves: `COORDINATION_REF_MOVED`, `COORDINATION_REF_CHECKED_OUT`,
 | `WRITE_TOKEN_INVALID` | 401 | the bearer token (`WWW-Authenticate: Bearer`) |
 | `PROTOCOL_VERSION_UNSUPPORTED` | 400 | the protocol header |
 | `REQUEST_TOO_LARGE` | 413 | a body over 1 MiB |
-| `REQUEST_MALFORMED` | 400 | the shape, a row rule, a non-finite number or a mixed session pair |
-| `SERVICE_DRAINING` | 503 | after `/shutdown` or the idle timeout |
+| `REQUEST_MALFORMED` | 400 | the shape, a row rule, a non-finite number, a mixed session pair, or a row the read-back cannot read |
+| `SERVICE_DRAINING` | 503 | after `/shutdown` or the idle timeout, and for a write or repair still waiting for the turn or the lock |
 | `TRANSITION_REJECTED` | 409 | the lane machine or a guard, with a reason URN |
 | `WP_ALREADY_CLAIMED` | 409 | a lifecycle claim held by another actor |
 | `DEPENDENCIES_NOT_SATISFIED` | 409 | a gated dependency is not approved, done or operator-canceled |
@@ -207,8 +232,8 @@ Each is a recorded ruling, and each is visible to a client:
 - **Location.** A coordination-routed Mission answers `422 WRITE_LOCATION_UNVERIFIED` (R16), and
   so do separate-git-dir and submodule repositories (R17). The root checkout is verified by
   asking git once at startup; any git failure is `422` (R31).
-- **Log.** A torn tail is refused, never repaired (C-006;
-  [#222](https://github.com/spec-kitty/spec-kitty-events/issues/222) is the repair follow-up). A
+- **Log.** A torn tail is refused by every write and repaired only by the explicit repair
+  operation (C-006; [#222](https://github.com/spec-kitty/spec-kitty-events/issues/222)). A
   raw U+0085/U+2028/U+2029/VT/FF/FS/GS/RS makes the log unreducible (R24,
   [core #7439](https://github.com/spec-kitty/spec-kitty/issues/7439)).
 - **Request.** A non-finite number is `REQUEST_MALFORMED` ([core #7441](https://github.com/spec-kitty/spec-kitty/issues/7441)),
@@ -217,10 +242,12 @@ Each is a recorded ruling, and each is visible to a client:
   (R15) and an unresolvable dependency declaration `dependencies_unsatisfied`; the plain YAML
   1.2 subset (R19–R23, R27) and the limits (R18, R25, R28–R30) decide what is resolvable. Core's
   ruamel deviations are [core #7444](https://github.com/spec-kitty/spec-kitty/issues/7444).
-- **Unreachable reasons.** `workspace_context_required` and the evidence half of
-  `implementation_evidence_required` cannot be reached over the wire;
-  [events #223](https://github.com/spec-kitty/spec-kitty-events/issues/223) and
-  [events #224](https://github.com/spec-kitty/spec-kitty-events/issues/224) track them.
+- **Unreachable reasons.** `workspace_context_required` cannot be reached over the wire. The
+  service passes its verified root as the guard's workspace context
+  ([events #223](https://github.com/spec-kitty/spec-kitty-events/issues/223)), so the guard never
+  sees a blank one; core keeps the guard as a fail-closed batch-API check (operator decision
+  2026-09-07, #946, DRIFT-3). The evidence half of `implementation_evidence_required` is reachable
+  through `implementationEvidencePresent: false` ([events #224](https://github.com/spec-kitty/spec-kitty-events/issues/224)).
 
 ## Operations
 
@@ -235,6 +262,7 @@ all under `/api/v1` and all requiring the bearer token:
 | `recordWorkPackageTransition` | `POST /missions/{missionId}/work-package-transitions` | yes |
 | `recordWorkPackageTransitionBatch` | `POST /missions/{missionId}/work-package-transitions/batch` | yes |
 | `recordInnerStateAnnotation` | `POST /missions/{missionId}/inner-state-annotations` | yes |
+| `repairStatusLog` | `POST /missions/{missionId}/status-log-repairs` | yes |
 | `shutdown` | `POST /shutdown` | yes |
 
 ## One write, end to end
@@ -283,7 +311,9 @@ ADR 2026-10-27-1 (D-2, open question 6) and the OpenAPI document.
      `ready` or `draining`).
 - **Stop.** `POST /api/v1/shutdown` (bearer and `Spec-Kitty-Write-Protocol`) drains and exits.
   - It answers `202` at once.
-  - Health then reads `draining`, and a write is refused `503 SERVICE_DRAINING`.
+  - Health then reads `draining`, and a write or repair is refused `503 SERVICE_DRAINING`. A write
+    or repair still waiting for the turn or the Mission lock stops waiting and writes nothing; one
+    already holding the lock finishes.
   - The service finishes the writes it holds (at most 5 s), removes its endpoint file while it
     still names its own instance, and exits 0
     ([`paths/shutdown.yaml`](https://github.com/spec-kitty/spec-kitty-events/blob/main/contracts/mission-write/paths/shutdown.yaml)).
@@ -291,5 +321,5 @@ ADR 2026-10-27-1 (D-2, open question 6) and the OpenAPI document.
   - If the process is still running after 10 s and its pid still matches the endpoint's
     instance, the launcher falls back to `SIGTERM` (`TerminateProcess` on Windows). On
     `SIGTERM` the service still removes its own endpoint file.
-- **Paths.** Every operation is under the contract's `/api/v1` prefix. Core's launcher client
-  still calls the bare paths, and spec-kitty/spec-kitty#6910 moves it to the prefix.
+- **Paths.** Every operation is under the contract's `/api/v1` prefix, which core's launcher calls
+  (spec-kitty/spec-kitty#6910, fixed on core `main` at `3dc4ca94f7`).

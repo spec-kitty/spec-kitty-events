@@ -93,7 +93,7 @@ run in a fixed order, so the status tells you which one failed:
 | 400 | canonical request target | `REQUEST_MALFORMED` |
 | 400 | protocol header | `PROTOCOL_VERSION_UNSUPPORTED` |
 | 413 | size cap | `REQUEST_TOO_LARGE` |
-| 503 | the service drains before it exits (after `/shutdown` or its idle timeout) | `SERVICE_DRAINING` |
+| 503 | the service drains before it exits (after `/shutdown` or its idle timeout); a write or repair still waiting for the turn or the Mission lock stops waiting and writes nothing | `SERVICE_DRAINING` |
 | 400 | body shape (a batch over 64 units included) | `REQUEST_MALFORMED` |
 | 404, 409, 422, 500 | the domain | the CLI's codes and the protocol-only domain codes, such as `TRANSITION_REJECTED`, `WP_ALREADY_CLAIMED` or `EVENT_ID_CONFLICT` |
 
@@ -106,7 +106,9 @@ The service is authoritative. A write that passes every check is appended and sy
 `201`, or replayed when every row is already persisted with identical bytes. A `201` therefore
 means durable: for `checkout_append`, one `O_APPEND` write and one `fsync` (plus a parent
 directory sync when the log is created), rolled back and refused `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`
-on a failed write. A refused write wrote nothing. A torn tail is refused, never repaired.
+on a failed write. A refused write wrote nothing. A torn tail is refused by every write, and it is
+repaired only by the explicit repair operation (`POST /api/v1/missions/{missionId}/status-log-repairs`,
+[#222](https://github.com/spec-kitty/spec-kitty-events/issues/222)). The repair is never part of a write.
 `coordination_ref_commit` answers `422 WRITE_LOCATION_UNVERIFIED` until migration step 4, and
 `statusCommit` stays null.
 

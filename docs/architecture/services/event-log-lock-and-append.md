@@ -2,7 +2,7 @@
 title: Event-log lock and append
 description: 'How command-cli appends to the CLI-shared event log under its lock; the write ordering, the Windows atomicity caveat, torn-tail repair, and the core-SHA CI pin.'
 doc_status: active
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -139,11 +139,31 @@ A torn tail is what a write cut short by a crash leaves after the last newline.
 
 Which policy the write service applies is now decided: **it refuses**. A torn tail answers
 `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED` and nothing is written; the write path never
-repairs. The operator ruling of 2026-10-31 keeps that, and an explicit repair command after
-core #6195 is the follow-up in
-[spec-kitty-events#222](https://github.com/spec-kitty/spec-kitty-events/issues/222). The
-glossary writer's `TornTailRepair` described above stays available to the caller that chooses
-to repair a ledger; the status log's write path does not.
+repairs. The operator ruling of 2026-10-31 keeps that.
+
+The status log has its own explicit repair, and it lands before core #6195 removes core's
+status-log writer ([spec-kitty-events#222](https://github.com/spec-kitty/spec-kitty-events/issues/222),
+delivered with [#236](https://github.com/spec-kitty/spec-kitty-events/issues/236)). It is the
+operation `POST /api/v1/missions/{missionId}/status-log-repairs`. It takes the same in-process
+turn and the same Mission status lock as a write, under the same 10 s budget. A repair never
+runs inside a write. It reads the tail and answers one of three actions:
+
+- `none`: the log is missing, empty or ends in LF. Nothing is touched, and no file is created.
+- `completed`: the tail is exactly one status row, with an `event_id` no earlier row has, that folds after the log's prefix. One LF is
+  appended.
+- `quarantined`: any other tail. The fragment is appended to `status.events.jsonl.torn` beside
+  the log, and the log is cut back to its last LF.
+
+The repair writes in this order: the quarantine path is checked and the fragment is appended to
+the quarantine file and forced; the directory holding both files is synced; the log's size is checked
+again; only then is the log truncated to its last LF, forced and its directory synced. The
+truncate is the only step that removes bytes from the log, so a failure before it leaves the log
+unchanged. A failure after it leaves the fragment in the quarantine file. The answer reports
+`readableAfterRepair`, which says whether the log now folds as the next write would.
+
+The glossary writer's `TornTailRepair` described above is a different operation. It has its own
+lock (`<ledger>.lock`) and its own file, and it stays available to the caller that chooses to
+repair a ledger. The status log's repair is the operation above.
 
 ## Why CI pins a core SHA for the interop test
 
