@@ -25,7 +25,8 @@ Failure codes (exit 1), printed as ``CONTRACT-CHECK breaking_check: <CODE>: <mod
 
 * ``BREAKING_WITHOUT_MAJOR``: a breaking change while ``info.version`` did not move its major version up.
 * ``BUNDLE_CHANGED_VERSION_SAME``: the bundle changed (outside the provisional elements) and ``info.version`` is
-  the baseline's, or lower (``VERSION_DECREASED`` when lower).
+  the baseline's, or lower (``VERSION_DECREASED`` when lower). A baseline that is the same
+  unreleased ``-SNAPSHOT`` (only possible with ``--baseline-root``) is work in progress, so a change inside it is not reported.
 * ``NO_BASELINE_NOT_INITIAL``: there is no release tag and ``info.version`` is not the initial version, or the
   module CHANGELOG has no entry for it.
 * ``RESOLVE_FAILED``: the resolver refused the candidate module.
@@ -45,6 +46,12 @@ the baseline (``release_check`` refuses to release one).
 bundles before the comparison. A difference that exists only because of them never fails and is reported in its own
 section (``PROVISIONAL_CHANGE`` lines, ``provisional_changes`` in ``counts:``).
 
+*A stable property that only references a provisional schema* is not such an element (ruling D11, 2026-11-10). The bundler
+inlines the schema, marker included, so the property looks provisional in the bundle; the check tells the two apart by
+comparing the property's ``x-provisional`` and ``title`` with the schema file's own (a ``$ref`` sibling marker replaces the
+schema's, so a property that is itself provisional never matches). Such a property stays, its body replaced by the same neutral
+stub on both sides, at every place either bundle inlines the schema: its presence and its requiredness are compared, its type and enum are not.
+
 *Preview report.* While no release tag exists, the check also prints an informational ``PREVIEW_DELTA`` report against
 the latest tag ``preview/<module>/*`` (``PREVIEW_REF_NONE`` when there is none, ``preview_ref=unavailable`` when only the
 preview tag listing fails). It never changes the exit status: a failing listing of the RELEASE tags is ``TAG_LIST_ERROR``
@@ -61,6 +68,7 @@ the sibling ``bundle`` and ``contract_resolver``.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import os
@@ -79,14 +87,19 @@ import yaml
 
 import bundle
 import contract_resolver
-from release_check import SNAPSHOT_SUFFIX, is_snapshot  # one definition of a snapshot for the baseline and the release rules
+from release_check import (
+    SNAPSHOT_SUFFIX,
+    is_snapshot,
+)  # one definition of a snapshot for the baseline and the release rules
 
 CHECK_NAME = "breaking_check"
 #: The line a module stays on until its first final release: 1.0.Z and 1.0.Z-SNAPSHOT.
 INITIAL_LINE = "1.0"
 _INITIAL_LINE_RE = re.compile(r"^1\.0\.(0|[1-9][0-9]*)(-SNAPSHOT)?$")
 DEFAULT_REF = "HEAD"
-SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$")
+SEMVER = re.compile(
+    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$"
+)
 BREAKING_LEVEL = 2  # oasdiff levels: 1 info, 2 warning, 3 error
 # The oasdiff 1.32.1 change ids that report a response growing: a property added to a schema, a property added through a new
 # allOf branch (a oneOf or anyOf branch is already an error in oasdiff), a new status code, a new media type, a new header.
@@ -117,7 +130,9 @@ RESPONSE_KEY_ADDED_ID = "response-key-added"
 STATUS_ADDED_IDS = ("response-success-status-added", "response-non-success-status-added")
 CLOSED_RESPONSE_IDS = (*RESPONSE_ADDITION_IDS, RESPONSE_KEY_ADDED_ID)
 SEVERITY_LEVELS_FILE = "severity-levels.txt"
-CLOSED_RESPONSE_NOTE = "closed response schemas: a response-shape change is a major version move and a new release"
+CLOSED_RESPONSE_NOTE = (
+    "closed response schemas: a response-shape change is a major version move and a new release"
+)
 COMMAND_TIMEOUT_SECONDS = 300
 HTTP_METHODS = ("get", "put", "post", "delete", "options", "head", "patch", "trace")
 MAX_LINES_PER_KIND = 20
@@ -134,7 +149,12 @@ def is_initial_line(version: str) -> bool:
 def subprocess_runner(command: Sequence[str], cwd: Path | None = None) -> tuple[int, str, str]:
     """Run ``command`` (an argument list, never a shell string) and return ``(status, stdout, stderr)``."""
     completed = subprocess.run(  # noqa: S603 -- argument list built here, binaries resolved with shutil.which, no shell
-        list(command), capture_output=True, text=True, timeout=COMMAND_TIMEOUT_SECONDS, check=False, cwd=cwd
+        list(command),
+        capture_output=True,
+        text=True,
+        timeout=COMMAND_TIMEOUT_SECONDS,
+        check=False,
+        cwd=cwd,
     )
     return completed.returncode, completed.stdout, completed.stderr
 
@@ -173,14 +193,19 @@ def finding(code: str, module: str, detail: str) -> str:
 
 
 SemverKey = tuple[int, int, int, tuple[Any, ...]]
-NUMERIC_IDENTIFIER = 0  # semver 2.0 section 11: a numeric identifier sorts below an alphanumeric one
+NUMERIC_IDENTIFIER = (
+    0  # semver 2.0 section 11: a numeric identifier sorts below an alphanumeric one
+)
 ALPHANUMERIC_IDENTIFIER = 1
 RELEASE_KEY: tuple[Any, ...] = (1,)  # above every prerelease key, which all start with 0
 
 
 def _prerelease_key(prerelease: str) -> tuple[Any, ...]:
     """The semver 2.0 precedence key of a prerelease: numeric identifiers numerically, the rest lexically, a shorter set first."""
-    identifiers = tuple((NUMERIC_IDENTIFIER, int(item)) if item.isdigit() else (ALPHANUMERIC_IDENTIFIER, item) for item in prerelease.split("."))
+    identifiers = tuple(
+        (NUMERIC_IDENTIFIER, int(item)) if item.isdigit() else (ALPHANUMERIC_IDENTIFIER, item)
+        for item in prerelease.split(".")
+    )
     return (0, *identifiers)
 
 
@@ -193,7 +218,12 @@ def parse_semver(text: str) -> SemverKey | None:
     if match is None:
         return None
     prerelease = match.group(4)
-    return int(match.group(1)), int(match.group(2)), int(match.group(3)), RELEASE_KEY if prerelease is None else _prerelease_key(prerelease)
+    return (
+        int(match.group(1)),
+        int(match.group(2)),
+        int(match.group(3)),
+        RELEASE_KEY if prerelease is None else _prerelease_key(prerelease),
+    )
 
 
 def latest_release_tag(tags: Sequence[str], module: str, exclude: str | None = None) -> str | None:
@@ -212,51 +242,210 @@ def latest_release_tag(tags: Sequence[str], module: str, exclude: str | None = N
     return best[1] if best else None
 
 
-def strip_provisional(node: Any) -> Any:
+#: What a stable property that only inlines a provisional schema keeps of that schema: nothing. Its presence and (through the
+#: ``required`` list beside it) its requiredness are still compared; the schema's own type, enum and body are not.
+NEUTRAL_STUB: dict[str, Any] = {}
+ROOT_SCHEMA_DIRECTORIES = ("_shared",)
+#: Where a property sits in a bundle: the keys and list indexes from the document root.
+PropertyPath = tuple[str | int, ...]
+
+
+def provisional_schemas(module_dir: Path) -> dict[str, Any]:
+    """Schema title -> its ``x-provisional`` value, for every whole schema file in ``module_dir`` and the ``_shared`` folder beside it.
+
+    The bundle inlines a ``$ref`` target, so a property that merely references a provisional schema carries the schema's
+    ``x-provisional`` in the bundle, exactly as a property that is itself provisional does. A property written with its own
+    ``x-provisional`` beside a ``$ref`` replaces the schema's marker (siblings of ``$ref`` override), so the two cases tell apart
+    by comparing the marker on the bundled property with the schema's own marker (ruling D11, 2026-11-10).
+    """
+    found: dict[str, Any] = {}
+    for directory in (module_dir, *(module_dir.parent / name for name in ROOT_SCHEMA_DIRECTORIES)):
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.rglob("*.yaml")):
+            try:
+                document = yaml.safe_load(path.read_text(encoding="utf-8"))
+            except (OSError, yaml.YAMLError):
+                continue
+            if (
+                isinstance(document, dict)
+                and isinstance(document.get("title"), str)
+                and document.get("x-provisional")
+            ):
+                found[document["title"]] = document["x-provisional"]
+    return found
+
+
+def inlines_provisional_schema(value: Any, schemas: dict[str, Any]) -> bool:
+    """True when ``value`` is a bundled property that is provisional only because the schema it references is."""
+    return (
+        isinstance(value, dict)
+        and isinstance(value.get("title"), str)
+        and bool(value.get("x-provisional"))
+        and schemas.get(value["title"]) == value["x-provisional"]
+    )
+
+
+def strip_provisional(
+    node: Any,
+    schemas: dict[str, Any] | None = None,
+    stubs: dict[PropertyPath, str] | None = None,
+    _path: PropertyPath = (),
+    allowed: frozenset[PropertyPath] | None = None,
+) -> Any:
     """A copy of ``node`` without the properties, parameters and operations that carry ``x-provisional``.
 
-    The names of removed properties are also taken out of the ``required`` list beside them.
+    The names of removed properties are also taken out of the ``required`` list beside them. A property that only inlines a
+    provisional schema (``schemas``, see :func:`provisional_schemas`) is not removed: it becomes :data:`NEUTRAL_STUB`, and its
+    ``path`` and schema title are recorded in ``stubs`` so the other side of the comparison can be stubbed at the same place.
+    With ``allowed`` given, only those paths are stubbed; any other such property keeps its real body (without the marker), so a
+    property re-pointed to a different provisional schema is compared for real.
     """
 
     def provisional(value: Any) -> bool:
         return isinstance(value, dict) and bool(value.get("x-provisional"))
 
+    known = schemas or {}
     if isinstance(node, list):
-        return [strip_provisional(item) for item in node if not provisional(item)]
+        return [
+            strip_provisional(item, schemas, stubs, (*_path, index), allowed)
+            for index, item in enumerate(node)
+            if not provisional(item)
+        ]
     if not isinstance(node, dict):
         return node
     result: dict[str, Any] = {}
     removed: set[str] = set()
     for key, value in node.items():
         if key == "properties" and isinstance(value, dict):
-            kept = {name: item for name, item in value.items() if not provisional(item)}
-            removed.update(str(name) for name in value if name not in kept)
-            result[key] = strip_provisional(kept)
+            kept: dict[str, Any] = {}
+            for name, item in value.items():
+                location: PropertyPath = (*_path, key, name)
+                if not provisional(item):
+                    kept[name] = strip_provisional(item, schemas, stubs, location, allowed)
+                elif inlines_provisional_schema(item, known) and (
+                    allowed is None or location in allowed
+                ):
+                    kept[name] = dict(NEUTRAL_STUB)
+                    if stubs is not None:
+                        stubs[location] = item["title"]
+                elif inlines_provisional_schema(item, known):
+                    real = {field: body for field, body in item.items() if field != "x-provisional"}
+                    kept[name] = strip_provisional(real, schemas, stubs, location, allowed)
+                else:
+                    removed.add(str(name))
+            result[key] = kept
         elif key in HTTP_METHODS and provisional(value):
             continue
         else:
-            result[key] = strip_provisional(value)
+            result[key] = strip_provisional(value, schemas, stubs, (*_path, key), allowed)
     if removed and isinstance(result.get("required"), list):
         result["required"] = [name for name in result["required"] if name not in removed]
     return result
 
 
+def title_at(node: Any, path: PropertyPath) -> Any:
+    """The ``title`` of the property at ``path`` in ``node``, or ``None`` when there is no such property or it has no title."""
+    current: Any = node
+    for step in path:
+        if isinstance(current, dict) and step in current:
+            current = current[step]
+        elif isinstance(current, list) and isinstance(step, int) and step < len(current):
+            current = current[step]
+        else:
+            return None
+    return current.get("title") if isinstance(current, dict) else None
+
+
+def stub_at(node: Any, stubs: dict[PropertyPath, str]) -> Any:
+    """``node``, changed in place, with :data:`NEUTRAL_STUB` at every recorded property path that still holds the same schema (by title).
+
+    ``node`` is the *unstripped* bundle of the other side, so a schema that became provisional (or stopped being) does not
+    show its enum or type moving as a break, while a property that really disappears on that side still does.
+    """
+    for path, title in stubs.items():
+        parent: Any = node
+        for step in path[:-1]:
+            if isinstance(parent, dict) and step in parent:
+                parent = parent[step]
+            elif isinstance(parent, list) and isinstance(step, int) and step < len(parent):
+                parent = parent[step]
+            else:
+                parent = None
+                break
+        leaf = path[-1]
+        if (
+            isinstance(parent, dict)
+            and isinstance(parent.get(leaf), dict)
+            and parent[leaf].get("title") == title
+        ):
+            parent[leaf] = dict(NEUTRAL_STUB)
+    return node
+
+
+def strip_both(
+    baseline: dict[str, Any],
+    candidate: dict[str, Any],
+    base_schemas: dict[str, Any] | None = None,
+    cand_schemas: dict[str, Any] | None = None,
+) -> tuple[Any, Any]:
+    """Both bundles without their provisional elements; a property inlining a provisional schema on either side is stubbed on both.
+
+    The first pass finds the stubbed paths of each side; the second stubs those paths in the other, still unstripped, bundle and
+    strips again, so list indexes still mean what they meant when the paths were recorded.
+    """
+    base_stubs: dict[PropertyPath, str] = {}
+    cand_stubs: dict[PropertyPath, str] = {}
+    strip_provisional(baseline, base_schemas, base_stubs)
+    strip_provisional(candidate, cand_schemas, cand_stubs)
+    # A stub is only fair where both sides hold the same schema (by title) at that path. Anywhere else (a property re-pointed to
+    # another schema, or present on one side only) the real bodies are compared, so a narrowing or a removal is still reported.
+    allowed = frozenset(
+        [path for path, title in cand_stubs.items() if title_at(baseline, path) == title]
+        + [path for path, title in base_stubs.items() if title_at(candidate, path) == title]
+    )
+    base_shared = {path: title for path, title in cand_stubs.items() if path in allowed}
+    cand_shared = {path: title for path, title in base_stubs.items() if path in allowed}
+    return (
+        strip_provisional(
+            stub_at(copy.deepcopy(baseline), base_shared), base_schemas, allowed=allowed
+        ),
+        strip_provisional(
+            stub_at(copy.deepcopy(candidate), cand_shared), cand_schemas, allowed=allowed
+        ),
+    )
+
+
 def digest(document: Any) -> str:
-    text = yaml.safe_dump(document, sort_keys=True, default_flow_style=False, allow_unicode=True, width=1000)
+    text = yaml.safe_dump(
+        document, sort_keys=True, default_flow_style=False, allow_unicode=True, width=1000
+    )
     return hashlib.sha256(text.encode("utf-8")).hexdigest()  # noqa: TID251 -- file-integrity digest of a bundle, not the charter hash
 
 
 def write_document(document: Any, target: Path) -> Path:
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(yaml.safe_dump(document, sort_keys=False, default_flow_style=False, allow_unicode=True, width=1000), encoding="utf-8")
+    target.write_text(
+        yaml.safe_dump(
+            document, sort_keys=False, default_flow_style=False, allow_unicode=True, width=1000
+        ),
+        encoding="utf-8",
+    )
     return target
 
 
 def entry_key(entry: dict[str, Any]) -> tuple[str, str, str, str]:
-    return (str(entry.get("id")), str(entry.get("operation")), str(entry.get("path")), str(entry.get("text")))
+    return (
+        str(entry.get("id")),
+        str(entry.get("operation")),
+        str(entry.get("path")),
+        str(entry.get("text")),
+    )
 
 
-def added_response_keys(baseline: dict[str, Any], candidate: dict[str, Any]) -> list[dict[str, Any]]:
+def added_response_keys(
+    baseline: dict[str, Any], candidate: dict[str, Any]
+) -> list[dict[str, Any]]:
     """Changes (oasdiff's entry shape, level ERR) for each response key an operation gained: ``default``, ``4XX`` and any status.
 
     Closed response schemas make any growth of an operation's response key set breaking. An operation that is new, or
@@ -277,7 +466,16 @@ def added_response_keys(baseline: dict[str, Any], candidate: dict[str, Any]) -> 
             old_keys = _response_keys(old_operation)
             for key in sorted(_response_keys(new_operation) - old_keys):
                 text = f"added the response with the key `{key}`"
-                entries.append({"id": RESPONSE_KEY_ADDED_ID, "text": text, "level": 3, "operation": method.upper(), "path": path, "key": key})
+                entries.append(
+                    {
+                        "id": RESPONSE_KEY_ADDED_ID,
+                        "text": text,
+                        "level": 3,
+                        "operation": method.upper(),
+                        "path": path,
+                        "key": key,
+                    }
+                )
     return entries
 
 
@@ -285,7 +483,10 @@ def reported_by_oasdiff(own: dict[str, Any], entries: list[dict[str, Any]]) -> b
     """Whether oasdiff already reports the new response key of ``own`` (a new status code), so it is not counted twice."""
     status = f"`{own['key']}`"
     return any(
-        entry.get("id") in STATUS_ADDED_IDS and entry.get("operation") == own["operation"] and entry.get("path") == own["path"] and status in str(entry.get("text"))
+        entry.get("id") in STATUS_ADDED_IDS
+        and entry.get("operation") == own["operation"]
+        and entry.get("path") == own["path"]
+        and status in str(entry.get("text"))
         for entry in entries
     )
 
@@ -298,36 +499,60 @@ def _response_keys(operation: dict[str, Any]) -> set[str]:
 def write_severity_levels(target: Path) -> Path:
     """Write oasdiff's custom severity file raising every response-property addition to ERR (one ``<id> err`` line each)."""
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text("".join(f"{identifier} err\n" for identifier in RESPONSE_ADDITION_IDS), encoding="utf-8", newline="\n")
+    target.write_text(
+        "".join(f"{identifier} err\n" for identifier in RESPONSE_ADDITION_IDS),
+        encoding="utf-8",
+        newline="\n",
+    )
     return target
 
 
-def oasdiff_breaking(runner: Runner, oasdiff: str, base: Path, revision: Path, severity_levels: Path | None = None) -> list[dict[str, Any]]:
+def oasdiff_breaking(
+    runner: Runner, oasdiff: str, base: Path, revision: Path, severity_levels: Path | None = None
+) -> list[dict[str, Any]]:
     """The changes oasdiff reports at level WARN or ERR between two bundle files (with ``severity_levels``, as that file raises them)."""
     command = [oasdiff, "breaking", str(base), str(revision), "--format", "json"]
     if severity_levels is not None:
         command += ["--severity-levels", str(severity_levels)]
     status, stdout, stderr = runner(command, None)
     if status != 0:
-        raise CannotRun("OASDIFF_FAILED", f"oasdiff exited {status}: {(stderr or stdout).strip()[:300]}")
+        raise CannotRun(
+            "OASDIFF_FAILED", f"oasdiff exited {status}: {(stderr or stdout).strip()[:300]}"
+        )
     try:
         entries = json.loads(stdout) if stdout.strip() else []
     except ValueError as error:
-        raise CannotRun("OASDIFF_FAILED", f"oasdiff printed output that is not JSON: {error}") from error
+        raise CannotRun(
+            "OASDIFF_FAILED", f"oasdiff printed output that is not JSON: {error}"
+        ) from error
     if not isinstance(entries, list):
         raise CannotRun("OASDIFF_FAILED", "oasdiff output is not a list of changes")
-    return [entry for entry in entries if isinstance(entry, dict) and int(entry.get("level", 0)) >= BREAKING_LEVEL]
+    return [
+        entry
+        for entry in entries
+        if isinstance(entry, dict) and int(entry.get("level", 0)) >= BREAKING_LEVEL
+    ]
 
 
-def oasdiff_changelog(runner: Runner, oasdiff: str, base: Path, revision: Path) -> list[dict[str, Any]]:
-    status, stdout, stderr = runner([oasdiff, "changelog", str(base), str(revision), "--format", "json"], None)
+def oasdiff_changelog(
+    runner: Runner, oasdiff: str, base: Path, revision: Path
+) -> list[dict[str, Any]]:
+    status, stdout, stderr = runner(
+        [oasdiff, "changelog", str(base), str(revision), "--format", "json"], None
+    )
     if status != 0:
-        raise CannotRun("OASDIFF_FAILED", f"oasdiff exited {status}: {(stderr or stdout).strip()[:300]}")
+        raise CannotRun(
+            "OASDIFF_FAILED", f"oasdiff exited {status}: {(stderr or stdout).strip()[:300]}"
+        )
     try:
         entries = json.loads(stdout) if stdout.strip() else []
     except ValueError as error:
-        raise CannotRun("OASDIFF_FAILED", f"oasdiff printed output that is not JSON: {error}") from error
-    return [entry for entry in entries if isinstance(entry, dict)] if isinstance(entries, list) else []
+        raise CannotRun(
+            "OASDIFF_FAILED", f"oasdiff printed output that is not JSON: {error}"
+        ) from error
+    return (
+        [entry for entry in entries if isinstance(entry, dict)] if isinstance(entries, list) else []
+    )
 
 
 class GitRepo:
@@ -344,11 +569,19 @@ class GitRepo:
     def require_full_history(self) -> None:
         status, stdout, stderr = self._run("rev-parse", "--is-shallow-repository")
         if status != 0:
-            raise CannotRun("TAG_LIST_ERROR", f"git rev-parse --is-shallow-repository failed: {stderr.strip()[:200]}")
+            raise CannotRun(
+                "TAG_LIST_ERROR",
+                f"git rev-parse --is-shallow-repository failed: {stderr.strip()[:200]}",
+            )
         if stdout.strip() == "true":
-            raise CannotRun("SHALLOW_CHECKOUT", "the clone is shallow, so release tags may be hidden; fetch with full history and tags")
+            raise CannotRun(
+                "SHALLOW_CHECKOUT",
+                "the clone is shallow, so release tags may be hidden; fetch with full history and tags",
+            )
 
-    def tags(self, pattern: str, *, version_sort: bool = False, merged: str | None = None) -> list[str]:
+    def tags(
+        self, pattern: str, *, version_sort: bool = False, merged: str | None = None
+    ) -> list[str]:
         """The tags matching ``pattern``; with ``merged``, only those reachable from that ref (``git tag --merged``)."""
         arguments = ["tag", "--list", pattern]
         if merged is not None:
@@ -357,7 +590,9 @@ class GitRepo:
             arguments.append("--sort=-version:refname")
         status, stdout, stderr = self._run(*arguments)
         if status != 0:
-            raise CannotRun("TAG_LIST_ERROR", f"git tag --list {pattern!r} failed: {stderr.strip()[:200]}")
+            raise CannotRun(
+                "TAG_LIST_ERROR", f"git tag --list {pattern!r} failed: {stderr.strip()[:200]}"
+            )
         return [line.strip() for line in stdout.splitlines() if line.strip()]
 
     def toplevel(self) -> Path:
@@ -377,7 +612,9 @@ class GitRepo:
             return f"none of {', '.join(relative_paths)} exists at {ref}"
         archive = destination / "baseline.tar"
         destination.mkdir(parents=True, exist_ok=True)
-        status, _, stderr = self._run("archive", "--format=tar", f"--output={archive}", ref, "--", *present)
+        status, _, stderr = self._run(
+            "archive", "--format=tar", f"--output={archive}", ref, "--", *present
+        )
         if status != 0:
             return f"git archive {ref} failed: {stderr.strip()[:200]}"
         with tarfile.open(archive) as handle:
@@ -398,7 +635,9 @@ def build_bundle(module_dir: Path, out_dir: Path) -> dict[str, Any]:
     """Write and read back the resolver bundle of ``module_dir``. Raises ``contract_resolver.ResolveError``."""
     document = yaml.safe_load(bundle.write_bundle(module_dir, out_dir).read_text(encoding="utf-8"))
     if not isinstance(document, dict):
-        raise contract_resolver.ResolveError("NOT_A_MAPPING", f"the bundle of {module_dir} is not a mapping")
+        raise contract_resolver.ResolveError(
+            "NOT_A_MAPPING", f"the bundle of {module_dir} is not a mapping"
+        )
     return document
 
 
@@ -432,7 +671,9 @@ class Checker:
         try:
             self.relative_root = self.args.root.resolve().relative_to(top).as_posix()
         except ValueError as error:
-            raise CannotRun("TAG_LIST_ERROR", f"{self.args.root} is outside its git working tree") from error
+            raise CannotRun(
+                "TAG_LIST_ERROR", f"{self.args.root} is outside its git working tree"
+            ) from error
 
     def baseline_module(self, module: str, tag: str) -> Path:
         assert self.repo is not None
@@ -465,15 +706,32 @@ class Checker:
             return
         baseline = self.baseline_bundle(module, baseline_dir, label)
         report.baselines += 1
-        self.compare(module, baseline, candidate, version_of(baseline), version, label)
+        self.compare(
+            module,
+            baseline,
+            candidate,
+            version_of(baseline),
+            version,
+            label,
+            provisional_schemas(baseline_dir),
+            provisional_schemas(module_dir),
+        )
 
     def find_baseline(self, module: str) -> tuple[Path | None, str]:
         if self.args.baseline_root is not None:
             directory = self.args.baseline_root / module
-            return (directory, "baseline-root") if (directory / bundle.ROOT_DOCUMENT).is_file() else (None, "")
+            return (
+                (directory, "baseline-root")
+                if (directory / bundle.ROOT_DOCUMENT).is_file()
+                else (None, "")
+            )
         assert self.repo is not None
         # only releases reachable from the commit being checked: a higher tag on a side branch is not this line's baseline
-        tag = latest_release_tag(self.repo.tags(f"contract-{module}-v*", merged=self.args.ref), module, self.args.release_tag)
+        tag = latest_release_tag(
+            self.repo.tags(f"contract-{module}-v*", merged=self.args.ref),
+            module,
+            self.args.release_tag,
+        )
         if tag is None:
             return None, ""
         return self.baseline_module(module, tag), tag
@@ -503,30 +761,69 @@ class Checker:
                 )
             )
 
-    def breaking_between(self, baseline: dict[str, Any], candidate: dict[str, Any], prefix: Path) -> list[dict[str, Any]]:
+    def breaking_between(
+        self, baseline: dict[str, Any], candidate: dict[str, Any], prefix: Path
+    ) -> list[dict[str, Any]]:
         """oasdiff's WARN/ERR changes plus the response keys oasdiff does not see (a new ``default`` or range response)."""
         base_file = write_document(baseline, prefix.parent / f"{prefix.name}-base.yaml")
         cand_file = write_document(candidate, prefix.parent / f"{prefix.name}-cand.yaml")
-        entries = oasdiff_breaking(self.runner, self.oasdiff, base_file, cand_file, self.severity_levels)
-        return entries + [own for own in added_response_keys(baseline, candidate) if not reported_by_oasdiff(own, entries)]
+        entries = oasdiff_breaking(
+            self.runner, self.oasdiff, base_file, cand_file, self.severity_levels
+        )
+        return entries + [
+            own
+            for own in added_response_keys(baseline, candidate)
+            if not reported_by_oasdiff(own, entries)
+        ]
 
-    def compare(self, module: str, baseline: dict[str, Any], candidate: dict[str, Any], base_version: str, version: str, label: str) -> None:
+    def compare(
+        self,
+        module: str,
+        baseline: dict[str, Any],
+        candidate: dict[str, Any],
+        base_version: str,
+        version: str,
+        label: str,
+        base_schemas: dict[str, Any] | None = None,
+        cand_schemas: dict[str, Any] | None = None,
+    ) -> None:
         report = self.report
-        base_stripped, cand_stripped = strip_provisional(baseline), strip_provisional(candidate)
+        base_stripped, cand_stripped = strip_both(baseline, candidate, base_schemas, cand_schemas)
         full_changed = digest(baseline) != digest(candidate)
         stable_changed = digest(base_stripped) != digest(cand_stripped)
-        breaking_full = self.breaking_between(baseline, candidate, self.work / "cmp" / module / "full") if full_changed else []
-        breaking_stable = self.breaking_between(base_stripped, cand_stripped, self.work / "cmp" / module / "stable") if stable_changed else []
+        breaking_full = (
+            self.breaking_between(baseline, candidate, self.work / "cmp" / module / "full")
+            if full_changed
+            else []
+        )
+        breaking_stable = (
+            self.breaking_between(
+                base_stripped, cand_stripped, self.work / "cmp" / module / "stable"
+            )
+            if stable_changed
+            else []
+        )
         stable_keys = {entry_key(entry) for entry in breaking_stable}
         provisional = [entry for entry in breaking_full if entry_key(entry) not in stable_keys]
-        provisional_lines = [f"{entry.get('operation')} {entry.get('path')}: {entry.get('text')}" for entry in provisional]
+        provisional_lines = [
+            f"{entry.get('operation')} {entry.get('path')}: {entry.get('text')}"
+            for entry in provisional
+        ]
         if full_changed and not stable_changed and not provisional_lines:
-            provisional_lines = ["the bundle differs only inside provisional elements (no breaking change)"]
+            provisional_lines = [
+                "the bundle differs only inside provisional elements (no breaking change)"
+            ]
         report.provisional_changes += len(provisional_lines)
         for line in provisional_lines[:MAX_LINES_PER_KIND]:
-            report.notes.append(f"CONTRACT-CHECK {CHECK_NAME}: PROVISIONAL_CHANGE: {module}: {line}")
+            report.notes.append(
+                f"CONTRACT-CHECK {CHECK_NAME}: PROVISIONAL_CHANGE: {module}: {line}"
+            )
         if provisional_lines:
-            report.summary.append(f"### {module}: provisional changes (never failing)\n\n" + "\n".join(f"- {line}" for line in provisional_lines) + "\n")
+            report.summary.append(
+                f"### {module}: provisional changes (never failing)\n\n"
+                + "\n".join(f"- {line}" for line in provisional_lines)
+                + "\n"
+            )
 
         base_parts, parts = parse_semver(base_version), parse_semver(version)
         if base_parts is None or parts is None:
@@ -540,8 +837,21 @@ class Checker:
                     where = f"{entry.get('operation')} {entry.get('path')}: {entry.get('text')}"
                     if entry.get("id") in CLOSED_RESPONSE_IDS:
                         where += f" ({CLOSED_RESPONSE_NOTE})"
-                    report.findings.append(finding("BREAKING_WITHOUT_MAJOR", module, f"{where} (baseline {label} {base_version}, candidate {version})"))
+                    report.findings.append(
+                        finding(
+                            "BREAKING_WITHOUT_MAJOR",
+                            module,
+                            f"{where} (baseline {label} {base_version}, candidate {version})",
+                        )
+                    )
             return
+        if (
+            stable_changed
+            and parts == base_parts
+            and is_snapshot(version)
+            and is_snapshot(base_version)
+        ):
+            return  # the baseline is the same unreleased snapshot: work in progress may change inside it (contracts/README.md)
         if stable_changed and parts <= base_parts:
             code = "BUNDLE_CHANGED_VERSION_SAME" if parts == base_parts else "VERSION_DECREASED"
             detail = f"the bundle changed but info.version is {version} (baseline {label} {base_version}); move the version and add a CHANGELOG entry"
@@ -555,7 +865,9 @@ class Checker:
             tags = self.repo.tags(f"preview/{module}/*", version_sort=True)
         except CannotRun as error:
             report.preview_refs.append("unavailable")
-            report.notes.append(f"PREVIEW_DELTA {module}: preview_ref=unavailable ({error.code}: {error.detail}); informational, never fails")
+            report.notes.append(
+                f"PREVIEW_DELTA {module}: preview_ref=unavailable ({error.code}: {error.detail}); informational, never fails"
+            )
             return
         if not tags:
             report.preview_refs.append("none")
@@ -564,27 +876,67 @@ class Checker:
         tag = tags[0]
         report.preview_refs.append(tag)
         try:
-            base = self.baseline_bundle(module, self.baseline_module(module, tag), f"preview-{tag.replace('/', '_')}")
+            base = self.baseline_bundle(
+                module, self.baseline_module(module, tag), f"preview-{tag.replace('/', '_')}"
+            )
             base_file = write_document(base, self.work / "preview" / module / "base.yaml")
             cand_file = write_document(candidate, self.work / "preview" / module / "cand.yaml")
             changes = oasdiff_changelog(self.runner, self.oasdiff, base_file, cand_file)
         except CannotRun as error:
-            report.notes.append(f"PREVIEW_DELTA {module}: preview_ref={tag}: unavailable ({error.code}: {error.detail}); informational, never fails")
+            report.notes.append(
+                f"PREVIEW_DELTA {module}: preview_ref={tag}: unavailable ({error.code}: {error.detail}); informational, never fails"
+            )
             return
-        report.notes.append(f"PREVIEW_DELTA {module}: preview_ref={tag}: {len(changes)} change(s) against the preview tag (informational, never fails)")
+        report.notes.append(
+            f"PREVIEW_DELTA {module}: preview_ref={tag}: {len(changes)} change(s) against the preview tag (informational, never fails)"
+        )
         for entry in changes[:MAX_LINES_PER_KIND]:
-            where = " ".join(part for part in (str(entry.get("operation", "")), str(entry.get("path", ""))) if part)
-            report.notes.append(f"PREVIEW_DELTA {module}: level={entry.get('level')} {where}: {entry.get('text')}")
+            where = " ".join(
+                part
+                for part in (str(entry.get("operation", "")), str(entry.get("path", "")))
+                if part
+            )
+            report.notes.append(
+                f"PREVIEW_DELTA {module}: level={entry.get('level')} {where}: {entry.get('text')}"
+            )
 
 
-def run(argv: Sequence[str] | None = None, *, runner: Runner = subprocess_runner, which: Which = shutil.which, out: Callable[[str], None] = print) -> int:
-    parser = argparse.ArgumentParser(description="Refuse a breaking contract change without a major version move.")
+def run(
+    argv: Sequence[str] | None = None,
+    *,
+    runner: Runner = subprocess_runner,
+    which: Which = shutil.which,
+    out: Callable[[str], None] = print,
+) -> int:
+    parser = argparse.ArgumentParser(
+        description="Refuse a breaking contract change without a major version move."
+    )
     parser.add_argument("--root", default="contracts", type=Path)
-    parser.add_argument("--module", action="append", default=[], help="restrict to this module (repeatable)")
-    parser.add_argument("--baseline-root", type=Path, default=None, help="compare against the modules under this directory instead of the latest release tag")
-    parser.add_argument("--release-tag", default=None, help="the tag being released (a tag push); it is never its own baseline, the previous release is")
-    parser.add_argument("--ref", default=DEFAULT_REF, help="the commit being checked; only release tags reachable from it can be the baseline (default: HEAD)")
-    parser.add_argument("--summary", type=Path, default=None, help="append the job summary here (default: $GITHUB_STEP_SUMMARY)")
+    parser.add_argument(
+        "--module", action="append", default=[], help="restrict to this module (repeatable)"
+    )
+    parser.add_argument(
+        "--baseline-root",
+        type=Path,
+        default=None,
+        help="compare against the modules under this directory instead of the latest release tag",
+    )
+    parser.add_argument(
+        "--release-tag",
+        default=None,
+        help="the tag being released (a tag push); it is never its own baseline, the previous release is",
+    )
+    parser.add_argument(
+        "--ref",
+        default=DEFAULT_REF,
+        help="the commit being checked; only release tags reachable from it can be the baseline (default: HEAD)",
+    )
+    parser.add_argument(
+        "--summary",
+        type=Path,
+        default=None,
+        help="append the job summary here (default: $GITHUB_STEP_SUMMARY)",
+    )
     args = parser.parse_args(argv)
 
     def blocked(error: CannotRun, report: Report | None = None) -> int:
@@ -596,7 +948,11 @@ def run(argv: Sequence[str] | None = None, *, runner: Runner = subprocess_runner
     if args.module:
         modules = [module for module in modules if module.name in args.module]
     if not modules:
-        return blocked(CannotRun("NO_MODULE", f"no module with a root {bundle.ROOT_DOCUMENT} under {args.root}"))
+        return blocked(
+            CannotRun(
+                "NO_MODULE", f"no module with a root {bundle.ROOT_DOCUMENT} under {args.root}"
+            )
+        )
 
     with tempfile.TemporaryDirectory(prefix="breaking-check-") as scratch:
         checker: Checker | None = None
@@ -613,7 +969,9 @@ def run(argv: Sequence[str] | None = None, *, runner: Runner = subprocess_runner
 
     for line in (*report.notes, *report.findings):
         out(line)
-    summary_target = args.summary or (Path(os.environ["GITHUB_STEP_SUMMARY"]) if os.environ.get("GITHUB_STEP_SUMMARY") else None)
+    summary_target = args.summary or (
+        Path(os.environ["GITHUB_STEP_SUMMARY"]) if os.environ.get("GITHUB_STEP_SUMMARY") else None
+    )
     if summary_target is not None and report.summary:
         with summary_target.open("a", encoding="utf-8") as handle:
             handle.write("\n".join(report.summary) + "\n")

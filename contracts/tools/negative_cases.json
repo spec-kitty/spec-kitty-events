@@ -2350,6 +2350,152 @@
       }
     },
     {
+      "id": "breaking-snapshot-baseline-same-version",
+      "tool": "breaking_check.py",
+      "tags": [
+        "oasdiff"
+      ],
+      "plant": {
+        "args": [
+          "--root",
+          "contracts/tools/fixtures/breaking_check/candidates/snapshot_same_version_removed_property",
+          "--baseline-root",
+          "contracts/tools/fixtures/breaking_check/baseline_snapshot"
+        ],
+        "code": "BREAKING_WITHOUT_MAJOR"
+      },
+      "control": {
+        "args": [
+          "--root",
+          "contracts/tools/fixtures/breaking_check/candidates/snapshot_same_version_changed",
+          "--baseline-root",
+          "contracts/tools/fixtures/breaking_check/baseline_snapshot"
+        ]
+      }
+    },
+    {
+      "id": "breaking-provisional-ref-repointed-property",
+      "tool": "breaking_check.py",
+      "tags": [
+        "oasdiff"
+      ],
+      "plant": {
+        "args": [
+          "--root",
+          "contracts/tools/fixtures/breaking_check/candidates/ref_repointed_to_provisional",
+          "--baseline-root",
+          "contracts/tools/fixtures/breaking_check/baseline_repoint"
+        ],
+        "code": "BREAKING_WITHOUT_MAJOR"
+      },
+      "control": {
+        "args": [
+          "--root",
+          "contracts/tools/fixtures/breaking_check/baseline_repoint",
+          "--baseline-root",
+          "contracts/tools/fixtures/breaking_check/baseline_repoint"
+        ]
+      }
+    },
+    {
+      "id": "breaking-provisional-ref-property-removed",
+      "tool": "breaking_check.py",
+      "tags": [
+        "oasdiff"
+      ],
+      "plant": {
+        "args": [
+          "--root",
+          "contracts/tools/fixtures/breaking_check/candidates/ref_provisional_removed",
+          "--baseline-root",
+          "contracts/tools/fixtures/breaking_check/baseline_ref"
+        ],
+        "code": "BREAKING_WITHOUT_MAJOR"
+      },
+      "control": {
+        "args": [
+          "--root",
+          "contracts/tools/fixtures/breaking_check/candidates/ref_provisional_kept",
+          "--baseline-root",
+          "contracts/tools/fixtures/breaking_check/baseline_ref"
+        ]
+      }
+    },
+    {
+      "id": "breaking-provisional-ref-property-unrequired",
+      "tool": "breaking_check.py",
+      "tags": [
+        "oasdiff"
+      ],
+      "plant": {
+        "args": [
+          "--root",
+          "contracts/tools/fixtures/breaking_check/candidates/ref_provisional_unrequired",
+          "--baseline-root",
+          "contracts/tools/fixtures/breaking_check/baseline_ref"
+        ],
+        "code": "BREAKING_WITHOUT_MAJOR"
+      },
+      "control": {
+        "args": [
+          "--root",
+          "contracts/tools/fixtures/breaking_check/candidates/ref_provisional_kept",
+          "--baseline-root",
+          "contracts/tools/fixtures/breaking_check/baseline_ref"
+        ]
+      }
+    },
+    {
+      "id": "breaking-provisional-ref-property-kept",
+      "tool": "breaking_check.py",
+      "tags": [
+        "oasdiff"
+      ],
+      "plant": {
+        "args": [
+          "--root",
+          "contracts/tools/fixtures/breaking_check/candidates/ref_provisional_kept",
+          "--baseline-root",
+          "contracts/tools/fixtures/breaking_check/baseline_ref"
+        ],
+        "code": "PROVISIONAL_CHANGE",
+        "exit": 0
+      },
+      "control": {
+        "args": [
+          "--root",
+          "contracts/tools/fixtures/breaking_check/candidates/ref_clean_same",
+          "--baseline-root",
+          "contracts/tools/fixtures/breaking_check/baseline_ref"
+        ]
+      }
+    },
+    {
+      "id": "breaking-provisional-ref-enum-not-reported",
+      "tool": "breaking_check.py",
+      "tags": [
+        "oasdiff"
+      ],
+      "plant": {
+        "args": [
+          "--root",
+          "contracts/tools/fixtures/breaking_check/candidates/ref_provisional_enum_changed",
+          "--baseline-root",
+          "contracts/tools/fixtures/breaking_check/baseline_ref"
+        ],
+        "code": "PROVISIONAL_CHANGE",
+        "exit": 0
+      },
+      "control": {
+        "args": [
+          "--root",
+          "contracts/tools/fixtures/breaking_check/candidates/ref_clean_same",
+          "--baseline-root",
+          "contracts/tools/fixtures/breaking_check/baseline_ref"
+        ]
+      }
+    },
+    {
       "id": "leak-scan-strict-id",
       "tool": "leak_scan.py",
       "build": "leak:strict-id",
