@@ -27,8 +27,14 @@ public final class Guards {
     };
   }
 
+  /**
+   * The inputs core's guards consult. {@code suppliedEvidence} is the unit's request-only {@code implementationEvidencePresent}: for the
+   * unforced in_progress to for_review guard a supplied boolean is used verbatim and null falls back to inference, as core's pipeline does.
+   * It never touches the subtask derivation. {@code root} is the resolved root checkout: the workspace context is core's default synthesis,
+   * the execution mode, a colon and that root.
+   */
   public static GuardContext context(Map<String, Object> row, FoldView state,
-      Function<String, SubtaskRoster> roster, Boolean dependencyReady) {
+      Function<String, SubtaskRoster> roster, Boolean dependencyReady, Boolean suppliedEvidence, String root) {
     WpWriteState wp = state.of(String.valueOf(row.get("wp_id")));
     Lane from = Lane.fromWire(String.valueOf(row.get("from_lane")));
     Lane to = Lane.fromWire(String.valueOf(row.get("to_lane")));
@@ -40,9 +46,11 @@ public final class Guards {
         case SubtaskRoster.Unresolvable unresolvable -> false;
       };
     }
-    Boolean evidence = from == Lane.IN_PROGRESS && to == Lane.FOR_REVIEW ? wp.hasTransitions() : null;
+    Boolean evidence = from == Lane.IN_PROGRESS && to == Lane.FOR_REVIEW
+        ? (suppliedEvidence != null ? suppliedEvidence : wp.hasTransitions())
+        : null;
     String executionMode = String.valueOf(row.getOrDefault("execution_mode", "worktree"));
-    return new GuardContext(Actors.project(row.get("actor")), executionMode + ":<root>", subtasks, evidence,
+    return new GuardContext(Actors.project(row.get("actor")), executionMode + ":" + root, subtasks, evidence,
         text(row.get("reason")), text(row.get("review_ref")), row.get("evidence"), force, row.get("review_result"), dependencyReady);
   }
 

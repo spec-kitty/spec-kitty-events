@@ -350,7 +350,7 @@ class WriteIntegrationTest {
   }
 
   @Test
-  void aWriteAlreadyInFlightFinishesWhileLaterWritesSeeServiceDraining() throws Exception {
+  void aWriteStillWaitingForTheMissionLockAtDrainAndLaterWritesBothSeeServiceDraining() throws Exception {
     ExecutorService executor = Executors.newSingleThreadExecutor();
     try (WriteRig rig = WriteRig.start()) {
       Path lock = rig.gitCommonDir.resolve("spec-kitty-locks/mission.status.lock");
@@ -363,9 +363,13 @@ class WriteIntegrationTest {
         rig.beginDrain();
         RawClient.Reply later = rig.post("unit", WriteRig.unit(WriteRig.claimRow(ID2)));
         assertRefusal(later, 503, "SERVICE_DRAINING", null);
+        // D10: a write still waiting for the Mission lock when the drain begins stops waiting and writes nothing. The peer keeps
+        // the lock until the waiter has answered, so the outcome never depends on a race with the release. A write that already
+        // holds the lock finishes: DrainTest.aWriteHoldingTheLockWhenTheShutdownArrivesFinishesAndItsBytesAreInTheLog.
+        RawClient.Reply waiting = started.get(5, TimeUnit.SECONDS);
+        assertRefusal(waiting, 503, "SERVICE_DRAINING", null);
         peer.close();
-        assertThat(started.get(5, TimeUnit.SECONDS).status()).isEqualTo(201);
-        assertThat(Files.readString(rig.log())).isEqualTo(WriteRig.priorPlannedLine() + WriteRig.expectedClaimLine(ID1));
+        assertThat(Files.readString(rig.log())).isEqualTo(WriteRig.priorPlannedLine());
       } finally {
         peer.close();
         executor.shutdownNow();

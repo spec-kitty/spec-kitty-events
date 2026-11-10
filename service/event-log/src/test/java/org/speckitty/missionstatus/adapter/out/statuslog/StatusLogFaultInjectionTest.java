@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -235,6 +236,11 @@ class StatusLogFaultInjectionTest {
         return new byte[0];
       }
       return Files.readAllBytes(path);
+    }
+
+    @Override
+    public boolean regularOrAbsent(Path path) {
+      return !Files.exists(path, LinkOption.NOFOLLOW_LINKS) || Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS);
     }
 
     @Override

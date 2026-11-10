@@ -5,10 +5,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.function.LongSupplier;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.speckitty.commandcli.adapter.out.filesystem.RepositoryIdentity;
+import org.speckitty.commandcli.adapter.out.mission.FilesystemMissionCatalog;
+import org.speckitty.commandcli.application.write.WriteService;
+import org.speckitty.commandcli.application.write.WriteTurn;
+import org.speckitty.commandcli.application.write.port.StatusLog;
 import org.speckitty.commandcli.adapter.out.filesystem.ServiceLock;
 import org.speckitty.commandcli.adapter.out.filesystem.StateDirectory;
 import org.speckitty.commandcli.domain.service.InstanceId;
@@ -30,7 +35,16 @@ class ServiceWiringTest {
       ServeRuntime runtime = new ServeRuntime(new ServeOptions(gcd, Duration.ofMinutes(1)), state, lock,
           InstanceId.mint(System.currentTimeMillis(), random), WriteToken.mint(random), RepositoryIdentity.of(gcd),
           "test", ignored -> { });
-      assertThat(new ServiceWiring().writeService(runtime).budget()).isEqualTo(Duration.ofSeconds(10));
+      ServiceWiring wiring = new ServiceWiring();
+      Duration budget = wiring.writeBudget();
+      assertThat(budget).isEqualTo(Duration.ofSeconds(10));
+      FilesystemMissionCatalog missions = wiring.missionCatalog(runtime);
+      StatusLog statusLog = wiring.statusLog(runtime, missions);
+      WriteTurn turn = wiring.writeTurn();
+      LongSupplier clock = wiring.nanoClock();
+      WriteService writes = wiring.writeService(runtime, missions, statusLog, wiring.rowCodec(), turn, budget, clock,
+          new org.speckitty.commandcli.application.lifecycle.ServiceLifecycle(java.time.Clock.systemUTC(), () -> { }));
+      assertThat(writes.budget()).isEqualTo(Duration.ofSeconds(10));
     }
   }
 }

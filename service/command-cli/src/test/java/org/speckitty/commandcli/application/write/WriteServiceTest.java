@@ -294,6 +294,79 @@ class WriteServiceTest {
 
   @Test
   @org.junit.jupiter.api.Timeout(30)
+  void aWaitOnTheTurnEndedByTheDrainIsServiceDrainingWithoutAskingTheLog() throws Exception {
+    Ports ports = new Ports();
+    WriteTurn turn = new WriteTurn();
+    java.util.concurrent.atomic.AtomicBoolean draining = new java.util.concurrent.atomic.AtomicBoolean();
+    WriteService service = new WriteService(ports.missions, ports.log, ports.codec, turn, Authority.standard(), Duration.ofSeconds(30),
+        System::nanoTime, draining::get);
+    CountDownLatch held = new CountDownLatch(1);
+    CountDownLatch release = new CountDownLatch(1);
+    Thread holder = Thread.ofPlatform().start(() -> {
+      try (var ignored = turn.tryAcquire(0).orElseThrow()) {
+        held.countDown();
+        release.await(30, TimeUnit.SECONDS);
+      } catch (InterruptedException exception) {
+        Thread.currentThread().interrupt();
+      }
+    });
+    assertThat(held.await(30, TimeUnit.SECONDS)).isTrue();
+    java.util.concurrent.CompletableFuture<WriteOutcome> waiting = java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> service.write(validRequest()));
+    Thread.sleep(150);
+    assertThat(waiting.isDone()).isFalse();
+
+    draining.set(true);
+
+    assertRefusal(waiting.get(5, TimeUnit.SECONDS), RefusalCode.SERVICE_DRAINING, null);
+    assertThat(ports.log.calls).isZero();
+    release.countDown();
+    holder.join(30_000);
+  }
+
+  @Test
+  void aLockWaitAbandonedByTheStoreIsServiceDrainingAndTheStoreWasGivenTheDrainSignal() {
+    Ports ports = new Ports();
+    ports.log.abandoned = true;
+    java.util.function.BooleanSupplier draining = () -> true;
+    WriteService service = new WriteService(ports.missions, ports.log, ports.codec, new WriteTurn(), Authority.standard(),
+        Duration.ofMillis(200), System::nanoTime, draining);
+
+    assertRefusal(service.write(validRequest()), RefusalCode.SERVICE_DRAINING, null);
+
+    assertThat(ports.log.abandon).isSameAs(draining);
+    assertThat(ports.log.appendCalls).isZero();
+  }
+
+  @Test
+  void aStoreThatOnlyKnowsTheOldWithLockIgnoresTheSignalAndKeepsItsContract() {
+    int[] calls = new int[1];
+    StatusLog oldStore = new StatusLog() {
+      @Override
+      public <T> LockResult<T> withLock(MissionRef mission, long deadlineNanos, SessionWork<T> work) {
+        calls[0]++;
+        return new LockResult.LockHeld<>();
+      }
+    };
+
+    var result = oldStore.withLock(REF, 1L, () -> true, session -> "never");
+
+    assertThat(result).isInstanceOf(StatusLog.LockResult.LockHeld.class);
+    assertThat(calls[0]).isEqualTo(1);
+  }
+
+  @Test
+  void aDrainSignalAloneRefusesNothingOnceTheTurnAndTheLockAreFree() {
+    Ports ports = new Ports();
+    WriteService service = new WriteService(ports.missions, ports.log, ports.codec, new WriteTurn(), Authority.standard(),
+        Duration.ofMillis(200), System::nanoTime, () -> true);
+
+    assertThat(service.write(validRequest())).as("abandonment is for waiters; a request that waits for nothing is served")
+        .isInstanceOf(WriteOutcome.Acked.class);
+  }
+
+  @Test
+  @org.junit.jupiter.api.Timeout(30)
   void aHeldTurnIsRefusedAtOnceWhenTheBudgetIsZero() throws Exception {
     Ports ports = new Ports();
     WriteTurn turn = new WriteTurn();
@@ -460,11 +533,19 @@ class WriteServiceTest {
     int calls;
     int appendCalls;
     boolean held;
+    boolean abandoned;
     boolean persistenceFails;
+    java.util.function.BooleanSupplier abandon;
     long deadline;
     int locksHeld;
     CountDownLatch entered;
     CountDownLatch release;
+
+    @Override
+    public <T> LockResult<T> withLock(MissionRef mission, long deadline, java.util.function.BooleanSupplier abandon, SessionWork<T> work) {
+      this.abandon = abandon;
+      return withLock(mission, deadline, work);
+    }
 
     @Override
     public <T> LockResult<T> withLock(MissionRef mission, long deadline, SessionWork<T> work) {
@@ -480,6 +561,7 @@ class WriteServiceTest {
         }
       }
       if (held) return new LockResult.LockHeld<>();
+      if (abandoned) return new LockResult.Abandoned<>();
       if (persistenceFails) return new LockResult.PersistenceFailed<>();
       locksHeld++;
       try {

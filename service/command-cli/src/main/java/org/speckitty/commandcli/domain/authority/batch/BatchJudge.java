@@ -23,8 +23,13 @@ public final class BatchJudge {
     this.unitJudge = unitJudge;
   }
 
+  /** Tests only: the root is the constant {@code "."}; production wires the real root through {@link #standard(String)}. */
   public static BatchJudge standard() {
-    return new BatchJudge(new UnitJudge(new DependencyVerdict(), new ClaimRules()));
+    return standard(".");
+  }
+
+  public static BatchJudge standard(String root) {
+    return new BatchJudge(new UnitJudge(new DependencyVerdict(), new ClaimRules(), root));
   }
 
   public Judgement judge(List<LogLine> log, List<UnitInput> newUnits, boolean batch, MissionFacts facts) {

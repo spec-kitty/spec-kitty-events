@@ -34,6 +34,8 @@ class ProtocolCorpusTest {
   private static final Path APPEND_FIXTURES = repositoryPath("src/spec_kitty_events/conformance/fixtures/status_append/invalid");
   private static final Set<String> PASSED = ConcurrentHashMap.newKeySet();
   private static final Set<String> GUARD_REASONS = ConcurrentHashMap.newKeySet();
+  private static final String EVIDENCE_FIELD_SUFFIX = " (with implementationEvidencePresent)";
+  private static final Set<String> EVIDENCE_FIELD_CASES = ConcurrentHashMap.newKeySet();
   private static WriteRig rig;
 
   @BeforeAll
@@ -60,14 +62,23 @@ class ProtocolCorpusTest {
         JsonNode expected = testCase.required("expected");
         if ("domain".equals(testCase.required("layer").asString())
             && "refusal".equals(expected.required("result").asString()) && expected.hasNonNull("reason")) {
-          guards.putIfAbsent(expected.required("reason").asString(), path);
+          // One representative per (reason, has implementationEvidencePresent): the evidence half of
+          // implementation_evidence_required must not displace the subtask half over HTTP (#224).
+          guards.putIfAbsent(guardKey(testCase), path);
         }
       }
     }
     return guards.entrySet().stream().map(entry -> DynamicTest.dynamicTest("guard " + entry.getKey(), () -> {
       runCase(rig, entry.getValue());
-      GUARD_REASONS.add(entry.getKey());
+      GUARD_REASONS.add(entry.getKey().replace(EVIDENCE_FIELD_SUFFIX, ""));
+      if (entry.getKey().endsWith(EVIDENCE_FIELD_SUFFIX)) EVIDENCE_FIELD_CASES.add(entry.getValue().getFileName().toString());
     }));
+  }
+
+  private static String guardKey(JsonNode testCase) {
+    boolean withField = false;
+    for (JsonNode unit : testCase.required("request").required("units")) withField |= unit.has("implementationEvidencePresent");
+    return testCase.required("expected").required("reason").asString() + (withField ? EVIDENCE_FIELD_SUFFIX : "");
   }
 
   @TestFactory
@@ -190,6 +201,9 @@ class ProtocolCorpusTest {
       Map<String, Object> unit = new LinkedHashMap<>();
       unit.put("wpId", original.required("wpId").asString());
       if (original.has("operation")) unit.put("operation", original.get("operation").asString());
+      if (original.has("implementationEvidencePresent")) {
+        unit.put("implementationEvidencePresent", valueTree(original.get("implementationEvidencePresent")));
+      }
       unit.put("rows", valueTree(original.required("rows")));
       unit.put("context", context);
       units.add(unit);
@@ -250,7 +264,10 @@ class ProtocolCorpusTest {
     assertThat(GUARD_REASONS).hasSize(15); // workspace_context_required is recorded unreachable over the wire.
     JsonNode unreachable = read(CASES.resolveSibling("unreachable.json"));
     assertThat(unreachable.has("urn:spec-kitty:write-refusal:workspace_context_required")).isTrue();
-    assertThat(PASSED).hasSize(34);
-    System.out.printf("Protocol/service corpus 14/14; guard reasons 15/15 (+1 recorded unreachable); invalid status rows 5/5 passed%n");
+    assertThat(unreachable.has("partial")).isFalse(); // both halves of implementation_evidence_required are reached.
+    // The evidence half goes over HTTP next to the subtask half: 34 before the field, plus one representative.
+    assertThat(EVIDENCE_FIELD_CASES).containsExactly("guard-evidence-explicit-false.json");
+    assertThat(PASSED).hasSize(35);
+    System.out.printf("Protocol/service corpus 14/14; guard reasons 15/15 (+1 recorded unreachable; evidence field case 1/1); invalid status rows 5/5 passed%n");
   }
 }

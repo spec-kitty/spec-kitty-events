@@ -16,6 +16,9 @@ public final class Operations {
   /** The three write operations: one transition unit, a batch of units, one standalone annotation. */
   private static final Pattern WRITE = Pattern.compile("^/api/v1/missions/[^/]+/(work-package-transitions(/batch)?|inner-state-annotations)$");
 
+  /** The status-log repair: an explicit operator request that passes the same guards as a write. */
+  private static final Pattern REPAIR = Pattern.compile("^/api/v1/missions/[^/]+/status-log-repairs$");
+
   private Operations() {}
 
   /** True for the POST paths of the three write operations. */
@@ -23,8 +26,13 @@ public final class Operations {
     return path != null && WRITE.matcher(path).matches();
   }
 
+  /** True for the POST path of the status-log repair operation. */
+  private static boolean isRepair(String path) {
+    return path != null && REPAIR.matcher(path).matches();
+  }
+
   /** True for the paths that require the protocol header: every operation but the handshake and the health. */
   public static boolean needsProtocol(String path) {
-    return SHUTDOWN.equals(path) || isWrite(path);
+    return SHUTDOWN.equals(path) || isWrite(path) || isRepair(path);
   }
 }

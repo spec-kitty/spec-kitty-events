@@ -9,6 +9,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Locale;
 
 /** JDK filesystem operations used in production. */
@@ -76,6 +77,15 @@ final class JdkFileOps implements FileOps {
         channel.close();
       }
     };
+  }
+
+  @Override
+  public boolean regularOrAbsent(Path path) throws IOException {
+    try {
+      return Files.readAttributes(path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS).isRegularFile();
+    } catch (NoSuchFileException e) {
+      return true;
+    }
   }
 
   private IOException mapOpenFailure(Path path, IOException failure) {

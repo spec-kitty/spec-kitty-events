@@ -25,6 +25,7 @@ class EdgeOrderTest {
 
   private static final JsonMapper JSON = JsonMapper.builder().build();
   private static final String WRITE = "/api/v1/missions/01M694HJ0000000000000000AA/work-package-transitions";
+  private static final String REPAIR = "/api/v1/missions/01M694HJ0000000000000000AA/status-log-repairs";
 
   private EdgeRig server;
 
@@ -84,16 +85,18 @@ class EdgeOrderTest {
     headers.add("Content-Type: application/json");
     String body = c.oversized() ? "{\"pad\":\"" + "x".repeat(BodySizeFilter.MAX_BYTES) + "\"}" : "{}";
 
-    RawClient.Reply reply = server.request("POST " + WRITE + " HTTP/1.1", body, headers.toArray(String[]::new));
+    for (String target : List.of(WRITE, REPAIR)) {
+      RawClient.Reply reply = server.request("POST " + target + " HTTP/1.1", body, headers.toArray(String[]::new));
 
-    assertThat(reply.status()).isEqualTo(c.status());
-    JsonNode problem = JSON.readTree(reply.body());
-    assertThat(problem.get("code").asString()).isEqualTo(c.code());
-    assertThat(problem.get("status").asInt()).isEqualTo(c.status());
-    assertThat(reply.head()).containsIgnoringCase("Content-Type: application/problem+json");
-    assertThat(reply.text()).doesNotContain(server.token.reveal()).doesNotContain("not-the-token").doesNotContain("evil.example");
-    if (c.status() == 401) {
-      assertThat(reply.head()).contains("WWW-Authenticate: Bearer");
+      assertThat(reply.status()).as(target).isEqualTo(c.status());
+      JsonNode problem = JSON.readTree(reply.body());
+      assertThat(problem.get("code").asString()).isEqualTo(c.code());
+      assertThat(problem.get("status").asInt()).isEqualTo(c.status());
+      assertThat(reply.head()).containsIgnoringCase("Content-Type: application/problem+json");
+      assertThat(reply.text()).doesNotContain(server.token.reveal()).doesNotContain("not-the-token").doesNotContain("evil.example");
+      if (c.status() == 401) {
+        assertThat(reply.head()).contains("WWW-Authenticate: Bearer");
+      }
     }
   }
 
@@ -112,7 +115,7 @@ class EdgeOrderTest {
   @ParameterizedTest(name = "{0}")
   @MethodSource("badTokens")
   void everyOperationAndUnknownPathNeedsTheToken(String name, String[] tokenHeaders) {
-    for (String target : List.of("GET /api/v1/handshake", "GET /api/v1/health", "POST /api/v1/shutdown", "POST " + WRITE, "GET /api/v1/nowhere-at-all")) {
+    for (String target : List.of("GET /api/v1/handshake", "GET /api/v1/health", "POST /api/v1/shutdown", "POST " + WRITE, "POST " + REPAIR, "GET /api/v1/nowhere-at-all")) {
       List<String> headers = new ArrayList<>(List.of(server.host(), "Spec-Kitty-Write-Protocol: 1"));
       for (String header : tokenHeaders) {
         headers.add(header.formatted(server.token.reveal()));
@@ -131,7 +134,7 @@ class EdgeOrderTest {
   @ParameterizedTest(name = "protocol ''{0}''")
   @MethodSource("badProtocols")
   void theShutdownAndTheWritesNeedASupportedProtocol(String value) {
-    for (String target : List.of("POST /api/v1/shutdown", "POST " + WRITE, "POST /api/v1/missions/01M694HJ0000000000000000AA/work-package-transitions/batch",
+    for (String target : List.of("POST /api/v1/shutdown", "POST " + WRITE, "POST " + REPAIR, "POST /api/v1/missions/01M694HJ0000000000000000AA/work-package-transitions/batch",
         "POST /api/v1/missions/01M694HJ0000000000000000AA/inner-state-annotations")) {
       RawClient.Reply reply = server.request(target + " HTTP/1.1", "", server.host(), server.bearer(), "Spec-Kitty-Write-Protocol: " + value);
       assertThat(reply.status()).as(target).isEqualTo(400);

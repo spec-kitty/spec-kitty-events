@@ -63,7 +63,9 @@ class EventLogBoundaryTest {
           "domain.readmodel.reducer.StatusReducer", "domain.readmodel.reducer.UnreducibleLedgerException");
 
   static final List<String> STATUSLOG_TYPES =
-      List.of("adapter.out.statuslog.StatusLogAppender", "adapter.out.statuslog.StatusLogSession", "adapter.out.statuslog.MissionLockPath");
+      List.of(
+          "adapter.out.statuslog.StatusLogAppender", "adapter.out.statuslog.StatusLogSession", "adapter.out.statuslog.MissionLockPath",
+          "adapter.out.statuslog.TailClassifier", "adapter.out.statuslog.TailRepair");
 
   static final String ROOT = "org.speckitty.missionstatus";
   static final String MODEL = ROOT + ".domain.model..";

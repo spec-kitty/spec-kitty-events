@@ -23,11 +23,20 @@ public record WriteRequest(String missionId, Kind kind, List<UnitRequest> units,
     ANNOTATION
   }
 
-  /** One work package's transition and annotations; {@code operation} is null only for a standalone annotation. */
-  public record UnitRequest(String wpId, Operation operation, List<Row> rows) {
+  /**
+   * One work package's transition and annotations; {@code operation} is null only for a standalone annotation. {@code
+   * implementationEvidencePresent} is the request-only evidence flag of the unforced in_progress to for_review guard (null: absent or null
+   * on the wire); it is never part of a row.
+   */
+  public record UnitRequest(String wpId, Operation operation, List<Row> rows, Boolean implementationEvidencePresent) {
     public UnitRequest {
       Objects.requireNonNull(wpId, "wpId");
       rows = List.copyOf(Objects.requireNonNull(rows, "rows"));
+    }
+
+    /** A unit without the request-only evidence flag (null means absent; it is never persisted). */
+    public UnitRequest(String wpId, Operation operation, List<Row> rows) {
+      this(wpId, operation, rows, null);
     }
   }
 

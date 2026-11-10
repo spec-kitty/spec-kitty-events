@@ -2,6 +2,7 @@ package org.speckitty.commandcli.adapter.in.http.operations;
 
 import java.util.function.Supplier;
 import org.speckitty.commandcli.adapter.in.http.edge.RefusalBody;
+import org.speckitty.commandcli.application.diagnostics.FailureRecord;
 import org.speckitty.commandcli.application.lifecycle.ServiceLifecycle;
 import org.speckitty.commandcli.application.write.WriteOutcome;
 import org.speckitty.commandcli.application.write.WriteRequest;
@@ -19,6 +20,7 @@ import tools.jackson.databind.json.JsonMapper;
 /** The unchanged write edge, followed by typed shape validation and the authoritative write service. */
 @RestController
 class WriteController {
+  private static final System.Logger LOG = System.getLogger(WriteController.class.getName());
   /** Fixed, and never the message of the failure: no write answers a Problem without a contract code, or with a value of the request. */
   private static final String UNEXPECTED_DETAIL = "The write failed unexpectedly; nothing was acknowledged.";
 
@@ -37,25 +39,28 @@ class WriteController {
   @PostMapping(path = "/api/v1/missions/{missionId}/work-package-transitions")
   ResponseEntity<byte[]> recordWorkPackageTransition(@PathVariable("missionId") String missionId,
       @RequestBody(required = false) byte[] body) {
-    return write(missionId, () -> bodies.parseUnit(missionId, body));
+    return write("recordWorkPackageTransition", missionId, () -> bodies.parseUnit(missionId, body));
   }
 
   @PostMapping(path = "/api/v1/missions/{missionId}/work-package-transitions/batch")
   ResponseEntity<byte[]> recordWorkPackageTransitionBatch(@PathVariable("missionId") String missionId,
       @RequestBody(required = false) byte[] body) {
-    return write(missionId, () -> bodies.parseBatch(missionId, body));
+    return write("recordWorkPackageTransitionBatch", missionId, () -> bodies.parseBatch(missionId, body));
   }
 
   @PostMapping(path = "/api/v1/missions/{missionId}/inner-state-annotations")
   ResponseEntity<byte[]> recordInnerStateAnnotation(@PathVariable("missionId") String missionId,
       @RequestBody(required = false) byte[] body) {
-    return write(missionId, () -> bodies.parseAnnotation(missionId, body));
+    return write("recordInnerStateAnnotation", missionId, () -> bodies.parseAnnotation(missionId, body));
   }
 
-  private ResponseEntity<byte[]> write(String missionId, Supplier<WriteBodies.Parsed> shape) {
+  private ResponseEntity<byte[]> write(String operation, String missionId, Supplier<WriteBodies.Parsed> shape) {
     try {
       return checkedWrite(missionId, shape);
     } catch (RuntimeException unexpected) {
+      // Errors deliberately remain uncaught and propagate to Spring's default handling.
+      LOG.log(System.Logger.Level.WARNING,
+          FailureRecord.describe(operation, RefusalCode.STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED.name(), unexpected));
       return refuse(RefusalBody.of(RefusalCode.STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED, UNEXPECTED_DETAIL));
     }
   }

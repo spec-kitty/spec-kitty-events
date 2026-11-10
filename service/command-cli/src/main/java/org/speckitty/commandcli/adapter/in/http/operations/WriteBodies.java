@@ -35,6 +35,13 @@ public final class WriteBodies {
     record Failure(Malformed malformed) implements Parsed {}
   }
 
+  /** Either the caller context of a status-log repair or the shape refusal. */
+  public sealed interface ParsedRepair {
+    record Success(WriteRequest.Context context) implements ParsedRepair {}
+
+    record Failure(Malformed malformed) implements ParsedRepair {}
+  }
+
   static final Pattern ULID = Pattern.compile("^[0-9A-HJKMNP-TV-Z]{26}$");
   static final Pattern WP_ID = Pattern.compile("^WP[0-9]{2,}$");
   static final Pattern RELATIVE_PATH = Pattern.compile("^(\\.|(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!(.*/)?\\.\\.(/|$)).+)$");
@@ -42,8 +49,9 @@ public final class WriteBodies {
   static final int MAX_BATCH_UNITS = 64;
 
   private static final Set<String> UNIT_REQUIRED = Set.of("wpId", "rows", "context");
-  private static final Set<String> UNIT_FIELDS = Set.of("wpId", "operation", "rows", "context");
+  private static final Set<String> UNIT_FIELDS = Set.of("wpId", "operation", "implementationEvidencePresent", "rows", "context");
   private static final Set<String> BATCH_FIELDS = Set.of("units");
+  private static final Set<String> REPAIR_FIELDS = Set.of("context");
   private static final Set<String> ANNOTATION_FIELDS = Set.of("wpId", "row", "context");
   private static final Set<String> CONTEXT_FIELDS = Set.of("actor", "checkout", "missionDirectory", "writeSurface", "destinationRef");
   /** One batch is one write (one commit for coordination_ref_commit), so its units name one location (ADR-0007). */
@@ -106,6 +114,22 @@ public final class WriteBodies {
     return new Parsed.Success(new WriteRequest(missionId, WriteRequest.Kind.BATCH, typedUnits, firstContext));
   }
 
+  /** The body of a status-log repair: exactly the member context, parsed with the strictness and the context rules of a write. */
+  public ParsedRepair parseRepair(byte[] body) {
+    Optional<JsonNode> root = parse(body);
+    if (root.isEmpty()) {
+      return new ParsedRepair.Failure(new Malformed("The body is not one JSON object.", null));
+    }
+    if (!onlyFields(root.get(), REPAIR_FIELDS, REPAIR_FIELDS)) {
+      return new ParsedRepair.Failure(new Malformed("The repair request must have exactly the member context.", null));
+    }
+    Optional<Malformed> invalid = context(root.get().get("context"));
+    if (invalid.isPresent()) {
+      return new ParsedRepair.Failure(invalid.get());
+    }
+    return new ParsedRepair.Success(typedContext(root.get().get("context")));
+  }
+
   public Parsed parseAnnotation(String missionId, byte[] body) {
     Optional<JsonNode> parsed = parse(body);
     if (parsed.isEmpty()) {
@@ -138,7 +162,10 @@ public final class WriteBodies {
 
   private static Parsed parseTypedUnit(String missionId, JsonNode unit) {
     if (!onlyFields(unit, UNIT_REQUIRED, UNIT_FIELDS)) {
-      return failure("A unit must have exactly the members wpId, rows and context, and optionally operation.");
+      return failure("A unit must have exactly the members wpId, rows and context, and optionally operation and implementationEvidencePresent.");
+    }
+    if (!evidenceWellTyped(unit.get("implementationEvidencePresent"))) {
+      return failure("The unit's implementationEvidencePresent must be a boolean or null.");
     }
     Optional<String> wpId = wpId(unit.get("wpId"));
     if (wpId.isEmpty()) {
@@ -168,8 +195,19 @@ public final class WriteBodies {
     if (context.isPresent()) {
       return new Parsed.Failure(context.get());
     }
-    WriteRequest.UnitRequest typedUnit = new WriteRequest.UnitRequest(wpId.get(), operation, typedRows);
+    WriteRequest.UnitRequest typedUnit = new WriteRequest.UnitRequest(wpId.get(), operation, typedRows,
+        evidenceFlag(unit.get("implementationEvidencePresent")));
     return new Parsed.Success(new WriteRequest(missionId, WriteRequest.Kind.UNIT, List.of(typedUnit), typedContext(unit.get("context"))));
+  }
+
+  /** The request-only evidence flag is a boolean or null when present. */
+  private static boolean evidenceWellTyped(JsonNode evidence) {
+    return evidence == null || evidence.isBoolean() || evidence.isNull();
+  }
+
+  /** Absent and null both mean "no explicit value": the authority infers the evidence as core's pipeline does. */
+  private static Boolean evidenceFlag(JsonNode evidence) {
+    return evidence == null || evidence.isNull() ? null : evidence.booleanValue();
   }
 
   private static WriteRequest.Operation operation(JsonNode operation) {

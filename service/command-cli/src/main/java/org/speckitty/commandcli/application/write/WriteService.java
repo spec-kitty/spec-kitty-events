@@ -6,7 +6,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
+import org.speckitty.commandcli.application.diagnostics.FailureRecord;
 import org.speckitty.commandcli.application.write.port.MissionCatalog;
 import org.speckitty.commandcli.application.write.port.MissionRef;
 import org.speckitty.commandcli.application.write.port.RowCodec;
@@ -24,7 +26,7 @@ import org.speckitty.commandcli.domain.service.RefusalReason;
 
 /** The complete FR-026 write check order behind Mission, log and codec ports. */
 public final class WriteService {
-  private static final String REF_COMMIT_DETAIL = "coordination_ref_commit is unavailable until migration step 4.";
+  private static final System.Logger LOG = System.getLogger(WriteService.class.getName());
   private static final String UNREADABLE_DETAIL = "A row cannot be read back from the status event log, so it is refused and nothing was written.";
   private static final String PERSISTENCE_DETAIL = "The status event log could not be verified or persisted; nothing was acknowledged.";
 
@@ -35,9 +37,17 @@ public final class WriteService {
   private final Authority authority;
   private final Duration budget;
   private final LongSupplier nanoClock;
+  private final BooleanSupplier draining;
 
+  /** A service that never abandons a wait: the signal is constant false. */
   public WriteService(MissionCatalog missions, StatusLog statusLog, RowCodec codec, WriteTurn turn, Authority authority,
       Duration budget, LongSupplier nanoClock) {
+    this(missions, statusLog, codec, turn, authority, budget, nanoClock, () -> false);
+  }
+
+  /** {@code draining} is the service's drain signal (D10): a request still waiting for the turn or the Mission lock stops waiting. */
+  public WriteService(MissionCatalog missions, StatusLog statusLog, RowCodec codec, WriteTurn turn, Authority authority,
+      Duration budget, LongSupplier nanoClock, BooleanSupplier draining) {
     this.missions = missions;
     this.statusLog = statusLog;
     this.codec = codec;
@@ -45,6 +55,7 @@ public final class WriteService {
     this.authority = authority;
     this.budget = budget;
     this.nanoClock = nanoClock;
+    this.draining = draining;
   }
 
   public Duration budget() {
@@ -60,6 +71,11 @@ public final class WriteService {
     try {
       return checkedWrite(request);
     } catch (RuntimeException unexpected) {
+      LOG.log(System.Logger.Level.WARNING, FailureRecord.describe(switch (request.kind()) {
+        case UNIT -> "recordWorkPackageTransition";
+        case BATCH -> "recordWorkPackageTransitionBatch";
+        case ANNOTATION -> "recordInnerStateAnnotation";
+      }, RefusalCode.STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED.name(), unexpected));
       return refused(RefusalCode.STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED, PERSISTENCE_DETAIL, null);
     }
   }
@@ -67,21 +83,9 @@ public final class WriteService {
   private WriteOutcome checkedWrite(WriteRequest request) {
     WriteOutcome refusal = validateRows(request);
     if (refusal != null) return refusal;
-    if ("coordination_ref_commit".equals(request.context().writeSurface())) {
-      return refused(RefusalCode.WRITE_LOCATION_UNVERIFIED, REF_COMMIT_DETAIL, null);
-    }
-    MissionCatalog.FindResult found = missions.find(request.missionId());
-    if (found instanceof MissionCatalog.RootUnverifiable) {
-      return refused(RefusalCode.WRITE_LOCATION_UNVERIFIED, "The repository root checkout cannot be verified.", null);
-    }
-    if (!(found instanceof MissionCatalog.Found success)) {
-      return refused(RefusalCode.MISSION_NOT_FOUND, "The Mission was not found.", null);
-    }
-    MissionRef mission = success.mission();
-    if (!missions.locationMatches(mission, request.context().checkout(), request.context().missionDirectory(),
-        request.context().destinationRef())) {
-      return refused(RefusalCode.WRITE_LOCATION_UNVERIFIED, "The write location could not be verified.", null);
-    }
+    WriteLocation.Result location = WriteLocation.verify(missions, request.missionId(), request.context());
+    if (location instanceof WriteLocation.Refused denied) return refused(denied.code(), denied.detail(), null);
+    MissionRef mission = ((WriteLocation.Verified) location).mission();
     refusal = checkWorkPackages(request, mission);
     if (refusal != null) return refusal;
     refusal = checkDuplicateIds(request);
@@ -125,19 +129,27 @@ public final class WriteService {
 
   private WriteOutcome lockedWrite(WriteRequest request, MissionRef mission) {
     long deadline = nanoClock.getAsLong() + budget.toNanos();
-    var acquired = turn.tryAcquire(deadline - nanoClock.getAsLong());
-    if (acquired.isEmpty()) return refused(RefusalCode.SERVICE_BUSY, "Another write is still in progress.", null);
-    try (WriteTurn.Turn ignored = acquired.orElseThrow()) {
-      StatusLog.LockResult<WriteOutcome> result = statusLog.withLock(mission, deadline,
+    WriteTurn.Acquisition acquisition = turn.acquire(deadline - nanoClock.getAsLong(), draining);
+    if (acquisition instanceof WriteTurn.Abandoned) return drainingRefusal();
+    if (!(acquisition instanceof WriteTurn.Acquired acquired)) {
+      return refused(RefusalCode.SERVICE_BUSY, "Another write is still in progress.", null);
+    }
+    try (WriteTurn.Turn ignored = acquired.turn()) {
+      StatusLog.LockResult<WriteOutcome> result = statusLog.withLock(mission, deadline, draining,
           session -> insideLock(request, mission, session));
       return switch (result) {
         case StatusLog.LockResult.Completed<WriteOutcome> completed -> completed.value();
         case StatusLog.LockResult.LockHeld<WriteOutcome> held -> refused(RefusalCode.STATUS_LOCK_HELD,
             "The Mission status lock is still held.", null);
+        case StatusLog.LockResult.Abandoned<WriteOutcome> abandoned -> drainingRefusal();
         case StatusLog.LockResult.PersistenceFailed<WriteOutcome> failed -> refused(
             RefusalCode.STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED, PERSISTENCE_DETAIL, null);
       };
     }
+  }
+
+  private static WriteOutcome drainingRefusal() {
+    return refused(RefusalCode.SERVICE_DRAINING, null, null);
   }
 
   private WriteOutcome insideLock(WriteRequest request, MissionRef mission, StatusLog.Session session) {
@@ -219,7 +231,7 @@ public final class WriteService {
 
   private static UnitInput input(WriteRequest.UnitRequest unit) {
     return new UnitInput(unit.wpId(), Operation.fromWire(unit.operation() == null ? "annotation" : unit.operation().wireValue()),
-        unit.rows().stream().map(row -> cast(row.value())).toList());
+        unit.rows().stream().map(row -> cast(row.value())).toList(), unit.implementationEvidencePresent());
   }
 
   private static WriteOutcome refused(RefusalCode code, String detail, Integer index) {

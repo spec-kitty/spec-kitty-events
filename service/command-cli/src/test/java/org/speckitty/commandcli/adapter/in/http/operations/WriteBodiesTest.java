@@ -70,6 +70,38 @@ class WriteBodiesTest {
   }
 
   @Test
+  void implementationEvidencePresentIsATypedBooleanOrNullAndAbsentIsNull() {
+    assertThat(requestWithRow(ROW).units().get(0).implementationEvidencePresent()).isNull();
+    assertThat(evidence("true")).isEqualTo(Boolean.TRUE);
+    assertThat(evidence("false")).isEqualTo(Boolean.FALSE);
+    assertThat(evidence("null")).isNull();
+    WriteRequest batch = success(bodies.parseBatch(MISSION, bytes("{\"units\":["
+        + withEvidence("false") + "," + unit(ROW.replace("WP01", "WP02")).replace("\"wpId\":\"WP01\"", "\"wpId\":\"WP02\"") + "]}")));
+    assertThat(batch.units().get(0).implementationEvidencePresent()).isEqualTo(Boolean.FALSE);
+    assertThat(batch.units().get(1).implementationEvidencePresent()).isNull();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"\"false\"", "0", "1", "{}", "[]", "\"\"", "1.5"})
+  void anyOtherTypeOfImplementationEvidencePresentIsMalformed(String value) {
+    WriteBodies.Malformed malformed = failure(bodies.parseUnit(MISSION, bytes(withEvidence(value))));
+    assertThat(malformed.detail()).contains("implementationEvidencePresent");
+    assertThat(malformed.detail()).doesNotContain("\"" + value + "\"");
+    assertThat(failure(bodies.parseBatch(MISSION, bytes("{\"units\":[" + withEvidence(value) + "]}"))).instance())
+        .isEqualTo("#/units/0");
+  }
+
+  @Test
+  void aMisspeltEvidenceKeyIsStillMalformed() {
+    WriteBodies.Malformed malformed = failure(bodies.parseUnit(MISSION,
+        bytes(unit(ROW).replace("\"rows\"", "\"implementationEvidence\":true,\"rows\""))));
+    assertThat(malformed.detail()).startsWith("A unit must have exactly the members");
+    assertThat(failure(bodies.parseUnit(MISSION,
+        bytes(unit(ROW).replace("\"rows\"", "\"implementation_evidence_present\":true,\"rows\"")))).detail())
+        .startsWith("A unit must have exactly the members");
+  }
+
+  @Test
   void batchesAndStandaloneAnnotationsKeepTheirKindAndContext() {
     WriteRequest batch = success(bodies.parseBatch(MISSION, example("TransitionBatch.two-units.yaml")));
     assertThat(batch.kind()).isEqualTo(WriteRequest.Kind.BATCH);
@@ -252,6 +284,14 @@ class WriteBodiesTest {
 
   private static byte[] example(String name) {
     return OperationsTest.body(ContractSchemas.root().resolve("examples").resolve(name)).getBytes(StandardCharsets.UTF_8);
+  }
+
+  private Boolean evidence(String value) {
+    return success(bodies.parseUnit(MISSION, bytes(withEvidence(value)))).units().get(0).implementationEvidencePresent();
+  }
+
+  private static String withEvidence(String value) {
+    return unit(ROW).replace("\"rows\"", "\"implementationEvidencePresent\":" + value + ",\"rows\"");
   }
 
   private static String unit(String rows) {

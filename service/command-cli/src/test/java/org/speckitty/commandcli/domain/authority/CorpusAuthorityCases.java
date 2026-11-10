@@ -44,7 +44,8 @@ public final class CorpusAuthorityCases {
     for (Object row : value.get("rows") instanceof List<?> values ? values : List.of()) {
       rows.add(castMap(row));
     }
-    return new UnitInput((String) value.get("wpId"), Operation.fromWire((String) value.get("operation")), rows);
+    return new UnitInput((String) value.get("wpId"), Operation.fromWire((String) value.get("operation")), rows,
+        (Boolean) value.get("implementationEvidencePresent"));
   }
 
   @SuppressWarnings("unchecked")

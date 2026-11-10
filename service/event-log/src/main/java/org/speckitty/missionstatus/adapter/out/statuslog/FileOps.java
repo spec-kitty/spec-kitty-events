@@ -14,6 +14,12 @@ interface FileOps {
 
   AppendChannel openForAppend(Path path) throws IOException;
 
+  /**
+   * True when {@code path} does not exist, or is a regular file that is not reached through a link. A symbolic link (dangling or not),
+   * a directory or a FIFO is false. Links are never followed; use this, not {@link #exists}, to vet a path before opening it.
+   */
+  boolean regularOrAbsent(Path path) throws IOException;
+
   void syncDirectory(Path directory) throws IOException;
 
   /** The narrow append-channel operations used by the session. */
