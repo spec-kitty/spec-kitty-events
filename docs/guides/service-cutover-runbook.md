@@ -1,8 +1,8 @@
 ---
 title: Service cutover runbook
-description: 'Maintainer procedure to import the events-domain services from core with history, integrate the build, hand the first release to core and move the issues.'
+description: 'Maintainer procedure to import the events-domain services from core with history, integrate the build, hand the first release to core, move the issues, repair torn logs.'
 doc_status: active
-updated: 2026-11-05T00:00:00Z
+updated: 2026-11-09T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -544,3 +544,128 @@ step 5 prints a line), the import is stale.
 - **After it merges:** this repository is canonical. Ask core for the change and re-make it
   here on a new branch. **[operator]** Pushing it and opening its PR need the operator's
   approval, and the operator merges it after review. Again, no cherry-pick.
+
+
+## 10. Repairing a torn status log
+
+Use this section when a write answers `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED` and the
+Mission's `status.events.jsonl` does not end in a newline. A write never repairs the log. The
+explicit repair operation does, and an operator runs it. The operation is
+`POST /api/v1/missions/{missionId}/status-log-repairs` (#222).
+
+**[operator]** Check the log first. The command prints `\n` when the log ends in LF:
+
+```bash
+GCD="$(git rev-parse --path-format=absolute --git-common-dir)"
+MISSION_DIR="kitty-specs/<mission-slug>"                  # the Mission's directory, relative to the checkout
+tail -c 1 "$MISSION_DIR/status.events.jsonl" | od -An -c
+```
+
+### Call the operation with curl
+
+Until core's repair verb ships (spec-kitty/spec-kitty#7482, linked to spec-kitty/spec-kitty#6195),
+call the operation directly. The write service keeps its port and token in `endpoint.json`, in
+`<git common dir>/spec-kitty-write-service/` (`LAUNCHER.md`, "Single instance"). The file holds
+`host` (always `127.0.0.1`), `port`, `token`, `instance_id` and `pid`. Read `port` and `token` from
+it, and never paste the token into a log or a chat.
+
+```bash
+EP="$GCD/spec-kitty-write-service/endpoint.json"
+PORT="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["port"])' "$EP")"
+TOKEN="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["token"])' "$EP")"
+MISSION_ID="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["mission_id"])' "$MISSION_DIR/meta.json")"
+
+curl -sS -X POST "http://127.0.0.1:$PORT/api/v1/missions/$MISSION_ID/status-log-repairs" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Spec-Kitty-Write-Protocol: 1" \
+  -H "Content-Type: application/json" \
+  -d "{\"context\": {\"actor\": \"<your-actor>\", \"checkout\": \".\", \"missionDirectory\": \"$MISSION_DIR\", \"writeSurface\": \"checkout_append\", \"destinationRef\": null}}"
+```
+
+The request body has one member, `context`. Its `actor` is any non-empty string. `checkout` is `.`
+for the repository root checkout, and `destinationRef` is `null`. The `missionId` in the path is the
+`mission_id` in the Mission's `meta.json`.
+
+A `200` answer has one of three actions. The fields are `repaired`, `action`, `movedBytes`,
+`quarantinedFile` and `readableAfterRepair`:
+
+| `action` | What happened | Answer |
+|---|---|---|
+| `none` | The log was missing, empty or ended in LF. Nothing was touched, and no file was created. | `repaired: false`, `movedBytes: 0`, `quarantinedFile: null` |
+| `completed` | The tail was exactly one status row, with an `event_id` no earlier row has, that folds after the log's prefix. One LF was appended. | `repaired: true`, `movedBytes: 0`, `quarantinedFile: null` |
+| `quarantined` | Any other tail. The fragment was moved to `status.events.jsonl.torn` beside the log, and the log was cut to its last LF. | `repaired: true`, `movedBytes` is the fragment's length, `quarantinedFile: "status.events.jsonl.torn"` |
+
+Other answers:
+
+- `401 WRITE_TOKEN_INVALID`: the token is wrong. Read the endpoint file again.
+- `404 MISSION_NOT_FOUND`: no `meta.json` has this `mission_id`.
+- `409 STATUS_LOCK_HELD`: the Mission lock was not free within the 10 s budget. Retry later.
+- `422 WRITE_LOCATION_UNVERIFIED`: a coordination-routed Mission. See the limit below.
+- `503 SERVICE_BUSY` (retry after 1 s), or `503 SERVICE_DRAINING` (read the endpoint file again;
+  the service is stopping).
+- `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`: the repair failed, and no byte was lost. The
+  repair may have taken effect, so run it again.
+
+### After the repair
+
+- **`quarantined`.** The fragment is in `$MISSION_DIR/status.events.jsonl.torn`. Read it, then
+  delete it or commit it. The file is untracked, inside a tracked Mission directory, so core's
+  dirty-tree checks may notice it. The contract and this repository do not say how core's checks
+  treat it. Check `git status` before the next lifecycle command, and if a check stops on the
+  file, state that uncertainty and ask.
+- **`readableAfterRepair: false`.** The log still does not fold as the next write would, so writes
+  fail for another reason. Stop, do not run the repair again, and escalate.
+- **A torn multi-row unit, after a `quarantined` repair.** The rows that landed before the tear stay in the log. Retrying the same
+  unit then answers `409 EVENT_ID_CONFLICT`, because some of its `event_id`s are present and some
+  are not. Re-issue the unit with new `event_id`s.
+
+### Limit: coordination-routed Missions
+
+Until migration step 4 serves the coordination ref, the operation answers
+`422 WRITE_LOCATION_UNVERIFIED` for a coordination-routed Mission. For such a Mission the remedy is
+manual.
+
+**[operator]** First find the log core actually writes for this Mission. A coordination-routed
+Mission's status is written through its coordination worktree (ADR-0007: today under
+`.worktrees/<mission>-coord/`), so the authoritative file is
+`<coordination worktree>/<missionDirectory>/status.events.jsonl`, **not** the copy under the root
+checkout's `kitty-specs/`. Confirm it is the file core's last write touched (its last line is the
+torn one) before you change anything. If you cannot tell which file is authoritative, stop and ask.
+
+Stop the write service with `POST /api/v1/shutdown`, or let it exit on its idle timeout. Make sure no
+core writer is running for that Mission. This guide does not verify which lock file core takes for
+a coordination-routed Mission, and it does not show a command that takes the lock. Be sure no other
+process is running before you cut.
+
+Core's remedy text (`src/kernel/event_log_append.py` on core `main`) says to inspect the file and
+cut the bytes after its last newline. The script below also keeps a copy of the cut bytes in
+`status.events.jsonl.torn`, so no byte is lost. That copy is this guide's addition, not core's
+text.
+
+```bash
+LOG="<coordination worktree>/<missionDirectory>/status.events.jsonl"   # the file you confirmed above
+python3 - "$LOG" <<'EOF'
+import os, sys
+path = sys.argv[1]
+with open(path, "rb+") as log:
+    data = log.read()
+    cut = data.rfind(b"\n") + 1
+    if cut == len(data):
+        sys.exit("the log ends in LF; nothing to cut")
+    with open(path + ".torn", "ab") as torn:
+        torn.write(data[cut:] + b"\n")
+        torn.flush()
+        os.fsync(torn.fileno())
+    log.truncate(cut)
+    log.flush()
+    os.fsync(log.fileno())
+# As the service does, sync the directory too, so the new .torn entry survives a crash.
+dir_fd = os.open(os.path.dirname(os.path.abspath(path)), os.O_RDONLY)
+try:
+    os.fsync(dir_fd)
+finally:
+    os.close(dir_fd)
+EOF
+```
+
+Then start the service again with the launcher, as core does for any write.
