@@ -1,0 +1,28 @@
+get:
+  operationId: listGadgets
+  summary: List gadgets.
+  description: Returns the gadgets.
+  tags:
+    - Things
+  responses:
+    '200':
+      description: The gadgets.
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/Gadget.yaml
+post:
+  operationId: makeGadget
+  summary: Make a gadget.
+  description: Makes one.
+  tags:
+    - Things
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/GadgetIn.yaml
+  responses:
+    '204':
+      description: Made.

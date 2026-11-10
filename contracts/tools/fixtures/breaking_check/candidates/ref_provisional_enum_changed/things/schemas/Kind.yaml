@@ -1,0 +1,8 @@
+title: Kind
+description: What sort of thing it is.
+type: string
+enum:
+  - small
+  - medium
+x-provisional:
+  open_decision: whether the kinds stay a closed list is still undecided

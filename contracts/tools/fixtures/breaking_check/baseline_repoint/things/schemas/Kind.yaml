@@ -1,0 +1,6 @@
+title: Kind
+description: What sort of thing it is.
+type: string
+enum:
+  - small
+  - large
