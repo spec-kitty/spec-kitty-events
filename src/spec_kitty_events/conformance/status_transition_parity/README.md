@@ -23,7 +23,9 @@ request) -> expected outcome` case. The file stem equals its kebab-case `id`.
   CRLF or malformed input must be represented. `tasks` maps filenames below
   `tasks/` to complete Markdown text.
 - `request.kind` is `unit`, `batch`, or `annotation`; each unit carries `wpId`,
-  an optional operation, and ordered rows. `checkout_append`, `checkout: "."`,
+  an optional operation, an optional `implementationEvidencePresent` (boolean or
+  null; a transition unit's request-only evidence flag, never part of its rows),
+  and ordered rows. `checkout_append`, `checkout: "."`,
   and the Mission directory are implied by the corpus.
 - `expected` is an acknowledgement with per-unit replay/append counts and
   optional `fsyncs`, or a refusal with its contract code, nullable reason URN,

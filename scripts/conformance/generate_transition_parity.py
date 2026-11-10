@@ -48,6 +48,9 @@ ROW_CALL_KWARGS = {
             "evidence",
             "review_result",
             "policy_metadata",
+            # Request-only on the wire (`TransitionUnit.implementationEvidencePresent`): core's
+            # authority takes it, but it is never a row field and is never persisted.
+            "implementation_evidence_present",
         }
     ),
     "start_implementation": frozenset({"force", "reason", "policy_metadata"}),
@@ -505,6 +508,15 @@ def start_review(
     return _call("start_review", wp_id, "in_review", actor, from_lane, kwargs)
 
 
+def wire_unit(call: Call, rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """The wire unit for one call; the request-only evidence flag is named only when the case sets it."""
+
+    unit: dict[str, Any] = {"wpId": call.wp_id, "operation": call.operation, "rows": rows}
+    if "implementation_evidence_present" in call.kwargs:
+        unit["implementationEvidencePresent"] = call.kwargs["implementation_evidence_present"]
+    return unit
+
+
 def ann(delta: Mapping[str, Any], *, wp_id: str = "WP01", actor: Any = "implementer-a") -> Call:
     return Call("annotation", wp_id, None, actor, {"delta": dict(delta)})
 
@@ -703,6 +715,37 @@ def _guard_intents() -> list[Intent]:
             path_to("in_progress"),
             tr("for_review"),
             tasks=incomplete_tasks,
+        ),
+        _intent(
+            "guard-evidence-explicit-false",
+            "guard",
+            path_to("in_progress"),
+            tr("for_review", implementation_evidence_present=False),
+        ),
+        _intent(
+            "guard-evidence-explicit-true",
+            "guard",
+            path_to("in_progress"),
+            tr("for_review", implementation_evidence_present=True),
+        ),
+        _intent(
+            "guard-evidence-explicit-true-subtasks-incomplete",
+            "guard",
+            path_to("in_progress"),
+            tr("for_review", implementation_evidence_present=True),
+            tasks=incomplete_tasks,
+        ),
+        _intent(
+            "guard-evidence-explicit-false-forced",
+            "guard",
+            path_to("in_progress"),
+            tr("for_review", force=True, reason="operator", implementation_evidence_present=False),
+        ),
+        _intent(
+            "guard-evidence-explicit-false-other-transition",
+            "guard",
+            path_to("in_progress"),
+            tr("blocked", implementation_evidence_present=False),
         ),
         _intent(
             "guard-subtasks-roster-nonstring-ids",
@@ -1499,11 +1542,20 @@ def build_intents() -> tuple[Intent, ...]:
         "guard-shell-pid-str-padded",
         "guard-shell-pid-bigstr",
     }
-    additions = review_additions | cycle3_additions
+    # The request-only evidence flag (#224); appended last for the same reason.
+    evidence_additions = {
+        "guard-evidence-explicit-false",
+        "guard-evidence-explicit-true",
+        "guard-evidence-explicit-true-subtasks-incomplete",
+        "guard-evidence-explicit-false-forced",
+        "guard-evidence-explicit-false-other-transition",
+    }
+    additions = review_additions | cycle3_additions | evidence_additions
     intents = (
         tuple(intent for intent in intents if intent.case_id not in additions)
         + tuple(intent for intent in intents if intent.case_id in review_additions)
         + tuple(intent for intent in intents if intent.case_id in cycle3_additions)
+        + tuple(intent for intent in intents if intent.case_id in evidence_additions)
     )
     ids = [intent.case_id for intent in intents]
     if len(ids) != len(set(ids)):
@@ -1884,10 +1936,7 @@ class CoreOracle:
                         raise
                     mapped = map_exception_to_refusal(exception, self.sources)
                     rows = self._would_be_rows(call, mission_dir, repo)
-                    units.extend(
-                        {"wpId": call.wp_id, "operation": call.operation, "rows": [row]}
-                        for row in rows
-                    )
+                    units.extend(wire_unit(call, [row]) for row in rows)
                     calls_record.append(
                         {
                             "entry_point": self._entry_point(call),
@@ -1903,7 +1952,7 @@ class CoreOracle:
                     break
                 calls_record.append(recorded)
                 for rows in groups:
-                    units.append({"wpId": call.wp_id, "operation": call.operation, "rows": rows})
+                    units.append(wire_unit(call, rows))
             kind = (
                 "batch"
                 if len(units) > 1

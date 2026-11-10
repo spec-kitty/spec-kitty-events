@@ -41,6 +41,7 @@
             "properties": {
               "wpId": {"type": "string", "pattern": "^WP[0-9]+$"},
               "operation": {"enum": ["transition", "start_implementation", "start_review", "annotation"]},
+              "implementationEvidencePresent": {"type": ["boolean", "null"]},
               "rows": {"type": "array", "minItems": 1, "items": {"type": "object"}}
             }
           }
