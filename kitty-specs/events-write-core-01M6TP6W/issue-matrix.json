@@ -132,6 +132,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#222": {
+      "evidence_ref": "Follow-up: #222, delivered by mission write-service-cutover-readiness-01M70THX (#236); operator ruling 2026-10-31 (refuse on the write path), 2026-11-08 (file the repair)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
     "#223": {
       "evidence_ref": "Follow-up: #223 (workspace_context_required is unreachable over the wire; unreachable.json kept per maintainer ruling 2026-11-08 (5), research \u00a711 decision 17)",
       "fr": null,
