@@ -46,17 +46,6 @@ final class CorpusCases {
       return (List<Map<String, Object>>) request().get("units");
     }
 
-    UnitInput unit() {
-      Map<String, Object> unit = units().getFirst();
-      return new UnitInput(
-          (String) unit.get("wpId"), Operation.fromWire((String) unit.get("operation")), rows(unit));
-    }
-
-    @SuppressWarnings("unchecked")
-    private static List<Map<String, Object>> rows(Map<String, Object> unit) {
-      return (List<Map<String, Object>>) unit.get("rows");
-    }
-
     FoldView fold() {
       if (value.get("log_text") instanceof String text) {
         return WriteFold.fold(logText(text));

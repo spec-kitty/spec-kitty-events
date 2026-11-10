@@ -11,7 +11,7 @@ import org.speckitty.missionstatus.domain.model.CodePoints;
  * {@code TypeError} and makes the log unreducible. Two ids that are equal compare equal and are never compared with {@code <}, so equal
  * keys never raise.
  */
-final class EventIds {
+public final class EventIds {
   /** Python's {@code None}: equal only to itself, ordered against nothing. */
   private enum Null { INSTANCE }
 
@@ -26,6 +26,15 @@ final class EventIds {
       case Double number -> new BigDecimal(number).stripTrailingZeros();
       default -> id;
     };
+  }
+
+  /**
+   * Whether two decoded {@code event_id}s are the same id to core's reducer (Python equality: {@code 1 == 1.0 == True},
+   * {@code "1" != 1}). Two absent ids ({@code None}) are not compared here: callers that need "is this a repeat" treat a missing id
+   * as no id, as the fold's own replay check does.
+   */
+  public static boolean sameId(Object left, Object right) {
+    return left != null && right != null && key(left).equals(key(right));
   }
 
   /** {@code a < b} on two keys as Python's tuple comparison reaches it, or an {@link UnreducibleLog} where Python raises. */

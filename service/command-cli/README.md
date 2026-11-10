@@ -54,7 +54,9 @@ Startup runs in this order:
    `read_endpoint_file`).
 
 The service logs to stdout and stderr, which the launcher appends to `service.log`. No log line
-carries the token, a request path or a header the caller sent.
+carries the token, a request path or a header the caller sent. An unexpected failure on the write or
+repair path writes one `WARNING` record that names the operation, the refusal code and the exception
+classes only (`application.diagnostics.FailureRecord`): never a message, a host path or row content.
 
 ## The HTTP surface
 
@@ -69,6 +71,7 @@ Every path is under `/api/v1`, the contract's server prefix
 | `POST /api/v1/missions/{missionId}/work-package-transitions` | `201` `DurabilityAck` after one synced append, or a refusal |
 | `POST /api/v1/missions/{missionId}/work-package-transitions/batch` | `201` `BatchDurabilityAck` after one synced append (1 to 64 units; a bad unit is named as `#/units/<i>`), or a refusal |
 | `POST /api/v1/missions/{missionId}/inner-state-annotations` | `201` `DurabilityAck` after one synced append, or a refusal |
+| `POST /api/v1/missions/{missionId}/status-log-repairs` | `200` `StatusLogRepairAck` (`action` `none`, `completed` or `quarantined`), or a refusal; explicit and operator-invoked, never part of a write (#222) |
 
 A request meets the checks in the contract's order. The first one that fails answers:
 
@@ -138,7 +141,13 @@ them in this order:
     the lifecycle claim rules, a stale `from_lane`, the force-note and done-evidence checks,
     dependency readiness, then the lane machine and its guards. A later unit sees the earlier
     units of the same request as if they had landed.
-11. **One append and one sync** of every new unit, then `201`.
+11. **Read-back** (`application.write.AppendVerifier`). Before anything is appended, the encoded
+    bytes of every new row are decoded with the log reader's codec, each to exactly one row, and
+    the log followed by those rows is folded with the fold the next write uses. A row that fails
+    either is `400 REQUEST_MALFORMED`, with `instance: #/units/<i>` for a batch unit, and nothing
+    is written. The read-back refuses JSON nesting beyond 256, an integer beyond 4300 digits, an
+    actor object the fold cannot decode, and a unit the fold rejects.
+12. **One append and one sync** of every new unit, then `201`. The append is the last step.
 
 ### Durability
 
@@ -149,9 +158,9 @@ them in this order:
   `MissionLockPath` builds from the directory's basename, not its slug or mission id, which is
   the lock core's `feature_status_lock` takes.
 - Under the lock the whole log is read and its tail checked. A last byte that is not LF is a
-  torn tail: it is refused (`500`), never repaired. The operator ruling of 2026-10-31 keeps
-  the refusal; an explicit repair command is the follow-up in
-  [#222](https://github.com/spec-kitty/spec-kitty-events/issues/222).
+  torn tail: every write refuses it (`500`), and no write repairs it. The explicit repair
+  operation does, under the same lock; see [The status-log repair](#the-status-log-repair)
+  ([#222](https://github.com/spec-kitty/spec-kitty-events/issues/222)).
 - All new rows — one unit or a whole batch — go out in one `O_APPEND` write of complete JSON
   lines, then `force()`. When the log did not exist, its parent directory is synced too.
 - If the write or the sync fails (a short write included), the log is truncated back to the size it
@@ -162,10 +171,25 @@ them in this order:
   U+2028, U+2029, VT, FF, FS, GS or RS is unreducible (`500`), because core's row splitter
   would break on it. JSON nesting is capped at 256 and integers at 4300 digits; floats are
   unbounded, as in Python. The request parser takes the same limits, set on its own token factory
-  (not a JVM-wide default), so the edge and the log reader agree. Before any append the service decodes
-  the encoded rows with the log's codec and folds the log plus the new rows with the fold the next
-  write uses; a row that fails either is `400 REQUEST_MALFORMED` (naming the unit of a batch) and
-  nothing is written, so an acknowledged row can always be read back.
+  (not a JVM-wide default), so the edge and the log reader agree. The read-back check (step 11)
+  decides whether an encoded row can be read back before anything is appended.
+
+### The status-log repair
+
+`POST /api/v1/missions/{missionId}/status-log-repairs` is the only operation that changes a torn
+status log. It is never part of a write:
+
+- It verifies the write location the same way a write does, and takes the same in-process turn
+  and the same Mission status lock under the same 10 s budget.
+- It answers one of three actions. A missing, empty or LF-terminated log is `none`, and nothing is
+  touched or created. A tail that is exactly one status row, with an `event_id` no earlier row has, which folds after the log's prefix, is
+  `completed`: one LF is appended. Any other tail is `quarantined`: the fragment is moved to
+  `status.events.jsonl.torn` beside the log, and the log is cut back to its last LF.
+- The quarantine copy is written and synced before the log is truncated. The truncate is the only
+  step that removes bytes from the log.
+- `readableAfterRepair` says whether the log, as it now stands, decodes and folds as the next write
+  would. A repair that leaves it `false` is still answered `200`.
+- A coordination-routed Mission answers `422 WRITE_LOCATION_UNVERIFIED` until migration step 4.
 
 ### Idempotency
 
@@ -184,8 +208,8 @@ them in this order:
 
 The in-process turn and the Mission lock share one deadline, `now + 10 s` (`ServiceWiring`
 constructs `WriteService` with `Duration.ofSeconds(10)`). Waiting out the turn answers `503
-SERVICE_BUSY` with `Retry-After: 1`; waiting out the Mission lock answers `409 STATUS_LOCK_HELD`.
-The service never waits unbounded.
+SERVICE_BUSY` with `Retry-After: 1`; waiting out the Mission lock answers `409 STATUS_LOCK_HELD`. The repair operation shares this
+budget, the turn and the lock. The service never waits unbounded.
 
 ### The operation field
 
@@ -219,8 +243,8 @@ placement and commit codes that belong to ADR-0007's surface (served from migrat
 | `WRITE_TOKEN_INVALID` | 401 | the bearer token |
 | `PROTOCOL_VERSION_UNSUPPORTED` | 400 | the protocol header |
 | `REQUEST_TOO_LARGE` | 413 | a body over 1 MiB |
-| `REQUEST_MALFORMED` | 400 | the body's shape or a row rule |
-| `SERVICE_DRAINING` | 503 | after `/shutdown` or the idle timeout |
+| `REQUEST_MALFORMED` | 400 | the body's shape, a row rule, or a row the read-back cannot read |
+| `SERVICE_DRAINING` | 503 | after `/shutdown` or the idle timeout, and for a write or repair still waiting for the turn or the lock |
 | `TRANSITION_REJECTED` | 409 | the lane machine or a guard, with a reason URN |
 | `WP_ALREADY_CLAIMED` | 409 | a lifecycle claim held by another actor |
 | `DEPENDENCIES_NOT_SATISFIED` | 409 | a gated dependency is not approved, done or operator-canceled |
@@ -246,6 +270,15 @@ The client is core's `transition_port` (#6195). Five rules keep it on the suppor
 - **Send `checkout_append` with `checkout: "."`, `destinationRef: null` and `missionDirectory`
   the Mission's directory relative to the root.** `coordination_ref_commit` is refused until
   migration step 4, and `statusCommit` stays null.
+- **Send `implementationEvidencePresent` when the caller knows the answer.** It is an optional
+  boolean or null on a unit, and it is request-only: it is never persisted. For an unforced
+  `in_progress` to `for_review`, a boolean is used as given; absent or null keeps the inference from
+  the subtask roster (#224). `TransitionUnit` is closed, so a service that predates the field answers
+  `400 REQUEST_MALFORMED` to it; a client sends the field only once the service it talks to serves
+  it (rolling upgrade, D3).
+- **Repair a torn status log only through the repair operation.** Send `context` as a write does:
+  `checkout` `.`, `writeSurface` `checkout_append`, `destinationRef` null and `missionDirectory` the
+  Mission's directory. Core's CLI verb that calls it is a core follow-up (spec-kitty/spec-kitty#7482).
 - **Keep the checks that stay client-side** (C-004): `move-task`'s agent-mismatch guard and the
   lane-specific for-review commit gate. They run above core's emit pipeline, have no protocol
   URN, and stay advisory; the service remains authoritative.
@@ -260,7 +293,7 @@ described above; this table is the compact list (R15–R31).
 
 | Where | Behaviour | Ruling |
 |---|---|---|
-| Log | torn tail refused, never repaired; LF-only writes, a CR before the LF tolerated on read | C-006, decision 10, [#222](https://github.com/spec-kitty/spec-kitty-events/issues/222) |
+| Log | torn tail refused by every write, repaired only by the explicit repair operation; LF-only writes, a CR before the LF tolerated on read | C-006, decision 10, [#222](https://github.com/spec-kitty/spec-kitty-events/issues/222) |
 | Log | a raw U+0085/U+2028/U+2029/VT/FF/FS/GS/RS makes the log unreducible (`500`) | R24, [core #7439](https://github.com/spec-kitty/spec-kitty/issues/7439) |
 | Log | JSON nesting capped at 256, integers at 4300 digits, floats unbounded | decision 16, [core #7439](https://github.com/spec-kitty/spec-kitty/issues/7439) |
 | Request | a row either of core's read paths (`read_events`, `materialize`) or the fold cannot read back (nesting over 256, a structured actor core's `decode_actor` refuses, the five-key `profile_source` actor no writer may emit, a subtask `uninitialized`, a `shell_pid` outside R28's ASCII form, a transition core would skip as non-lane) is `REQUEST_MALFORMED`; an unexpected failure is `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`, never a Problem without a code | PR #230 squad, decision 22 |
@@ -282,16 +315,20 @@ described above; this table is the compact list (R15–R31).
 Plain scalars resolve by the YAML 1.2.2 core schema (`Yaml12Schema`), not SnakeYAML's YAML 1.1
 resolver, so numeric spellings only ruamel reads as numbers are refused rather than copied. The
 own `meta.json` BOM behaviour is core's (a BOM means the Mission is not found), tracked as
-[core #7445](https://github.com/spec-kitty/spec-kitty/issues/7445). Two guard reasons are not
-reachable over the wire; [events #223](https://github.com/spec-kitty/spec-kitty-events/issues/223)
-(`workspace_context_required`) and
-[events #224](https://github.com/spec-kitty/spec-kitty-events/issues/224) (the evidence half of
-`implementation_evidence_required`) track them.
+[core #7445](https://github.com/spec-kitty/spec-kitty/issues/7445). One guard reason is not reachable over the wire:
+`workspace_context_required`. The service passes its verified root as the guard's workspace context
+(the real root, [events #223](https://github.com/spec-kitty/spec-kitty-events/issues/223);
+`UnitJudge` and `ServiceWiring`), so the guard never sees a blank one. Core keeps the guard as a
+fail-closed batch-API check (operator decision 2026-09-07, #946, DRIFT-3). The evidence half of
+`implementation_evidence_required` is reachable now through `implementationEvidencePresent: false`
+([events #224](https://github.com/spec-kitty/spec-kitty-events/issues/224)).
 
 ## Lifecycle
 
 - **Shutdown.** `POST /api/v1/shutdown` answers `202` at once. The health check then reads
-  `draining` and new writes get `SERVICE_DRAINING`. The service waits up to 5 s for the requests
+  `draining` and new writes get `SERVICE_DRAINING`. A write or repair still waiting for the turn or
+  the Mission lock stops waiting and answers `503 SERVICE_DRAINING`, writing nothing; one already
+  holding the lock finishes (D10, #231 4.7). The service waits up to 5 s for the requests
   it holds, a request whose body is still arriving included, and the application's own shutdown
   phase is capped at 2 s, so the process is gone well inside the launcher's 10 s. Then it removes `endpoint.json`, but only while the file still names this instance,
   and exits 0.
@@ -330,9 +367,8 @@ cuts no tag; a release that carries it is what core's binding (#6195) pins
   - It builds the unit with `transition_unit_from` (core
     `src/specify_cli/status/write_service_protocol.py`).
   - The runtime emitter half has no operation in protocol major 1.
-- **Path prefix.** Core's launcher client still calls the bare paths `/handshake`, `/health` and
-  `/shutdown`. The contract's `/api/v1` prefix wins, and spec-kitty/spec-kitty#6910 moves the
-  client to it.
+- **Path prefix.** The contract's `/api/v1` prefix is the one core's launcher calls
+  (spec-kitty/spec-kitty#6910, fixed on core `main` at `3dc4ca94f7`).
 
 ## Build and test
 

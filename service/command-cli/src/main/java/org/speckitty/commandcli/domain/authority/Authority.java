@@ -13,8 +13,14 @@ public final class Authority {
     this.batchJudge = batchJudge;
   }
 
+  /** Tests only: the root is the constant {@code "."}; production wires the real root through {@link #standard(String)}. */
   public static Authority standard() {
-    return new Authority(new BatchJudge(new UnitJudge(new DependencyVerdict(), new ClaimRules())));
+    return standard(".");
+  }
+
+  /** The assembly whose guards see {@code root}, the resolved root checkout, in their workspace context. */
+  public static Authority standard(String root) {
+    return new Authority(BatchJudge.standard(root));
   }
 
   public Judgement judge(List<LogLine> log, List<UnitInput> newUnits, boolean batch, MissionFacts facts) {

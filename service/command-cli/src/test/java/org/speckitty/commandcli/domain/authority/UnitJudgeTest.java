@@ -148,6 +148,64 @@ class UnitJudgeTest {
     assertThat(new Judgement.Accepted()).isInstanceOf(Judgement.class);
   }
 
+  private static final MissionFacts ONE_SUBTASK = new MissionFacts() {
+    public DependencyDeclaration dependencies(String wpId) { return new DependencyDeclaration.None(); }
+    public SubtaskRoster subtaskRoster(String wpId) { return new SubtaskRoster.Resolved(List.of("T001")); }
+  };
+
+  @Test
+  void explicitFalseEvidenceRefusesTheReviewHandoffWithACompleteRoster() {
+    UnitJudge judge = new UnitJudge(DependencyGate.NO_VERDICT, ClaimGate.NONE);
+    FoldView inProgress = AuthorityFixtures.foldTo(Lane.IN_PROGRESS);
+    Map<String, Object> row = AuthorityFixtures.row("in_progress", "for_review");
+    Refusal refusal = judge.judge(evidenceUnit(row, false), inProgress, NO_FACTS).orElseThrow();
+    assertThat(refusal.reason()).isEqualTo(RefusalReason.IMPLEMENTATION_EVIDENCE_REQUIRED);
+    assertThat(refusal.message()).isEqualTo(
+        "Transition in_progress -> for_review requires implementation evidence or force with reason");
+    assertThat(judge.judge(evidenceUnit(row, true), inProgress, NO_FACTS)).isEmpty();
+    assertThat(judge.judge(evidenceUnit(row, null), inProgress, NO_FACTS)).isEmpty();
+    assertThat(judge.judge(unit(Operation.TRANSITION, row), inProgress, NO_FACTS)).isEmpty();
+  }
+
+  @Test
+  void trueEvidenceNeverRescuesAnIncompleteRoster() {
+    UnitJudge judge = new UnitJudge(DependencyGate.NO_VERDICT, ClaimGate.NONE);
+    Map<String, Object> row = AuthorityFixtures.row("in_progress", "for_review");
+    for (Boolean supplied : new Boolean[] {true, false, null}) {
+      Refusal refusal = judge.judge(evidenceUnit(row, supplied), AuthorityFixtures.foldTo(Lane.IN_PROGRESS), ONE_SUBTASK).orElseThrow();
+      assertThat(refusal.reason()).as(String.valueOf(supplied)).isEqualTo(RefusalReason.IMPLEMENTATION_EVIDENCE_REQUIRED);
+      assertThat(refusal.message()).contains("completed subtasks");
+    }
+  }
+
+  @Test
+  void evidenceIsIgnoredUnderForceAndForOtherTransitions() {
+    UnitJudge judge = new UnitJudge(DependencyGate.NO_VERDICT, ClaimGate.NONE);
+    Map<String, Object> forced = AuthorityFixtures.row("in_progress", "for_review");
+    forced.put("force", true);
+    forced.put("reason", "operator");
+    assertThat(judge.judge(evidenceUnit(forced, false), AuthorityFixtures.foldTo(Lane.IN_PROGRESS), NO_FACTS)).isEmpty();
+    Map<String, Object> other = AuthorityFixtures.row("planned", "claimed");
+    assertThat(judge.judge(evidenceUnit(other, false), AuthorityFixtures.foldTo(Lane.PLANNED), NO_FACTS)).isEmpty();
+    Map<String, Object> blocked = AuthorityFixtures.row("in_progress", "blocked");
+    assertThat(judge.judge(evidenceUnit(blocked, false), AuthorityFixtures.foldTo(Lane.IN_PROGRESS), NO_FACTS)).isEmpty();
+  }
+
+  @Test
+  void theRootGivenAtConstructionReachesTheGuardContext() {
+    UnitJudge judge = new UnitJudge(DependencyGate.NO_VERDICT, ClaimGate.NONE, "/the/resolved/root");
+    Map<String, Object> row = AuthorityFixtures.row("claimed", "in_progress");
+    GuardContext context = judge.guardContext(unit(Operation.TRANSITION, row), AuthorityFixtures.foldTo(Lane.CLAIMED), NO_FACTS, null);
+    assertThat(context.workspaceContext()).isEqualTo("worktree:/the/resolved/root");
+    assertThat(new UnitJudge(DependencyGate.NO_VERDICT, ClaimGate.NONE)
+        .guardContext(unit(Operation.TRANSITION, row), AuthorityFixtures.foldTo(Lane.CLAIMED), NO_FACTS, null)
+        .workspaceContext()).isEqualTo("worktree:.");
+  }
+
+  private static UnitInput evidenceUnit(Map<String, Object> row, Boolean supplied) {
+    return new UnitInput("WP01", Operation.TRANSITION, List.of(row), supplied);
+  }
+
   private static UnitInput unit(Operation operation, Map<String, Object> row) {
     return new UnitInput("WP01", operation, List.of(row));
   }

@@ -58,7 +58,8 @@ class DiskMissionFactsParityTest {
         List<Map<String, Object>> rows = new ArrayList<>();
         for (JsonNode row : unit.required("rows")) rows.add(map(row));
         units.add(new UnitInput(unit.required("wpId").asString(),
-            Operation.fromWire(unit.path("operation").asString("transition")), rows));
+            Operation.fromWire(unit.path("operation").asString("transition")), rows,
+            unit.path("implementationEvidencePresent").isBoolean() ? unit.get("implementationEvidencePresent").booleanValue() : null));
       }
       boolean batch = "batch".equals(testCase.required("request").required("kind").asString());
       Judgement judgement = Authority.standard().judge(log, units, batch, new DiskMissionFacts(mission));
@@ -132,7 +133,7 @@ class DiskMissionFactsParityTest {
 
   @AfterAll
   static void report() {
-    assertThat(PASSED).hasSize(239);
-    System.out.printf("DiskMissionFacts parity: %d/239 domain cases passed%n", PASSED.size());
+    assertThat(PASSED).hasSize(244);
+    System.out.printf("DiskMissionFacts parity: %d/244 domain cases passed%n", PASSED.size());
   }
 }

@@ -2,10 +2,13 @@ package org.speckitty.commandcli.adapter.out.statuslog;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.function.BooleanSupplier;
 import org.speckitty.commandcli.application.write.port.MissionRef;
 import org.speckitty.commandcli.application.write.port.StatusLog;
+import org.speckitty.missionstatus.adapter.out.ledger.LockAbandonedException;
 import org.speckitty.missionstatus.adapter.out.statuslog.StatusLogAppender;
 import org.speckitty.missionstatus.adapter.out.statuslog.StatusLockHeldException;
+import org.speckitty.missionstatus.adapter.out.statuslog.TailRepair;
 
 /** Translates event-log lock and persistence failures into application-port outcomes. */
 public final class EventLogStatusLog implements StatusLog {
@@ -21,8 +24,13 @@ public final class EventLogStatusLog implements StatusLog {
 
   @Override
   public <T> LockResult<T> withLock(MissionRef mission, long deadlineNanos, SessionWork<T> work) {
+    return withLock(mission, deadlineNanos, () -> false, work);
+  }
+
+  @Override
+  public <T> LockResult<T> withLock(MissionRef mission, long deadlineNanos, BooleanSupplier abandon, SessionWork<T> work) {
     try {
-      return appender.withMissionLock(gcd, root.resolve(mission.directory()), deadlineNanos, locked -> {
+      return appender.withMissionLock(gcd, root.resolve(mission.directory()), deadlineNanos, abandon, locked -> {
         try {
           return new LockResult.Completed<>(work.run(new Session() {
             @Override
@@ -42,6 +50,16 @@ public final class EventLogStatusLog implements StatusLog {
                 throw new LogIOException(exception);
               }
             }
+
+            @Override
+            public RepairResult repairTail(TailCheck check) {
+              try {
+                TailRepair repair = locked.repairTail(check::isCompleteRow);
+                return new RepairResult(RepairResult.Action.valueOf(repair.action().name()), repair.movedBytes(), repair.bytesAfter());
+              } catch (IOException exception) {
+                throw new LogIOException(exception);
+              }
+            }
           }));
         } catch (LogIOException exception) {
           throw exception;
@@ -49,6 +67,8 @@ public final class EventLogStatusLog implements StatusLog {
       });
     } catch (StatusLockHeldException held) {
       return new LockResult.LockHeld<>();
+    } catch (LockAbandonedException abandoned) {
+      return new LockResult.Abandoned<>();
     } catch (IOException | LogIOException failure) {
       return new LockResult.PersistenceFailed<>();
     }

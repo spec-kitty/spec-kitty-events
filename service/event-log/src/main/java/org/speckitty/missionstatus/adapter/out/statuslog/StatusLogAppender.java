@@ -3,6 +3,7 @@ package org.speckitty.missionstatus.adapter.out.statuslog;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.function.BooleanSupplier;
 import org.speckitty.missionstatus.adapter.out.ledger.LedgerLock;
 import org.speckitty.missionstatus.adapter.out.ledger.LedgerLockTimeoutException;
 import org.speckitty.missionstatus.adapter.out.ledger.LedgerLocks;
@@ -40,9 +41,19 @@ public final class StatusLogAppender {
    * {@code deadlineNanos}, then yields one session for {@code <missionDirectory>/status.events.jsonl}.
    */
   public <T> T withMissionLock(Path gcd, Path missionDirectory, long deadlineNanos, SessionWork<T> work) throws IOException {
+    return withMissionLock(gcd, missionDirectory, deadlineNanos, () -> false, work);
+  }
+
+  /**
+   * As above, but the wait for the lock ends in {@link org.speckitty.missionstatus.adapter.out.ledger.LockAbandonedException} once
+   * {@code abandon} is true. The signal is consulted only while waiting; a held lock is never given up, and {@code work} always runs to
+   * its end.
+   */
+  public <T> T withMissionLock(Path gcd, Path missionDirectory, long deadlineNanos, BooleanSupplier abandon, SessionWork<T> work)
+      throws IOException {
     Path lockPath = MissionLockPath.of(gcd, missionDirectory.getFileName().toString());
     long remaining = Math.max(0L, deadlineNanos - System.nanoTime());
-    try (LedgerLock.Held held = acquire(lockPath, remaining)) {
+    try (LedgerLock.Held held = acquire(lockPath, remaining, abandon)) {
       LockedStatusLogSession session = new LockedStatusLogSession(missionDirectory.resolve(LOG_NAME), files);
       try {
         return work.run(session);
@@ -52,9 +63,9 @@ public final class StatusLogAppender {
     }
   }
 
-  private LedgerLock.Held acquire(Path lockPath, long remainingNanos) throws IOException {
+  private LedgerLock.Held acquire(Path lockPath, long remainingNanos, BooleanSupplier abandon) throws IOException {
     try {
-      return lock.acquire(lockPath, Duration.ofNanos(remainingNanos));
+      return lock.acquire(lockPath, Duration.ofNanos(remainingNanos), abandon);
     } catch (LedgerLockTimeoutException e) {
       throw new StatusLockHeldException(lockPath, e);
     }

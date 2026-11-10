@@ -2,6 +2,7 @@ package org.speckitty.commandcli.config;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.function.LongSupplier;
 import org.speckitty.commandcli.adapter.out.filesystem.EndpointFile;
 import org.speckitty.commandcli.adapter.out.mission.FilesystemMissionCatalog;
 import org.speckitty.commandcli.adapter.out.statuslog.EventLogRowCodec;
@@ -9,12 +10,17 @@ import org.speckitty.commandcli.adapter.out.statuslog.EventLogStatusLog;
 import org.speckitty.commandcli.application.lifecycle.IdleWatch;
 import org.speckitty.commandcli.application.lifecycle.ServiceIdentity;
 import org.speckitty.commandcli.application.lifecycle.ServiceLifecycle;
+import org.speckitty.commandcli.application.repair.StatusLogRepairService;
+import org.speckitty.commandcli.application.write.port.MissionCatalog;
+import org.speckitty.commandcli.application.write.port.RowCodec;
+import org.speckitty.commandcli.application.write.port.StatusLog;
 import org.speckitty.commandcli.application.write.WriteService;
 import org.speckitty.commandcli.application.write.WriteTurn;
 import org.speckitty.commandcli.domain.authority.Authority;
 import org.speckitty.commandcli.domain.service.WriteToken;
 import org.speckitty.missionstatus.adapter.out.statuslog.StatusLogAppender;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.web.server.context.WebServerInitializedEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
@@ -65,13 +71,56 @@ class ServiceWiring {
     return new ServiceLifecycle(clock, shutdown);
   }
 
+  /** The one in-process turn that serialises every mutation of a Mission: a write and a repair wait on this same instance. */
   @Bean
-  WriteService writeService(ServeRuntime runtime) {
+  WriteTurn writeTurn() {
+    return new WriteTurn();
+  }
+
+  /** The one write budget a write and a repair share across the turn and the Mission lock (R7). A test may register its own. */
+  @Bean
+  @ConditionalOnMissingBean(name = "writeBudget")
+  Duration writeBudget() {
+    return Duration.ofSeconds(10);
+  }
+
+  @Bean
+  LongSupplier nanoClock() {
+    return System::nanoTime;
+  }
+
+  @Bean
+  FilesystemMissionCatalog missionCatalog(ServeRuntime runtime) {
+    return new FilesystemMissionCatalog(runtime.options().gitCommonDir());
+  }
+
+  @Bean
+  StatusLog statusLog(ServeRuntime runtime, FilesystemMissionCatalog missions) {
+    return new EventLogStatusLog(new StatusLogAppender(), runtime.options().gitCommonDir(), root(runtime, missions));
+  }
+
+  /** The repository root checkout: the catalog's resolution, else the git common dir's parent. */
+  private static java.nio.file.Path root(ServeRuntime runtime, FilesystemMissionCatalog missions) {
     java.nio.file.Path gcd = runtime.options().gitCommonDir();
-    FilesystemMissionCatalog missions = new FilesystemMissionCatalog(gcd);
-    java.nio.file.Path root = missions.root().orElse(gcd.toAbsolutePath().getParent());
-    return new WriteService(missions, new EventLogStatusLog(new StatusLogAppender(), gcd, root), new EventLogRowCodec(),
-        new WriteTurn(), Authority.standard(), Duration.ofSeconds(10), System::nanoTime);
+    return missions.root().orElse(gcd.toAbsolutePath().getParent());
+  }
+
+  @Bean
+  RowCodec rowCodec() {
+    return new EventLogRowCodec();
+  }
+
+  @Bean
+  WriteService writeService(ServeRuntime runtime, FilesystemMissionCatalog missions, StatusLog statusLog, RowCodec codec,
+      WriteTurn turn, Duration writeBudget, LongSupplier nanoClock, ServiceLifecycle lifecycle) {
+    return new WriteService(missions, statusLog, codec, turn, Authority.standard(root(runtime, missions).toString()), writeBudget,
+        nanoClock, lifecycle::draining);
+  }
+
+  @Bean
+  StatusLogRepairService statusLogRepairService(MissionCatalog missions, StatusLog statusLog, RowCodec codec, WriteTurn turn,
+      Duration writeBudget, LongSupplier nanoClock, ServiceLifecycle lifecycle) {
+    return new StatusLogRepairService(missions, statusLog, codec, turn, writeBudget, nanoClock, lifecycle::draining);
   }
 
   @Bean

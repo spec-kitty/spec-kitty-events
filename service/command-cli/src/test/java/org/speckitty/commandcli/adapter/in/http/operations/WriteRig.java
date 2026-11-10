@@ -38,7 +38,8 @@ final class WriteRig implements AutoCloseable {
   private final ServiceLock serviceLock;
   private final ConfigurableApplicationContext context;
 
-  private WriteRig() throws Exception {
+  private WriteRig(Duration budget, java.util.function.Consumer<org.springframework.context.support.GenericApplicationContext> customizer)
+      throws Exception {
     repository = Files.createTempDirectory("command-cli-write-repository");
     run(repository, "git", "init", "--quiet");
     gitCommonDir = repository.resolve(".git");
@@ -57,12 +58,30 @@ final class WriteRig implements AutoCloseable {
         InstanceId.mint(System.currentTimeMillis(), random), token, RepositoryIdentity.of(gitCommonDir),
         "0.0.0-dev", ignored -> { });
     ServeRuntime.install(runtime);
-    context = new SpringApplicationBuilder(CommandCliApplication.class).run();
+    SpringApplicationBuilder application = new SpringApplicationBuilder(CommandCliApplication.class);
+    application.initializers(registry -> {
+      org.springframework.context.support.GenericApplicationContext generic =
+          (org.springframework.context.support.GenericApplicationContext) registry;
+      // ServiceWiring declares its writeBudget bean only when none is registered, so a test can shorten the shared write budget.
+      if (budget != null) generic.registerBean("writeBudget", Duration.class, () -> budget);
+      if (customizer != null) customizer.accept(generic);
+    });
+    context = application.run();
   }
 
   static WriteRig start() {
+    return start(null);
+  }
+
+  /** A rig whose write and repair share the given budget instead of the production ten seconds. */
+  static WriteRig start(Duration budget) {
+    return start(budget, null);
+  }
+
+  /** As {@link #start(Duration)}, with a hook on the context before it refreshes (for example a bean post-processor around a port). */
+  static WriteRig start(Duration budget, java.util.function.Consumer<org.springframework.context.support.GenericApplicationContext> customizer) {
     try {
-      return new WriteRig();
+      return new WriteRig(budget, customizer);
     } catch (Exception exception) {
       throw new IllegalStateException("Cannot start write test rig", exception);
     }
@@ -95,6 +114,45 @@ final class WriteRig implements AutoCloseable {
         host(), bearer(), "Spec-Kitty-Write-Protocol: 1", "Content-Type: application/json");
   }
 
+  /** POST /missions/{id}/status-log-repairs with the standard guards. */
+  RawClient.Reply postRepair(String targetMission, String body) {
+    return RawClient.request(port(), "POST /api/v1/missions/" + targetMission + "/status-log-repairs HTTP/1.1", body,
+        host(), bearer(), "Spec-Kitty-Write-Protocol: 1", "Content-Type: application/json");
+  }
+
+  RawClient.Reply repair() {
+    return postRepair(missionId, repairRequest(context()));
+  }
+
+  static String repairRequest(String context) {
+    return "{\"context\":" + context + "}";
+  }
+
+  /** A bean of the running service context. */
+  <T> T bean(Class<T> type) {
+    return context.getBean(type);
+  }
+
+  /** The turn the service's writes and repairs share, as the Spring context holds it. */
+  org.speckitty.commandcli.application.write.WriteTurn turn() {
+    return context.getBean(org.speckitty.commandcli.application.write.WriteTurn.class);
+  }
+
+  /** Every regular file of the Mission directory, as relative path, size and modification time. */
+  List<String> missionTree() {
+    try (Stream<Path> files = Files.walk(missionDirectory)) {
+      return files.filter(Files::isRegularFile).sorted().map(path -> {
+        try {
+          return missionDirectory.relativize(path) + " " + Files.size(path) + " " + Files.getLastModifiedTime(path).toMillis();
+        } catch (IOException exception) {
+          return missionDirectory.relativize(path) + " ?";
+        }
+      }).toList();
+    } catch (IOException exception) {
+      throw new java.io.UncheckedIOException(exception);
+    }
+  }
+
   void removeMission() throws IOException {
     try (Stream<Path> paths = Files.walk(missionDirectory)) {
       paths.sorted(Comparator.reverseOrder()).forEach(path -> path.toFile().delete());
@@ -117,6 +175,19 @@ final class WriteRig implements AutoCloseable {
 
   Path log() {
     return missionDirectory.resolve("status.events.jsonl");
+  }
+
+  Path quarantine() {
+    return missionDirectory.resolve("status.events.jsonl.torn");
+  }
+
+  /** Replaces the status log with exactly these bytes. */
+  void seedLog(byte[] bytes) throws IOException {
+    Files.write(log(), bytes);
+  }
+
+  void seedLog(String text) throws IOException {
+    seedLog(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));
   }
 
   void replaceMission(String id, String directory, java.util.Map<String, String> tasks, byte[] initialLog) throws IOException {

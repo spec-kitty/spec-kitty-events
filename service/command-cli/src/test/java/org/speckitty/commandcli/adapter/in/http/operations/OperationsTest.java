@@ -21,6 +21,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.speckitty.commandcli.adapter.in.http.edge.RawClient;
 import org.speckitty.commandcli.adapter.out.filesystem.RepositoryIdentity;
 import org.speckitty.commandcli.application.lifecycle.ServiceLifecycle;
+import org.speckitty.commandcli.application.repair.StatusLogRepairService;
 import org.speckitty.commandcli.application.write.WriteOutcome;
 import org.speckitty.commandcli.application.write.WriteService;
 import org.speckitty.commandcli.domain.service.RefusalCode;
@@ -30,7 +31,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The six operations of contracts/mission-write on a running service (spec FR-008 to FR-011, FR-015, SC-003): the handshake and the
+ * The seven operations of contracts/mission-write on a running service (spec FR-008 to FR-011, FR-015, SC-003): the handshake and the
  * health answer what the service is, a well-formed write to an unknown Mission is refused with nothing written, a malformed write is
  * REQUEST_MALFORMED, and every body validates against the contract's schemas.
  */
@@ -213,6 +214,63 @@ class OperationsTest {
     assertThat(JSON.readTree(reply.body()).get("code").asString()).isEqualTo("WRITE_LOCATION_UNVERIFIED");
     assertThat(JSON.readTree(reply.body()).get("detail").asString()).contains("migration step 4");
     assertThat(server.tree()).as("nothing written").isEqualTo(before);
+  }
+
+  @Test
+  void theContractsRepairExampleToAnUnknownMissionWritesNothing() {
+    String body = body(ContractSchemas.root().resolve("examples/StatusLogRepairRequest.yaml"));
+    List<String> before = server.tree();
+
+    RawClient.Reply reply = post("/api/v1/missions/" + MISSION + "/status-log-repairs", body);
+
+    assertThat(reply.status()).as(reply.text()).isEqualTo(404);
+    assertThat(ContractSchemas.violations("WriteRefusal", reply.body())).isEmpty();
+    assertThat(JSON.readTree(reply.body()).get("code").asString()).isEqualTo("MISSION_NOT_FOUND");
+    assertThat(server.tree()).as("nothing written").isEqualTo(before);
+    assertThat(reply.text()).doesNotContain(server.token.reveal()).doesNotContain(server.gitCommonDir.toString());
+  }
+
+  @Test
+  void aRepairOfACoordinationRefCommitIsRefusedBeforeMissionResolution() {
+    String context = WriteRig.context().replace("checkout_append", "coordination_ref_commit").replace("\"destinationRef\":null", "\"destinationRef\":\"kitty/mission-m\"");
+    List<String> before = server.tree();
+
+    RawClient.Reply reply = post("/api/v1/missions/" + MISSION + "/status-log-repairs", WriteRig.repairRequest(context));
+
+    assertThat(reply.status()).isEqualTo(422);
+    assertThat(JSON.readTree(reply.body()).get("code").asString()).isEqualTo("WRITE_LOCATION_UNVERIFIED");
+    assertThat(JSON.readTree(reply.body()).get("detail").asString()).contains("migration step 4");
+    assertThat(server.tree()).isEqualTo(before);
+  }
+
+  @Test
+  void aMalformedRepairIsRefusedBeforeTheGateAndEchoesNothing() {
+    String path = "/api/v1/missions/" + MISSION + "/status-log-repairs";
+    String context = WriteRig.context();
+    for (String body : List.of("", "{", "[]", "{}", "{\"context\":" + context + ",\"extra\":1}", "{\"context\":" + context.replace("kitty-specs/mission", "../outside") + "}")) {
+      RawClient.Reply reply = post(path, body);
+
+      assertThat(reply.status()).as(body).isEqualTo(400);
+      assertThat(ContractSchemas.violations("WriteRefusal", reply.body())).isEmpty();
+      assertThat(JSON.readTree(reply.body()).get("code").asString()).isEqualTo("REQUEST_MALFORMED");
+      assertThat(reply.text()).doesNotContain("outside").doesNotContain("extra");
+    }
+    assertThat(post("/api/v1/missions/not-a-ulid/status-log-repairs", WriteRig.repairRequest(context)).status()).isEqualTo(400);
+  }
+
+  @Test
+  void anUnexpectedFailureOnTheRepairPathStillAnswersAContractRefusalWithAFixedDetail() throws Exception {
+    StatusLogRepairService repairs = mock(StatusLogRepairService.class);
+    when(repairs.repair(any(), any())).thenThrow(new IllegalStateException("secret-row-value /tmp/path"));
+    StatusLogRepairController controller = new StatusLogRepairController(new ServiceLifecycle(Clock.systemUTC(), () -> { }), repairs,
+        new WriteBodies(), JSON);
+
+    ResponseEntity<byte[]> response = controller.repairStatusLog(MISSION, WriteRig.repairRequest(WriteRig.context()).getBytes());
+
+    assertThat(response.getStatusCode().value()).isEqualTo(500);
+    assertThat(JSON.readTree(response.getBody()).get("code").asString()).isEqualTo("STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED");
+    assertThat(new String(response.getBody())).doesNotContain("secret").doesNotContain("/tmp");
+    assertThat(ContractSchemas.violations("WriteRefusal", new String(response.getBody()))).isEmpty();
   }
 
   @Test
