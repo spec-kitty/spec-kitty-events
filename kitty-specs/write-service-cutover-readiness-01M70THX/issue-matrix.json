@@ -1,0 +1,125 @@
+{
+  "rows": {
+    "#151": {
+      "evidence_ref": "Context: contract tools are not CI gates; M1 runs them by hand",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#222": {
+      "evidence_ref": "Repair operation: WP01 contract, WP02 event-log primitive, WP03 command-cli operation",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "in-mission",
+      "wp": null
+    },
+    "#223": {
+      "evidence_ref": "Wording (WP01, WP07) + real root (WP04)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "in-mission",
+      "wp": null
+    },
+    "#224": {
+      "evidence_ref": "implementationEvidencePresent: WP01 contract, WP04 authority + corpus",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "in-mission",
+      "wp": null
+    },
+    "#231": {
+      "evidence_ref": "Items 4.7 (WP05), 4.12 (WP01), 4.14 (WP06), 4.15 (WP01, WP07); the rest stays with #237",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "in-mission",
+      "wp": null
+    },
+    "#236": {
+      "evidence_ref": "Mission M1 itself (D9: one PR for M1)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "in-mission",
+      "wp": null
+    },
+    "#237": {
+      "evidence_ref": "Sibling mission M2; cited for scope (D4, REQUEST_MALFORMED note), owes M1 no work",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#6195": {
+      "evidence_ref": "Follow-up: spec-kitty/spec-kitty#7482 (repair verb, evidence mapping, blank context); rolling-upgrade comment on #6195",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
+    "#6910": {
+      "evidence_ref": "Core issue, fixed on core main 3dc4ca94f7; WP07 removes the stale README line",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "verified-already-fixed",
+      "wp": null
+    },
+    "#946": {
+      "evidence_ref": "Core history cited for the workspace_context_required rationale (operator decision 2026-09-07)",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "not-applicable",
+      "wp": null
+    }
+  },
+  "schema_version": 1
+}

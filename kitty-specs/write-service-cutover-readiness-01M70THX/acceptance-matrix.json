@@ -1,0 +1,229 @@
+{
+  "mission_slug": "write-service-cutover-readiness-01M70THX",
+  "mission_number": "",
+  "mission_type": "software-dev",
+  "overall_verdict": "pass",
+  "criteria": [
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/mission-write/paths/missions_missionId_status-log-repairs.yaml + StatusLogRepairController; StatusLogRepairHttpTest (14) all scenarios; breaking_check vs 62af21d0 additive",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:14.571539+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "StatusLogRepairServiceTest isCompleteRow decision table (16 rows incl. duplicate/numeric event_id, unreducible prefix); StatusLogRepairHttpTest scenario 2 and 2b",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:16.401952+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "StatusLogTailRepairFaultTest Nth-call fault matrix (8 calls x 3 modes, absent/existing .torn), size re-check before mutation and before truncate/LF, .torn rollback; StatusLogTailRepairTest 25",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:18.292017+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "StatusLogTailRepairTest completion cases; StatusLogRepairHttpTest scenario 2 (one LF, no .torn); fault test completion run",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:20.206367+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "StatusLogRepairHttpTest scenario 3 (healthy/empty/missing/already-repaired: 200 none, tree identical) with positive control; StatusLogTailRepairTest NONE cases",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:22.035501+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ServiceWiring shared WriteTurn/StatusLog/catalog/budget/clock beans; StatusLogRepairHttpTest scenarios 5 and 11 (waited >=700 ms, 409 STATUS_LOCK_HELD / 503 SERVICE_BUSY) + theRunningServiceGivesWritesAndRepairsTheSameTenSecondBudget; scenario 6 draining 503",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:23.890238+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WriteLocation shared with writes; StatusLogRepairHttpTest scenarios 7 (422 coordination/mismatch), 9 (400); EdgeOrderTest covers repair path (403/401/400/413)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:25.744250+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "StatusLogRepairAck closed schema; every HTTP answer validated with ContractSchemas.violations; quarantinedFile fixed name; examples validated by example_check (144/144)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:27.607740+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "StatusLogRepairHttpTest scenario 4; StatusLogAppenderTest torn tail refused; StatusLogTailRepairTest write-path regression",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:29.396482+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WriteBodiesTest (boolean/null only), UnitJudgeTest, GuardContextTest; corpus guard-evidence-explicit-{false,true,true-subtasks-incomplete,false-forced,false-other-transition} generated by core at pin 512567ee (--check drift 0)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:31.181872+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "EvidenceFieldHttpTest: byte-identical logs for true/null/absent; replay with and without the field",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:33.054418+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "ProtocolCorpusTest representative per (reason, has-field), PASSED 35; ParityCorpusTest/DiskMissionFactsParityTest 244; unreachable.json partial removed; packaged conformance 1233 passed",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:34.835185+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-013",
+      "description": "Verify FR-013 is satisfied",
+      "proof_type": "inspection",
+      "evidence": "WriteRefusalReason.yaml workspace_context_required description; unreachable.json reason (core transition_pipeline.py:322-337 @366ff233, operator decision 2026-09-07, #946, DRIFT-3); write-service-protocol.md unreachable reasons",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:36.604094+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-014",
+      "description": "Verify FR-014 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "GuardContextTest/UnitJudgeTest exact worktree:<root>; Authority.standard(root) wired in ServiceWiring; no <root> literal in command-cli main",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:38.380565+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-015",
+      "description": "Verify FR-015 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "DrainTest (10, deterministic lock/turn-wait observation): waiting write/repair 503 SERVICE_DRAINING within 1 s (measured 37-96 ms), holder 201, drain <=5 s; LedgerLockAbandonTest; DRAIN_BUDGET 5 s unchanged",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:40.363262+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-016",
+      "description": "Verify FR-016 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "CatchAllLoggingTest (10): one WARNING per catch-all, marker hygiene with positive control, no double logging; FailureRecordTest (3)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:42.390922+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-017",
+      "description": "Verify FR-017 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "WriteOperation.yaml x-provisional; provisional_check pass (38 elements); CHANGELOG Provisional bullet",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:44.286251+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-018",
+      "description": "Verify FR-018 is satisfied",
+      "proof_type": "inspection",
+      "evidence": "WriteRefusalCode REQUEST_MALFORMED const lists read-back cases; command-cli README and write-service-protocol.md list read-back as its own step",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:46.147315+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-019",
+      "description": "Verify FR-019 is satisfied",
+      "proof_type": "inspection",
+      "evidence": "event-log-lock-and-append.md says repair lands before #6195; README/protocol/runbook section 10; npm run validate green; no stale 'after core #6195' text",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:48.020781+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-020",
+      "description": "Verify FR-020 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": "contracts/mission-write/CHANGELOG.md 1.0.1-SNAPSHOT; breaking_check --baseline-root origin/main: exit 0, breaking=0 after ruling D11 (provisional-ref stub + same-snapshot baseline rule); negative cases breaking-provisional-ref-* and breaking-snapshot-baseline-same-version (research/wp01-contract-tool-run.md, D11 re-run)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-10T07:05:47.028761+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-021",
+      "description": "Verify FR-021 is satisfied",
+      "proof_type": "inspection",
+      "evidence": "kitty-specs/events-write-core-01M6TP6W/issue-matrix.json #222 row; this mission issue-matrix rows for #222 #223 #224 #231 #236",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:51.775162+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-022",
+      "description": "Verify FR-022 is satisfied",
+      "proof_type": "inspection",
+      "evidence": "spec-kitty/spec-kitty#7482 filed (repair verb, evidence mapping, blank context); rolling-upgrade comment on spec-kitty/spec-kitty#6195 (issuecomment-6748975822)",
+      "pass_fail": "pass",
+      "verified_by": "claude:claude-opus-5-5:orchestrator",
+      "verified_at": "2026-11-09T23:04:53.634694+00:00",
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
+}
