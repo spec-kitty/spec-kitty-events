@@ -1,0 +1,18 @@
+title: StatusLogRepairRequest
+description: >-
+  An explicit, operator-invoked request to repair the status log of the Mission named by the path.
+  It carries the same caller and write-location context as a transition unit, and no row content.
+type: object
+additionalProperties: false
+required:
+  - context
+properties:
+  context:
+    $ref: RequestContext.yaml
+    description: The request context of the repair, verified against the Mission's write location.
+    x-derived:
+      rule: Reuse the caller and write-location context contract of a transition unit unchanged.
+      inputs:
+        - TransitionUnit.context
+examples:
+  - $ref: ../examples/StatusLogRepairRequest.yaml

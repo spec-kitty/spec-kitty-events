@@ -1,0 +1,47 @@
+post:
+  operationId: repairStatusLog
+  summary: Explicitly repair a Mission's torn status log.
+  description: >-
+    Explicit and operator-invoked: the write path never repairs (#222). The operation takes the
+    same in-process turn and per-Mission status lock as a write, under the same shared budget. Its
+    actions are none, completed and quarantined; a missing, empty or LF-terminated log is healthy
+    and answers 200 with action none. A coordination-routed Mission answers 422
+    WRITE_LOCATION_UNVERIFIED until migration step 4 serves the coordination ref (ADR-0007 D-1):
+    write-location verification cannot verify that location yet. This operation must land and ship
+    in a service-v* release candidate before spec-kitty/spec-kitty#6195 removes core's status-log writer.
+  tags:
+    - WorkPackages
+  parameters:
+    - $ref: ../parameters/MissionId.yaml
+    - $ref: ../parameters/WriteProtocolVersion.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../schemas/StatusLogRepairRequest.yaml
+  responses:
+    '200':
+      description: The repair outcome; action none means the healthy log was not touched.
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/StatusLogRepairAck.yaml
+    '400':
+      $ref: ../responses/RequestMalformed.yaml
+    '401':
+      $ref: ../responses/TokenInvalid.yaml
+    '403':
+      $ref: ../responses/RequestRefused.yaml
+    '404':
+      $ref: ../responses/TargetNotFound.yaml
+    '409':
+      $ref: ../responses/WriteConflict.yaml
+    '413':
+      $ref: ../responses/RequestTooLarge.yaml
+    '422':
+      $ref: ../responses/PlacementRefused.yaml
+    '500':
+      $ref: ../responses/WriteFailed.yaml
+    '503':
+      $ref: ../responses/ServiceBusy.yaml

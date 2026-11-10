@@ -7,7 +7,8 @@ version is the `info.version` of `openapi.yaml`.
 
 The coordination write without a coordination worktree (spec-kitty/spec-kitty#7284, epic
 spec-kitty/spec-kitty#7276; [ADR-0007](../../docs/adr/0007-write-service-commits-coordination-status-by-ref.md)).
-Not yet released. `1.0.0-SNAPSHOT` shipped inside the `service-v0.1.0-rc.1` and `rc.2`
+Not yet released. `1.0.0-SNAPSHOT`
+shipped inside the `service-v0.1.0-rc.1` and `rc.2`
 pre-releases, so by operator ruling of 2026-11-06 it is treated like a release candidate: this
 change opens `1.0.1-SNAPSHOT` instead of rewriting it, and a new `service-v*` release candidate
 can carry it. The change removes enum values, so read against a released `1.0.0` it would be a
@@ -17,8 +18,20 @@ with its CHANGELOG heading while no release exists (`NO_BASELINE_INITIAL_VERSION
 by a workflow, #151). A consumer pinned to `service-v0.1.0-rc.1` or `rc.2` keeps the old bundle
 until it moves its pin.
 
+Write-service cut-over readiness (#236) adds, inside the same unreleased version, an explicit
+status-log repair, the implementation-evidence wire input and operator-facing wording, all needed
+before spec-kitty/spec-kitty#6195 removes core's status-log writer. These additions are additive.
+
 ### Added
 
+- `POST /missions/{missionId}/status-log-repairs`: an explicit, operator-invoked and locked repair,
+  separate from the write path, with the closed `StatusLogRepairRequest`, `StatusLogRepairAck` and
+  `StatusLogRepairAction` schemas. The actions are `none`, `completed` and `quarantined`; examples
+  cover the request and all three actions, and `enum_pins.json` pins the action vocabulary
+  (#236; #222).
+- Optional `TransitionUnit.implementationEvidencePresent` (boolean or null): the unforced
+  `in_progress` to `for_review` guard uses an explicit boolean verbatim and infers only when the
+  field is absent or null. It is request-only and never persisted (#236; #224).
 - `WriteOperation`: the values `transition` (core's emit pipeline, as `move-task`, `mark-status` and
   `status emit` use it), `start_implementation` and `start_review` (core's lifecycle starts, which
   carry the claim rules). A start from `planned` travels as two units of a batch (spec-kitty/spec-kitty-events#160,
@@ -51,6 +64,19 @@ until it moves its pin.
 
 ### Changed
 
+- `WriteRefusalReason.workspace_context_required` records that no wire request can produce it: every
+  wire door supplies or synthesises a context, while core retains its fail-closed batch-API guard
+  (operator decision 2026-09-07, #946, DRIFT-3) so the vocabulary mirrors core (#236; #223).
+- `WriteRefusalReason.implementation_evidence_required` names both reachable halves of the handoff
+  guard: the roster supplies the subtask half and `implementationEvidencePresent: false` supplies
+  the evidence half (#236; #224).
+- `REQUEST_MALFORMED` includes read-back verification before append: JSON nesting beyond 256, an
+  integer beyond 4300 digits, an actor object the fold cannot decode, or a unit the fold rejects;
+  a batch refusal carries `instance` (#236; #231).
+- `SERVICE_DRAINING` in `ServiceBusy` and `/shutdown`, together with
+  [`LAUNCHER.md`](./LAUNCHER.md), now says that a write or repair still waiting for the turn or
+  Mission lock when draining begins answers 503 and writes nothing, while one holding the lock
+  finishes. The 5 s drain and 10 s SIGTERM timings are unchanged (#236; #231).
 - `STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED` also describes a torn tail (refused, not repaired),
   a log the write fold cannot reduce, and a failed write or sync after which the append was cut
   back (spec-kitty/spec-kitty-events#160, #161 and #155).
@@ -103,6 +129,11 @@ until it moves its pin.
 
 ### Provisional
 
+- `WriteOperation` is provisional: its three values are settled, but its closure is not because the
+  vocabulary follows core's operation doors and a new door adds a value. Consequently the enum of
+  `TransitionUnit.operation` leaves `breaking_check` coverage when provisional elements are stripped,
+  but the property itself does not: it only references the provisional schema, so its presence and its
+  requiredness stay compared (D11, 2026-11-10). `enum_pins.json` still guards the three values (#236; #231).
 - The protocol-only codes `COORDINATION_REF_MOVED`, `COORDINATION_REF_CHECKED_OUT` and
   `COORDINATION_LEDGER_UNREADABLE` are provisional until migration step 4 serves the surface.
   As with the provisional codes of `1.0.0-SNAPSHOT`, an enum value cannot

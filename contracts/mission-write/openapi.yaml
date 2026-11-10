@@ -42,5 +42,7 @@ paths:
     $ref: paths/missions_missionId_work-package-transitions_batch.yaml
   /missions/{missionId}/inner-state-annotations:
     $ref: paths/missions_missionId_inner-state-annotations.yaml
+  /missions/{missionId}/status-log-repairs:
+    $ref: paths/missions_missionId_status-log-repairs.yaml
   /shutdown:
     $ref: paths/shutdown.yaml

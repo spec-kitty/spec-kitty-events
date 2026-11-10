@@ -16,3 +16,8 @@ x-derived:
     start doors; no single core symbol defines the enum.
   inputs:
     - TransitionUnit.operation
+x-provisional:
+  open_decision: >-
+    Whether this vocabulary stays closed as core's operation doors grow is unsettled. The vocabulary
+    follows those doors (x-derived), so a new core door adds a value; the three current values are
+    settled, but their closure is not (spec-kitty/spec-kitty-events#231, item 4.12).

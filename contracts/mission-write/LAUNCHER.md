@@ -17,8 +17,8 @@ authority (#161) are built, so its writes are served, apart from `coordination_r
 is refused until migration step 4.
 
 Every path below is under the contract's server prefix `/api/v1` (`GET /api/v1/handshake`,
-`GET /api/v1/health`, `POST /api/v1/shutdown`). The prefix wins over core's launcher client,
-which still calls the bare paths; spec-kitty/spec-kitty#6910 moves it.
+`GET /api/v1/health`, `POST /api/v1/shutdown`). Core's launcher client calls the prefixed paths
+since spec-kitty/spec-kitty#6910.
 
 ## Start
 
@@ -48,7 +48,9 @@ Ready means all three:
 ## Stop
 
 `POST /shutdown` (bearer and the `Spec-Kitty-Write-Protocol` header) drains and exits: it
-answers `202` at once, health reads `draining`, a write is refused with `SERVICE_DRAINING`, the
+answers `202` at once, health reads `draining`, and a new write or repair is refused with
+`SERVICE_DRAINING`. A write or repair still waiting for the turn or the Mission lock when draining
+begins answers `503 SERVICE_DRAINING` and writes nothing; one already holding the lock finishes. The
 service finishes the writes it holds (at most 5 s), removes its endpoint file while it still names
 its own instance and exits 0 ([`paths/shutdown.yaml`](./paths/shutdown.yaml)). After its idle
 timeout without a request, the service drains and exits the same way. If the process is still

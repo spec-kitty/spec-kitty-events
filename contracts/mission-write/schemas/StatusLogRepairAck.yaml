@@ -1,0 +1,62 @@
+title: StatusLogRepairAck
+description: >-
+  The outcome of an explicit status-log repair. repaired is true if and only if action is not none.
+  movedBytes is greater than 0 only for quarantined. quarantinedFile is non-null if and only if
+  action is quarantined, and is always a fixed file name, never a host path.
+type: object
+additionalProperties: false
+required:
+  - repaired
+  - action
+  - movedBytes
+  - quarantinedFile
+  - readableAfterRepair
+properties:
+  repaired:
+    type: boolean
+    description: True if and only if the repair changed the log; equivalent to action not being none.
+    x-derived:
+      rule: Set repaired exactly when the repair action is not none.
+      inputs:
+        - action
+  action:
+    $ref: StatusLogRepairAction.yaml
+    description: The repair action selected from the state of the Mission's status log.
+    x-derived:
+      rule: >-
+        Classify the status log selected by the repair context, replacing core's implicit LF-healing
+        with an explicit none, completed or quarantined action.
+      inputs:
+        - StatusLogRepairRequest.context
+        - path: src/specify_cli/status/store.py
+          symbol: append_raw_rows_atomic
+  movedBytes:
+    type: integer
+    minimum: 0
+    description: The fragment length in bytes for quarantined; zero for none and completed.
+    x-derived:
+      rule: Report the quarantined fragment's byte length when action is quarantined, otherwise zero.
+      inputs:
+        - action
+  quarantinedFile:
+    type:
+      - string
+      - 'null'
+    pattern: '^status\.events\.jsonl\.torn$'
+    description: The fixed quarantine file name when action is quarantined; null otherwise, never a host path.
+    x-derived:
+      rule: Return status.events.jsonl.torn exactly when action is quarantined, and null otherwise.
+      inputs:
+        - action
+  readableAfterRepair:
+    type: boolean
+    description: Whether the log left by the repair decodes and folds as the next write would fold it.
+    x-derived:
+      rule: Decode and fold the log selected by the repair context after applying action, as the next write does.
+      inputs:
+        - StatusLogRepairRequest.context
+        - action
+examples:
+  - $ref: ../examples/StatusLogRepairAck.none.yaml
+  - $ref: ../examples/StatusLogRepairAck.completed.yaml
+  - $ref: ../examples/StatusLogRepairAck.quarantined.yaml

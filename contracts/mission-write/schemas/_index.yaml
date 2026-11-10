@@ -9,6 +9,9 @@ files:
   - MissionId.yaml
   - ProtocolVersion.yaml
   - RequestContext.yaml
+  - StatusLogRepairAction.yaml
+  - StatusLogRepairAck.yaml
+  - StatusLogRepairRequest.yaml
   - TransitionBatch.yaml
   - TransitionUnit.yaml
   - WpId.yaml

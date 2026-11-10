@@ -1,0 +1,5 @@
+repaired: true
+action: quarantined
+movedBytes: 37
+quarantinedFile: status.events.jsonl.torn
+readableAfterRepair: true

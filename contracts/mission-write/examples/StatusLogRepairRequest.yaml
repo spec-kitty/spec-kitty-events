@@ -1,0 +1,6 @@
+context:
+  actor: claude
+  checkout: .
+  missionDirectory: kitty-specs/write-service-demo-01M5Z6N5
+  writeSurface: checkout_append
+  destinationRef: null
