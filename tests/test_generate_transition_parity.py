@@ -70,12 +70,77 @@ def test_exception_mapping_rejects_non_core_exceptions() -> None:
 
 def test_core_arguments_must_be_derivable_from_rows() -> None:
     module = _generator()
-    with pytest.raises(module.GenerationError, match="implementation_evidence_present"):
-        module.tr("for_review", implementation_evidence_present=False)
     with pytest.raises(module.GenerationError, match="operator_force_note"):
         module.start_impl(operator_force_note="operator")
     with pytest.raises(module.GenerationError, match="review_lane_exit"):
         module.start_impl(review_lane_exit=True)
+    with pytest.raises(module.GenerationError, match="implementation_evidence_present"):
+        module.start_impl(implementation_evidence_present=False)
+    with pytest.raises(module.GenerationError, match="implementation_evidence_present"):
+        module.start_review(implementation_evidence_present=False)
+
+
+def test_transition_accepts_the_evidence_kwarg_and_passes_it_to_core() -> None:
+    module = _generator()
+    call = module.tr("for_review", implementation_evidence_present=False)
+    assert call.kwargs == {"implementation_evidence_present": False}
+    assert "implementation_evidence_present" in module.ROW_CALL_KWARGS["transition"]
+    sent = module.CoreOracle.__new__(module.CoreOracle)._core_kwargs(
+        call, Path("mission"), Path("repo")
+    )
+    assert sent["implementation_evidence_present"] is False
+
+
+def test_wire_unit_carries_the_evidence_field_only_when_set() -> None:
+    module = _generator()
+    rows = [{"event_id": "x"}]
+    absent = module.wire_unit(module.tr("for_review"), rows)
+    assert absent == {"wpId": "WP01", "operation": "transition", "rows": rows}
+    assert "implementationEvidencePresent" not in absent
+    for value in (False, True, None):
+        unit = module.wire_unit(
+            module.tr("for_review", implementation_evidence_present=value), rows
+        )
+        assert unit["implementationEvidencePresent"] is value
+        assert unit["rows"] == rows
+
+
+def test_evidence_cases_come_from_core_and_name_the_field_on_the_wire() -> None:
+    cases = (
+        Path(__file__).parents[1]
+        / "src/spec_kitty_events/conformance/status_transition_parity/cases"
+    )
+    expected = {
+        "guard-evidence-explicit-false": ("refusal", False),
+        "guard-evidence-explicit-true": ("ack", True),
+        "guard-evidence-explicit-true-subtasks-incomplete": ("refusal", True),
+        "guard-evidence-explicit-false-forced": ("ack", False),
+        "guard-evidence-explicit-false-other-transition": ("ack", False),
+    }
+    for name, (result, value) in expected.items():
+        case = json.loads((cases / f"{name}.json").read_text(encoding="utf-8"))
+        assert case["oracle"] == "core"
+        assert case["expected"]["result"] == result
+        assert case["request"]["units"][-1]["implementationEvidencePresent"] is value
+        assert case["core_call"]["kwargs"]["implementation_evidence_present"] is value
+    refused = json.loads((cases / "guard-evidence-explicit-false.json").read_text("utf-8"))
+    assert refused["expected"]["reason"].endswith(":implementation_evidence_required")
+    assert "requires implementation evidence" in refused["expected"]["message"]
+    incomplete = json.loads(
+        (cases / "guard-evidence-explicit-true-subtasks-incomplete.json").read_text("utf-8")
+    )
+    assert "requires completed subtasks" in incomplete["expected"]["message"]
+
+
+def test_unreachable_drops_partial_and_keeps_workspace_context_with_its_reason() -> None:
+    corpus = (
+        Path(__file__).parents[1] / "src/spec_kitty_events/conformance/status_transition_parity"
+    )
+    unreachable = json.loads((corpus / "unreachable.json").read_text(encoding="utf-8"))
+    assert list(unreachable) == ["urn:spec-kitty:write-refusal:workspace_context_required"]
+    reason = unreachable["urn:spec-kitty:write-refusal:workspace_context_required"]
+    for anchor in ("transition_pipeline.py:322-337", "366ff233", "512567ee", "2026-09-07", "#946"):
+        assert anchor in reason
 
 
 def test_core_python_comes_from_core_checkout(tmp_path: Path) -> None:
