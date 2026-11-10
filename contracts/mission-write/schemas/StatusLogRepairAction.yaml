@@ -1,0 +1,18 @@
+title: StatusLogRepairAction
+description: >-
+  What an explicit status-log repair did. none: the log was missing, empty or LF-terminated and
+  nothing was touched. completed: the fragment was exactly one row that folds with the log, and one
+  LF was appended. quarantined: the fragment was moved to the quarantine file and the log was
+  truncated to its last LF.
+type: string
+enum:
+  - none
+  - completed
+  - quarantined
+x-derived:
+  rule: >-
+    Classify the torn tail explicitly instead of applying core writer's implicit LF-healing side
+    effect: none when no fragment exists, completed for one foldable row, quarantined otherwise.
+  inputs:
+    - path: src/specify_cli/status/store.py
+      symbol: append_raw_rows_atomic

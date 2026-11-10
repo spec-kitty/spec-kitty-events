@@ -1,7 +1,9 @@
 description: >-
-  The service cannot take the write now (503). SERVICE_BUSY: it is serializing other writes beyond
-  its queue bound; retry the same service after Retry-After seconds. SERVICE_DRAINING: it is
-  about to exit; re-read the endpoint file. Provisional.
+  The service cannot take the write or repair now (503). SERVICE_BUSY: it is serializing other
+  writes beyond its queue bound; retry the same service after Retry-After seconds. SERVICE_DRAINING:
+  it is about to exit; re-read the endpoint file. A write or repair still waiting for the turn or
+  the Mission lock when draining begins answers 503 SERVICE_DRAINING and writes nothing; one
+  already holding the lock finishes. Provisional.
 headers:
   Retry-After:
     description: Seconds to wait before retrying; sent with SERVICE_BUSY, absent with SERVICE_DRAINING.

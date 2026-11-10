@@ -2,10 +2,12 @@ post:
   operationId: shutdown
   summary: Ask the service to drain and exit.
   description: >-
-    The service stops accepting writes (health reads draining and a write is refused with
-    SERVICE_DRAINING), finishes the writes it holds, removes its endpoint file while it still names
-    this instance and exits 0. It answers 202 before it exits; a shutdown while it already drains is
-    answered 202 and starts nothing new. Settled when command-cli was built
+    The service stops accepting writes and repairs (health reads draining and a new write or repair
+    is refused with SERVICE_DRAINING). A write or repair still waiting for the turn or the Mission
+    lock when draining begins answers 503 SERVICE_DRAINING and writes nothing; one already holding
+    the lock finishes. The service finishes the writes it holds, removes its endpoint file while it
+    still names this instance and exits 0. It answers 202 before it exits; a shutdown while it
+    already drains is answered 202 and starts nothing new. Settled when command-cli was built
     (spec-kitty/spec-kitty-events#156).
   tags:
     - Service

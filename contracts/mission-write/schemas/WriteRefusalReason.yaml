@@ -17,9 +17,16 @@ oneOf:
   - const: 'urn:spec-kitty:write-refusal:dependencies_unsatisfied'
     description: 'A dependency of the work package is not approved, done, or canceled with operator provenance.'
   - const: 'urn:spec-kitty:write-refusal:workspace_context_required'
-    description: 'claimed to in_progress carries no workspace context.'
+    description: >-
+      claimed to in_progress carries no workspace context. No wire request can produce this reason:
+      every wire door supplies or synthesises a context. Core's guard is a fail-closed invariant for
+      its own batch API (transition_pipeline.py:322-337 at core main @ 366ff233; operator decision
+      2026-09-07, spec-kitty/spec-kitty#946, DRIFT-3), kept so the vocabulary mirrors core.
   - const: 'urn:spec-kitty:write-refusal:implementation_evidence_required'
-    description: 'in_progress to for_review carries no completed subtasks or implementation evidence.'
+    description: >-
+      in_progress to for_review fails either half of the guard. Both halves are reachable: the
+      subtask half comes from the roster, and the evidence half comes from
+      implementationEvidencePresent: false.
   - const: 'urn:spec-kitty:write-refusal:reason_required'
     description: 'The transition needs a reason (in_progress back to planned).'
   - const: 'urn:spec-kitty:write-refusal:review_ref_required'

@@ -35,6 +35,21 @@ properties:
     x-source:
       path: src/specify_cli/status/write_service_protocol.py
       symbol: TransitionUnit.context
+  implementationEvidencePresent:
+    type:
+      - boolean
+      - 'null'
+    description: >-
+      Whether implementation evidence exists, for the unforced in_progress -> for_review guard.
+      Absent or null: the service infers it as core's pipeline does (any earlier transition of the
+      work package). true or false: used verbatim. It never affects the subtask half of the guard,
+      is ignored for other transitions and under force, and is never persisted (the appended bytes
+      and replay are identical with and without it). An older service that does not know the field
+      answers 400 REQUEST_MALFORMED (additionalProperties is false), so a client omits it unless
+      the caller gave an explicit value (core #6195 documents the rolling upgrade).
+    x-source:
+      path: src/specify_cli/status/models.py
+      symbol: TransitionRequest.implementation_evidence_present
 examples:
   - $ref: ../examples/TransitionUnit.claim.yaml
   - $ref: ../examples/TransitionUnit.start-implementation.yaml

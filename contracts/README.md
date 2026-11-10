@@ -567,7 +567,10 @@ drops the suffix from `info.version` and from the heading. `release_check.py` re
 a `-SNAPSHOT` tag with `SNAPSHOT_RELEASE_REFUSED` before it builds or checksums that
 module (the release workflow has already installed Gradle and bundled the modules by
 then, and no publish step is reachable after the refusal), so a snapshot is never
-published.
+published. A `--baseline-root` that carries the same unreleased snapshot as the candidate
+(for example `main`'s tree while `1.0.1-SNAPSHOT` is still open) is work in progress, not a
+release: a change inside it is not `BUNDLE_CHANGED_VERSION_SAME`, while a breaking change against
+it is still reported (#236, ruling D11).
 
 The breaking-change job writes the bundle of the baseline and of the candidate and
 compares them with `oasdiff`. The baseline is the latest release tag reachable from the
@@ -577,7 +580,12 @@ when a breaking change leaves the major where it was, and with
 `BUNDLE_CHANGED_VERSION_SAME` when the bundle changed and `info.version` did not
 move at all. Elements marked `x-provisional` are removed from both sides first;
 a difference that exists only because of them never fails and is reported in its own
-section.
+section. A stable property that merely references a provisional schema is not such an
+element: its presence and requiredness stay compared and only the schema's own type and enum
+are skipped (the check swaps the inlined body for the same neutral stub on both sides), when
+both sides reference the same schema there. A property re-pointed to a different schema is
+compared with its real bodies, so a narrowing is still a break. A property carrying its own
+`x-provisional` is still removed.
 
 `breaking_check.py` resolves baselines only from `contract-<module>-v*` tags, a line that is
 retired (below), so today there is no baseline, and no workflow runs the tool (#151).
