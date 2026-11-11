@@ -158,10 +158,10 @@
       "criterion_id": "FR-016",
       "description": "Verify FR-016 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "ArchitectureRulesTest PROCESS_CREATION_ONLY_IN_MISSION; ProcessCreationRuleTest planted ProcessBuilder fails, ProcessHandle passes",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T12:49:17.465312+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
