@@ -17,3 +17,39 @@ tasks.register("verifyAll") {
     description = "Runs every module's check task."
     dependsOn(subprojects.map { "${it.path}:check" })
 }
+
+subprojects {
+    pluginManager.withPlugin("java") {
+        // These file collections are configuration-cache safe; their configurations resolve during task execution.
+        val compileClasspath = objects.fileCollection().from(configurations.named("compileClasspath"))
+        val testCompileClasspath = objects.fileCollection().from(configurations.named("testCompileClasspath"))
+        val testRuntimeClasspath = objects.fileCollection().from(configurations.named("testRuntimeClasspath"))
+
+        tasks.register("sonarLibraries") {
+            group = "documentation"
+            description = "Writes absolute main and test Java classpaths for Sonar, one path per line."
+            val librariesFile = layout.buildDirectory.file("sonar/libraries.txt")
+            val testLibrariesFile = layout.buildDirectory.file("sonar/test-libraries.txt")
+            inputs.files(compileClasspath).withPropertyName("compileClasspath")
+            inputs.files(testCompileClasspath).withPropertyName("testCompileClasspath")
+            inputs.files(testRuntimeClasspath).withPropertyName("testRuntimeClasspath")
+            outputs.file(librariesFile)
+            outputs.file(testLibrariesFile)
+            doLast {
+                val mainPaths = compileClasspath.files.map { it.absolutePath }.distinct().sorted()
+                librariesFile.get().asFile.apply {
+                    parentFile.mkdirs()
+                    writeText(if (mainPaths.isEmpty()) "" else mainPaths.joinToString("\n", postfix = "\n"))
+                }
+                val testPaths = (testCompileClasspath.files + testRuntimeClasspath.files)
+                    .map { it.absolutePath }
+                    .distinct()
+                    .sorted()
+                testLibrariesFile.get().asFile.apply {
+                    parentFile.mkdirs()
+                    writeText(if (testPaths.isEmpty()) "" else testPaths.joinToString("\n", postfix = "\n"))
+                }
+            }
+        }
+    }
+}
