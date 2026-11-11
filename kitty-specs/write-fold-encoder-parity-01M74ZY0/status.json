@@ -29,6 +29,9 @@
       "last_event_id": "01M756N9Y9E157NYGDT85G6C3M",
       "last_transition_at": "2026-11-11T11:42:29.833373+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "TransitionId (Identified|Absent) models event_id; id-less setter finds no setter (core parity); 7 differential cases from package reducer; NonFiniteLogIdTest; :command-cli:test 1667 pass"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 3079,
