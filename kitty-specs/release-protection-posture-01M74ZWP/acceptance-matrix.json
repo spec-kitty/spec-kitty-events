@@ -58,10 +58,10 @@
       "criterion_id": "FR-006",
       "description": "Verify FR-006 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "tests/test_release_protection_audit.py every-leaf test: 65 leaves, exactly one failure each",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T11:53:54.282636+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
