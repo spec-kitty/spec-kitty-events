@@ -18,6 +18,10 @@ jobs:
           R: ${{ github.repository }}
         run: |
           probe() { code=$(gh api -i "$1" 2>/dev/null | head -1 | awk '{print $2}'); echo "PROBE $1 -> ${code:-ERR}"; }
+          echo "ENVJSON $(gh api repos/$R/environments/service-release --jq '{protection_rules, deployment_branch_policy, can_admins_bypass}' 2>&1)"
+          echo "RS1 $(gh api repos/$R/rulesets/26558116 --jq '{name,target,enforcement,conditions,rules,bypass_actors}' 2>&1)"
+          echo "RS2 $(gh api repos/$R/rulesets/26752412 --jq '{name,target,enforcement,conditions,rules,bypass_actors}' 2>&1)"
+          echo "ENVS $(gh api repos/$R/environments --jq '[.environments[].name]' 2>&1)"
           probe "repos/$R/rulesets"
           probe "repos/$R/rulesets/26558116"
           echo "main bypass_actors: $(gh api repos/$R/rulesets/26558116 --jq '.bypass_actors' 2>&1)"
@@ -59,6 +63,10 @@ jobs:
           R: ${{ github.repository }}
         run: |
           probe() { code=$(gh api -i "$1" 2>/dev/null | head -1 | awk '{print $2}'); echo "PROBE $1 -> ${code:-ERR}"; }
+          echo "ENVJSON $(gh api repos/$R/environments/service-release --jq '{protection_rules, deployment_branch_policy, can_admins_bypass}' 2>&1)"
+          echo "RS1 $(gh api repos/$R/rulesets/26558116 --jq '{name,target,enforcement,conditions,rules,bypass_actors}' 2>&1)"
+          echo "RS2 $(gh api repos/$R/rulesets/26752412 --jq '{name,target,enforcement,conditions,rules,bypass_actors}' 2>&1)"
+          echo "ENVS $(gh api repos/$R/environments --jq '[.environments[].name]' 2>&1)"
           probe "repos/$R/rulesets"
           probe "repos/$R/rulesets/26558116"
           echo "main bypass_actors: $(gh api repos/$R/rulesets/26558116 --jq '.bypass_actors' 2>&1)"
