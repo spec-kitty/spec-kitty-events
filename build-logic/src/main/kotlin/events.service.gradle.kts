@@ -4,10 +4,8 @@
 // the service compiles, runs or packages. Each module still declares its own plugins, dependencies and test tasks.
 plugins {
     java
-    jacoco
+    id("events.jacoco-xml")
 }
-
-val libs = the<VersionCatalogsExtension>().named("libs")
 
 java {
     toolchain { languageVersion = JavaLanguageVersion.of(25) }
@@ -20,10 +18,6 @@ tasks.withType<JavaCompile>().configureEach {
     if ("-parameters" !in options.compilerArgs) {
         options.compilerArgs.add("-parameters")
     }
-}
-
-jacoco {
-    toolVersion = libs.findVersion("jacoco").get().requiredVersion
 }
 
 val serviceTestSlot = gradle.sharedServices.registerIfAbsent("serviceTestSlot", ServiceTestSlot::class) {
