@@ -180,6 +180,36 @@ class ApprovedDepartureLiftTest {
   }
 
   @Test
+  void thePairingAndTheLiftCompareByCodePointNotByUtf16() {
+    // U+FF5E sorts before U+1F600 by code point (Python) but after it by UTF-16 unit. By code point the departure is behind the approval and
+    // is lifted; a UTF-16 compare would bind it un-lifted and the departure would be dropped (the work package would stay approved).
+    String wave = "\uFF5E";
+    String emoji = new String(Character.toChars(0x1F600));
+    StatusSnapshot snapshot =
+        reduceAll(
+            List.of(
+                move("V", "2026", "WP01", Lane.FOR_REVIEW, Lane.IN_REVIEW),
+                move("A", emoji, "WP01", Lane.IN_REVIEW, Lane.APPROVED),
+                move("D", wave, "WP01", Lane.APPROVED, Lane.IN_PROGRESS)));
+    assertState(snapshot, "WP01", Lane.IN_PROGRESS, "D");
+    assertThat(snapshot.lastEventId()).isEqualTo("D");
+  }
+
+  @Test
+  void aRowStampedExactlyAtTheFloorIsNotCarriedAndIsDroppedAsTheOracleDoes() {
+    // The carry takes rows strictly below the lifted at: R (09:00, equal to the floor) keeps its own sort position, before the flagged
+    // departure, arrives while the work package is approved and is dropped.
+    StatusSnapshot snapshot =
+        reduce(
+            toReview("WP01", ""),
+            move("A", t(9), "WP01", Lane.IN_REVIEW, Lane.APPROVED),
+            move("D", t(5), "WP01", Lane.APPROVED, Lane.IN_PROGRESS),
+            move("R", t(9), "WP01", Lane.IN_PROGRESS, Lane.FOR_REVIEW));
+    assertState(snapshot, "WP01", Lane.IN_PROGRESS, "D");
+    assertThat(snapshot.lastEventId()).isEqualTo("D");
+  }
+
+  @Test
   void theLiftDoesNotDependOnTheFileOrder() {
     List<StatusEvent> rows = new ArrayList<>(toReview("WP01", ""));
     rows.addAll(

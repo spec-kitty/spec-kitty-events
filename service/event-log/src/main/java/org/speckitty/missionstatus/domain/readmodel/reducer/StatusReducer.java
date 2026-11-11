@@ -23,7 +23,7 @@ import org.speckitty.missionstatus.domain.model.WpState;
  * The port of the reduction {@code materialize_snapshot} runs: {@code spec_kitty_events.diary.reduce_parsed} 11.3.0 plus the
  * cancellation-provenance and implementer projections of {@code reducer.py}. Steps: (1) deduplicate by {@code event_id}, first occurrence
  * in file order wins, except that rows which are all reconstruction seeds keep the canonical-minimum one (the two projections sort first,
- * then deduplicate); (2) sort by the injected ordering; (3) fold with rollback-aware precedence; (4) a separate annotation pass; (5) the
+ * then deduplicate); (2) sort by the injected ordering, or by the oracle's lifted key when the approved-departure lift moves a row; (3) fold with rollback-aware precedence; (4) a separate annotation pass; (5) the
  * display lane counts (taken from the snapshot). It is pure: no clock, no I/O, no framework.
  *
  * <p>Ported from 10.4.0 to 10.4.6 (#5967, #4941, #6058, #6061, #87): arm (ii) of the precedence drops an unforced, non-rollback transition whose
@@ -31,7 +31,7 @@ import org.speckitty.missionstatus.domain.model.WpState;
  * in force unless it meets its bare sibling approval, an applied rollback seed yields to a real event); the same-id seed dedup; and the order
  * in which a real {@code approved -> X} follows its same-{@code at} approval. Ported from 10.5.1 (#170; spec-kitty-events#101, #102;
  * spec-kitty#4941): the approved-departure lift of {@code _order_transitions}. A non-seed {@code approved -> X} recorded on a clock behind
- * the approval it followed is bound to the latest approval at or before it, else to the earliest later one, and in that case sorts at that
+ * the approval it followed is bound to the latest still-unbound approval at or before it, else to the earliest still-unbound later one, and in that case sorts at that
  * approval's {@code at} ({@code _approved_departure_sort_at}); the rework stamped below the lifted departure is carried behind it
  * ({@code _carry_lifted_sort_at}). Only the sort key moves: the stored {@code at}, the arms and the projections still read the stored
  * value. With nothing lifted the order is exactly the 10.4.6 one. The 10.4.3 seed payload fold (a seed that loses arm (ii) still fills the claim slots and {@code review_result} that no real event
