@@ -98,7 +98,8 @@
       "last_transition_at": "2026-11-11T12:08:02.267805+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Tuples sanitised; IntegerTooLarge/NonStringKey/UnsupportedValue typed refusals; 3.11 grammar port on every interpreter; no-mutation checks; 0 differing bytes across 3.10/3.11/3.13; fragment added"
+        "Tuples sanitised; IntegerTooLarge/NonStringKey/UnsupportedValue typed refusals; 3.11 grammar port on every interpreter; no-mutation checks; 0 differing bytes across 3.10/3.11/3.13; fragment added",
+        "Cycle 1 fixes: IntegerTooLarge counts digits not sign (regression tests), fragment item refs corrected, hypothesis assertion made structural"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
