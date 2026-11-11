@@ -1,7 +1,7 @@
 {
-  "event_count": 7,
-  "last_event_id": "01M756G19JJ86MMY4XM9QZEZ4X",
-  "materialized_at": "2026-11-11T11:39:37.138569+00:00",
+  "event_count": 9,
+  "last_event_id": "01M756H02491YRF56TYYYVGXRB",
+  "materialized_at": "2026-11-11T11:40:08.641013+00:00",
   "mission_number": "",
   "mission_slug": "release-protection-posture-01M74ZWP",
   "mission_type": "software-dev",
@@ -13,21 +13,21 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 3
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
-      "actor": "user",
+      "actor": "claude",
       "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "planned",
-      "last_event_id": "01M756G19JJ86MMY4XM9QZEZ4X",
-      "last_transition_at": "2026-11-11T11:39:37.138569+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M756H02491YRF56TYYYVGXRB",
+      "last_transition_at": "2026-11-11T11:40:08.641013+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review",
