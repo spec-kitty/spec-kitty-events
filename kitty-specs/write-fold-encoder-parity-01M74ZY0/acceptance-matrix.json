@@ -128,10 +128,10 @@
       "criterion_id": "FR-013",
       "description": "Verify FR-013 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "11.5.0 in pyproject, __version__, java/build.gradle.kts, README, COMPATIBILITY (11.5.0 section), uv.lock; fragment 237-validate-transition-core-edges.md",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T12:49:07.782702+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
