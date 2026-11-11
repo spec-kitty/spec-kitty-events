@@ -13,5 +13,7 @@
   "slug": "write-fold-encoder-parity-01M74ZY0",
   "target_branch": "issue-237-write-fold-encoder-parity",
   "topology": "single_branch",
-  "topology_source": "explicit"
+  "topology_source": "explicit",
+  "contracts": "none",
+  "contracts_rationale": "No API or schema interface changes: the mission changes fold semantics, the Python encoder and validate_transition behaviour, tests and test resources. The mission-write contract and packaged schemas are untouched."
 }
