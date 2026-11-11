@@ -492,8 +492,9 @@ def test_verifier_success_builds_the_exact_attestation_argv(tmp_path: Path) -> N
         str(tmp_path / "tool-linux"),
         "--repo",
         REPO,
-        "--signer-workflow",
-        "spec-kitty/spec-kitty-events/.github/workflows/service-release.yml",
+        "--cert-identity",
+        "https://github.com/spec-kitty/spec-kitty-events/.github/workflows/service-release.yml"
+        "@refs/tags/service-v0.1.0-rc.2",
         "--source-ref",
         "refs/tags/service-v0.1.0-rc.2",
         "--deny-self-hosted-runners",
@@ -659,7 +660,7 @@ def test_attestation_infrastructure_fault_is_exit_2_never_a_verdict(
         capsys,
     )
     assert code == 2 and "ERROR" in out and "WARN" not in out and "FAIL" not in out
-    assert "ERROR:" in summary
+    assert "**ERROR** release" in summary
 
 
 @pytest.mark.parametrize(
@@ -708,8 +709,14 @@ def test_findings_before_an_error_are_printed_and_summary_records_the_error(
 ) -> None:
     raw = raw_inputs()
     raw["service_release"]["can_admins_bypass"] = True
-    gh = FakeGh(raw=raw, releases=copy.deepcopy(ONLY_RC), attest_rc=1, attest_err="HTTP 503")
-    code, out, summary = run_cli(tmp_path, gh, capsys)
+    inner = FakeGh(raw=raw)
+
+    def gh(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[-1].endswith("releases?per_page=100"):
+            return subprocess.CompletedProcess(args, 1, "", "HTTP 500")
+        return inner(args)
+
+    code, out, summary = run_cli(tmp_path, gh, capsys)  # type: ignore[arg-type]
     assert code == 2
     assert out.index("FAIL settings service_release.can_admins_bypass") < out.index("ERROR")
     assert "ERROR: " in summary and "service_release.can_admins_bypass" in summary
@@ -807,3 +814,136 @@ def test_genuine_gh_verdict_strings_stay_verdicts(
 def test_bare_generic_header_is_not_a_verdict() -> None:
     assert not audit._is_verification_outcome("\u2717 Sigstore verification failed\nError: x")
     assert audit._is_verification_outcome(GENUINE_VERDICTS[0])
+
+
+# ------------------------------- squad MAJOR: sanitised classification, per-asset errors
+
+SOURCE_REF_MISMATCH = (
+    "\u2717 Policy verification failed\nError: verifying: no matching CertificateIdentity found, "
+    'last error: expected SourceRepositoryRef to be "refs/tags/x", got "refs/heads/{branch}"'
+)
+
+
+@pytest.mark.parametrize(
+    "branch", ["fix-tls", "connection", "retry-timeout", "eof", "x-tuf", "no-such-host"]
+)
+@pytest.mark.parametrize(
+    ("releases", "label", "code"),
+    [(ONLY_RC, "WARN", 0), (final_releases(), "FAIL", 1)],
+    ids=["prerelease", "final"],
+)
+def test_attacker_controlled_branch_names_cannot_turn_a_verdict_into_an_error(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    branch: str,
+    releases: list[Any],
+    label: str,
+    code: int,
+) -> None:
+    gh = FakeGh(
+        releases=copy.deepcopy(releases),
+        attest_rc=1,
+        attest_err=SOURCE_REF_MISMATCH.format(branch=branch),
+    )
+    got, out, _ = cli(gh, tmp_path, capsys)
+    assert got == code and label in out and "ERROR" not in out
+
+
+def test_asset_name_in_an_infrastructure_stderr_does_not_make_a_verdict() -> None:
+    stderr = "Error: open expected-san.jar: connection reset by peer"
+    assert not audit._is_verification_outcome(stderr, ("expected-san.jar",))
+    assert not audit._is_verification_outcome(
+        "Get expected-san.jar: HTTP 503", ("expected-san.jar",)
+    )
+    assert audit._is_verification_outcome(
+        "failed to verify signature of expected-san.jar", ("expected-san.jar",)
+    )
+
+
+def test_asset_named_like_a_marker_stays_an_error_end_to_end(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    rel = service_release("service-v0.1.0-rc.1", assets=["expected-san.jar"])
+    rel["assets"][0]["digest"] = f"sha256:{PAYLOAD_SHA}"
+    gh = FakeGh(
+        releases=[rel],
+        attest_rc=1,
+        attest_err="Error: reading expected-san.jar: HTTP 503",
+    )
+    code, out, _ = cli(gh, tmp_path, capsys)
+    assert code == 2 and "ERROR release service-v0.1.0-rc.1/expected-san.jar" in out
+    assert "WARN" not in out
+
+
+def test_runner_environment_mismatch_is_a_verdict() -> None:
+    assert audit._is_verification_outcome(
+        'expected RunnerEnvironment to be "github-hosted", got "self-hosted"'
+    )
+    assert not audit._is_verification_outcome("")
+
+
+def test_infra_fault_in_an_early_release_does_not_mask_a_later_bad_final(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    rc = copy.deepcopy(ONLY_RC)  # service-v0.1.0-rc.2, sorts first
+    final = final_releases()
+    final[0]["tag_name"] = "service-v9.9.9"
+    final[0]["author"] = {"login": "someone"}
+    for r in rc + final:
+        for a in r["assets"]:
+            a["digest"] = f"sha256:{PAYLOAD_SHA}"
+
+    class Flaky(FakeGh):
+        def __call__(self, args: list[str]) -> subprocess.CompletedProcess[str]:
+            if args[1:3] == ["attestation", "verify"] and "rc.2" in " ".join(args):
+                return subprocess.CompletedProcess(args, 1, "", "HTTP 503: Service Unavailable")
+            return super().__call__(args)
+
+    code, out, summary = run_cli(tmp_path, Flaky(releases=rc + final), capsys, "--skip-settings")
+    assert code == 1
+    assert "FAIL release service-v9.9.9: authored by someone" in out
+    assert "ERROR release service-v0.1.0-rc.2/" in out and "could not verify: " in out
+    assert "**ERROR** release `service-v0.1.0-rc.2/" in summary
+
+
+def test_error_finding_alone_exits_2_with_line_and_summary(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    gh = FakeGh(releases=final_releases(), attest_rc=1, attest_err="HTTP 503")
+    code, out, summary = cli(gh, tmp_path, capsys)
+    assert code == 2 and "ERROR release service-v0.1.0/" in out and "FAIL" not in out
+    assert "**ERROR** release" in summary and "errors: " in summary
+
+
+def test_audit_releases_continues_after_an_asset_fault() -> None:
+    def verify(tag: str, asset: dict[str, Any]) -> audit.AssetVerdict:
+        if asset["name"] == "tool-linux":
+            raise audit.AssetFault("boom")
+        return audit.AssetVerdict(True, "")
+
+    found = audit.audit_releases(
+        [service_release("service-v1.0.0-rc.1"), service_release("service-v2.0.0", author="x")],
+        verify,
+    )
+    assert [(f.severity, f.subject) for f in found] == [
+        ("error", "service-v1.0.0-rc.1/tool-linux"),
+        ("failure", "service-v2.0.0"),
+        ("error", "service-v2.0.0/tool-linux"),
+    ]
+    assert found[0].message == "could not verify: boom"
+
+
+def test_lookup_404_needs_http_404_but_plain_not_found_is_infrastructure(tmp_path: Path) -> None:
+    gh = FakeGh(lookup=(1, "", "repository Not Found"))
+    with pytest.raises(audit.AssetFault):
+        audit.gh_asset_verifier(gh, REPO, tmp_path)("service-v1.0.0", ASSET)
+
+
+def test_wait_timer_30_normalises_and_drifts(expected: dict[str, Any]) -> None:
+    raw = raw_inputs()
+    raw["service_release"]["protection_rules"].append({"type": "wait_timer", "wait_timer": 30})
+    live = normalised(raw)
+    assert live["service_release"]["wait_timer"] == 30
+    findings = audit.diff_settings(expected, live)
+    assert any(f.subject == "service_release.wait_timer" for f in findings)
+    assert audit.diff_settings(expected, normalised()) == []

@@ -17,7 +17,11 @@ Two checks, both driven through the ``gh`` CLI with the caller's ``GH_TOKEN``:
    downgraded.
 
 Exit codes: 0 no failures (warnings allowed), 1 at least one failure, 2 the
-audit could not complete (API or download fault).
+audit could not complete (API fault) or an asset could not be verified (an
+"error" finding; the remaining assets and releases are still checked). Text
+the attacker controls (quoted values, asset and tag names) is stripped before
+gh's stderr is classified; anything not an explicit verification outcome is an
+infrastructure fault, never a verdict.
 
 The script is read-only: it never writes to GitHub.
 """
@@ -33,7 +37,7 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, NamedTuple
+from typing import Any, Callable, NamedTuple, Sequence
 
 SERVICE_TAG = re.compile(r"^service-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$")
 BOT = "github-actions[bot]"
@@ -51,20 +55,19 @@ _VERDICT_MARKERS = (
     "failed to verify signature",
     "failed to verify log inclusion",
 )
-_EXPECTED_TOPICS = ("san", "signer", "source", "predicate")
-_INFRA_PATTERN = re.compile(
-    r"\b(401|403|429|50[0-4]|http [45]\d\d|rate.?limit|timeout|timed out|connection|tls"
-    r"|no such host|dial tcp|eof|deadline exceeded|network is unreachable|i/o timeout"
-    r"|failed to initialize|trusted root|tuf|failed to fetch|unexpected status)\b",
-    re.IGNORECASE,
-)
+_EXPECTED_TOPICS = ("san", "signer", "source", "predicate", "runner")
 
 FAILURE = "failure"
 WARNING = "warning"
+ERROR = "error"
 
 
 class AuditError(Exception):
     """An infrastructure fault: the audit could not complete (exit code 2)."""
+
+
+class AssetFault(AuditError):
+    """An infrastructure fault confined to one asset: reported, and the audit goes on."""
 
 
 @dataclass(frozen=True)
@@ -255,7 +258,14 @@ def audit_releases(releases: list[dict[str, Any]], verify: AssetVerifier) -> lis
             name = str(asset.get("name", ""))
             if _is_checksum(name):
                 continue
-            verdict = verify(tag, asset)
+            try:
+                verdict = verify(tag, asset)
+            except AssetFault as exc:
+                # never downgraded on a prerelease, and the loop continues
+                findings.append(
+                    Finding(ERROR, "release", f"{tag}/{name}", f"could not verify: {exc}")
+                )
+                continue
             if not verdict.ok:
                 fault(f"{tag}/{name}", verdict.reason)
     return findings
@@ -336,19 +346,28 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _is_verification_outcome(stderr: str) -> bool:
-    """True only for a known verification outcome; infrastructure faults are not."""
-    text = stderr.lower()
-    if not text.strip() or _INFRA_PATTERN.search(text):
-        return False
+def _sanitise(stderr: str, scrub: Sequence[str]) -> str:
+    """Drop text an attacker controls: quoted values, file paths, asset and tag names."""
+    text = re.sub(r'"[^"]*"', " ", stderr)
+    for needle in sorted({n for n in scrub if n}, key=len, reverse=True):
+        text = text.replace(needle, " ")
+    return text.lower()
+
+
+def _is_verification_outcome(stderr: str, scrub: Sequence[str] = ()) -> bool:
+    """True only for a known verification outcome; anything else is infrastructure."""
+    text = _sanitise(stderr, scrub)
     if any(marker in text for marker in _VERDICT_MARKERS):
         return True
-    return "expected" in text and any(topic in text for topic in _EXPECTED_TOPICS)
+    if "expected" in text and any(topic in text for topic in _EXPECTED_TOPICS):
+        return True
+    # Unrecognised text (HTTP errors, timeouts, DNS/TLS faults, empty stderr) is infrastructure.
+    return False
 
 
 def _raise_infra(what: str, stderr: str | None) -> None:
     lines = [ln.strip() for ln in (stderr or "").strip().splitlines() if ln.strip()]
-    raise AuditError(f"{what} failed: {lines[-1] if lines else 'no output'}")
+    raise AssetFault(f"{what} failed: {lines[-1] if lines else 'no output'}")
 
 
 def gh_asset_verifier(runner: Runner, repo: str, workdir: Path) -> AssetVerifier:
@@ -375,7 +394,7 @@ def gh_asset_verifier(runner: Runner, repo: str, workdir: Path) -> AssetVerifier
             )
             if download.returncode != 0 or not target.is_file():
                 detail = (download.stderr or "").strip().splitlines()
-                raise AuditError(
+                raise AssetFault(
                     f"download of {tag}/{name} failed: {detail[-1] if detail else 'no file'}"
                 )
             actual = _sha256(target)
@@ -388,13 +407,13 @@ def gh_asset_verifier(runner: Runner, repo: str, workdir: Path) -> AssetVerifier
             lookup_path = f"repos/{repo}/attestations/sha256:{actual}"
             lookup = runner(["gh", "api", lookup_path])
             if lookup.returncode != 0:
-                if re.search(r"\b404\b|not found", lookup.stderr or "", re.IGNORECASE):
+                if re.search(r"HTTP 404", lookup.stderr or "", re.IGNORECASE):
                     return AssetVerdict(False, f"no attestation for sha256:{actual}")
                 _raise_infra(f"attestation lookup {lookup_path}", lookup.stderr)
             try:
                 found = json.loads(lookup.stdout).get("attestations")
             except (json.JSONDecodeError, AttributeError) as exc:
-                raise AuditError(f"attestation lookup {lookup_path}: unexpected response") from exc
+                raise AssetFault(f"attestation lookup {lookup_path}: unexpected response") from exc
             if not found:
                 return AssetVerdict(False, f"no attestation for sha256:{actual}")
             attest = runner(
@@ -405,8 +424,8 @@ def gh_asset_verifier(runner: Runner, repo: str, workdir: Path) -> AssetVerifier
                     str(target),
                     "--repo",
                     repo,
-                    "--signer-workflow",
-                    f"{repo}/{SIGNER_WORKFLOW}",
+                    "--cert-identity",
+                    f"https://github.com/{repo}/{SIGNER_WORKFLOW}@refs/tags/{tag}",
                     "--source-ref",
                     f"refs/tags/{tag}",
                     "--deny-self-hosted-runners",
@@ -414,7 +433,7 @@ def gh_asset_verifier(runner: Runner, repo: str, workdir: Path) -> AssetVerifier
             )
             if attest.returncode != 0:
                 stderr = attest.stderr or ""
-                if not _is_verification_outcome(stderr):
+                if not _is_verification_outcome(stderr, (str(target), name, tag)):
                     _raise_infra(f"attestation verify of {tag}/{name}", stderr)
                 lines = [ln for ln in stderr.strip().splitlines() if ln.strip()]
                 return AssetVerdict(False, f"attestation verification failed: {lines[-1].strip()}")
@@ -430,22 +449,31 @@ def gh_asset_verifier(runner: Runner, repo: str, workdir: Path) -> AssetVerifier
 # ---------------------------------------------------------------------------
 
 
+_LABELS = {FAILURE: "FAIL", WARNING: "WARN", ERROR: "ERROR"}
+
+
 def render_summary(findings: list[Finding], error: str | None = None) -> str:
     failures = sum(1 for f in findings if f.severity == FAILURE)
     warnings = sum(1 for f in findings if f.severity == WARNING)
-    lines = ["## Release-protection audit", "", f"Failures: {failures}, warnings: {warnings}", ""]
+    errors = sum(1 for f in findings if f.severity == ERROR)
+    lines = [
+        "## Release-protection audit",
+        "",
+        f"Failures: {failures}, warnings: {warnings}, errors: {errors}",
+        "",
+    ]
     if error is not None:
         lines.append(f"ERROR: {error}")
     elif not findings:
         lines.append("No findings.")
     for f in findings:
-        label = "FAIL" if f.severity == FAILURE else "WARN"
+        label = _LABELS[f.severity]
         lines.append(f"- **{label}** {f.kind} `{f.subject}`: {f.message}")
     return "\n".join(lines) + "\n"
 
 
 def _line(f: Finding) -> str:
-    label = "FAIL" if f.severity == FAILURE else "WARN"
+    label = _LABELS[f.severity]
     return f"{label} {f.kind} {f.subject}: {f.message}"
 
 
@@ -492,7 +520,9 @@ def main(argv: list[str] | None = None, runner: Runner = _run) -> int:
             handle.write(render_summary(findings, error))
     if error is not None:
         return 2
-    return 1 if any(f.severity == FAILURE for f in findings) else 0
+    if any(f.severity == FAILURE for f in findings):
+        return 1
+    return 2 if any(f.severity == ERROR for f in findings) else 0
 
 
 if __name__ == "__main__":
