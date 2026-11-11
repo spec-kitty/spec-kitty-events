@@ -1,0 +1,29 @@
+{
+  "event_count": 1,
+  "last_event_id": "01M755Z2TNJ5RACD8TRJ893V1Y",
+  "materialized_at": "2026-11-11T11:30:21.653522+00:00",
+  "mission_number": "",
+  "mission_slug": "write-fold-encoder-parity-01M74ZY0",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 1
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M755Z2TNJ5RACD8TRJ893V1Y",
+      "last_transition_at": "2026-11-11T11:30:21.653522+00:00"
+    }
+  }
+}
