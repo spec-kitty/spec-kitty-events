@@ -107,7 +107,7 @@ def _check_int(value: int) -> None:
     if value.bit_length() <= limit * 3:
         return
     try:
-        digits = len(str(value))
+        digits = len(str(abs(value)))  # CPython's limit counts digits, not the sign
     except ValueError as exc:
         raise IntegerTooLarge("integer exceeds the int-to-str digit limit") from exc
     if digits > limit:

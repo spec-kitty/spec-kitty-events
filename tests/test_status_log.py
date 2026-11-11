@@ -313,6 +313,15 @@ def test_integer_at_the_digit_limit_is_accepted() -> None:
     assert encode_status_row({"a": value}) == f'{{"a": {value}}}\n'.encode("ascii")
 
 
+def test_negative_integer_at_the_digit_limit_is_accepted_and_one_past_is_refused() -> None:
+    at_limit = -(10**4300 - 1)  # sign plus 4300 digits
+    row = json.loads('{"a": -' + "9" * 4300 + "}")
+    assert row == {"a": at_limit}
+    assert encode_status_row(row) == (json.dumps(row, sort_keys=True) + "\n").encode("ascii")
+    with pytest.raises(IntegerTooLarge):
+        encode_status_row({"a": -(10**4300)})
+
+
 def test_oversized_integer_in_a_dropped_session_field_does_not_refuse() -> None:
     row = {"session_started_at": 10**5000, "k": 1}
     assert encode_status_row(row) == b'{"k": 1}\n'
@@ -365,4 +374,6 @@ def test_json_like_rows_encode_without_mutation_or_bare_errors(row: dict[str, An
 
     assert row == snapshot
     assert encoded.endswith(b"\n")
-    assert b"hostname" not in encoded
+    sanitized = sanitize_status_row(row)
+    _assert_key_absent(sanitized, "hostname")
+    assert json.loads(encoded.decode("ascii")) == json.loads(json.dumps(sanitized, sort_keys=True))
