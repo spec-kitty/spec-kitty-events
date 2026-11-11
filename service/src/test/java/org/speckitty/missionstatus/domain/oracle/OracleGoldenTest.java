@@ -41,6 +41,7 @@ class OracleGoldenTest {
   static Stream<String> fixtures() {
     return Stream.of(
         "interleaved/two-missions",
+        "interleaved/clock-ahead-approval-departure",
         "lifecycle-only/seven-lifecycle-types",
         "no-ledger/plain-and-discarded",
         "log-truncated/shrunk-and-rewritten",

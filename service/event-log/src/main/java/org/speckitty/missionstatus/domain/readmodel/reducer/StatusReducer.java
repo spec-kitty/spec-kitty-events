@@ -20,7 +20,7 @@ import org.speckitty.missionstatus.domain.model.StatusSnapshot;
 import org.speckitty.missionstatus.domain.model.WpState;
 
 /**
- * The port of the reduction {@code materialize_snapshot} runs: {@code spec_kitty_events.diary.reduce_parsed} 10.4.6 plus the
+ * The port of the reduction {@code materialize_snapshot} runs: {@code spec_kitty_events.diary.reduce_parsed} 11.3.0 plus the
  * cancellation-provenance and implementer projections of {@code reducer.py}. Steps: (1) deduplicate by {@code event_id}, first occurrence
  * in file order wins, except that rows which are all reconstruction seeds keep the canonical-minimum one (the two projections sort first,
  * then deduplicate); (2) sort by the injected ordering; (3) fold with rollback-aware precedence; (4) a separate annotation pass; (5) the
@@ -29,7 +29,12 @@ import org.speckitty.missionstatus.domain.model.WpState;
  * <p>Ported from 10.4.0 to 10.4.6 (#5967, #4941, #6058, #6061, #87): arm (ii) of the precedence drops an unforced, non-rollback transition whose
  * {@code from_lane} differs from the lane in force for every setter; the reconstruction-seed exemptions (a rollback seed must continue the lane
  * in force unless it meets its bare sibling approval, an applied rollback seed yields to a real event); the same-id seed dedup; and the order
- * in which a real {@code approved -> X} follows its same-{@code at} approval. The 10.4.3 seed payload fold (a seed that loses arm (ii) still fills the claim slots and {@code review_result} that no real event
+ * in which a real {@code approved -> X} follows its same-{@code at} approval. Ported from 10.5.1 (#170; spec-kitty-events#101, #102;
+ * spec-kitty#4941): the approved-departure lift of {@code _order_transitions}. A non-seed {@code approved -> X} recorded on a clock behind
+ * the approval it followed is bound to the latest approval at or before it, else to the earliest later one, and in that case sorts at that
+ * approval's {@code at} ({@code _approved_departure_sort_at}); the rework stamped below the lifted departure is carried behind it
+ * ({@code _carry_lifted_sort_at}). Only the sort key moves: the stored {@code at}, the arms and the projections still read the stored
+ * value. With nothing lifted the order is exactly the 10.4.6 one. The 10.4.3 seed payload fold (a seed that loses arm (ii) still fills the claim slots and {@code review_result} that no real event
  * wrote) is not ported, because it writes only slots this service never serves; it touches none of the lane-setter slots.
  */
 public final class StatusReducer {
@@ -40,26 +45,34 @@ public final class StatusReducer {
    *
    * <p>Advanced to 10.5.1 as a pin-only step (spec-kitty#6261, operator ruling): the 10.5.1 change to {@code _order_transitions} — a
    * non-seed departure from {@code approved} lifted to sort after the clock-ahead approval it followed (spec-kitty#4941,
-   * spec-kitty-events#102) — is NOT yet ported here. No conformance golden exercises that case, so the goldens and this coupling stay
-   * green at the bumped pin; the reduction below still implements the 10.4.6-level behaviour described above. The behaviour port (plus a
-   * fixture that exercises the clock-ahead case) is tracked by spec-kitty#6268.
+   * spec-kitty-events#102) — was deferred, because no conformance golden exercised that case.
    *
    * <p>Advanced to 11.0.0 after a port review (spec-kitty#6399): between 10.5.1 and 11.0.0 the ordering, precedence and fold of
    * {@code diary.reduce_parsed} are unchanged. The {@code diary} changes are the subtask vocabulary of {@code parse_diary} (the
    * line codec follows the CLI partition, not {@code parse_diary}), a docstring and a comment; the {@code status} module changes are on the
    * Lamport path ({@code status_event_sort_key}, unclocked envelopes), which this class does not port. All 88 conformance goldens are
-   * byte-identical under 11.0.0. The 10.5.1 gap above is unchanged.
+   * byte-identical under 11.0.0.
    *
    * <p>Advanced to 11.3.0 after a port review (spec-kitty#6602): {@code diary.py} and {@code status.py} are byte-identical between
    * 11.0.0 and 11.3.0, so the ordering, precedence and fold of {@code diary.reduce_parsed} are unchanged. The releases add the
    * {@code decision_significance} models, a producer-registry row and the {@code cloudevents} package, none of which this class reads.
-   * Every conformance golden is byte-identical under 11.3.0; only the manifest's {@code specKittyEventsVersion} moved. The 10.5.1 gap above
-   * is unchanged.
+   * Every conformance golden is byte-identical under 11.3.0; only the manifest's {@code specKittyEventsVersion} moved.
+   *
+   * <p>The 10.5.1 lift is ported at this pin (spec-kitty-events#170, which took over spec-kitty#6268): {@code diary.py} is byte-identical
+   * between the 11.3.0 release and the unreleased package on {@code main}, so 11.3.0 stays the released oracle the goldens are generated with (operator ruling on #170).
+   * The {@code interleaved/clock-ahead-approval-departure} golden pins the lift in both languages.
    */
   public static final String PORTED_EVENTS_VERSION = "11.3.0";
 
   private static final String[] SYNTHETIC_PREFIXES = {"Force move to ", "move-task: "};
   private static final Set<Lane> ROLLBACK_TARGETS = Set.of(Lane.PLANNED, Lane.CLAIMED, Lane.IN_PROGRESS);
+
+  /** {@code (at, event_id)} in code-point order, the oracle's plain sort key. */
+  private static final Comparator<StatusEvent> BY_AT_THEN_ID =
+      Comparator.comparing(StatusEvent::at, CodePoints::compare).thenComparing(StatusEvent::eventId, CodePoints::compare);
+
+  /** The effective sort {@code at} per carried or lifted {@code event_id}, and the sequence number that keeps swept events in order. */
+  private record Carried(Map<String, String> effective, Map<String, Integer> seq) {}
 
   private final EventOrdering ordering;
 
@@ -143,8 +156,115 @@ public final class StatusReducer {
       boolean allSeeds = rows.size() > 1 && rows.stream().allMatch(StatusEvent::isSeed);
       unique.add(allSeeds ? rows.stream().min(Comparator.comparing(StatusEvent::seedKey, CodePoints::compare)).orElseThrow() : rows.getFirst());
     }
-    unique.sort(ordering);
-    return approvedFollowsItsApproval(unique);
+    Map<String, String> lifted = approvedDepartureSortAt(unique);
+    if (lifted.isEmpty()) {
+      unique.sort(ordering);
+      return approvedFollowsItsApproval(unique);
+    }
+    return orderWithLift(unique, lifted);
+  }
+
+  /**
+   * {@code _order_transitions} when {@code _approved_departure_sort_at} lifted something (10.5.1, spec-kitty-events#101): the full oracle key
+   * {@code (effective at, approved-departure flag, sequence, event_id)}. The final tie-break is the code-point {@code event_id} of the oracle,
+   * which agrees with the production {@code AtThenEventId} ordering.
+   */
+  private static List<StatusEvent> orderWithLift(List<StatusEvent> unique, Map<String, String> lifted) {
+    Set<String> approvals = new HashSet<>();
+    for (StatusEvent event : unique) {
+      if (event.toLane() == Lane.APPROVED && event.fromLane() != Lane.APPROVED && !event.isSeed()) {
+        approvals.add(event.wpId() + '\0' + event.at());
+      }
+    }
+    Carried carried = carryLiftedSortAt(unique, lifted);
+    Comparator<StatusEvent> byKey =
+        Comparator.comparing((StatusEvent e) -> carried.effective().getOrDefault(e.eventId(), e.at()), CodePoints::compare)
+            .thenComparing(
+                (StatusEvent e) ->
+                    carried.seq().containsKey(e.eventId())
+                        || (e.fromLane() == Lane.APPROVED && !e.isSeed() && approvals.contains(e.wpId() + '\0' + e.at())))
+            .thenComparing(e -> carried.seq().getOrDefault(e.eventId(), 0))
+            .thenComparing(StatusEvent::eventId, CodePoints::compare);
+    List<StatusEvent> result = new ArrayList<>(unique);
+    result.sort(byKey);
+    return result;
+  }
+
+  /**
+   * {@code _approved_departure_sort_at}: map a non-seed {@code approved -> X} departure's {@code event_id} to the {@code at} of the later
+   * (clock-ahead) approval it must follow. Pass 1 binds each departure to the latest unbound approval not after it (no lift); pass 2 binds each
+   * remaining departure to the earliest unbound approval after it. Empty when no clock ran ahead.
+   */
+  private static Map<String, String> approvedDepartureSortAt(List<StatusEvent> events) {
+    Map<String, List<StatusEvent>> arrivals = new HashMap<>();
+    Map<String, List<StatusEvent>> departures = new LinkedHashMap<>();
+    for (StatusEvent event : events) {
+      if (event.isSeed()) {
+        continue;
+      }
+      if (event.toLane() == Lane.APPROVED && event.fromLane() != Lane.APPROVED) {
+        arrivals.computeIfAbsent(event.wpId(), id -> new ArrayList<>()).add(event);
+      } else if (event.fromLane() == Lane.APPROVED && event.toLane() != Lane.APPROVED) {
+        departures.computeIfAbsent(event.wpId(), id -> new ArrayList<>()).add(event);
+      }
+    }
+    Map<String, String> lifted = new HashMap<>();
+    for (Map.Entry<String, List<StatusEvent>> entry : departures.entrySet()) {
+      List<StatusEvent> unbound = new ArrayList<>(arrivals.getOrDefault(entry.getKey(), List.of()));
+      unbound.sort(BY_AT_THEN_ID);
+      List<StatusEvent> ordered = new ArrayList<>(entry.getValue());
+      ordered.sort(BY_AT_THEN_ID);
+      List<StatusEvent> skewed = new ArrayList<>();
+      for (StatusEvent departure : ordered) {
+        int earlier = -1;
+        for (int i = 0; i < unbound.size(); i++) {
+          if (CodePoints.compare(unbound.get(i).at(), departure.at()) <= 0) {
+            earlier = i;
+          }
+        }
+        if (earlier >= 0) {
+          unbound.remove(earlier);
+        } else {
+          skewed.add(departure);
+        }
+      }
+      for (StatusEvent departure : skewed) {
+        for (int i = 0; i < unbound.size(); i++) {
+          if (CodePoints.compare(unbound.get(i).at(), departure.at()) > 0) {
+            lifted.put(departure.eventId(), unbound.remove(i).at());
+            break;
+          }
+        }
+      }
+    }
+    return lifted;
+  }
+
+  /**
+   * {@code _carry_lifted_sort_at}: sweep every row (seeds included) in {@code (at, event_id)} order keeping a per-work-package floor; a lifted
+   * departure raises it, and a later row whose {@code at} is below it takes the floor as its sort {@code at}. Stored {@code at} is untouched.
+   */
+  private static Carried carryLiftedSortAt(List<StatusEvent> events, Map<String, String> lifted) {
+    Map<String, String> effective = new HashMap<>(lifted);
+    Map<String, Integer> seq = new HashMap<>();
+    Map<String, String> floors = new HashMap<>();
+    List<StatusEvent> swept = new ArrayList<>(events);
+    swept.sort(BY_AT_THEN_ID);
+    int position = 0;
+    for (StatusEvent event : swept) {
+      position++;
+      String floor = floors.get(event.wpId());
+      String liftedAt = lifted.get(event.eventId());
+      if (liftedAt != null) {
+        String base = floor == null ? "" : floor;
+        floors.put(event.wpId(), CodePoints.compare(base, liftedAt) >= 0 ? base : liftedAt);
+        seq.put(event.eventId(), position);
+      } else if (floor != null && CodePoints.compare(event.at(), floor) < 0) {
+        effective.put(event.eventId(), floor);
+        seq.put(event.eventId(), position);
+      }
+    }
+    return new Carried(effective, seq);
   }
 
   /**

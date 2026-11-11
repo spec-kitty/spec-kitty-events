@@ -2,7 +2,7 @@
 title: The read-write split
 description: 'The CQRS split of the events domain: the read-only Mission Status Read API, the Java write service as the one canonical writer, and the writers and readers today versus the target.'
 doc_status: active
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-11T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -102,5 +102,5 @@ history at cutover.
 | Lane transitions in `status.events.jsonl` | `status/store.py` atomic primitives (temp file, fsync, `os.replace`) under the Mission status lock. | A single `O_APPEND` write and `fsync` in the service (ADR 2026-10-27-1 D-5). |
 | Other event logs | `kernel.event_log_append`: one interim lock, torn-tail refusal, one `O_APPEND` write plus `fsync` (#6606). Glossary writes through `spec_kitty_events.persistence.append_event`, the only contract writer. | Handed to the service one log at a time, glossary first (ADR 2026-10-22-1, migration order). |
 | Row shape | Flat `StatusEvent` rows with no version, a `"5.0.0"` lifecycle envelope, and other own shapes. | `spec-kitty-events` row envelopes with a row and a payload version (ADR 2026-10-14-1 D-3, D-3a). |
-| Who reads | CLI readers through `diary.reduce_parsed` (wall clock); some raw readers bypass it (G-13); the Java read API with its own port of the reducer, without the approved-departure lift (G-4, #6268). | One read port for every CLI status read, with the Java service conformance-gated against the Python reducer (ADR 2026-10-01-2 D-5 as amended). |
+| Who reads | CLI readers through `diary.reduce_parsed` (wall clock); some raw readers bypass it (G-13); the Java read API with its own port of the reducer, approved-departure lift included (G-4, closed by #170). | One read port for every CLI status read, with the Java service conformance-gated against the Python reducer (ADR 2026-10-01-2 D-5 as amended). |
 | Proof of one writer | `tests/architectural/test_status_events_writes_gate.py` and `test_event_log_writes_gate.py` ledger today's writers. | A Python writes gate with an empty allowlist and an ArchUnit rule that only `event-log` opens a ledger for writing (ADR 2026-10-22-1, Confirmation). |
