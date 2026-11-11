@@ -94,3 +94,75 @@ edge check (core: `check_transition`), guards are unchanged.
 
 ## Supply chain
 No dependency is added, upgraded or removed; DIRECTIVE_051 controls are not triggered.
+
+## Findings during implementation
+
+Recorded by WP07 from each work package's report and review (review-cycle files under `tasks/`).
+
+### Rulings taken during implementation
+
+- **DM-01M758AR0XV801HVGA8ZPQWATR (operator, 2026-11-11): Full D4.** Aligning
+  `validate_transition` with core's graph conflicted with two packaged valid fixtures and the
+  "force-exempt by contract" text for review-ref-gated rewinds (#48), and `reduce_status_events`
+  (which calls `validate_transition`) would start recording such events as `TransitionAnomaly`.
+  The operator chose core's graph everywhere. Result (WP04): the two fixtures became forced moves
+  under the same ids, with unforced invalid twins (`min_version` 11.5.0); a third fixture,
+  `zeitgeist_attrs/valid/wp_status_changed_done_drops_evidence.json`, was rerouted
+  `for_review → in_review` to keep its unforced, evidence-dropping intent; COMPATIBILITY 11.5.0
+  records the reducer behaviour change.
+
+### Per work package
+
+- **WP01 (4.16, 4.17).** `TransitionId` (sealed `Identified` / `Absent`, factory-only). Core's
+  `_find_event_by_id` guard is deliberate, so the fold mirrors it. Nine differential cases, with
+  expectations from `spec_kitty_events.diary.reduce` (core's reducer). Both directions are shown:
+  the old fold *dropped* events core applies (`idless-setter-stale-forward-applies`,
+  `idless-setter-claimed-to-in-progress`), *refused* a log core reduces (`idless-and-string-none`),
+  and, across a log, *acknowledged* a `claimed → in_progress` core drops
+  (`idless-setter-cascade-acknowledged-core-drops`); two identified controls. A same-timestamp
+  id-less case cannot reach the rollback arm: the tie falls to the id comparison, which is
+  unorderable in core (`TypeError`), so `idless-same-timestamp-unorderable` pins "both refuse".
+  The case shape gained `expected: {"unreducible": "TypeError"}` for such logs. The non-finite
+  log id (`NaN`, `Infinity`, `1e400`) answers `500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED`
+  with the log unchanged.
+- **WP02 (4.8).** `StatusLogAppender(LongSupplier)`; command-cli passes its `nanoClock` bean; the
+  repair path uses the same adapter. Reverting to `System.nanoTime()` fails 3 of the 5 new tests.
+- **WP03 (4.1, 4.2, 4.4, 4.5).** Tuples recurse and stay tuples (core's `_strip_pii_recursive`
+  does the same). New refusals `IntegerTooLarge`, `NonStringKey`, `UnsupportedValue`, checked on
+  the *sanitised* value, so a dropped session field holding a huge int is accepted as in core.
+  Non-string keys are refused at every depth (core would coerce them; unreachable from
+  `json.loads`; documented). The CPython 3.11 port is used on every interpreter: on
+  `+00:00:00.000001` it gives offset 0 on 3.10, 3.11 and 3.13, while 3.13's native parser gives
+  1 µs. A 200,000-form fuzz showed 0 differences between the port and native 3.11. Byte dumps of
+  the status_append fixtures are identical on 3.10.20, 3.11.15 and 3.13.18 (NFR-001). Review
+  cycle 1 caught a sign-counting bug in the digit limit (a negative 4300-digit int was refused);
+  fixed and pinned.
+- **WP04 (4.3, 4.6).** Core's graph at the pin equals D-6 above (no drift between the pin and core
+  `main` for `allowed_targets()`). Removed unforced edges: `for_review → approved|done|in_progress|planned`,
+  `in_review → for_review`, `genesis → blocked`, `blocked → blocked`; none added. The Java binding
+  has no transition validator, so it needed only the version line. 11.4.0 → 11.5.0.
+- **WP05 (4.9).** 91 ack cases (86 domain + 5 service); **89 run over HTTP with appended-bytes
+  assertions**. Two are explicitly excluded, each with its observed refusal asserted:
+  `dependency-no-tasks-file-accepted` (the service answers `404 WP_NOT_FOUND` before the
+  authority, a pre-existing service rule from mission `events-write-core-01M6TP6W` FR-018, whereas
+  core's `emit_status_transition` accepts it) and `annotation-subtasks-complete-unlocks-review`
+  (a batch whose first unit is an annotation; the wire's `TransitionBatch` takes transition units
+  only, so `400 REQUEST_MALFORMED`). NFR-002 / SC-004 ("100% of ack cases") are therefore met for
+  89 of 91; the two gaps are pre-existing service behaviours, not introduced here, and are filed
+  as follow-ups rather than changed in this mission. `ack-bytes.json` was produced in encoder mode;
+  CI's `write-core-parity` step (`extract_ack_bytes.py --check`, core mode) is its proof from core.
+- **WP06 (4.10, 4.11, 4.13).** Positive controls: removing either `UV_PYTHON` prefix fails the
+  workflow test; the planted `ProcessBuilder` class fails the new rule and a planted
+  `ProcessHandle` reader passes it.
+
+### Environment notes
+
+- Core's code cannot run in this session (permission classifier); core was read statically at
+  the pin and at `main`.
+- The local Gradle build needs a session-local Gradle home: the environment's init script reads
+  plugin markers from a Central mirror whose copies differ from the Gradle Plugin Portal's pinned
+  in `gradle/verification-metadata.xml`.
+- `cd site && npm run validate` cannot run here: the doc toolkit comes from npm.pkg.github.com,
+  which answers 401. CI's `docs-build` is the docs gate for this PR.
+- `tests/test_version_not_amended.py` fails in this shallow clone (no release tags), with and
+  without the mission's changes.
