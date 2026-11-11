@@ -132,10 +132,21 @@
       "last_event_id": "01M758793KSEHT77MRR8YX4497",
       "last_transition_at": "2026-11-11T12:09:47.377873+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "- 2026-11-11T12:10:57Z – claude – shell_pid=31293 – Blocked: removing unforced for_review->in_progress and for_review->done fails 2 packaged conformance fixtures (edge_cases/valid/wp_status_changed_unforced_for_review_to_in_progress_with_review_ref.json, lifecycle/valid/wp_status_changed_summary_done.json); escalating per prompt, no fixture edited. Pin graph matches research D-6 exactly. Draft status.py patch saved in scratchpad (wp04-status-edges.patch); tree reverted."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 31293,
-      "shell_pid_created_at": "1794398983.93"
+      "shell_pid_created_at": "1794398983.93",
+      "subtasks": {
+        "T013": "done",
+        "T017": "done",
+        "T018": "done",
+        "T019": "done",
+        "T020": "done",
+        "T021": "done"
+      }
     },
     "WP05": {
       "actor": "finalize-tasks",
