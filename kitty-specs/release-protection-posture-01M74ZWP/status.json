@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "user",
-      "agent": "claude",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -30,9 +30,11 @@
       "last_transition_at": "2026-11-11T11:39:37.138569+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review"
+        "Ready for review",
+        "Cycle 1 REJECT: R1 [MAJOR] attestation infra faults become verdicts"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-events/kitty-specs/release-protection-posture-01M74ZWP/tasks/WP01-audit-script/review-cycle-1.md",
         "reference": "review-cycle://release-protection-posture-01M74ZWP/WP01-audit-script/review-cycle-1.md",
@@ -40,15 +42,15 @@
         "verdict": "changes_requested"
       },
       "role": "implementer",
-      "shell_pid": 2630,
-      "shell_pid_created_at": "1794396803.61",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T001": "done",
-        "T002": "done",
-        "T003": "done",
-        "T004": "done",
-        "T005": "done",
-        "T006": "done"
+        "T001": "planned",
+        "T002": "planned",
+        "T003": "planned",
+        "T004": "planned",
+        "T005": "planned",
+        "T006": "planned"
       }
     },
     "WP02": {
