@@ -13,7 +13,7 @@ requirement_refs:
 - FR-019
 planning_base_branch: issue-237-write-fold-encoder-parity
 merge_target_branch: issue-237-write-fold-encoder-parity
-branch_strategy: Single-branch mission. Planning, base and merge target are issue-237-write-fold-encoder-parity; the finished branch goes to main through one PR.
+branch_strategy: Planning artifacts for this mission were generated on issue-237-write-fold-encoder-parity. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-237-write-fold-encoder-parity unless the human explicitly redirects the landing branch.
 subtasks:
 - T031
 - T032
