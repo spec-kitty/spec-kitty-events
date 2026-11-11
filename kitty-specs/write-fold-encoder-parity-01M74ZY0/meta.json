@@ -27,6 +27,7 @@
   "purpose_context": "Core spec-kitty/spec-kitty#6195 makes the events write service the only status-log writer. Before that ships, the write fold must judge a null event_id setter exactly as core does, and the remaining #231 minors from the write-core squad must close: the Python reference encoder (tuples, exception taxonomy, version-independent timestamps, no-mutation tests), validate_transition aligned with core's machine (ruling D4), and the assurance gaps (ack bytes over HTTP, the core venv's Python pin, a process-creation architecture rule, the core-pin purpose text).",
   "purpose_tldr": "Close the remaining write-core parity gaps: the write fold's null event_id setter, clock injection, the Python reference encoder's edge cases, validate_transition aligned with core, and the assurance backlog.",
   "slug": "write-fold-encoder-parity-01M74ZY0",
+  "status_phase": "1",
   "target_branch": "issue-237-write-fold-encoder-parity",
   "topology": "single_branch",
   "topology_source": "explicit"
