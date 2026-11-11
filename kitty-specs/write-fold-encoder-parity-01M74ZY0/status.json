@@ -99,7 +99,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Tuples sanitised; IntegerTooLarge/NonStringKey/UnsupportedValue typed refusals; 3.11 grammar port on every interpreter; no-mutation checks; 0 differing bytes across 3.10/3.11/3.13; fragment added",
-        "Cycle 1 fixes: IntegerTooLarge counts digits not sign (regression tests), fragment item refs corrected, hypothesis assertion made structural"
+        "Cycle 1 fixes: IntegerTooLarge counts digits not sign (regression tests), fragment item refs corrected, hypothesis assertion made structural",
+        "Cycle 2 approved. MAJOR resolved: _check_int counts digits without sign (74be464b); negative 4300-digit int encodes == json.dumps, -(10**4300) refused. Fragment item refs and hypothesis assertion fixed. 258 passed on 3.10/3.11/3.13; conformance 1233; status_append valid bytes identical on all three and equal expected_line; port vs native 3.11 fromisoformat 0 diffs over 200k fuzzed forms; ruff/mypy --strict/changelog check+guard clean."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
