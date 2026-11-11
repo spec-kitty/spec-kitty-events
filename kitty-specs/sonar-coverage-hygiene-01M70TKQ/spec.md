@@ -18,7 +18,7 @@
 1. **D9 (2026-11-09): one PR closes #234 and #235.** This relaxes the one-issue-one-PR rule of AGENTS.md. #234 lands first inside the branch because #235's test assertions and classpath work reason about which reports exist.
 2. **Source/test overlap.** `sonar.sources` must list `java/src/main/java`, never `java/src/`, which would cover `java/src/test/java` (also in `sonar.tests`). On `main` at `28b8f851` the properties file already holds `java/src/main/java`; this mission adds the test that pins it (no overlap) rather than editing the value.
 3. **Report coverage.** JaCoCo XML covers every project with main sources, derived from `settings.gradle.kts` (not a fixed "all five"), including `:mission-status-api`. The wiring lives in `build-logic/src/main/kotlin/events.library.gradle.kts`. `domain-model` and `event-log` apply `events.service`, not `events.library`, so they need the same wiring through the shared convention.
-4. **Conformance tests.** The packaged conformance tests are counted as tests with the glob `**/test_*.py` in `sonar.test.inclusions`. No other `test_*.py` file sits under the scanned sources, so the glob selects exactly the twelve `src/spec_kitty_events/conformance/` test files.
+4. **Conformance tests.** The packaged conformance tests are counted as tests with the glob `**/test_*.py` in `sonar.test.inclusions`. No other `test_*.py` file sits under the scanned sources, so the glob selects exactly the eleven `src/spec_kitty_events/conformance/` test files.
 
 ## User Scenarios & Testing *(mandatory)*
 

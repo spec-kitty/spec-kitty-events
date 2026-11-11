@@ -26,7 +26,7 @@ subprojects {
         val testRuntimeClasspath = objects.fileCollection().from(configurations.named("testRuntimeClasspath"))
 
         tasks.register("sonarLibraries") {
-            group = "documentation"
+            group = "verification"
             description = "Writes absolute main and test Java classpaths for Sonar, one path per line."
             val librariesFile = layout.buildDirectory.file("sonar/libraries.txt")
             val testLibrariesFile = layout.buildDirectory.file("sonar/test-libraries.txt")
