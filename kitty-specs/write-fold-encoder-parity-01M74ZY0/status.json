@@ -234,6 +234,9 @@
       "last_event_id": "01M75A66NJJVR5Y5X6W8V2PXAX",
       "last_transition_at": "2026-11-11T12:44:09.266514+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Issue matrix completed (9 rows); research.md 'Findings during implementation' records DM-01M758AR full-D4 ruling, per-WP outcomes, 89/91 ack coverage with the two pre-existing exclusions, environment notes."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 23977,
