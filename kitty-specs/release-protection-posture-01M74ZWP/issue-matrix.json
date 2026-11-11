@@ -13,7 +13,7 @@
       "wp": null
     },
     "#170": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "context: sibling mission scope boundary (C-006)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -21,7 +21,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#221": {
