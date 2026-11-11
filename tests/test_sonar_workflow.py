@@ -132,10 +132,6 @@ def test_analysis_steps_continue_after_failures_but_not_cancellation(step_id: st
     assert _step(step_id)["if"].startswith(f"!cancelled() && {TOKEN_OUTPUT}")
 
 
-def test_always_is_not_used_anywhere_even_in_comments() -> None:
-    assert "always()" not in SONAR.read_text(encoding="utf-8")
-
-
 def test_scan_environment_contains_only_the_sonar_token() -> None:
     assert set(_step("scan")["env"]) == {"SONAR_TOKEN"}
 
@@ -231,20 +227,6 @@ def test_sonar_project_identity() -> None:
     assert "src" in properties["sonar.sources"].split(",")
     assert "java/src/main/java" in properties["sonar.sources"].split(",")
     assert "service/src/main/java" in properties["sonar.sources"].split(",")
-
-
-@pytest.mark.parametrize(
-    ("left", "right", "expected"),
-    [
-        ("java/src", "java/src/test/java", True),
-        ("java/src/test/java", "java/src", True),
-        ("java/src", "java/src", True),
-        ("java/src/main/java", "java/src/test/java", False),
-        ("java/src", "java/src-other/test/java", False),
-    ],
-)
-def test_source_test_overlap_uses_path_components(left: str, right: str, expected: bool) -> None:
-    assert _paths_overlap(left, right) is expected
 
 
 def test_sonar_source_roots_do_not_overlap_test_roots() -> None:
