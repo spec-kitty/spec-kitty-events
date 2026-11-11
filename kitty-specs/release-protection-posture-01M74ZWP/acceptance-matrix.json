@@ -127,11 +127,11 @@
     {
       "criterion_id": "FR-013",
       "description": "Verify FR-013 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "proof_type": "manual_review",
+      "evidence": "guide '#### Run and read the audit': run by hand, exit codes, FAIL/WARN/ERROR, expected-file PR rule",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T11:54:26.661590+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
