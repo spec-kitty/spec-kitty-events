@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "reviewer-renata",
-      "agent": null,
+      "agent": "reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 2,
@@ -34,7 +34,8 @@
         "Cycle 1 REJECT: R1 [MAJOR] attestation infra faults become verdicts",
         "Cycle 1 fixes",
         "Cycle 2 REJECT: R1 residual (network faults as verdicts)",
-        "Cycle 2 fixes"
+        "Cycle 2 fixes",
+        "Approved: cycles 1-2 rejected by independent reviewer; cycle-3 fix verified (136 tests)"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
