@@ -118,10 +118,10 @@
       "criterion_id": "FR-012",
       "description": "Verify FR-012 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "docs/events/work-and-status.md Validation paragraph + edge table; write service named as authority",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T12:49:04.566612+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
