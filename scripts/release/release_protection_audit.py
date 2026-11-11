@@ -44,14 +44,18 @@ DUPLICATE_KEY = "duplicate_ruleset_name"
 
 # `gh attestation verify` stderr classification (FR-010): only these are verdicts.
 _VERDICT_MARKERS = (
-    "verification failed",
-    "no matching",
-    "failed to verify",
+    "policy verification failed",
+    "no matching certificateidentity",
     "no attestations found",
+    "artifact does not match digest",
+    "failed to verify signature",
+    "failed to verify log inclusion",
 )
 _EXPECTED_TOPICS = ("san", "signer", "source", "predicate")
 _INFRA_PATTERN = re.compile(
-    r"\b(401|403|429|50[0-4]|http [45]\d\d|rate.?limit|timeout|timed out|connection|tls)\b",
+    r"\b(401|403|429|50[0-4]|http [45]\d\d|rate.?limit|timeout|timed out|connection|tls"
+    r"|no such host|dial tcp|eof|deadline exceeded|network is unreachable|i/o timeout"
+    r"|failed to initialize|trusted root|tuf|failed to fetch|unexpected status)\b",
     re.IGNORECASE,
 )
 

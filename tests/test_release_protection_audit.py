@@ -355,7 +355,7 @@ class FakeGh:
         releases: list[dict[str, Any]] | None = None,
         fail: str | None = None,
         attest_rc: int = 0,
-        attest_err: str = "line one\nno matching attestation",
+        attest_err: str = "line one\nNo attestations found for subject sha256:abc",
         lookup: tuple[int, str, str] | None = None,
         pages: bool = False,
     ) -> None:
@@ -516,7 +516,7 @@ def test_verifier_attestation_failure_is_not_ok_and_cleans_up(tmp_path: Path) ->
     gh = FakeGh(attest_rc=1)
     verdict = audit.gh_asset_verifier(gh, REPO, tmp_path)("service-v1.0.0", ASSET)
     assert verdict == audit.AssetVerdict(
-        False, "attestation verification failed: no matching attestation"
+        False, "attestation verification failed: No attestations found for subject sha256:abc"
     )
     assert not (tmp_path / "tool-linux").exists()
 
@@ -638,6 +638,13 @@ def cli(gh: FakeGh, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> tuple
         "",
         "Get https://api.github.com: dial tcp: i/o timeout",
         "verification failed: HTTP 502",
+        "Warning: failed to initialize GitHub verifier: failed to get trusted root from TUF "
+        'client Get "https://tuf-repo.github.com/x": dial tcp: lookup tuf-repo.github.com: '
+        "no such host\n\u2717 Sigstore verification failed\nError: boom",
+        '\u2717 Sigstore verification failed\nError: failed to fetch bundle with URL: Get "https://x": EOF',
+        "\u2717 Sigstore verification failed\nError: context deadline exceeded",
+        "\u2717 Sigstore verification failed\nError: dial tcp 1.2.3.4:443: connect: "
+        "network is unreachable",
     ],
 )
 @pytest.mark.parametrize("releases", [ONLY_RC, final_releases()], ids=["prerelease", "final"])
@@ -769,3 +776,34 @@ def test_duplicate_ruleset_name_is_a_failure_not_a_collapse(expected: dict[str, 
 def test_service_tag_must_match_in_full() -> None:
     found = audit.audit_releases([service_release("service-v1.0.0\n")], FakeVerifier())
     assert [f.message for f in found] == ["service-v* tag outside the release line"]
+
+
+GENUINE_VERDICTS = [
+    "\u2717 Policy verification failed\nError: verifying: no matching CertificateIdentity found, "
+    'last error: expected SourceRepositoryRef to be "refs/tags/x", got "refs/heads/y"',
+    "\u2717 No attestations found for subject sha256:" + "ab" * 32,
+]
+
+
+@pytest.mark.parametrize("stderr", GENUINE_VERDICTS)
+@pytest.mark.parametrize(
+    ("releases", "label", "code"),
+    [(ONLY_RC, "WARN", 0), (final_releases(), "FAIL", 1)],
+    ids=["prerelease", "final"],
+)
+def test_genuine_gh_verdict_strings_stay_verdicts(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    stderr: str,
+    releases: list[Any],
+    label: str,
+    code: int,
+) -> None:
+    gh = FakeGh(releases=copy.deepcopy(releases), attest_rc=1, attest_err=stderr)
+    got, out, _ = cli(gh, tmp_path, capsys)
+    assert got == code and label in out and "ERROR" not in out
+
+
+def test_bare_generic_header_is_not_a_verdict() -> None:
+    assert not audit._is_verification_outcome("\u2717 Sigstore verification failed\nError: x")
+    assert audit._is_verification_outcome(GENUINE_VERDICTS[0])
