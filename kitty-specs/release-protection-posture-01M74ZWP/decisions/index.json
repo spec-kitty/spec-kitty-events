@@ -1,0 +1,77 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-11T11:23:18.345310Z",
+      "decision_id": "01M755J5E9J11CFV1JEA9T2X1A",
+      "final_answer": "Accept the blind spot: audit stays on contents: read; guide records bypass lists as an accepted risk with operator sign-off and a manual read-only check command.",
+      "input_key": "bypass_actor_coverage",
+      "mission_id": "01M74ZWPER2T1VXG43JSTSWPFC",
+      "mission_slug": "release-protection-posture-01M74ZWP",
+      "opened_by": "cli",
+      "options": [
+        "Accept the blind spot",
+        "Add an admin-read credential"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Read-only GITHUB_TOKEN gets bypass_actors=null for both rulesets. Should the audit cover ruleset bypass lists?",
+      "rationale": null,
+      "resolved_at": "2026-11-11T11:23:21.428944Z",
+      "resolved_by": null,
+      "slot_key": "specify.audit.bypass-actors",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-11T11:23:24.341845Z",
+      "decision_id": "01M755JB9N018XSX5VJ39HQRXP",
+      "final_answer": "No change, accept: leave ci-pr-lane-canary.yml as is; record the org-wide App token as an accepted risk with sign-off; narrowing the App installation is an Operator action.",
+      "input_key": "canary_token_scope",
+      "mission_id": "01M74ZWPER2T1VXG43JSTSWPFC",
+      "mission_slug": "release-protection-posture-01M74ZWP",
+      "opened_by": "cli",
+      "options": [
+        "Two narrow tokens",
+        "Repositories only",
+        "No change, accept"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Narrow the PR-lane canary's org-wide App token in the workflow?",
+      "rationale": null,
+      "resolved_at": "2026-11-11T11:23:27.110583Z",
+      "resolved_by": null,
+      "slot_key": "specify.canary.token-scope",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-11T11:23:29.808405Z",
+      "decision_id": "01M755JGMGCZPF51EY86DH0DR5",
+      "final_answer": "Warn only for prereleases: final releases fail on non-bot author or an unattested non-checksum asset; prereleases get the same checks reported as warnings; rehearsals publish no release.",
+      "input_key": "prerelease_rule",
+      "mission_id": "01M74ZWPER2T1VXG43JSTSWPFC",
+      "mission_slug": "release-protection-posture-01M74ZWP",
+      "opened_by": "cli",
+      "options": [
+        "Warn only for prereleases",
+        "Fail on all service-v*",
+        "Skip prereleases"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Rule for a service-v* prerelease that is not bot-authored or has an unattested asset?",
+      "rationale": null,
+      "resolved_at": "2026-11-11T11:23:32.788602Z",
+      "resolved_by": null,
+      "slot_key": "specify.audit.prereleases",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M74ZWPER2T1VXG43JSTSWPFC",
+  "version": 1
+}

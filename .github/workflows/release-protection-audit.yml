@@ -1,0 +1,43 @@
+# Release-protection audit (#239, closes #221): the compensating control for the paths the
+# `service-release` environment does not hold (it guards only service-release.yml's `publish` job).
+# Daily and on demand, read-only:
+#  - the live release-protection settings (environments, the service-release environment's
+#    reviewers and tag policy, the rulesets) must equal scripts/release/release-protection-expected.json;
+#  - every service-v* release must be authored by github-actions[bot], and every non-checksum asset must
+#    pass `gh attestation verify` as signed by service-release.yml at refs/tags/<tag>. A final release
+#    fails the run; a prerelease only warns (D8).
+# The token is contents: read: it cannot see the rulesets' bypass lists (accepted risk D6) and it can
+# change nothing. A red run is the signal; nothing is filed. See docs/guides/service-protocol-and-releases.md,
+# "Release-protection posture".
+name: release-protection-audit
+
+on:
+  schedule:
+    # daily at 06:41 UTC: off the :00/:30 marks, clear of sonar (04:17) and the canary (05:23)
+    - cron: "41 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-protection-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - name: Audit the release-protection settings and the service-v* releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: >-
+          python3 scripts/release/release_protection_audit.py
+          --repo "$REPO"
+          --expected scripts/release/release-protection-expected.json
+          --summary "$GITHUB_STEP_SUMMARY"
