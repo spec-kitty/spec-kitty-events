@@ -48,10 +48,10 @@
       "criterion_id": "FR-005",
       "description": "Verify FR-005 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "tests/test_release_protection_audit.py drift cases + CLI main() end-to-end; rehearsal run 43013478484 live: exit 0",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T11:53:50.093430+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
