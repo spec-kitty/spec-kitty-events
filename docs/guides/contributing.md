@@ -62,10 +62,33 @@ check and never gates a merge. A red quality gate is surfaced in the run summary
 SonarCloud, not as a failed workflow.
 
 The job generates its own coverage so it always describes the scanned revision: the Python
-suite writes `coverage.xml`, and `./gradlew verifyAll` writes the JaCoCo XML reports after the
-contract bundle is built, as `service.yml` does. It never downloads another run's reports; if
-one is missing the run warns and scans without that language's coverage rather than reusing
-another commit's. Without the `SONAR_TOKEN` secret (forks) the job skips green with a notice.
+suite writes `coverage.xml`, and `./gradlew verifyAll` writes one JaCoCo XML report per Gradle
+project with main sources, after the contract bundle is built, as `service.yml` does. The
+project list is read from `settings.gradle.kts` by `scripts/sonar_java_modules.py`, so a new
+module with main sources is picked up without editing the workflow. The collect step warns with
+a `::warning::` for each module whose report is missing, and the step summary lists the reports
+it found and the missing modules. It never downloads another run's reports; if one is missing
+the run warns and scans without that module's coverage rather than reusing another commit's.
+Without the `SONAR_TOKEN` secret (forks) the job skips green with a notice.
+
+Java library types resolve from explicit classpaths. The `sonarLibraries` Gradle task, registered
+by the root build, writes each Java project's compile classpath to `build/sonar/libraries.txt` and
+its test classpath to `build/sonar/test-libraries.txt`. The collect step joins those files into
+`sonar.java.libraries` and `sonar.java.test.libraries`. Only when no such file exists does it fall
+back to the `modules-2` Gradle cache glob, with a warning.
+
+`sonar-project.properties` sets `sonar.test.inclusions=**/test_*.py`, so the packaged conformance
+tests under `src/spec_kitty_events/conformance/` count as test code. `sonar.sources` lists
+`java/src/main/java` and no source root overlaps a test root.
+
+The analysis steps run under `!cancelled()` rather than `always()`, so a cancelled run does not
+scan. The scan step's `env` carries `SONAR_TOKEN` alone, and no build step receives the token.
+The report step's step summary names each failed build step (the Python tests, JDK, contract
+bundle, Gradle build and classpath steps). Those steps are `continue-on-error`, so the scan still
+runs and the summary says what it ran without.
+
+`tests/test_sonar_workflow.py` pins these properties, and `tests/test_sonar_java_modules.py`
+pins the module derivation.
 
 Run it by hand against a branch:
 
