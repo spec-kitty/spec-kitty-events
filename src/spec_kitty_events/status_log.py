@@ -166,7 +166,8 @@ def sanitize_status_row(row: Mapping[str, Any]) -> dict[str, Any]:
     session timestamps are always removed; when both parse they are replaced
     by their integer-second duration. Tuples are sanitised like lists and stay
     tuples, as in core's sanitiser (they encode as arrays either way). The
-    input and all nested values remain unchanged. A non-object row is outside the status-row protocol.
+    input and all nested values remain unchanged. A non-object row is outside
+    the status-row protocol.
 
     Session timestamps use CPython 3.11's exact ``datetime.fromisoformat``
     grammar on every supported interpreter: the CPython 3.11 port in

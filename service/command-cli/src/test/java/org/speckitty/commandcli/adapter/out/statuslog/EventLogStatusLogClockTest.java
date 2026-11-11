@@ -34,14 +34,28 @@ class EventLogStatusLogClockTest {
   }
 
   @Test
-  void aFreeLockIsTakenWhenTheDeadlineIsAheadOnTheInjectedClockOnly() throws Exception {
+  void aHeldLockIsWaitedForWhileTheDeadlineIsAheadOnTheInjectedClockEvenIfItIsPastOnTheWallClock() throws Exception {
     Path root = Files.createTempDirectory("event-log-clock-free");
     Path gcd = root.resolve(".git");
     Files.createDirectories(root.resolve("kitty-specs/m"));
-    AtomicLong fake = new AtomicLong(0);
+    Files.createDirectories(gcd.resolve("spec-kitty-locks"));
+    // The fake clock sits an hour behind the wall clock: a deadline 3 s ahead on the fake clock is long past on System.nanoTime().
+    AtomicLong fake = new AtomicLong(System.nanoTime() - Duration.ofHours(1).toNanos());
+    long deadline = fake.get() + Duration.ofSeconds(3).toNanos();
+    var held = LedgerLocks.forThisOs().acquire(gcd.resolve("spec-kitty-locks/m.status.lock"), Duration.ofSeconds(2));
+    Thread releaser = new Thread(() -> {
+      try {
+        Thread.sleep(400);
+        held.close();
+      } catch (Exception exception) {
+        throw new IllegalStateException(exception);
+      }
+    });
+    releaser.start();
     var result = assertTimeoutPreemptively(TIMEOUT,
         () -> new EventLogStatusLog(new StatusLogAppender(fake::get), gcd, root)
-            .withLock(new MissionRef("id", "kitty-specs/m"), Duration.ofSeconds(3).toNanos(), session -> "done"));
+            .withLock(new MissionRef("id", "kitty-specs/m"), deadline, session -> "done"));
+    releaser.join();
     assertThat(((StatusLog.LockResult.Completed<String>) result).value()).isEqualTo("done");
   }
 }

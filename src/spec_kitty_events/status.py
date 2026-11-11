@@ -655,8 +655,8 @@ _REVIEW_REJECTION_FAMILY: FrozenSet[Tuple[Lane, Lane]] = frozenset(
 
 
 # Review-ref-gated rewinds (review_ref is required even when forced; since 11.5.0
-# for_review -> in_progress also needs force, as it is not a core edge); see the module docstring section
-# "Review-Ref-Gated Rewind Family" (spec-kitty-events#48).
+# for_review -> in_progress also needs force, as it is not a core edge); see the
+# module docstring section "Review-Ref-Gated Rewind Family" (spec-kitty-events#48).
 _REVIEW_REF_GATED_REWINDS: FrozenSet[Tuple[Lane, Lane]] = frozenset(
     {
         (Lane.FOR_REVIEW, Lane.IN_PROGRESS),

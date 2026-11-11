@@ -22,8 +22,9 @@ final class EventOrdering {
   }
 
   /**
-   * First-wins dedupe by core's id equality. The fold keys several maps by an id's spelling, so two ids that spell alike without being
-   * equal (the text {@code "1"} and the number {@code 1}), which core tells apart, make the log unreducible here rather than merge.
+   * First-wins dedupe by core's id equality, keyed by {@link TransitionId}. Two ids that spell alike without being equal (the
+   * text {@code "1"} and the number {@code 1}), which core tells apart, still make the log unreducible here: that refusal is a
+   * conservative pre-existing rule kept from before the maps were keyed by {@code TransitionId}; dropping it is tracked in #259.
    */
   static List<Transition> dedup(List<Transition> transitions) {
     Map<TransitionId, List<Transition>> groups = new LinkedHashMap<>();

@@ -1921,7 +1921,7 @@
       "path": "edge_cases/valid/wp_status_changed_unforced_in_review_to_in_progress_with_review_ref.json",
       "expected_result": "valid",
       "event_type": "WPStatusChanged",
-      "notes": "Valid unforced rewind in_review->in_progress with review_ref and reason set; member of the review-ref-gated rewind family, which is force-exempt by contract (spec-kitty-events#48).",
+      "notes": "Valid unforced rewind in_review->in_progress with review_ref and reason set; member of the review-ref-gated rewind family (spec-kitty-events#48); a core edge, so no force is needed (for_review->in_progress needs force since 11.5.0).",
       "min_version": "3.0.0"
     },
     {
@@ -1945,7 +1945,7 @@
       "path": "edge_cases/valid/wp_status_changed_unforced_approved_to_in_progress_with_review_ref.json",
       "expected_result": "valid",
       "event_type": "WPStatusChanged",
-      "notes": "Valid unforced rewind approved->in_progress with review_ref and reason set; member of the review-ref-gated rewind family, which is force-exempt by contract (spec-kitty-events#48).",
+      "notes": "Valid unforced rewind approved->in_progress with review_ref and reason set; member of the review-ref-gated rewind family (spec-kitty-events#48); a core edge, so no force is needed (for_review->in_progress needs force since 11.5.0).",
       "min_version": "3.0.0"
     },
     {

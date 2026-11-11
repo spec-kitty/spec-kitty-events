@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import copy
 import json
+import sys
+from collections.abc import Iterator
 from typing import Any
 
 import pytest
@@ -299,6 +301,20 @@ def test_tuple_encodes_as_array_without_pii() -> None:
 
     assert encode_status_row(row) == b'{"x": [{"k": 1}, []]}\n'
     assert row == snapshot
+
+
+@pytest.fixture(autouse=True)
+def _default_int_digit_limit() -> Iterator[None]:
+    """Pin the int-to-str digit limit so the limit tests ignore PYTHONINTMAXSTRDIGITS."""
+    if not hasattr(sys, "set_int_max_str_digits"):
+        yield
+        return
+    previous = sys.get_int_max_str_digits()
+    sys.set_int_max_str_digits(4300)
+    try:
+        yield
+    finally:
+        sys.set_int_max_str_digits(previous)
 
 
 def test_oversized_integer_is_refused_not_reported_as_non_finite() -> None:

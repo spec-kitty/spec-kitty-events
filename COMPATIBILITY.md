@@ -24,7 +24,7 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty`
 
 
-## `11.5.0` — `validate_transition` and `reduce_status_events` follow core's edge graph (minor)
+## `11.5.0` — `validate_transition` and `reduce_status_events` follow core's edge graph (minor by ruling D4; breaking accept/reject boundary)
 
 `11.5.0` (spec-kitty-events#237; #231 item 4.6; maintainer ruling D4) is a **minor** release.
 `validate_transition()` and, through it, `reduce_status_events()` now admit exactly the
@@ -66,6 +66,37 @@ Also additive: `spec_kitty_events.status_log` exports the encoder refusal classe
 `IntegerTooLarge`, `NonStringKey` and `UnsupportedValue` (subclasses of `StatusRowRefused`).
 
 **Release classification.** Minor by ruling D4, although the unforced edge set narrows.
+This is a **breaking accept/reject boundary**: envelopes that `11.4.0` accepted (for
+example an unforced `for_review -> done`) are now rejected. It is a recorded exception to
+`contracts/versioning-and-compatibility.md` (which classifies "previously-accepted envelope
+rejected" as breaking), approved by the maintainer (ruling D4, 2026-11-09) and the operator
+(DM-01M758AR, "Full D4"). Reason: the package mirrors core's write authority, and core
+requires `force` on these edges (cf. core #6514). It supersedes the `10.5.2` "consumers MUST
+NOT require force" guarantee for `for_review -> in_progress`. The changelog fragment is filed
+under `Breaking`; precedent: `8.2.1` shipped a breaking entry without a major.
+
+**Consumer impact beyond writers.**
+
+- `spec_kitty_events.conformance.validate_event("WPStatusChanged", ...)` runs
+  `validate_transition` and now rejects these unforced moves.
+- `reduce_lifecycle_events` delegates to `reduce_status_events` and is affected too.
+- Historical append-only logs that hold these unforced moves (they exist in real mission
+  logs) now reduce differently in `reduce_status_events`: the event becomes a
+  `TransitionAnomaly` and the WP stays in its earlier lane. `diary.reduce` /
+  `spec_kitty_events.status.reduce` (the reducer core uses) applies no edge check and is
+  unchanged, so the two package reducers can now disagree on such history. `force=True`
+  applies to new events only; existing history cannot be rewritten.
+- Whether spec-kitty-saas ingress validates `WPStatusChanged` with `validate_event` or reduces
+  with `reduce_status_events` is not verifiable from this repo. Consumers must pin `11.5.0`
+  deliberately, and the central CLI-SaaS contract
+  (`spec-kitty-saas/contracts/cli-saas-current-api.yaml`) must record the narrowed
+  acceptance (follow-up: #258).
+- Encoder (`spec_kitty_events.status_log`): oversized integers now raise `IntegerTooLarge`
+  instead of `NonFiniteNumber`; `NonStringKey` is a deliberate narrowing (core's
+  `serialize_event_line` coerces `int`/`float`/`bool`/`None` keys through `json.dumps` and
+  writes the row, as the `11.4.0` encoder did; unreachable from `json.loads`); and on 3.11+
+  the session-duration bytes for some malformed timestamps change (the 3.11 `fromisoformat`
+  port is used everywhere, core-exact).
 
 ### Adopting 11.5.0
 
@@ -506,6 +537,10 @@ packaged copy, so the two drifted. This release re-syncs the copy. No validator,
 schema, fixture or behaviour change; the envelope schema stays `3.0.0`.
 
 ## `10.5.2` — review-ref-gated rewinds documented in the status contract
+
+> Partly superseded by `11.5.0`: `for_review -> in_progress` is no longer force-exempt and
+> now needs `force=True` (with a reason and a `review_ref`). `in_review -> in_progress` and
+> `approved -> in_progress` are unchanged.
 
 `10.5.2` (spec-kitty-events#48) is a documentation and contract-clarification patch.
 The `-> in_progress` rewinds from `for_review`, `in_review` and `approved` form a

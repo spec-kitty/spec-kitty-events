@@ -41,12 +41,12 @@ class ProtocolCorpusTest {
   /** Ack cases that cannot run over HTTP, each with its principled reason: an explicit list, never a silent skip. */
   private static final Map<String, AckExclusion> ACK_EXCLUSIONS = Map.of(
       "dependency-no-tasks-file-accepted", new AckExclusion(RefusalCode.WP_NOT_FOUND, null,
-          "The case has no tasks files at all: core's authority accepts the transition, but the service's wire-level "
+          "(#256) The case has no tasks files at all: core's authority accepts the transition, but the service's wire-level "
               + "precondition (WriteService.checkWorkPackages) refuses an unknown work package before the authority "
               + "is consulted, so this domain ack is unreachable over HTTP."),
       "annotation-subtasks-complete-unlocks-review", new AckExclusion(RefusalCode.REQUEST_MALFORMED,
           "The unit's operation is not a WriteOperation value.",
-          "The case is a batch whose first unit is a standalone annotation unit. The wire's TransitionBatch holds only "
+          "(#256) The case is a batch whose first unit is a standalone annotation unit. The wire's TransitionBatch holds only "
               + "transition units (operation is transition, start_implementation or start_review); a standalone "
               + "annotation travels alone on /inner-state-annotations, so this batch shape has no wire form."));
   private static final Set<String> ACK_RUN = ConcurrentHashMap.newKeySet();
@@ -124,7 +124,13 @@ class ProtocolCorpusTest {
     return "ack".equals(testCase.required("expected").required("result").asString());
   }
 
+  private static final JsonNode ACK_BYTES = loadAckBytes();
+
   private static JsonNode ackBytes() {
+    return ACK_BYTES;
+  }
+
+  private static JsonNode loadAckBytes() {
     try (java.io.InputStream stream = ProtocolCorpusTest.class.getResourceAsStream(ACK_BYTES_RESOURCE)) {
       if (stream == null) throw new IllegalStateException("missing test resource " + ACK_BYTES_RESOURCE);
       return JSON.readTree(new String(stream.readAllBytes(), StandardCharsets.UTF_8));

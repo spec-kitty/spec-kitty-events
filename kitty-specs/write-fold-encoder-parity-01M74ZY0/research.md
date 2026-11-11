@@ -145,7 +145,10 @@ Recorded by WP07 from each work package's report and review (review-cycle files 
   assertions**. Two are explicitly excluded, each with its observed refusal asserted:
   `dependency-no-tasks-file-accepted` (the service answers `404 WP_NOT_FOUND` before the
   authority, a pre-existing service rule from mission `events-write-core-01M6TP6W` FR-018, whereas
-  core's `emit_status_transition` accepts it) and `annotation-subtasks-complete-unlocks-review`
+  core's `emit_status_transition` accepts it: core's dependency reader returns no declared dependencies when zero
+  `tasks/` files match the WP id, so there is nothing to refuse; read statically at a core checkout (`22a6a730`, later
+  than the `512567ee` pin, so unverified at the pin and tracked in #256) and
+  `annotation-subtasks-complete-unlocks-review`
   (a batch whose first unit is an annotation; the wire's `TransitionBatch` takes transition units
   only, so `400 REQUEST_MALFORMED`). NFR-002 / SC-004 ("100% of ack cases") are therefore met for
   89 of 91; the two gaps are pre-existing service behaviours, not introduced here, and are filed

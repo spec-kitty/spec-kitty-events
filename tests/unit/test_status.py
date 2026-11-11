@@ -895,7 +895,7 @@ class TestGuardConditions:
         result = validate_transition(payload)
         assert result.valid is False
         assert result.violations == (
-            "Transition Lane.FOR_REVIEW -> Lane.IN_PROGRESS is not allowed",
+            f"Transition {Lane.FOR_REVIEW} -> {Lane.IN_PROGRESS} is not allowed",
         )
 
     def test_unforced_for_review_to_planned_reports_edge_rejection_and_review_ref(self) -> None:
@@ -909,7 +909,7 @@ class TestGuardConditions:
         assert result.valid is False
         assert result.violations == (
             "review-rejection rollback for_review -> planned requires force=True",
-            "Transition Lane.FOR_REVIEW -> Lane.PLANNED is not allowed",
+            f"Transition {Lane.FOR_REVIEW} -> {Lane.PLANNED} is not allowed",
             "for_review -> planned requires review_ref",
         )
 
