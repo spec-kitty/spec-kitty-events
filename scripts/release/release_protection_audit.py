@@ -350,7 +350,8 @@ def _sanitise(stderr: str, scrub: Sequence[str]) -> str:
     """Drop text an attacker controls: quoted values, file paths, asset and tag names."""
     text = re.sub(r'"[^"]*"', " ", stderr)
     for needle in sorted({n for n in scrub if n}, key=len, reverse=True):
-        text = text.replace(needle, " ")
+        # Whole tokens only, so a short asset name such as `e` cannot erase letters of a marker.
+        text = re.sub(rf"(?<![\w./-]){re.escape(needle)}(?![\w./-])", " ", text)
     return text.lower()
 
 
@@ -359,7 +360,10 @@ def _is_verification_outcome(stderr: str, scrub: Sequence[str] = ()) -> bool:
     text = _sanitise(stderr, scrub)
     if any(marker in text for marker in _VERDICT_MARKERS):
         return True
-    if "expected" in text and any(topic in text for topic in _EXPECTED_TOPICS):
+    # Word-bounded: `unexpected` and `resource` (in gh's own fault text) must not read as a verdict.
+    if re.search(r"\bexpected\b", text) and any(
+        re.search(rf"\b{topic}", text) for topic in _EXPECTED_TOPICS
+    ):
         return True
     # Unrecognised text (HTTP errors, timeouts, DNS/TLS faults, empty stderr) is infrastructure.
     return False

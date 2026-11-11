@@ -947,3 +947,32 @@ def test_wait_timer_30_normalises_and_drifts(expected: dict[str, Any]) -> None:
     findings = audit.diff_settings(expected, live)
     assert any(f.subject == "service_release.wait_timer" for f in findings)
     assert audit.diff_settings(expected, normalised()) == []
+
+
+@pytest.mark.parametrize(
+    "stderr",
+    [
+        "Error: unexpected status 503 fetching resource",
+        "Error: failed to fetch bundle: unexpected EOF from signer endpoint",
+        "Error: unexpected end of JSON input reading resource list",
+    ],
+)
+def test_gh_infrastructure_text_with_unexpected_or_resource_is_not_a_verdict(stderr: str) -> None:
+    # FR-010: these are infrastructure faults; as verdicts they would turn a prerelease into a green WARN.
+    assert not audit._is_verification_outcome(stderr)
+    # Positive control on the same shape: the word-bounded rule still sees a real mismatch.
+    assert audit._is_verification_outcome('Error: expected SourceRepositoryRef to be "a", got "b"')
+
+
+@pytest.mark.parametrize("name", ["e", "i", "ed", "fi", "a", "s"])
+def test_a_short_asset_name_cannot_erase_a_verdict_marker(name: str) -> None:
+    path = f"/tmp/work/{name}"
+    stderr = (
+        f"Loaded digest sha256:abc for file://{path}\n"
+        "✗ Policy verification failed\n"
+        "Error: no matching CertificateIdentity found, last error: expected SourceRepositoryRef to be "
+        '"refs/tags/service-v1.0.0", got "refs/heads/x"'
+    )
+    assert audit._is_verification_outcome(stderr, (path, name, "service-v1.0.0"))
+    # Positive control: the same scrub still removes the name where it stands as a whole token.
+    assert name not in audit._sanitise(f"file {name} done", (name,)).split()
