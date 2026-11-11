@@ -97,6 +97,9 @@
       "last_event_id": "01M757VP29EKEDCHFAW6XZZZGZ",
       "last_transition_at": "2026-11-11T12:03:27.433825+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Tuples sanitised; IntegerTooLarge/NonStringKey/UnsupportedValue typed refusals; 3.11 grammar port on every interpreter; no-mutation checks; 0 differing bytes across 3.10/3.11/3.13; fragment added"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 23410,
