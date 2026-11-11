@@ -2,7 +2,7 @@
 title: Service protocol and releases
 description: 'The CLI-to-write-service protocol in practice, the two release lines, the service-v* assets and tarball layouts, how core pins a release, and how to cut one.'
 doc_status: active
-updated: 2026-11-09T00:00:00Z
+updated: 2026-11-11T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -246,6 +246,8 @@ A core change that needs a new package and a new service release bumps both pins
    `gh attestation verify <asset> --repo spec-kitty/spec-kitty-events --signer-workflow spec-kitty/spec-kitty-events/.github/workflows/service-release.yml --source-ref refs/tags/<tag>`
    for each non-checksum asset. The signer and ref flags matter: `--repo` alone accepts an
    attestation from any workflow or branch in the repository.
+   After publishing, run the release-protection audit by hand; it must stay green (see
+   [Run and read the audit](#run-and-read-the-audit)).
 6. **Hand the pins to core**: the tag, the asset names and their sha256 sums.
 
 A failed run publishes nothing. Fix on `main` by a reviewed PR, then tag a new version; do
@@ -264,7 +266,7 @@ environment makes GitHub create it with no protection.
    - *Deployment branches and tags*: *Selected branches and tags*, with one tag rule, `service-v*`.
      A run from any other ref cannot enter the environment, so `publish` never runs there. The
      environment guards only `publish`: another workflow that asks for `contents: write` (for
-     example on a branch with an edited workflow) is not held by it (#221).
+     example on a branch with an edited workflow) is not held by it (#221). See [Release-protection posture](#release-protection-posture).
    - No environment secrets are needed: `publish` uses the job's `GITHUB_TOKEN` and OIDC.
 2. **A tag ruleset for `service-v*`** (Settings → Rules → Rulesets → New tag ruleset): `service-release-tags`,
    target `refs/tags/service-v*`, enforcement *Active*, with *Restrict creations*, *Restrict updates*,
@@ -283,6 +285,53 @@ gh api repos/spec-kitty/spec-kitty-events/environments/service-release \
 gh api repos/spec-kitty/spec-kitty-events/environments/service-release/deployment-branch-policies --jq '.branch_policies[] | {name, type}'
 gh api repos/spec-kitty/spec-kitty-events/rulesets --jq '.[] | {id, name, target, enforcement}'
 ```
+
+### Release-protection posture
+
+The environment guards only `publish`. This section lists every other path to a `service-v*` release
+and what covers it. The audit (`release-protection-audit.yml`, daily and read-only) is the compensating control.
+
+| Vector | Control | Status | Check it |
+|---|---|---|---|
+| A workflow on any pushed branch requests `contents: write` and runs `gh release create` on an existing `service-v*` tag (#152, #221). | The audit checks every `service-v*` release's author and verifies every non-checksum asset's attestation: it must be signed by exactly `service-release.yml` running at `refs/tags/<tag>`. A final release that fails turns the run red. A pass proves that workflow file signed the asset at that tag, not that the `service-release` environment approved it. Consumers verify downloads with the step 5 command ([Cut a release](#cut-a-release)) and core pins by sha256. That command's `--signer-workflow` is a prefix match; the audit pins the exact identity with `--cert-identity https://github.com/spec-kitty/spec-kitty-events/.github/workflows/service-release.yml@refs/tags/<tag>`, which consumers can use too (#253). | **Detected, not prevented.** GitHub has no rule that restricts who creates a release. | The audit run; the step 5 command for each asset. |
+| Settings drift: someone loosens the `service-release` environment, or changes, disables, adds or deletes a ruleset. | The audit compares the live settings with `scripts/release/release-protection-expected.json`. | **Detected daily, not prevented.** It does not see the bypass lists (below), branch protection, the Actions default token permissions, or any environment other than `service-release` beyond its name. | The audit run. |
+| A `service-v*` tag is moved or deleted after release. | The `service-release-tags` ruleset (item 2 above) plus `publish`'s re-check that the tag still names the built commit. | Controlled. | The ruleset list in the check commands above. |
+| The `main` ruleset needs 0 approving reviews and `stijn-dejongh` can bypass it, so the `gate`'s ancestor-of-`main` check is only as strong as what reaches `main`. | Compensating control: the audit. | **Accepted risk, D5.** Signed off by `stijn-dejongh` on 2026-11-09 (#239). Revisit when a second maintainer exists. | `gh api repos/spec-kitty/spec-kitty-events/rulesets/26558116 --jq '.rules'` (the `pull_request` rule's `required_approving_review_count`), plus the bypass check in the last row. |
+| The PR-lane canary (`ci-pr-lane-canary.yml`) mints a `spec-kitty-factory-ci` App token for every repository the org-wide installation reaches. | None in this repository. The workflow stays as is. | **Accepted risk, D7.** Signed off by `stijn-dejongh` on 2026-11-11 (#239; decision record `DM-01M755JB9N018XSX5VJ39HQRXP`). Revisit when the App installation is narrowed or the canary moves to the planning repo. | The App installation's scope, by hand. |
+| The rulesets' bypass lists. The audit's read-only token cannot read them (`bypass_actors` comes back null), so adding a bypass actor is not detected. | None in the audit. | **Accepted risk, D6.** Signed off by `stijn-dejongh` on 2026-11-11 (#239; decision record `DM-01M755J5E9J11CFV1JEA9T2X1A`). Revisit if GitHub exposes the lists to read tokens. | Run by hand with an admin login: `gh api repos/spec-kitty/spec-kitty-events/rulesets/<id> --jq '.bypass_actors'` for `26558116` and `26752412`. Expected: `main` → the user `stijn-dejongh` (always); `service-release-tags` → the `admins` team and `stijn-dejongh` (always). |
+| A published release's assets are replaced, or assets are added to it later. | The audit re-verifies every asset's digest and attestation each day. | **Detected daily, not prevented.** *Immutable releases* (Settings → General → Releases) would prevent it; it is off today. | The audit run. |
+| The audit itself is silenced: the workflow is disabled, its scheduled run is cancelled, or someone dispatches it from a branch with an edited script. | Trust only `schedule` runs and dispatch runs on `main`. A missing or cancelled daily run on `main` is itself a red signal. | **Residual risk, not yet signed off** (anyone with write access can do this; the audit cannot stop it; #254). | Actions → release-protection-audit, filtered to `main`. |
+
+A final release flagged by the audit is untrusted. Do not pin it, and investigate how it was created.
+A prerelease is checked the same way but only warns (D8). A rehearsal publishes nothing.
+
+#### Run and read the audit
+
+Run the audit by hand from Actions → release-protection-audit → Run workflow, or with
+`gh workflow run release-protection-audit.yml`. Run it from `main` after changing a setting and after publishing a release.
+To check the settings locally (read-only, with a `gh` login that can read the repository):
+
+```bash
+python3 scripts/release/release_protection_audit.py --repo spec-kitty/spec-kitty-events \
+  --expected scripts/release/release-protection-expected.json --skip-releases
+```
+
+The audit exits with one of three codes:
+
+- `0`: no failures. Warnings are allowed.
+- `1`: at least one failure. Each failure is a `FAIL` line in the run summary; any `ERROR` lines are listed too.
+- `2`: no failure, but something could not be checked: an API, network or verification-infrastructure fault, each an `ERROR` line. A fault on one asset does not stop the others from being checked. Run it again; an `ERROR` that persists on the same asset is a finding to investigate, not noise.
+
+A `FAIL settings …` line means a live setting differs from the expected file. A `FAIL release <tag> …` line
+means a final release not authored by `github-actions[bot]`, or an asset whose attestation was not signed by `service-release.yml` at its tag. Treat that release as untrusted.
+Prerelease verification faults appear as `WARN` lines and do not fail the run; an `ERROR` on a prerelease asset still exits 2.
+
+The audit records only the environment settings it knows: reviewers, self-review, admin bypass, wait timer
+and deployment policy. A new environment-level setting that GitHub adds later is not compared until the script learns it.
+A new rule parameter in a ruleset shows up as drift.
+
+A deliberate settings change lands with a reviewed PR that updates `scripts/release/release-protection-expected.json`. Regenerate the file from fresh API responses as `tests/fixtures/release_protection/README.md` describes; do not edit it by hand.
+The audit is red until that PR merges, by design.
 
 ### What CI does not gate
 

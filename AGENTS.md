@@ -20,7 +20,8 @@ no merge queue. `ci.yml`'s `suite` is not required, and a `pr:pause-ci` label pa
 (`pr-pause-ci.yml`; ADR 0005 D3, amended 2026-11-02, #177). The deterministic CI suite is
 `.github/workflows/ci.yml` (Blacksmith, per `planning#274`); the other workflows run the
 acceptance and cross-repo harness checks (`acceptance.yml`, `cross-repo-harness-tests.yml`)
-and the daily CI canary (`ci-pr-lane-canary.yml`), build and deploy the docs site, and
+and the daily CI canary (`ci-pr-lane-canary.yml`) and the daily read-only release-protection audit
+(`release-protection-audit.yml`), build and deploy the docs site, and
 publish to PyPI on `v*` tags (`publish-pypi.yml`) or to TestPyPI on manual dispatch
 (`publish-testpypi.yml`). `service.yml` runs the Gradle build (`./gradlew verifyAll`: the Java
 binding, the services under `service/` and the contracts) on `main` pushes that touch the Java,

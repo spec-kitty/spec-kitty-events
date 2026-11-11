@@ -1,0 +1,1 @@
+{"id":26752412,"name":"service-release-tags","target":"tag","source_type":"Repository","source":"spec-kitty/spec-kitty-events","enforcement":"active","bypass_actors":null,"current_user_can_bypass":"never","conditions":{"ref_name":{"exclude":[],"include":["refs/tags/service-v*"]}},"rules":[{"type":"creation"},{"type":"update"},{"type":"deletion"},{"type":"non_fast_forward"}]}

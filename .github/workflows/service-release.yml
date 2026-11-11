@@ -14,6 +14,8 @@
 # the only job with a write token). publish runs in the `service-release` environment, so it waits for
 # a required reviewer, and the environment admits only service-v* tags (#152; the settings are listed in
 # docs/guides/service-protocol-and-releases.md, "Release protection").
+# The environment holds only `publish`: the paths it does not hold (another workflow with `contents: write`,
+# settings drift) are watched by the daily read-only `release-protection-audit.yml` (#221, #239).
 name: service-release
 
 on:
