@@ -236,7 +236,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Issue matrix completed (9 rows); research.md 'Findings during implementation' records DM-01M758AR full-D4 ruling, per-WP outcomes, 89/91 ack coverage with the two pre-existing exclusions, environment notes.",
-        "Cycle 1 fix: #48 and #6514 rows added; #237 row names WP07."
+        "Cycle 1 fix: #48 and #6514 rows added; #237 row names WP07.",
+        "Cycle 2: matrix covers all 11 cited issues (#48, #6514 added, source files set, #237 names WP07); JSON parses; research.md claims verified in cycle 1."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
