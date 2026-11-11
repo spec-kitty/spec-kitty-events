@@ -49,7 +49,7 @@
       "wp": null
     },
     "#237": {
-      "evidence_ref": "WP01 37214341 (b6cff598); WP02 55c9c4d6; WP03 74be464b (daed87d5); WP04 1f17c1d7 (0f0321ad); WP05 ca91d3df; WP06 d96e0902",
+      "evidence_ref": "WP01 37214341 (b6cff598); WP02 55c9c4d6; WP03 74be464b (daed87d5); WP04 1f17c1d7 (0f0321ad); WP05 ca91d3df; WP06 d96e0902; WP07 records bb8115be",
       "fr": "FR-001..FR-019",
       "nfr": null,
       "repo": null,
@@ -58,7 +58,7 @@
       "source_file": "spec.md",
       "title": "Mission M2: Write-fold and reference-encoder parity",
       "verdict": "in-mission",
-      "wp": "WP01, WP02, WP03, WP04, WP05, WP06"
+      "wp": "WP01, WP02, WP03, WP04, WP05, WP06, WP07"
     },
     "#247": {
       "evidence_ref": "Context: M1 landing PR, merged",
@@ -84,6 +84,18 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#48": {
+      "evidence_ref": "Context: the contract text WP04 rewrote under ruling DM-01M758AR (full D4); #48's own work is closed",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "research.md",
+      "title": "Review-ref-gated rewind family (force-exempt by contract)",
+      "verdict": "not-applicable",
+      "wp": null
+    },
     "#6195": {
       "evidence_ref": "Context: core spec-kitty/spec-kitty#6195; WP01 must land before it (C-005)",
       "fr": null,
@@ -105,6 +117,18 @@
       "scope": null,
       "source_file": null,
       "title": "core: read reducer approved-departure lift (G-4)",
+      "verdict": "not-applicable",
+      "wp": null
+    },
+    "#6514": {
+      "evidence_ref": "Context: core change cited by the D4 ruling; no events-side work owed",
+      "fr": null,
+      "nfr": null,
+      "repo": "spec-kitty/spec-kitty",
+      "sc": null,
+      "scope": null,
+      "source_file": "decisions/DM-01M758AR0XV801HVGA8ZPQWATR.md",
+      "title": "core: review_ref required on for_review -> in_progress (force-insurmountable)",
       "verdict": "not-applicable",
       "wp": null
     }
