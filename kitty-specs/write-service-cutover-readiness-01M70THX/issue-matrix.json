@@ -2,75 +2,75 @@
   "rows": {
     "#151": {
       "evidence_ref": "Context: contract tools are not CI gates; M1 runs them by hand",
-      "fr": null,
+      "fr": "FR-020",
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
+      "title": "Port core's contract-tooling CI (verify-pins, lint, breaking check, tool tests) to events",
       "verdict": "not-applicable",
-      "wp": null
+      "wp": "WP01"
     },
     "#222": {
       "evidence_ref": "Repair operation: WP01 contract, WP02 event-log primitive, WP03 command-cli operation",
-      "fr": null,
+      "fr": "FR-001..FR-009",
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
+      "title": "Status log: an explicit torn-tail repair command before core #6195 removes the Python writer",
       "verdict": "in-mission",
-      "wp": null
+      "wp": "WP01, WP02, WP03"
     },
     "#223": {
       "evidence_ref": "Wording (WP01, WP07) + real root (WP04)",
-      "fr": null,
+      "fr": "FR-013, FR-014",
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
+      "title": "mission-write: workspace_context_required cannot be produced over the wire",
       "verdict": "in-mission",
-      "wp": null
+      "wp": "WP01, WP04, WP07"
     },
     "#224": {
       "evidence_ref": "implementationEvidencePresent: WP01 contract, WP04 authority + corpus",
-      "fr": null,
+      "fr": "FR-010..FR-012",
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
+      "title": "mission-write: the missing-evidence half of implementation_evidence_required cannot be produced over the wire",
       "verdict": "in-mission",
-      "wp": null
+      "wp": "WP01, WP04"
     },
     "#231": {
       "evidence_ref": "Items 4.7 (WP05), 4.12 (WP01), 4.14 (WP06), 4.15 (WP01, WP07); the rest stays with #237",
-      "fr": null,
+      "fr": "FR-015..FR-018",
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
+      "title": "[squad] MINOR findings on PR #230 (write core: #160, #161, #155)",
       "verdict": "in-mission",
-      "wp": null
+      "wp": "WP01, WP05, WP06, WP07"
     },
     "#236": {
       "evidence_ref": "Mission M1 itself (D9: one PR for M1)",
-      "fr": null,
+      "fr": "FR-001..FR-022",
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
+      "title": "Mission M1: Write-service cut-over readiness",
       "verdict": "in-mission",
-      "wp": null
+      "wp": "WP01..WP07"
     },
     "#237": {
       "evidence_ref": "Sibling mission M2; cited for scope (D4, REQUEST_MALFORMED note), owes M1 no work",
@@ -80,45 +80,45 @@
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
+      "title": "Mission M2: Write-fold and reference-encoder parity",
       "verdict": "not-applicable",
       "wp": null
     },
     "#6195": {
       "evidence_ref": "Follow-up: spec-kitty/spec-kitty#7482 (repair verb, evidence mapping, blank context); rolling-upgrade comment on #6195",
-      "fr": null,
+      "fr": "FR-022",
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
+      "title": "Mission Write API (5/9): lane-transition cut-over to the write core",
       "verdict": "deferred-with-followup",
-      "wp": null
+      "wp": "WP07"
     },
     "#6910": {
       "evidence_ref": "Core issue, fixed on core main 3dc4ca94f7; WP07 removes the stale README line",
-      "fr": null,
+      "fr": "FR-018",
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": null,
-      "title": null,
+      "title": "Service launcher client: call the write service under the contract's /api/v1 prefix",
       "verdict": "verified-already-fixed",
-      "wp": null
+      "wp": "WP07"
     },
     "#946": {
       "evidence_ref": "Core history cited for the workspace_context_required rationale (operator decision 2026-09-07)",
-      "fr": null,
+      "fr": "FR-013",
       "nfr": null,
       "repo": null,
       "sc": null,
       "scope": null,
       "source_file": "spec.md",
-      "title": "<fill at WP-implementation time>",
+      "title": "Fix idempotent implementation start lifecycle",
       "verdict": "not-applicable",
-      "wp": null
+      "wp": "WP01"
     }
   },
   "schema_version": 1

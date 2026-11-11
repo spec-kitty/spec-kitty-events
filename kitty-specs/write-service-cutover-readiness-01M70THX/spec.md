@@ -198,7 +198,7 @@ Several statements about the service are out of step with what it does or will d
 | NFR-003 | Log hygiene. | 0 occurrences of a planted marker path, token or row value in captured log output across the catch-all tests. | Proposed |
 | NFR-004 | Answered before exit. | A request waiting on the turn or the Mission lock when draining starts is answered within 1 s of the drain starting, which is well inside the 5 s drain budget, in 100% of test runs. | Proposed |
 | NFR-005 | Code quality on new Java code. | Cyclomatic complexity ≤ 15 per method; the existing coverage gates of `./gradlew verifyAll` stay unchanged and pass. | Proposed |
-| NFR-006 | Repair cost. | A repair reads the log once and folds it at most twice (the in-context completion check, then `readableAfterRepair` for a quarantine), and holds the Mission lock no longer than the shared write budget. | Proposed |
+| NFR-006 | Repair cost. | A repair reads the log once and folds it at most twice (the in-context completion check, then `readableAfterRepair` for a quarantine), and waits for the in-process turn and the Mission lock for no longer than the shared write budget (the budget limits the wait, not the time the lock is then held: the read, the folds and the fsyncs under the lock have no limit of their own, and bytes survive an exit mid-repair through the crash-ordering of FR-003). | Proposed |
 
 ### Constraints
 
