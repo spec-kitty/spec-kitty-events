@@ -88,7 +88,7 @@
     },
     "WP03": {
       "actor": "claude-reviewer",
-      "agent": "claude-reviewer",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -101,6 +101,7 @@
         "Tuples sanitised; IntegerTooLarge/NonStringKey/UnsupportedValue typed refusals; 3.11 grammar port on every interpreter; no-mutation checks; 0 differing bytes across 3.10/3.11/3.13; fragment added"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-events/kitty-specs/write-fold-encoder-parity-01M74ZY0/tasks/WP03-reference-encoder/review-cycle-1.md",
         "reference": "review-cycle://write-fold-encoder-parity-01M74ZY0/WP03-reference-encoder/review-cycle-1.md",
@@ -108,14 +109,14 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 28107,
-      "shell_pid_created_at": "1794398648.62",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T011": "done",
-        "T012": "done",
-        "T014": "done",
-        "T015": "done",
-        "T016": "done"
+        "T011": "planned",
+        "T012": "planned",
+        "T014": "planned",
+        "T015": "planned",
+        "T016": "planned"
       }
     },
     "WP04": {
