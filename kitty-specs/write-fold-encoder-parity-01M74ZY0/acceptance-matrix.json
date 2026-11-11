@@ -138,10 +138,10 @@
       "criterion_id": "FR-014",
       "description": "Verify FR-014 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "ProtocolCorpusTest: 89/91 ack cases over HTTP with appended-bytes assertions vs ack-bytes.json; 2 pre-existing exclusions asserted, follow-up #256; extract_ack_bytes.py + write-core-parity --check step",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T12:49:10.954033+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
