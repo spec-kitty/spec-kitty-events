@@ -31,7 +31,8 @@
       "model": "__resolved_model_absent__",
       "notes": [
         "Ready for review",
-        "Cycle 1 REJECT: R1 [MAJOR] attestation infra faults become verdicts"
+        "Cycle 1 REJECT: R1 [MAJOR] attestation infra faults become verdicts",
+        "Cycle 1 fixes"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
