@@ -25,6 +25,7 @@
   "purpose_context": "The service-release environment guards only the publish job. Issue #221 names the remaining paths: a branch workflow with contents: write can create an unreviewed release, the canary mints an org-wide App token, the main ruleset needs no approval and has an always-bypass actor, and nothing checks the live settings for drift. Before the first non-rc service-v* tag, M4 (#239) adds a scheduled read-only audit, an expected-settings file, tests, and a release guide section that records each control or accepted risk.",
   "purpose_tldr": "Close the release paths around the protected publish job: a daily read-only audit of live settings and service releases, a narrower canary token, and a guide that maps every vector to a control or a signed-off accepted risk.",
   "slug": "release-protection-posture-01M74ZWP",
+  "status_phase": "1",
   "target_branch": "issue-239-release-protection",
   "topology": "single_branch",
   "topology_source": "explicit"
