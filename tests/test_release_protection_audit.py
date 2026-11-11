@@ -21,6 +21,7 @@ EXPECTED_PATH = ROOT / "scripts" / "release" / "release-protection-expected.json
 REPO = "spec-kitty/spec-kitty-events"
 PAYLOAD = b"payload"
 PAYLOAD_SHA = hashlib.sha256(PAYLOAD).hexdigest()
+EXPECTED_LEAF_COUNT = 65
 
 
 def load(name: str) -> Any:
@@ -117,15 +118,19 @@ Path_ = tuple[Any, ...]
 
 
 def leaf_paths(tree: Any, prefix: Path_ = ()) -> list[Path_]:
-    """Dict leaves; a list is one leaf, plus each scalar element of a scalar list."""
+    """Every dict leaf; a list is one leaf, and so is each scalar nested inside it."""
     if isinstance(tree, dict):
         out: list[Path_] = []
         for key in sorted(tree):
             out.extend(leaf_paths(tree[key], (*prefix, key)))
         return out
     leaves: list[Path_] = [prefix]
-    if isinstance(tree, list) and all(isinstance(v, str) for v in tree):
-        leaves.extend((*prefix, i) for i in range(len(tree)))
+    if isinstance(tree, list):
+        for i, item in enumerate(tree):
+            if isinstance(item, (dict, list)):
+                leaves.extend(leaf_paths(item, (*prefix, i)))
+            else:
+                leaves.append((*prefix, i))
     return leaves
 
 
@@ -158,14 +163,16 @@ def test_every_expected_leaf_drifting_gives_exactly_one_failure(path: Path_) -> 
     changed = json.loads(EXPECTED_PATH.read_text())
     mutate(changed, path)
     findings = audit.diff_settings(changed, live)
-    dotted = ".".join(str(k) for k in path if not isinstance(k, int))
+    # lists are compared whole: the subject is the enclosing list's path
+    cut = next((n for n, k in enumerate(path) if isinstance(k, int)), len(path))
+    dotted = ".".join(path[:cut])
     assert len(findings) == 1, f"{path}: {findings}"
     assert findings[0].severity == "failure"
-    assert findings[0].subject.startswith(dotted)
+    assert findings[0].subject == dotted, (path, findings[0].subject)
 
 
 def test_leaf_enumeration_is_not_vacuous() -> None:
-    assert len(_leaves()) >= 30
+    assert len(_leaves()) >= EXPECTED_LEAF_COUNT
 
 
 # -------------------------------------------------------- 3. live drift cases
@@ -310,7 +317,13 @@ def test_release_faults_have_the_severity_of_the_release_kind(tag: str, severity
     assert [(f.severity, f.subject) for f in bad] == [(severity, f"{tag}/tool-linux")]
 
     empty = audit.audit_releases([service_release(tag, assets=[])], FakeVerifier())
-    assert [(f.severity, f.subject, f.message) for f in empty] == [(severity, tag, "no assets")]
+    assert [(f.severity, f.subject, f.message) for f in empty] == [
+        (severity, tag, "no non-checksum assets")
+    ]
+    only_sums = audit.audit_releases(
+        [service_release(tag, assets=["SHA256SUMS", "a.sha256"])], FakeVerifier()
+    )
+    assert [(f.severity, f.message) for f in only_sums] == [(severity, "no non-checksum assets")]
 
 
 def test_tag_outside_the_release_line_fails_and_other_tags_are_ignored() -> None:
@@ -342,11 +355,17 @@ class FakeGh:
         releases: list[dict[str, Any]] | None = None,
         fail: str | None = None,
         attest_rc: int = 0,
+        attest_err: str = "line one\nno matching attestation",
+        lookup: tuple[int, str, str] | None = None,
+        pages: bool = False,
     ) -> None:
         self.raw = raw or raw_inputs()
         self.releases = releases if releases is not None else self.default_releases()
         self.fail = fail
         self.attest_rc = attest_rc
+        self.attest_err = attest_err
+        self.lookup = lookup  # (returncode, stdout, stderr) for the attestation lookup
+        self.pages = pages
         self.calls: list[list[str]] = []
 
     @staticmethod
@@ -360,6 +379,9 @@ class FakeGh:
     def __call__(self, args: list[str]) -> subprocess.CompletedProcess[str]:
         self.calls.append(args)
         assert args[0] == "gh"
+        if args[1] == "api" and "/attestations/sha256:" in args[-1]:
+            rc, out, err = self.lookup or (0, json.dumps({"attestations": [{"bundle": {}}]}), "")
+            return subprocess.CompletedProcess(args, rc, out, err)
         if args[1] == "api":
             return self.api(args)
         if args[1:3] == ["release", "download"]:
@@ -370,9 +392,20 @@ class FakeGh:
             )
             return subprocess.CompletedProcess(args, 0, "", "")
         if args[1:3] == ["attestation", "verify"]:
-            err = "line one\nno matching attestation" if self.attest_rc else ""
+            err = self.attest_err if self.attest_rc else ""
             return subprocess.CompletedProcess(args, self.attest_rc, "", err)
         raise AssertionError(f"unexpected gh call {args}")
+
+    @staticmethod
+    def split(path: str, data: Any) -> list[Any]:
+        """Two pages: the second one carries the tail of the collection."""
+        if isinstance(data, list):
+            half = len(data) // 2
+            return [data[:half], data[half:]]
+        key = "environments" if path.endswith("/environments") else "branch_policies"
+        items = data[key]
+        half = len(items) // 2
+        return [{**data, key: items[:half]}, {**data, key: items[half:]}]
 
     def api(self, args: list[str]) -> subprocess.CompletedProcess[str]:
         if self.fail == "api":
@@ -383,7 +416,7 @@ class FakeGh:
         env = f"{base}/environments/service-release"
         table: dict[str, tuple[Any, bool]] = {
             f"{base}/rulesets": (
-                [{"id": rs["id"], "name": rs["name"]} for rs in self.raw["rulesets"]],
+                [{"id": rs.get("id"), "name": rs["name"]} for rs in self.raw["rulesets"]],
                 True,
             ),
             f"{base}/environments": (self.raw["environments"], True),
@@ -392,10 +425,12 @@ class FakeGh:
             f"{base}/releases?per_page=100": (self.releases, True),
         }
         for rs in self.raw["rulesets"]:
-            table[f"{base}/rulesets/{rs['id']}"] = (rs, False)
+            table[f"{base}/rulesets/{rs.get('id')}"] = (rs, False)
         data, is_list = table[path]
         assert paginate == is_list, path
-        body = [data] if paginate else data
+        body: Any = [data] if paginate else data
+        if paginate and self.pages:
+            body = self.split(path, data)
         return subprocess.CompletedProcess(args, 0, json.dumps(body), "")
 
 
@@ -410,7 +445,7 @@ def test_api_failure_exits_2_with_error_line(
     capsys.readouterr()
     code = audit.main(["--repo", REPO, "--expected", str(EXPECTED_PATH)], runner=FakeGh(fail="api"))
     out = capsys.readouterr().out
-    assert code == 2 and out.startswith("ERROR ") and "HTTP 500" in out
+    assert code == 2 and "ERROR " in out and "HTTP 500" in out
 
 
 def test_invalid_json_is_an_error() -> None:
@@ -575,3 +610,162 @@ def test_diff_and_release_audit_are_deterministic(
     one = audit.audit_releases(mixed, FakeVerifier(bad={"tool-linux"}))
     two = audit.audit_releases(list(reversed(mixed)), FakeVerifier(bad={"tool-linux"}))
     assert one and one == two
+
+
+# ------------------------------------------- R1: attestation faults fail closed
+
+ONLY_RC = [r for r in FakeGh.default_releases() if r["tag_name"] == "service-v0.1.0-rc.2"]
+
+
+def final_releases() -> list[dict[str, Any]]:
+    final = copy.deepcopy(ONLY_RC)
+    final[0]["tag_name"] = "service-v0.1.0"
+    return final
+
+
+def cli(gh: FakeGh, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> tuple[int, str, str]:
+    return run_cli(tmp_path, gh, capsys, "--skip-settings")
+
+
+@pytest.mark.parametrize(
+    "stderr",
+    [
+        "HTTP 503: Service Unavailable",
+        "HTTP 429: API rate limit exceeded",
+        "failed to fetch TUF root: connection reset",
+        "x509: tls handshake failure",
+        "HTTP 401 Bad credentials",
+        "",
+        "Get https://api.github.com: dial tcp: i/o timeout",
+        "verification failed: HTTP 502",
+    ],
+)
+@pytest.mark.parametrize("releases", [ONLY_RC, final_releases()], ids=["prerelease", "final"])
+def test_attestation_infrastructure_fault_is_exit_2_never_a_verdict(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], stderr: str, releases: list[Any]
+) -> None:
+    code, _, _ = cli(FakeGh(releases=copy.deepcopy(releases)), tmp_path, capsys)
+    assert code == 0  # positive control: the same releases verify cleanly
+    code, out, summary = cli(
+        FakeGh(releases=copy.deepcopy(releases), attest_rc=1, attest_err=stderr),
+        tmp_path,
+        capsys,
+    )
+    assert code == 2 and "ERROR" in out and "WARN" not in out and "FAIL" not in out
+    assert "ERROR:" in summary
+
+
+@pytest.mark.parametrize(
+    ("releases", "label", "code"),
+    [(ONLY_RC, "WARN", 0), (final_releases(), "FAIL", 1)],
+    ids=["prerelease", "final"],
+)
+def test_signer_mismatch_is_a_verdict(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], releases: list[Any], label: str, code: int
+) -> None:
+    gh = FakeGh(
+        releases=copy.deepcopy(releases),
+        attest_rc=1,
+        attest_err="Error: verification failed\nexpected SAN other.yml, got service-release.yml",
+    )
+    got, out, _ = cli(gh, tmp_path, capsys)
+    assert got == code and label in out and "ERROR" not in out
+    assert "attestation verification failed: expected SAN" in out
+
+
+def test_attestation_lookup_404_and_empty_are_verdicts_and_500_is_an_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    for lookup in [(1, "", "gh: Not Found (HTTP 404)"), (0, '{"attestations": []}', "")]:
+        gh = FakeGh(releases=copy.deepcopy(ONLY_RC), lookup=lookup)
+        code, out, _ = cli(gh, tmp_path, capsys)
+        assert code == 0 and "WARN release service-v0.1.0-rc.2/" in out
+        assert f"no attestation for sha256:{PAYLOAD_SHA}" in out
+        assert not any(c[1:3] == ["attestation", "verify"] for c in gh.calls)
+    gh = FakeGh(releases=copy.deepcopy(ONLY_RC), lookup=(1, "", "gh: Server Error (HTTP 500)"))
+    code, out, _ = cli(gh, tmp_path, capsys)
+    assert code == 2 and "ERROR" in out and "WARN" not in out
+
+
+def test_lookup_queries_the_computed_digest(tmp_path: Path) -> None:
+    gh = FakeGh()
+    audit.gh_asset_verifier(gh, REPO, tmp_path)("service-v1.0.0", ASSET)
+    assert ["gh", "api", f"repos/{REPO}/attestations/sha256:{PAYLOAD_SHA}"] in gh.calls
+
+
+# --------------------------------------------- R3: robust main and summary
+
+
+def test_findings_before_an_error_are_printed_and_summary_records_the_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    raw = raw_inputs()
+    raw["service_release"]["can_admins_bypass"] = True
+    gh = FakeGh(raw=raw, releases=copy.deepcopy(ONLY_RC), attest_rc=1, attest_err="HTTP 503")
+    code, out, summary = run_cli(tmp_path, gh, capsys)
+    assert code == 2
+    assert out.index("FAIL settings service_release.can_admins_bypass") < out.index("ERROR")
+    assert "ERROR: " in summary and "service_release.can_admins_bypass" in summary
+
+
+def test_unexpected_exception_is_an_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def boom(args: list[str]) -> subprocess.CompletedProcess[str]:
+        raise OSError("gh not installed")
+
+    code, out, summary = run_cli(tmp_path, boom, capsys)  # type: ignore[arg-type]
+    assert code == 2 and "ERROR unexpected OSError" in out and "ERROR:" in summary
+
+
+def test_null_wait_timer_counts_as_zero_and_missing_ruleset_id_is_an_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    raw = raw_inputs()
+    raw["service_release"]["protection_rules"].append({"type": "wait_timer", "wait_timer": None})
+    assert normalised(raw)["service_release"]["wait_timer"] == 0
+    raw = raw_inputs()
+    gh = FakeGh(raw=raw)
+    gh.raw = {
+        **raw,
+        "rulesets": [{k: v for k, v in rs.items() if k != "id"} for rs in raw["rulesets"]],
+    }
+    code, out, _ = run_cli(tmp_path, gh, capsys, "--skip-releases")
+    assert code == 2 and "has no id" in out
+
+
+# ------------------------------------------------ R4: multi-page flattening
+
+
+def test_second_pages_are_audited(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    ordered = FakeGh.default_releases()
+    ordered.sort(key=lambda r: r["tag_name"].startswith("service-v"))  # services land on page 2
+    gh = FakeGh(releases=ordered, pages=True)
+    code, out, _ = run_cli(tmp_path, gh, capsys)
+    # clean settings prove the page-2 environment, policy and ruleset were all read
+    assert code == 0 and "FAIL" not in out
+    assert any(c[1:3] == ["attestation", "verify"] for c in gh.calls)
+    # and a page-2 release fault is reported
+    ordered[-1]["author"] = {"login": "someone"}
+    code, out, _ = run_cli(tmp_path, FakeGh(releases=ordered, pages=True), capsys)
+    assert "authored by someone" in out and "WARN release service-v" in out
+
+
+# ------------------------------------------------ R5: duplicate ruleset names
+
+
+def test_duplicate_ruleset_name_is_a_failure_not_a_collapse(expected: dict[str, Any]) -> None:
+    assert audit.diff_settings(expected, normalised()) == []  # positive control
+    raw = raw_inputs()
+    dup = copy.deepcopy(raw["rulesets"][0])
+    dup["id"] = 1
+    raw["rulesets"].append(dup)
+    findings = audit.diff_settings(expected, normalised(raw))
+    assert [(f.severity, f.subject, f.message) for f in findings] == [
+        ("failure", "rulesets.main", "duplicate ruleset name")
+    ]
+
+
+def test_service_tag_must_match_in_full() -> None:
+    found = audit.audit_releases([service_release("service-v1.0.0\n")], FakeVerifier())
+    assert [f.message for f in found] == ["service-v* tag outside the release line"]

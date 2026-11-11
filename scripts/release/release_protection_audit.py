@@ -40,6 +40,20 @@ BOT = "github-actions[bot]"
 ENVIRONMENT = "service-release"
 SIGNER_WORKFLOW = ".github/workflows/service-release.yml"
 CHUNK = 1024 * 1024
+DUPLICATE_KEY = "duplicate_ruleset_name"
+
+# `gh attestation verify` stderr classification (FR-010): only these are verdicts.
+_VERDICT_MARKERS = (
+    "verification failed",
+    "no matching",
+    "failed to verify",
+    "no attestations found",
+)
+_EXPECTED_TOPICS = ("san", "signer", "source", "predicate")
+_INFRA_PATTERN = re.compile(
+    r"\b(401|403|429|50[0-4]|http [45]\d\d|rate.?limit|timeout|timed out|connection|tls)\b",
+    re.IGNORECASE,
+)
 
 FAILURE = "failure"
 WARNING = "warning"
@@ -120,7 +134,7 @@ def _normalise_environment(
             prevent_self_review = bool(rule.get("prevent_self_review", False))
             reviewers.extend(_reviewer_label(r) for r in rule.get("reviewers") or [])
         elif rule.get("type") == "wait_timer":
-            wait_timer = int(rule.get("wait_timer", 0))
+            wait_timer = int(rule.get("wait_timer") or 0)
     policies = [
         {"name": p.get("name"), "type": p.get("type")}
         for p in branch_policies.get("branch_policies") or []
@@ -136,6 +150,17 @@ def _normalise_environment(
     }
 
 
+def _normalise_rulesets(rulesets: list[dict[str, Any]]) -> dict[str, Any]:
+    names = [str(rs.get("name")) for rs in rulesets]
+    out: dict[str, Any] = {}
+    for name, rs in zip(names, rulesets):
+        # A repeated name (e.g. an inherited org ruleset) is flagged, never collapsed.
+        out[name] = (
+            {DUPLICATE_KEY: names.count(name)} if names.count(name) > 1 else _normalise_ruleset(rs)
+        )
+    return out
+
+
 def normalise_settings(
     repository: str,
     environments: dict[str, Any],
@@ -148,7 +173,7 @@ def normalise_settings(
         "repository": repository,
         "environments": sorted(str(e.get("name")) for e in environments.get("environments") or []),
         "service_release": _normalise_environment(service_release, branch_policies),
-        "rulesets": {str(rs.get("name")): _normalise_ruleset(rs) for rs in rulesets},
+        "rulesets": _normalise_rulesets(rulesets),
     }
 
 
@@ -157,6 +182,9 @@ def _show(value: Any) -> str:
 
 
 def _walk(path: str, expected: Any, live: Any, out: list[Finding]) -> None:
+    if isinstance(live, dict) and DUPLICATE_KEY in live:
+        out.append(Finding(FAILURE, "settings", path, "duplicate ruleset name"))
+        return
     if isinstance(expected, dict) and isinstance(live, dict):
         for key in sorted(set(expected) | set(live)):
             sub = f"{path}.{key}" if path else str(key)
@@ -203,7 +231,7 @@ def audit_releases(releases: list[dict[str, Any]], verify: AssetVerifier) -> lis
         tag = str(release.get("tag_name", ""))
         if not tag.startswith("service-v"):
             continue
-        if not SERVICE_TAG.match(tag):
+        if not SERVICE_TAG.fullmatch(tag):
             findings.append(
                 Finding(FAILURE, "release", tag, "service-v* tag outside the release line")
             )
@@ -217,8 +245,8 @@ def audit_releases(releases: list[dict[str, Any]], verify: AssetVerifier) -> lis
         if login != BOT:
             fault(tag, f"authored by {login}, not {BOT}")
         assets = sorted(release.get("assets") or [], key=lambda a: str(a.get("name", "")))
-        if not assets:
-            fault(tag, "no assets")
+        if not any(not _is_checksum(str(a.get("name", ""))) for a in assets):
+            fault(tag, "no non-checksum assets")
         for asset in assets:
             name = str(asset.get("name", ""))
             if _is_checksum(name):
@@ -273,7 +301,11 @@ def read_live_settings(runner: Runner, repo: str) -> dict[str, Any]:
     """Read and normalise the live release-protection settings."""
     base = f"repos/{repo}"
     listed = _flatten_pages(gh_json(runner, f"{base}/rulesets", paginate=True))
-    rulesets = [gh_json(runner, f"{base}/rulesets/{rs['id']}") for rs in listed]
+    rulesets = []
+    for rs in listed:
+        if rs.get("id") is None:
+            raise AuditError(f"ruleset {rs.get('name')!r} has no id in the rulesets listing")
+        rulesets.append(gh_json(runner, f"{base}/rulesets/{rs['id']}"))
     env_pages = gh_json(runner, f"{base}/environments", paginate=True)
     environments = {"environments": _flatten_pages(env_pages, "environments")}
     names = {e.get("name") for e in environments["environments"]}
@@ -298,6 +330,21 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(CHUNK), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _is_verification_outcome(stderr: str) -> bool:
+    """True only for a known verification outcome; infrastructure faults are not."""
+    text = stderr.lower()
+    if not text.strip() or _INFRA_PATTERN.search(text):
+        return False
+    if any(marker in text for marker in _VERDICT_MARKERS):
+        return True
+    return "expected" in text and any(topic in text for topic in _EXPECTED_TOPICS)
+
+
+def _raise_infra(what: str, stderr: str | None) -> None:
+    lines = [ln.strip() for ln in (stderr or "").strip().splitlines() if ln.strip()]
+    raise AuditError(f"{what} failed: {lines[-1] if lines else 'no output'}")
 
 
 def gh_asset_verifier(runner: Runner, repo: str, workdir: Path) -> AssetVerifier:
@@ -334,6 +381,18 @@ def gh_asset_verifier(runner: Runner, repo: str, workdir: Path) -> AssetVerifier
                     False,
                     f"digest mismatch: api {str(api_digest).removeprefix('sha256:')}, file {actual}",
                 )
+            lookup_path = f"repos/{repo}/attestations/sha256:{actual}"
+            lookup = runner(["gh", "api", lookup_path])
+            if lookup.returncode != 0:
+                if re.search(r"\b404\b|not found", lookup.stderr or "", re.IGNORECASE):
+                    return AssetVerdict(False, f"no attestation for sha256:{actual}")
+                _raise_infra(f"attestation lookup {lookup_path}", lookup.stderr)
+            try:
+                found = json.loads(lookup.stdout).get("attestations")
+            except (json.JSONDecodeError, AttributeError) as exc:
+                raise AuditError(f"attestation lookup {lookup_path}: unexpected response") from exc
+            if not found:
+                return AssetVerdict(False, f"no attestation for sha256:{actual}")
             attest = runner(
                 [
                     "gh",
@@ -350,9 +409,11 @@ def gh_asset_verifier(runner: Runner, repo: str, workdir: Path) -> AssetVerifier
                 ]
             )
             if attest.returncode != 0:
-                lines = [ln for ln in (attest.stderr or "").strip().splitlines() if ln.strip()]
-                last = lines[-1].strip() if lines else "no output"
-                return AssetVerdict(False, f"attestation verification failed: {last}")
+                stderr = attest.stderr or ""
+                if not _is_verification_outcome(stderr):
+                    _raise_infra(f"attestation verify of {tag}/{name}", stderr)
+                lines = [ln for ln in stderr.strip().splitlines() if ln.strip()]
+                return AssetVerdict(False, f"attestation verification failed: {lines[-1].strip()}")
             return AssetVerdict(True, "")
         finally:
             target.unlink(missing_ok=True)
@@ -365,11 +426,13 @@ def gh_asset_verifier(runner: Runner, repo: str, workdir: Path) -> AssetVerifier
 # ---------------------------------------------------------------------------
 
 
-def render_summary(findings: list[Finding]) -> str:
+def render_summary(findings: list[Finding], error: str | None = None) -> str:
     failures = sum(1 for f in findings if f.severity == FAILURE)
     warnings = sum(1 for f in findings if f.severity == WARNING)
     lines = ["## Release-protection audit", "", f"Failures: {failures}, warnings: {warnings}", ""]
-    if not findings:
+    if error is not None:
+        lines.append(f"ERROR: {error}")
+    elif not findings:
         lines.append("No findings.")
     for f in findings:
         label = "FAIL" if f.severity == FAILURE else "WARN"
@@ -392,29 +455,39 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _collect(args: argparse.Namespace, runner: Runner, findings: list[Finding]) -> None:
+    if not args.skip_settings:
+        try:
+            expected = json.loads(args.expected.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise AuditError(f"cannot load expected settings {args.expected}: {exc}") from exc
+        findings.extend(diff_settings(expected, read_live_settings(runner, args.repo)))
+    if not args.skip_releases:
+        releases = read_releases(runner, args.repo)
+        with tempfile.TemporaryDirectory() as tmp:
+            verifier = gh_asset_verifier(runner, args.repo, Path(tmp))
+            findings.extend(audit_releases(releases, verifier))
+
+
 def main(argv: list[str] | None = None, runner: Runner = _run) -> int:
     args = _parser().parse_args(argv)
     findings: list[Finding] = []
+    error: str | None = None
     try:
-        if not args.skip_settings:
-            try:
-                expected = json.loads(args.expected.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError) as exc:
-                raise AuditError(f"cannot load expected settings {args.expected}: {exc}") from exc
-            findings.extend(diff_settings(expected, read_live_settings(runner, args.repo)))
-        if not args.skip_releases:
-            releases = read_releases(runner, args.repo)
-            with tempfile.TemporaryDirectory() as tmp:
-                verifier = gh_asset_verifier(runner, args.repo, Path(tmp))
-                findings.extend(audit_releases(releases, verifier))
+        _collect(args, runner, findings)
     except AuditError as exc:
-        print(f"ERROR {exc}")
-        return 2
+        error = str(exc)
+    except Exception as exc:  # noqa: BLE001 - any unexpected fault is an error, never a pass
+        error = f"unexpected {type(exc).__name__}: {exc}"
     for finding in findings:
         print(_line(finding))
+    if error is not None:
+        print(f"ERROR {error}")
     if args.summary is not None:
         with args.summary.open("a", encoding="utf-8") as handle:
-            handle.write(render_summary(findings))
+            handle.write(render_summary(findings, error))
+    if error is not None:
+        return 2
     return 1 if any(f.severity == FAILURE for f in findings) else 0
 
 
