@@ -68,10 +68,10 @@
       "criterion_id": "FR-007",
       "description": "Verify FR-007 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "tests/test_release_protection_audit.py verifier argv test (--signer-workflow service-release.yml, --source-ref refs/tags/<tag>, --deny-self-hosted-runners); live rehearsal verified both rcs",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T11:53:58.690274+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
