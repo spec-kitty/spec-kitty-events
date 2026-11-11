@@ -20,7 +20,7 @@
   "work_packages": {
     "WP01": {
       "actor": "claude-reviewer",
-      "agent": "claude-reviewer",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
@@ -33,6 +33,7 @@
         "TransitionId (Identified|Absent) models event_id; id-less setter finds no setter (core parity); 7 differential cases from package reducer; NonFiniteLogIdTest; :command-cli:test 1667 pass"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "feedback_path": "/home/user/spec-kitty-events/kitty-specs/write-fold-encoder-parity-01M74ZY0/tasks/WP01-idless-transition-fold/review-cycle-1.md",
         "reference": "review-cycle://write-fold-encoder-parity-01M74ZY0/WP01-idless-transition-fold/review-cycle-1.md",
@@ -40,15 +41,15 @@
         "verdict": "changes_requested"
       },
       "role": "reviewer",
-      "shell_pid": 9128,
-      "shell_pid_created_at": "1794397375.4",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
       "subtasks": {
-        "T001": "done",
-        "T002": "done",
-        "T003": "done",
-        "T004": "done",
-        "T005": "done",
-        "T006": "done"
+        "T001": "planned",
+        "T002": "planned",
+        "T003": "planned",
+        "T004": "planned",
+        "T005": "planned",
+        "T006": "planned"
       }
     },
     "WP02": {
