@@ -9,6 +9,7 @@ checked-out revision; the workflow never downloads another run's artefacts.
 from __future__ import annotations
 
 import re
+from fnmatch import fnmatch
 import sys
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -251,10 +252,11 @@ def test_sonar_source_roots_do_not_overlap_test_roots() -> None:
     sources = properties["sonar.sources"].split(",")
     tests = properties["sonar.tests"].split(",")
     assert not any(_paths_overlap(source, test) for source in sources for test in tests)
-
-
-def test_packaged_conformance_tests_are_test_sources() -> None:
-    assert _properties()["sonar.test.inclusions"] == "**/test_*.py"
+    # An inclusion filter only narrows files already under sonar.tests; it must keep the Java tests.
+    for pattern in filter(None, properties.get("sonar.test.inclusions", "").split(",")):
+        assert fnmatch("service/src/test/java/io/x/FooTest.java", pattern.replace("**", "*")), (
+            pattern
+        )
 
 
 @pytest.mark.parametrize(
