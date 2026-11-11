@@ -25,7 +25,7 @@
       "wp": "WP01"
     },
     "#236": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Context: mission M1, merged; landed #231 items 4.7, 4.12, 4.14, 4.15",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -33,7 +33,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#237": {
