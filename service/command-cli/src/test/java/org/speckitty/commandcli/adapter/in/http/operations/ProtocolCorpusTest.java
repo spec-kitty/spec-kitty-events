@@ -27,16 +27,37 @@ import org.speckitty.missionstatus.adapter.out.filesystem.codec.StatusRowEncoder
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-/** WP04's edge/service cases, every guard reason and every invalid status_append row over real HTTP. */
+/**
+ * WP04's edge/service cases, every guard reason, every invalid status_append row and every ack case of the parity corpus
+ * (domain ones included) over real HTTP. Ack cases also assert the bytes appended to the log against
+ * {@code conformance/ack-bytes.json}, a committed test resource extracted from core (ruling M2-R2); the tests never read core.
+ */
 class ProtocolCorpusTest {
   private static final JsonMapper JSON = JsonMapper.builder().build();
   private static final Path CASES = repositoryPath("src/spec_kitty_events/conformance/status_transition_parity/cases");
   private static final Path APPEND_FIXTURES = repositoryPath("src/spec_kitty_events/conformance/fixtures/status_append/invalid");
   private static final Set<String> PASSED = ConcurrentHashMap.newKeySet();
+  private static final String ACK_BYTES_RESOURCE = "/conformance/ack-bytes.json";
+  /** Ack cases that cannot run over HTTP, each with its principled reason: an explicit list, never a silent skip. */
+  private static final Map<String, AckExclusion> ACK_EXCLUSIONS = Map.of(
+      "dependency-no-tasks-file-accepted", new AckExclusion(RefusalCode.WP_NOT_FOUND, null,
+          "The case has no tasks files at all: core's authority accepts the transition, but the service's wire-level "
+              + "precondition (WriteService.checkWorkPackages) refuses an unknown work package before the authority "
+              + "is consulted, so this domain ack is unreachable over HTTP."),
+      "annotation-subtasks-complete-unlocks-review", new AckExclusion(RefusalCode.REQUEST_MALFORMED,
+          "The unit's operation is not a WriteOperation value.",
+          "The case is a batch whose first unit is a standalone annotation unit. The wire's TransitionBatch holds only "
+              + "transition units (operation is transition, start_implementation or start_review); a standalone "
+              + "annotation travels alone on /inner-state-annotations, so this batch shape has no wire form."));
+  private static final Set<String> ACK_RUN = ConcurrentHashMap.newKeySet();
   private static final Set<String> GUARD_REASONS = ConcurrentHashMap.newKeySet();
   private static final String EVIDENCE_FIELD_SUFFIX = " (with implementationEvidencePresent)";
   private static final Set<String> EVIDENCE_FIELD_CASES = ConcurrentHashMap.newKeySet();
+  private static final int ACK_COUNT = 91; // 86 domain + 5 service ack cases of the corpus.
   private static WriteRig rig;
+
+  /** What the service answers instead of the domain ack, and why the ack cannot be reached over the wire. */
+  private record AckExclusion(RefusalCode code, String detail, String reason) {}
 
   @BeforeAll
   static void start() {
@@ -48,7 +69,8 @@ class ProtocolCorpusTest {
     List<Path> paths;
     try (Stream<Path> listed = Files.list(CASES)) {
       paths = listed.filter(path -> path.toString().endsWith(".json")).sorted()
-          .filter(path -> !"domain".equals(read(path).get("layer").asString())).toList();
+          .filter(path -> isAck(read(path)) ? !ACK_EXCLUSIONS.containsKey(read(path).get("id").asString())
+              : !"domain".equals(read(path).get("layer").asString())).toList();
     }
     return paths.stream().map(path -> DynamicTest.dynamicTest(path.getFileName().toString(), () -> runCase(rig, path)));
   }
@@ -73,6 +95,42 @@ class ProtocolCorpusTest {
       GUARD_REASONS.add(entry.getKey().replace(EVIDENCE_FIELD_SUFFIX, ""));
       if (entry.getKey().endsWith(EVIDENCE_FIELD_SUFFIX)) EVIDENCE_FIELD_CASES.add(entry.getValue().getFileName().toString());
     }));
+  }
+
+  /** The exclusions are asserted, not assumed: each excluded ack case is refused as recorded and appends nothing. */
+  @TestFactory
+  Stream<DynamicTest> excludedAckCasesAreRefusedAsRecorded() {
+    return ACK_EXCLUSIONS.keySet().stream().sorted().map(id -> DynamicTest.dynamicTest(id, () -> {
+      AckExclusion exclusion = ACK_EXCLUSIONS.get(id);
+      JsonNode testCase = read(CASES.resolve(id + ".json"));
+      assertThat(isAck(testCase)).isTrue();
+      JsonNode mission = testCase.required("mission");
+      Map<String, String> tasks = new LinkedHashMap<>();
+      testCase.required("tasks").properties().forEach(entry -> tasks.put(entry.getKey(), entry.getValue().asString()));
+      rig.replaceMission(mission.required("mission_id").asString(), mission.required("directory").asString(), tasks,
+          initialLog(testCase));
+      byte[] before = Files.readAllBytes(rig.log());
+      RawClient.Reply reply = rig.post(testCase.required("request").required("kind").asString(),
+          requestBody(testCase.required("request"), mission.required("directory").asString()));
+      assertThat(reply.status()).as(reply.text()).isEqualTo(exclusion.code().status());
+      JsonNode refusal = JSON.readTree(reply.body());
+      assertThat(refusal.path("code").asString()).isEqualTo(exclusion.code().name());
+      if (exclusion.detail() != null) assertThat(refusal.path("detail").asString()).isEqualTo(exclusion.detail());
+      assertThat(Files.readAllBytes(rig.log())).isEqualTo(before);
+    }));
+  }
+
+  private static boolean isAck(JsonNode testCase) {
+    return "ack".equals(testCase.required("expected").required("result").asString());
+  }
+
+  private static JsonNode ackBytes() {
+    try (java.io.InputStream stream = ProtocolCorpusTest.class.getResourceAsStream(ACK_BYTES_RESOURCE)) {
+      if (stream == null) throw new IllegalStateException("missing test resource " + ACK_BYTES_RESOURCE);
+      return JSON.readTree(new String(stream.readAllBytes(), StandardCharsets.UTF_8));
+    } catch (IOException exception) {
+      throw new IllegalStateException(exception);
+    }
   }
 
   private static String guardKey(JsonNode testCase) {
@@ -140,7 +198,7 @@ class ProtocolCorpusTest {
     JsonNode request = testCase.required("request");
     String kind = request.required("kind").asString();
     String body = requestBody(request, directory);
-    RawClient.Reply reply = rig.post(kind.equals("batch") ? "batch" : "unit", body);
+    RawClient.Reply reply = rig.post(kind.equals("batch") || kind.equals("annotation") ? kind : "unit", body);
     JsonNode expected = testCase.required("expected");
     if ("ack".equals(expected.required("result").asString())) {
       assertThat(reply.status()).as(testCase.required("id").asString() + ": " + reply.text()).isEqualTo(201);
@@ -153,6 +211,8 @@ class ProtocolCorpusTest {
         assertThat(actual.path("replayed").asBoolean()).isEqualTo(units.get(index).path("replayed").asBoolean());
       }
       if (kind.equals("batch")) assertThat(ack.path("fsyncs").asInt()).isEqualTo(expected.path("fsyncs").asInt());
+      assertAppendedBytes(caseId, before, units.size());
+      ACK_RUN.add(caseId);
     } else {
       RefusalCode code = RefusalCode.valueOf(expected.required("code").asString());
       assertThat(reply.status()).as(testCase.required("id").asString() + ": " + reply.text()).isEqualTo(code.status());
@@ -166,6 +226,20 @@ class ProtocolCorpusTest {
       assertThat(after).isEqualTo(before);
     }
     PASSED.add(testCase.required("id").asString());
+  }
+
+  /** The log grew by exactly the committed expectation: the old bytes untouched, then each unit's text in order. */
+  private static void assertAppendedBytes(String caseId, byte[] before, int unitCount) throws IOException {
+    JsonNode expectedUnits = ackBytes().get(caseId);
+    assertThat(expectedUnits).as(caseId + " has an entry in " + ACK_BYTES_RESOURCE).isNotNull();
+    assertThat(expectedUnits.size()).as(caseId + " unit texts").isEqualTo(unitCount);
+    StringBuilder appended = new StringBuilder();
+    expectedUnits.forEach(text -> appended.append(text.asString()));
+    byte[] prior = before == null ? new byte[0] : before;
+    byte[] after = Files.readAllBytes(rig.log());
+    assertThat(Arrays.copyOf(after, Math.min(after.length, prior.length))).as(caseId + " prior bytes").isEqualTo(prior);
+    assertThat(new String(after, prior.length, after.length - prior.length, StandardCharsets.UTF_8))
+        .as(caseId + " appended bytes").isEqualTo(appended.toString());
   }
 
   private static String fixedDetail(JsonNode testCase, RefusalCode code) {
@@ -207,6 +281,15 @@ class ProtocolCorpusTest {
       unit.put("rows", valueTree(original.required("rows")));
       unit.put("context", context);
       units.add(unit);
+    }
+    if (request.required("kind").asString().equals("annotation")) {
+      // The standalone annotation endpoint takes one row, not a unit with rows.
+      Map<String, Object> only = units.getFirst();
+      Map<String, Object> annotation = new LinkedHashMap<>();
+      annotation.put("wpId", only.get("wpId"));
+      annotation.put("row", ((List<?>) only.get("rows")).getFirst());
+      annotation.put("context", only.get("context"));
+      return JSON.writeValueAsString(annotation);
     }
     Object body = request.required("kind").asString().equals("batch") ? Map.of("units", units) : units.getFirst();
     return JSON.writeValueAsString(body);
@@ -267,7 +350,16 @@ class ProtocolCorpusTest {
     assertThat(unreachable.has("partial")).isFalse(); // both halves of implementation_evidence_required are reached.
     // The evidence half goes over HTTP next to the subtask half: 34 before the field, plus one representative.
     assertThat(EVIDENCE_FIELD_CASES).containsExactly("guard-evidence-explicit-false.json");
-    assertThat(PASSED).hasSize(35);
-    System.out.printf("Protocol/service corpus 14/14; guard reasons 15/15 (+1 recorded unreachable; evidence field case 1/1); invalid status rows 5/5 passed%n");
+    JsonNode expectedBytes = ackBytes();
+    try (Stream<Path> listed = Files.list(CASES)) {
+      assertThat(listed.filter(path -> path.toString().endsWith(".json")).filter(path -> isAck(read(path))).count())
+          .as("ack cases in the corpus").isEqualTo(ACK_COUNT);
+    }
+    assertThat(ACK_RUN).as("every ack case of the corpus, or an explicit exclusion").hasSize(ACK_COUNT - ACK_EXCLUSIONS.size());
+    assertThat(ACK_RUN).as("resource keys are exactly the ack cases run (no orphans)")
+        .containsExactlyInAnyOrderElementsOf(expectedBytes.propertyNames().stream()
+            .filter(key -> !ACK_EXCLUSIONS.containsKey(key)).toList());
+    assertThat(PASSED).hasSize(35 + ACK_COUNT - 5 - ACK_EXCLUSIONS.size());
+    System.out.printf("Protocol/service corpus 14/14; guard reasons 15/15 (+1 recorded unreachable; evidence field case 1/1); invalid status rows 5/5 passed; ack cases %d/%d over HTTP with byte assertions%n", ACK_RUN.size(), ACK_COUNT);
   }
 }

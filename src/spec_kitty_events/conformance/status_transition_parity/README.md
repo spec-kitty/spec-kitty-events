@@ -74,6 +74,20 @@ service's refusal as the expectation. Core's behaviour on those inputs is an acc
 stack (research §11 decision 19), so they are `oracle: protocol`, never core parity. Every other
 protocol case is left untouched.
 
+## Appended bytes
+
+Every `ack` case also fixes the bytes the service appends to the log. They live in
+`service/command-cli/src/test/resources/conformance/ack-bytes.json` (`{case id: [unit text, ...]}`),
+a test resource of the service and not part of the packaged contract; the Java tests read only that
+committed file (operator ruling M2-R2). A unit's text is `""` when the unit is a replay, else its
+request rows serialised one per line, in order, each ending in LF. `scripts/conformance/extract_ack_bytes.py`
+produces it: in its default `core` mode it uses core's `serialize_event_line` at the pinned SHA, and
+CI's `write-core-parity` job runs it with `--check` to prove the committed file equals core's output.
+The file was bootstrapped in `--serializer encoder` mode (the package's `encode_status_row`, which the
+`status_append` oracle proves core-exact) because the authoring session could not execute core; the
+core check in CI is what upgrades it to core-extracted. Drift there means the encoder is not
+core-exact for some row: escalate, never edit the file by hand.
+
 `unreachable.json` maps a wholly unreachable reason URN to its proven cause. Its
 `partial` object records an unreachable half of a reason that remains reachable
 through another half; it may be empty or absent, as it is when every half is
