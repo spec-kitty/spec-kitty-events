@@ -1,0 +1,37 @@
+{
+  "expected": {
+    "WP01": "claimed"
+  },
+  "id": "idless-two-rows-dedupe",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:01+00:00",
+      "event_id": null,
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "planned",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "claimed",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:02+00:00",
+      "event_id": null,
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "claimed",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "in_progress",
+      "wp_id": "WP01"
+    }
+  ],
+  "notes": "Core groups every id-less row under the one None key and keeps the first, so the second row is a duplicate and never applies (claimed). Java must group them the same way."
+}

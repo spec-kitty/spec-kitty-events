@@ -19,8 +19,8 @@ final class StateProjections {
 
   static void apply(Map<String, Map<String, Object>> states, List<Transition> rawEvents) {
     List<Transition> events = rawEvents.stream().sorted(EventOrdering::compare).toList();
-    Set<Object> seen = new HashSet<>();
-    List<Transition> unique = events.stream().filter(event -> seen.add(event.idKey())).toList();
+    Set<TransitionId> seen = new HashSet<>();
+    List<Transition> unique = events.stream().filter(event -> seen.add(event.id())).toList();
     projectCancellation(states, unique);
     projectImplementer(states, unique);
     // Core's implementer authority reads raw append order, without reducer de-duplication or sorting.

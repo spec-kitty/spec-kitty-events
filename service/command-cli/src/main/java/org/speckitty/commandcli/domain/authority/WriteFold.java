@@ -62,6 +62,7 @@ public final class WriteFold {
 
   private static WpWriteState stateView(Map<String, Object> state, boolean hasTransitions) {
     Map<String, Object> slots = new LinkedHashMap<>(state);
+    slots.remove(TransitionFold.SETTER);
     Object rawActor = immutable(slots.remove("__raw_actor"));
     Object projectedActor = slots.get("actor");
     Object subtasks = slots.getOrDefault("subtasks", Map.of());
@@ -125,13 +126,8 @@ public final class WriteFold {
       Lane.fromWire(text(row.get("to_lane")));
     }
 
-    /**
-     * The id's spelling, for the maps the fold keys by id. Core does not coerce it ({@code StatusEvent.from_dict} keeps the raw
-     * scalar), so equality and ordering are {@link #idKey}'s; a spelling shared by two ids that are not equal is refused by the dedupe.
-     */
-    String id() { return pyText(row.get("event_id")); }
-    /** The id as core's reducer compares and hashes it ({@link EventIds}). */
-    Object idKey() { return EventIds.key(row.get("event_id")); }
+    /** The row's {@code event_id} as core holds it: {@link TransitionId.Absent} when missing or null (never a setter). */
+    TransitionId id() { return TransitionId.of(row); }
     String wpId() { return pyText(row.get("wp_id")); }
     String at() { return text(row.get("at")); }
     Lane from() { return Lane.fromWire(text(row.get("from_lane"))); }
