@@ -95,6 +95,18 @@
       "title": "<fill at WP-implementation time>",
       "verdict": "not-applicable",
       "wp": null
+    },
+    "#6268": {
+      "evidence_ref": "Context: core spec-kitty/spec-kitty#6268 (read reducer approved-departure lift, G-4); out of scope",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "not-applicable",
+      "wp": null
     }
   },
   "schema_version": 1
