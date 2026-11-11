@@ -1,6 +1,6 @@
 # Compatibility Guide
 
-**Current package version**: `11.4.0`
+**Current package version**: `11.5.0`
 
 The on-wire envelope schema version is `3.0.0` and has been unchanged since
 the cutover. The package version and the envelope schema version move
@@ -23,6 +23,53 @@ This document is the public compatibility policy for consumers of:
 - `spec-kitty-saas`
 - `spec-kitty`
 
+
+## `11.5.0` — `validate_transition` and `reduce_status_events` follow core's edge graph (minor)
+
+`11.5.0` (spec-kitty-events#237; #231 item 4.6; maintainer ruling D4) is a **minor** release.
+`validate_transition()` and, through it, `reduce_status_events()` now admit exactly the
+unforced edges of core's lane machine (`src/specify_cli/status/wp_state.py` at spec-kitty
+`512567eee71e31bb39f580c4f7acf8b865e9d1b2`) plus the package's own initial edge
+`None -> planned`. Force semantics and the guard checks (`review_ref`, `reason`, evidence,
+the review-rejection family) are unchanged; `force=True` still bypasses the edge check.
+
+Unforced edges removed from the package (each is now reported as
+`Transition X -> Y is not allowed` and, in a log, recorded as a `TransitionAnomaly`):
+
+- `for_review -> approved`
+- `for_review -> done`
+- `for_review -> in_progress`
+- `for_review -> planned`
+- `in_review -> for_review`
+- `genesis -> blocked`
+- `blocked -> blocked`
+
+Blocked and canceled are now explicit per-state edges, as in core. Producers must force the
+removed moves with a non-empty `reason`, and with a `review_ref` where required
+(`for_review -> in_progress`), as core does; or route through `in_review` for approval and
+completion. The write service is the write authority; the package mirrors it.
+
+Packaged conformance fixtures changed to stay core-valid:
+
+- `wp-status-changed-unforced-for-review-to-in-progress-with-review-ref-valid` and
+  `lifecycle-wp-status-changed-summary-done-valid` keep their ids and stay valid, but the
+  events are now forced (with a reason).
+- Their unforced forms are registered as invalid, `min_version` `11.5.0`:
+  `wp-status-changed-unforced-for-review-to-in-progress-with-review-ref-invalid` and
+  `wp-status-changed-unforced-for-review-to-done-invalid`.
+
+Also additive: `spec_kitty_events.status_log` exports the encoder refusal classes
+`IntegerTooLarge`, `NonStringKey` and `UnsupportedValue` (subclasses of `StatusRowRefused`).
+
+**Release classification.** Minor by ruling D4, although the unforced edge set narrows.
+
+### Adopting 11.5.0
+
+- **Writers and replayers of status events:** audit moves out of `for_review` other than
+  `-> in_review`, `-> blocked` and `-> canceled`, and `genesis -> blocked`/`blocked -> blocked`;
+  send them with `force=True` and a reason, or fix the lane path.
+- **Conformance consumers:** refresh the two fixtures above and register the two new invalid
+  ones; the Java binding has no transition validator and is unaffected beyond its version.
 
 ## `11.4.0` — the events-side write core: status-row encoding and status-transition parity (minor)
 

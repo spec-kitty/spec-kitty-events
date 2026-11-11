@@ -142,28 +142,31 @@ tests.
 
 ## Review-Ref-Gated Rewind Family
 
-Three backward rewinds to ``in_progress`` form a second, separate family. They
-are force-exempt and gated on ``review_ref``:
+Three backward rewinds to ``in_progress`` form a second, separate family, gated
+on ``review_ref``:
 
-    | from_lane   | to_lane     |
-    |-------------|-------------|
-    | for_review  | in_progress |
-    | in_review   | in_progress |
-    | approved    | in_progress |
+    | from_lane   | to_lane     | unforced edge in core? |
+    |-------------|-------------|------------------------|
+    | for_review  | in_progress | no (force required)    |
+    | in_review   | in_progress | yes                    |
+    | approved    | in_progress | yes                    |
+
+Since 11.5.0 (maintainer ruling D4) the unforced edge graph is core's lane
+machine (``src/specify_cli/status/wp_state.py`` at spec-kitty pin
+``512567eee71e31bb39f580c4f7acf8b865e9d1b2``). ``for_review -> in_progress`` is
+no longer an unforced edge there, so it needs ``force=True`` like any other
+move off the graph. The write service is the write authority; this module
+mirrors it.
 
 ### Wire requirements
 
 * ``review_ref`` MUST be a non-empty string, whether the event is forced or
   not. A missing or blank ``review_ref`` is invalid even when ``force=True``.
-* ``force`` is NOT required and is allowed. If ``force=True`` is set, the
-  payload's existing rule still applies (``force=True requires a non-empty
-  reason``).
-
-### Force-exempt by contract
-
-Consumers MUST NOT require ``force=True`` on these edges.
-``validate_transition()`` accepts them unforced, provided ``review_ref`` is
-present. Do not extend the review-rejection force rule to them.
+* ``force`` is NOT required for ``in_review -> in_progress`` and
+  ``approved -> in_progress`` (core edges). For ``for_review -> in_progress``
+  an unforced event is rejected with ``Transition ... is not allowed``; the
+  valid form is ``force=True`` with a non-empty ``reason`` (the payload rule
+  ``force=True requires a non-empty reason``) and a ``review_ref``.
 
 ### Violation routing
 
@@ -172,11 +175,9 @@ A missing ``review_ref`` produces a violation containing
 
 ### Rationale
 
-Forcing a rewind bypasses the status diary's ``from_lane`` continuity check.
-A forced, stale ``approved -> in_progress`` can then reopen a WP that is
-already ``done``. Keeping these edges unforced keeps that check in force, and
 ``review_ref`` records which review sent the WP back
-(spec-kitty-events#48).
+(spec-kitty-events#48). Forcing a rewind bypasses the edge check, so
+``review_ref`` stays mandatory on forced events.
 
 ### Contrast with the review-rejection family
 
@@ -186,10 +187,12 @@ when forced.
 
 ### Conformance fixtures
 
-Nine fixtures under ``edge_cases/valid/`` and ``edge_cases/invalid/`` pin the
-family: for each source lane, an unforced event with ``review_ref`` (valid),
-an unforced event without it (invalid), and a forced event without it
-(invalid). Their manifest ids start with
+Fixtures under ``edge_cases/valid/`` and ``edge_cases/invalid/`` pin the
+family: for ``in_review`` and ``approved``, an unforced event with ``review_ref``
+(valid), an unforced event without it (invalid), and a forced event without it
+(invalid); for ``for_review``, a forced event with ``review_ref`` and ``reason``
+(valid), an unforced event with ``review_ref`` (invalid, edge not allowed), and
+the review_ref-less variants (invalid). Their manifest ids start with
 ``wp-status-changed-unforced-`` or ``wp-status-changed-forced-`` and end in
 ``-to-in-progress-...``.
 """
@@ -589,35 +592,54 @@ class TransitionError(SpecKittyEventsError):
 # Section 4: Validation
 # ---------------------------------------------------------------------------
 
+# Unforced edge graph. Mirrors core's lane machine: ``allowed_targets()`` per
+# state in ``src/specify_cli/status/wp_state.py`` of spec-kitty at pin
+# 512567eee71e31bb39f580c4f7acf8b865e9d1b2, plus the package-only initial edge
+# ``(None, planned)`` (core has no ``None`` lane). Core's write service is the
+# write authority; this table is a read-side mirror, so edges are listed
+# explicitly per state (blocked/canceled included) rather than derived.
 _ALLOWED_TRANSITIONS: FrozenSet[Tuple[Optional[Lane], Lane]] = frozenset(
     {
-        # Initial
+        # Initial (package only)
         (None, Lane.PLANNED),
-        # Genesis seed (unseeded WP -> planned at finalize-tasks)
+        # genesis
         (Lane.GENESIS, Lane.PLANNED),
-        # Happy path
+        (Lane.GENESIS, Lane.CANCELED),
+        # planned
         (Lane.PLANNED, Lane.CLAIMED),
+        (Lane.PLANNED, Lane.BLOCKED),
+        (Lane.PLANNED, Lane.CANCELED),
+        # claimed
         (Lane.CLAIMED, Lane.IN_PROGRESS),
+        (Lane.CLAIMED, Lane.BLOCKED),
+        (Lane.CLAIMED, Lane.CANCELED),
+        # in_progress
         (Lane.IN_PROGRESS, Lane.FOR_REVIEW),
         (Lane.IN_PROGRESS, Lane.APPROVED),
+        (Lane.IN_PROGRESS, Lane.PLANNED),
+        (Lane.IN_PROGRESS, Lane.BLOCKED),
+        (Lane.IN_PROGRESS, Lane.CANCELED),
+        # for_review
         (Lane.FOR_REVIEW, Lane.IN_REVIEW),
-        (Lane.FOR_REVIEW, Lane.APPROVED),
-        (Lane.FOR_REVIEW, Lane.DONE),
+        (Lane.FOR_REVIEW, Lane.BLOCKED),
+        (Lane.FOR_REVIEW, Lane.CANCELED),
+        # in_review
         (Lane.IN_REVIEW, Lane.APPROVED),
         (Lane.IN_REVIEW, Lane.DONE),
-        (Lane.APPROVED, Lane.DONE),
-        # Review rollback
-        (Lane.FOR_REVIEW, Lane.IN_PROGRESS),
-        (Lane.FOR_REVIEW, Lane.PLANNED),
         (Lane.IN_REVIEW, Lane.IN_PROGRESS),
-        (Lane.IN_REVIEW, Lane.FOR_REVIEW),
         (Lane.IN_REVIEW, Lane.PLANNED),
+        (Lane.IN_REVIEW, Lane.BLOCKED),
+        (Lane.IN_REVIEW, Lane.CANCELED),
+        # approved
+        (Lane.APPROVED, Lane.DONE),
         (Lane.APPROVED, Lane.IN_PROGRESS),
         (Lane.APPROVED, Lane.PLANNED),
-        # Abandon/reassign
-        (Lane.IN_PROGRESS, Lane.PLANNED),
-        # Unblock
+        (Lane.APPROVED, Lane.BLOCKED),
+        (Lane.APPROVED, Lane.CANCELED),
+        # blocked
         (Lane.BLOCKED, Lane.IN_PROGRESS),
+        (Lane.BLOCKED, Lane.CANCELED),
+        # done, canceled: terminal, no outgoing edges
     }
 )
 
@@ -694,22 +716,9 @@ def validate_transition(payload: StatusTransitionPayload) -> TransitionValidatio
             f"{payload.to_lane.value} requires force=True"
         )
 
-    # Force check — if force is True, skip matrix check
+    # Force check — if force is True, skip the edge check
     if not payload.force:
-        # Matrix check
-        pair = (payload.from_lane, payload.to_lane)
-        in_matrix = pair in _ALLOWED_TRANSITIONS
-        to_blocked = (
-            payload.to_lane is Lane.BLOCKED
-            and payload.from_lane is not None
-            and payload.from_lane not in TERMINAL_LANES
-        )
-        to_canceled = (
-            payload.to_lane is Lane.CANCELED
-            and payload.from_lane is not None
-            and payload.from_lane not in TERMINAL_LANES
-        )
-        if not (in_matrix or to_blocked or to_canceled):
+        if (payload.from_lane, payload.to_lane) not in _ALLOWED_TRANSITIONS:
             violations.append(f"Transition {payload.from_lane} -> {payload.to_lane} is not allowed")
 
     # Guard conditions (checked regardless of force). The force-required

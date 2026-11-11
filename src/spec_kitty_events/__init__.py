@@ -46,6 +46,11 @@ This release publishes:
   journal (saas#1814), relay fan-out (zeitgeist#304), and the
   People/Missions/Repositories projections (saas#1816) — never the volatile
   ``zeitgeist_attrs`` codec.
+- Status-row reference codec (``spec_kitty_events.status_log``,
+  spec-kitty-events#160, #161, #155): ``sanitize_status_row`` and
+  ``encode_status_row``, the byte-exact encoding of one ``status.events.jsonl``
+  row, with its refusal classes. Reached explicitly as the module, like
+  ``total_order`` and ``producer_contract``, and deliberately not re-exported here.
 - Producer row-schema contract (``spec_kitty_events.producer_contract``,
   spec-kitty-events#92): the authoring registry and the composed/legacy JSON
   Schemas for producer-written event rows (``load_registry``,
@@ -66,7 +71,7 @@ The offline sync/cutover surfaces (``spec_kitty_events.sync``, ``legacy``,
 lives in ``spec_kitty_events.strict.validate_strict_envelope``.
 """
 
-__version__ = "11.4.0"
+__version__ = "11.5.0"
 
 # Core data models
 from spec_kitty_events.models import (

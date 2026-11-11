@@ -1881,8 +1881,24 @@
       "path": "edge_cases/valid/wp_status_changed_unforced_for_review_to_in_progress_with_review_ref.json",
       "expected_result": "valid",
       "event_type": "WPStatusChanged",
-      "notes": "Valid unforced rewind for_review->in_progress with review_ref and reason set; member of the review-ref-gated rewind family, which is force-exempt by contract (spec-kitty-events#48).",
+      "notes": "Valid forced rewind for_review->in_progress with review_ref and reason set; member of the review-ref-gated rewind family (spec-kitty-events#48). Since 11.5.0 (operator ruling D4) for_review->in_progress is not an unforced edge in core, so the valid form is force=true; the id keeps its historical name. The unforced form is wp-status-changed-unforced-for-review-to-in-progress-with-review-ref-invalid.",
       "min_version": "3.0.0"
+    },
+    {
+      "id": "wp-status-changed-unforced-for-review-to-in-progress-with-review-ref-invalid",
+      "path": "edge_cases/invalid/wp_status_changed_unforced_for_review_to_in_progress_with_review_ref.json",
+      "expected_result": "invalid",
+      "event_type": "WPStatusChanged",
+      "notes": "Unforced for_review->in_progress with review_ref and reason set. for_review->in_progress is not an unforced edge in core (wp_state.py at 512567ee); validate_transition() MUST emit a violation containing 'is not allowed'. The valid form is force=true (see the -valid twin).",
+      "min_version": "11.5.0"
+    },
+    {
+      "id": "wp-status-changed-unforced-for-review-to-done-invalid",
+      "path": "edge_cases/invalid/wp_status_changed_unforced_for_review_to_done.json",
+      "expected_result": "invalid",
+      "event_type": "WPStatusChanged",
+      "notes": "Unforced for_review->done with DoneEvidence. for_review->done is not an unforced edge in core (wp_state.py at 512567ee; a WP must pass through in_review); validate_transition() MUST emit a violation containing 'is not allowed'. The valid form is force=true with a reason (see lifecycle-wp-status-changed-summary-done-valid).",
+      "min_version": "11.5.0"
     },
     {
       "id": "wp-status-changed-unforced-for-review-to-in-progress-missing-review-ref-invalid",
@@ -4734,7 +4750,7 @@
       "path": "lifecycle/valid/wp_status_changed_summary_done.json",
       "expected_result": "valid",
       "event_type": "WPStatusChanged",
-      "notes": "Terminal transition to done carrying a one-line summary and DoneEvidence (#62).",
+      "notes": "Terminal transition to done carrying a one-line summary and DoneEvidence (#62). Since 11.5.0 (operator ruling D4) for_review->done is not an unforced edge in core, so the event is forced with a reason. The unforced form is wp-status-changed-unforced-for-review-to-done-invalid.",
       "min_version": "11.1.0"
     },
     {

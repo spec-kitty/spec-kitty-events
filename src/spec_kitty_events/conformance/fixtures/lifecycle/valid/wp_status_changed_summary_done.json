@@ -3,8 +3,8 @@
   "from_lane": "for_review",
   "to_lane": "done",
   "actor": "test-agent",
-  "force": false,
-  "reason": null,
+  "force": true,
+  "reason": "merge-time completion from for_review without an in_review claim",
   "execution_mode": "worktree",
   "review_ref": null,
   "evidence": {
