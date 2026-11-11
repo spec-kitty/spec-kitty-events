@@ -28,10 +28,10 @@
       "criterion_id": "FR-003",
       "description": "Verify FR-003 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "fold-differential: both directions shown (stale-forward-applies, claimed-to-in-progress, cascade-acknowledged-core-drops, idless-and-string-none) + 2 identified controls; generate_fold_differential.py --check; tests/test_fold_differential.py 11",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T12:48:35.475523+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
