@@ -33,7 +33,8 @@
         "Ready for review",
         "Cycle 1 REJECT: R1 [MAJOR] attestation infra faults become verdicts",
         "Cycle 1 fixes",
-        "Cycle 2 REJECT: R1 residual (network faults as verdicts)"
+        "Cycle 2 REJECT: R1 residual (network faults as verdicts)",
+        "Cycle 2 fixes"
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
