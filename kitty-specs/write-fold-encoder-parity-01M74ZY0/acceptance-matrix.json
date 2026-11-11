@@ -18,10 +18,10 @@
       "criterion_id": "FR-002",
       "description": "Verify FR-002 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "TransitionFold.setterOf: Absent setter = no setter; FoldDifferentialTest 9 cases vs package reducer",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T12:48:32.237707+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
