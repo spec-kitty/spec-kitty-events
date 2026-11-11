@@ -37,7 +37,7 @@
       "wp": null
     },
     "#237": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Closed by this mission: WP01-WP06 cover every remaining #231 item; WP01 fix 37214341",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -45,8 +45,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP01"
     },
     "#247": {
       "evidence_ref": "<link or commit>",
