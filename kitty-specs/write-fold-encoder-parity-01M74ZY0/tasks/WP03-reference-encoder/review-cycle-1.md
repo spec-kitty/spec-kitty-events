@@ -25,9 +25,10 @@ Reproduction (3.11):
 ```python
 import json
 from spec_kitty_events.status_log import encode_status_row
-row = json.loads('{"a": -' + '9' * 4300 + '}')
-json.dumps(row)            # fine (what core writes)
-encode_status_row(row)     # IntegerTooLarge  <- wrong
+
+row = json.loads('{"a": -' + "9" * 4300 + "}")
+json.dumps(row)  # fine (what core writes)
+encode_status_row(row)  # IntegerTooLarge  <- wrong
 ```
 
 This changes the result of a row the encoder accepted before the change (and core accepts), which
