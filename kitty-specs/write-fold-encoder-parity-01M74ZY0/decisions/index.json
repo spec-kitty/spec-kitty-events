@@ -71,6 +71,31 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-11T12:11:40.957478Z",
+      "decision_id": "01M758AR0XV801HVGA8ZPQWATR",
+      "final_answer": "Full D4: adopt core's graph everywhere; move the two fixtures to force=true (or invalid/ with a forced valid twin); rewrite the force-exempt-by-contract section to match core (#6514); note the reduce_status_events behaviour change in COMPATIBILITY 11.5.0.",
+      "input_key": "d4_fixture_conflict",
+      "mission_id": "01M74ZY0SE67V2DDNWTJA9DSQD",
+      "mission_slug": "write-fold-encoder-parity-01M74ZY0",
+      "opened_by": "cli",
+      "options": [
+        "Full D4: update fixtures + contract text, minor bump",
+        "D4 except the contract-protected edges",
+        "Document validate_transition as legacy; no edge change",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "D4 (validate_transition = core edge graph) conflicts with two packaged valid fixtures and the 'force-exempt by contract' rule for for_review->in_progress (#48), and reduce_status_events would drop those events as anomalies. How to resolve?",
+      "rationale": null,
+      "resolved_at": "2026-11-11T12:14:43.268268Z",
+      "resolved_by": null,
+      "slot_key": "plan.d4.contract-fixtures",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M74ZY0SE67V2DDNWTJA9DSQD",
