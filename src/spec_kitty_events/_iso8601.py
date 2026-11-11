@@ -14,14 +14,12 @@ import path changes.
 
 :func:`parse_iso8601_datetime` (spec-kitty-events#160, PR #230 squad
 finding) is the one full parser here, used by ``status_log`` for session
-timestamps. On Python 3.11+ it is exactly
-``datetime.fromisoformat(normalize_iso8601_shape(value))``, the behaviour
-``status_log`` shipped with. On the declared floor (3.10) it is a faithful
-port of CPython 3.11's ``datetime.fromisoformat`` grammar
-(:func:`_parse_isoformat_311`), so every form 3.11 accepts -- basic-format
+timestamps. On every interpreter it is a faithful port of CPython 3.11's
+``datetime.fromisoformat`` grammar (:func:`_parse_isoformat_311`), so every
+form 3.11 accepts -- basic-format
 dates and times, ISO week dates, ``Z``, hour-only and second/fraction
 offsets, reduced precision, comma fractions and any single-character
-date/time separator -- yields the same ``datetime`` on 3.10 as core's
+date/time separator -- yields the same ``datetime`` on every interpreter as core's
 interpreter produces. Its oracle is the CPython 3.11 vector set shared with
 the Java port (``service/domain-model/src/test/resources/pyisodatetime/
 vectors.json``).
@@ -30,7 +28,6 @@ vectors.json``).
 from __future__ import annotations
 
 import re
-import sys
 from datetime import date, datetime, timedelta, timezone
 
 #: Matches an ISO-8601/RFC-3339 timestamp in either extended
@@ -380,7 +377,8 @@ def _parse_iso_time(text: str) -> tuple[int, int, int, int, int | None]:
 def _parse_isoformat_311(value: str) -> datetime:
     """Parse exactly like CPython 3.11's ``datetime.fromisoformat``.
 
-    This is the 3.10 fallback for :func:`parse_iso8601_datetime`; it is the
+    This is the implementation behind :func:`parse_iso8601_datetime` on every
+    interpreter; it is the
     grammar ported from CPython's C implementation (the same one the Java
     ``PyIsoDateTime`` binding follows), so it accepts and rejects the same
     strings and produces the same naive/aware value.
@@ -411,13 +409,10 @@ def _parse_isoformat_311(value: str) -> datetime:
 def parse_iso8601_datetime(value: str) -> datetime:
     """Parse *value* exactly as CPython 3.11's ``datetime.fromisoformat``.
 
-    On 3.11 and later this delegates to ``datetime.fromisoformat`` after
-    :func:`normalize_iso8601_shape`, preserving the byte-for-byte behaviour
-    ``status_log`` has always had. On 3.10 it uses
-    :func:`_parse_isoformat_311`, which closes the grammar gap between
-    3.10's narrower parser and core's 3.11 interpreter.
+    The CPython 3.11 port (:func:`_parse_isoformat_311`) is used on every
+    interpreter, never the running interpreter's own ``fromisoformat``, so
+    3.10, 3.11, 3.12 and 3.13 accept, reject and produce identical values
+    (3.12+ changed edge cases such as sub-minute offsets with fractions).
     """
 
-    if sys.version_info >= (3, 11):
-        return datetime.fromisoformat(normalize_iso8601_shape(value))
     return _parse_isoformat_311(value)
