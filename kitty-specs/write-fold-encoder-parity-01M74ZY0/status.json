@@ -1,7 +1,7 @@
 {
-  "event_count": 40,
-  "last_event_id": "01M7596FMVH9J1XSM35JA0QRHP",
-  "materialized_at": "2026-11-11T12:26:49.883931+00:00",
+  "event_count": 41,
+  "last_event_id": "01M7596ZVMSSX23W07F0N45AHR",
+  "materialized_at": "2026-11-11T12:27:06.484342+00:00",
   "mission_number": "",
   "mission_slug": "write-fold-encoder-parity-01M74ZY0",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 3
   },
   "work_packages": {
@@ -122,15 +122,15 @@
       }
     },
     "WP04": {
-      "actor": "user",
-      "agent": null,
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude",
-      "lane": "for_review",
-      "last_event_id": "01M7596FMVH9J1XSM35JA0QRHP",
-      "last_transition_at": "2026-11-11T12:26:49.883931+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M7596ZVMSSX23W07F0N45AHR",
+      "last_transition_at": "2026-11-11T12:27:06.484342+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-11T12:10:57Z – claude – shell_pid=31293 – Blocked: removing unforced for_review->in_progress and for_review->done fails 2 packaged conformance fixtures (edge_cases/valid/wp_status_changed_unforced_for_review_to_in_progress_with_review_ref.json, lifecycle/valid/wp_status_changed_summary_done.json); escalating per prompt, no fixture edited. Pin graph matches research D-6 exactly. Draft status.py patch saved in scratchpad (wp04-status-edges.patch); tree reverted.",
@@ -145,9 +145,9 @@
         "reviewer": "claude-reviewer",
         "verdict": "changes_requested"
       },
-      "role": "implementer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
+      "role": "reviewer",
+      "shell_pid": 9762,
+      "shell_pid_created_at": "1794400023.44",
       "subtasks": {
         "T013": "done",
         "T017": "done",
