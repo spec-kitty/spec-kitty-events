@@ -216,10 +216,12 @@ public final class StatusReducer {
       ordered.sort(BY_AT_THEN_ID);
       List<StatusEvent> skewed = new ArrayList<>();
       for (StatusEvent departure : ordered) {
+        // unbound is sorted, so the latest approval not after the departure is the first match scanning from the end.
         int earlier = -1;
-        for (int i = 0; i < unbound.size(); i++) {
+        for (int i = unbound.size() - 1; i >= 0; i--) {
           if (CodePoints.compare(unbound.get(i).at(), departure.at()) <= 0) {
             earlier = i;
+            break;
           }
         }
         if (earlier >= 0) {

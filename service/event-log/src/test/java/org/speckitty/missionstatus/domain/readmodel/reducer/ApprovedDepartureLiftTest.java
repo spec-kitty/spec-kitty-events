@@ -134,6 +134,46 @@ class ApprovedDepartureLiftTest {
   }
 
   @Test
+  void anOrphanDepartureBindsNothingSoTheNextDepartureKeepsItsOwnApproval() {
+    // Kills index pairing (the failure _approved_departure_sort_at's two passes guard against): D0 has no approval at or before it and none
+    // left after it, so it stays unbound and is dropped; D binds A un-lifted and applies. Pairing D0 with A would lift D0 and strand D.
+    StatusSnapshot snapshot =
+        reduce(
+            toReview("WP01", ""),
+            move("D0", "2026-09-01T03:30:00Z", "WP01", Lane.APPROVED, Lane.IN_PROGRESS),
+            move("A", t(5), "WP01", Lane.IN_REVIEW, Lane.APPROVED),
+            move("D", t(6), "WP01", Lane.APPROVED, Lane.DONE));
+    assertState(snapshot, "WP01", Lane.DONE, "D");
+  }
+
+  @Test
+  void passOneBindsTheLatestApprovalAtOrBeforeTheDeparture() {
+    // E0 (07:00) binds E2 (05:00), the LATEST approval not after it, leaving E3 (03:00) for the skewed E1 (01:00), which is lifted to 03:00.
+    // Binding the earliest (E3) instead would lift E1 to 05:00 and make it the setter.
+    StatusSnapshot snapshot =
+        reduceAll(
+            List.of(
+                move("E0", t(7), "WP01", Lane.APPROVED, Lane.BLOCKED),
+                move("E1", t(1), "WP01", Lane.APPROVED, Lane.BLOCKED),
+                move("E2", t(5), "WP01", Lane.BLOCKED, Lane.APPROVED),
+                move("E3", t(3), "WP01", Lane.IN_REVIEW, Lane.APPROVED)));
+    assertState(snapshot, "WP01", Lane.BLOCKED, "E0");
+  }
+
+  @Test
+  void passTwoLiftsASkewedDepartureToTheEarliestLaterApproval() {
+    // D (10:00) has no approval at or before it; pass 2 binds A1 (10:02:00.5), the EARLIEST later one, so D applies after A1 and A2 then
+    // re-approves. Binding the latest (A2) would sort D after A2 and leave the work package blocked.
+    StatusSnapshot snapshot =
+        reduceAll(
+            List.of(
+                move("D", t(10), "WP01", Lane.APPROVED, Lane.BLOCKED),
+                move("A1", "2026-09-01T10:02:00.5Z", "WP01", Lane.PLANNED, Lane.APPROVED),
+                move("A2", t(17), "WP01", Lane.BLOCKED, Lane.APPROVED)));
+    assertState(snapshot, "WP01", Lane.APPROVED, "A2");
+  }
+
+  @Test
   void aSeedDepartureIsNotLiftedAndASeedApprovalBindsNothing() {
     StatusSnapshot seedDeparture =
         reduce(toReview("WP01", ""), move("A", t(9), "WP01", Lane.IN_REVIEW, Lane.APPROVED), seed("D", t(5), "WP01", Lane.APPROVED, Lane.IN_PROGRESS, "{d}"));

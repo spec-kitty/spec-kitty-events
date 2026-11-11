@@ -289,7 +289,9 @@ somewhere unexpected:
 - **Two reducer implementations must agree**: the Python fold and the Java port. The
   Java service records the library version it is coupled to (`PORTED_EVENTS_VERSION`),
   and `ManifestCouplingTest` holds it equal to the version the conformance goldens were
-  generated with, but a behaviour change no golden exercises passes that check (G-4).
+  generated with, but a behaviour change no golden exercises passes that check: the 10.5.1
+  approved-departure lift did until #170 ported it with a golden that covers it (G-4, closed).
+  The write service holds its own copy of that ordering (#249).
 
 The history of the recent bumps shows one recurring class: the library ships reducer
 behaviour changes as **patch** releases (its `COMPATIBILITY.md` records each), and the
