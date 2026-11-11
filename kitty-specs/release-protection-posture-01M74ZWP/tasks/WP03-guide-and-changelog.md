@@ -12,7 +12,7 @@ requirement_refs:
 - NFR-003
 planning_base_branch: issue-239-release-protection
 merge_target_branch: issue-239-release-protection
-branch_strategy: Planning artifacts for this mission were generated on issue-239-release-protection. This mission is single_branch; the work lands on issue-239-release-protection, which goes to main as one PR.
+branch_strategy: Planning artifacts for this mission were generated on issue-239-release-protection. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-239-release-protection unless the human explicitly redirects the landing branch.
 subtasks:
 - T010
 - T011

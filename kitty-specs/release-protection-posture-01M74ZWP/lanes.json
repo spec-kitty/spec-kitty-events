@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "mission_slug": "release-protection-posture-01M74ZWP",
+  "mission_id": "01M74ZWPER2T1VXG43JSTSWPFC",
+  "mission_branch": "issue-239-release-protection",
+  "target_branch": "issue-239-release-protection",
+  "lanes": [
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP01",
+        "WP02",
+        "WP03"
+      ],
+      "write_scope": [
+        ".github/workflows/release-protection-audit.yml",
+        ".github/workflows/service-release.yml",
+        "AGENTS.md",
+        "CLAUDE.md",
+        "docs/changelog/unreleased/239-release-protection-audit.md",
+        "docs/guides/service-protocol-and-releases.md",
+        "scripts/release/release-protection-expected.json",
+        "scripts/release/release_protection_audit.py",
+        "tests/fixtures/release_protection/**",
+        "tests/test_release_protection_audit.py",
+        "tests/test_release_protection_workflow.py"
+      ],
+      "predicted_surfaces": [],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-11-11T11:32:44.279880+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP03"
+  ],
+  "planning_commit_sha": "7e40b796dbc458ffbcd694880f71a5a98493c7dd"
+}
