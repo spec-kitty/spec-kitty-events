@@ -235,7 +235,8 @@
       "last_transition_at": "2026-11-11T12:46:59.465541+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Issue matrix completed (9 rows); research.md 'Findings during implementation' records DM-01M758AR full-D4 ruling, per-WP outcomes, 89/91 ack coverage with the two pre-existing exclusions, environment notes."
+        "Issue matrix completed (9 rows); research.md 'Findings during implementation' records DM-01M758AR full-D4 ruling, per-WP outcomes, 89/91 ack coverage with the two pre-existing exclusions, environment notes.",
+        "Cycle 1 fix: #48 and #6514 rows added; #237 row names WP07."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
