@@ -84,6 +84,42 @@
       "verdict": "not-applicable",
       "wp": null
     },
+    "#256": {
+      "evidence_ref": "Follow-up #256: 89/91 ack cases over HTTP; exclusions asserted",
+      "fr": "FR-014",
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "research.md",
+      "title": "Two parity-corpus ack cases cannot run over HTTP",
+      "verdict": "deferred-with-followup",
+      "wp": "WP05"
+    },
+    "#258": {
+      "evidence_ref": "Follow-up #258 (charter: Central CLI-SaaS API Contract)",
+      "fr": "FR-011",
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "COMPATIBILITY.md",
+      "title": "Record narrowed WPStatusChanged acceptance in the central CLI-SaaS contract",
+      "verdict": "deferred-with-followup",
+      "wp": "WP04"
+    },
+    "#259": {
+      "evidence_ref": "Follow-up #259: squad minors not fixed in #257",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "PR #257 squad",
+      "title": "[squad] MINOR findings on PR #257",
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
     "#48": {
       "evidence_ref": "Context: the contract text WP04 rewrote under ruling DM-01M758AR (full D4); #48's own work is closed",
       "fr": null,
