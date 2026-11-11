@@ -30,7 +30,8 @@
       "last_transition_at": "2026-11-11T11:49:22.913108+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "TransitionId (Identified|Absent) models event_id; id-less setter finds no setter (core parity); 7 differential cases from package reducer; NonFiniteLogIdTest; :command-cli:test 1667 pass"
+        "TransitionId (Identified|Absent) models event_id; id-less setter finds no setter (core parity); 7 differential cases from package reducer; NonFiniteLogIdTest; :command-cli:test 1667 pass",
+        "Cycle 1 fix: added idless-setter-cascade-acknowledged-core-drops (+identified-cascade-control) showing the Java-applies/core-drops direction across a log (old fold: in_progress, core: in_review); corrected impossibility notes; _expected catches only TypeError. Out-of-map edit rationale: StateProjections.java one-line change (seen set keyed by TransitionId.id()) forced by removing Transition.idKey(), semantically neutral. FoldDifferentialTest (domain) imports adapter EventLogRowCodec on purpose, to decode rows as the service does (test-only). Extension: expected may be {unreducible: <ExceptionType>}. :command-cli:test 1669 pass."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
