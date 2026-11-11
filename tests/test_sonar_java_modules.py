@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "sonar_java_modules.py"
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -48,19 +50,40 @@ def test_synthetic_module_needs_main_sources_and_defaults_to_its_project_name(
     tmp_path: Path,
 ) -> None:
     (tmp_path / "settings.gradle.kts").write_text(
-        'include(":new-module")\ninclude(":without-main")\n',
+        'include(":new-module")\n'
+        'include(":multi-a", "multi-b")  // several paths, one without a colon\n'
+        '// include(":commented-out")\n'
+        'include(":without-main")\n'
+        'include(":moved")\nproject(":moved").projectDir = file("elsewhere/moved")\n',
         encoding="utf-8",
     )
-    (tmp_path / "new-module" / "src" / "main").mkdir(parents=True)
+    for directory in ("new-module", "multi-a", "multi-b", "elsewhere/moved", "commented-out"):
+        (tmp_path / directory / "src" / "main").mkdir(parents=True)
     (tmp_path / "without-main" / "src" / "test").mkdir(parents=True)
 
+    suffix = "build/reports/jacoco/test/jacocoTestReport.xml"
     assert java_modules(tmp_path) == [
-        (
-            ":new-module",
-            "new-module",
-            "new-module/build/reports/jacoco/test/jacocoTestReport.xml",
-        )
+        (":moved", "elsewhere/moved", f"elsewhere/moved/{suffix}"),
+        (":multi-a", "multi-a", f"multi-a/{suffix}"),
+        (":multi-b", "multi-b", f"multi-b/{suffix}"),
+        (":new-module", "new-module", f"new-module/{suffix}"),
     ]
+
+
+@pytest.mark.parametrize(
+    "settings",
+    [
+        "include(PROJECTS)\n",
+        'include(":a")\nproject(":a").projectDir = File(rootDir, "a")\n',
+    ],
+)
+def test_unparseable_settings_fail_instead_of_dropping_modules(
+    tmp_path: Path, settings: str
+) -> None:
+    (tmp_path / "settings.gradle.kts").write_text(settings, encoding="utf-8")
+
+    with pytest.raises(ValueError, match="settings.gradle.kts"):
+        java_modules(tmp_path)
 
 
 def test_cli_prints_tab_separated_module_report_rows() -> None:

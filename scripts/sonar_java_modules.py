@@ -10,23 +10,41 @@ from pathlib import Path
 
 Module = tuple[str, str, str]
 
-_INCLUDE = re.compile(r'^\s*include\(\s*"(:[^"]+)"\s*\)', re.MULTILINE)
+_LINE_COMMENT = re.compile(r"//[^\n]*")
+_INCLUDE_CALL = re.compile(r"\binclude\(([^)]*)\)")
+_QUOTED = re.compile(r'"([^"]+)"')
 _PROJECT_DIR = re.compile(
-    r'^\s*project\(\s*"(:[^"]+)"\s*\)\.projectDir\s*=\s*file\(\s*"([^"]+)"\s*\)',
-    re.MULTILINE,
+    r'\bproject\(\s*"(:?[^"]+)"\s*\)\.projectDir\s*=\s*file\(\s*"([^"]+)"\s*\)',
 )
 _REPORT_SUFFIX = "build/reports/jacoco/test/jacocoTestReport.xml"
+
+
+def _project_path(name: str) -> str:
+    return name if name.startswith(":") else f":{name}"
 
 
 def java_modules(root: Path, settings_path: Path | None = None) -> list[Module]:
     """Return ``(project name, directory, report)`` rows for projects with main sources."""
     settings = settings_path if settings_path is not None else root / "settings.gradle.kts"
-    text = settings.read_text(encoding="utf-8")
-    project_dirs = {match.group(1): match.group(2) for match in _PROJECT_DIR.finditer(text)}
+    text = _LINE_COMMENT.sub("", settings.read_text(encoding="utf-8"))
+    project_dirs = {_project_path(m.group(1)): m.group(2) for m in _PROJECT_DIR.finditer(text)}
+    if len(project_dirs) != text.count(".projectDir"):
+        raise ValueError(
+            f'{settings}: a projectDir assignment is not project("..").projectDir = file("..")'
+        )
+
+    names: list[str] = []
+    include_calls = 0
+    for call in _INCLUDE_CALL.finditer(text):
+        arguments = _QUOTED.findall(call.group(1))
+        if arguments:
+            include_calls += 1
+        names.extend(_project_path(argument) for argument in arguments)
+    if include_calls != len(re.findall(r"\binclude\(", text)):
+        raise ValueError(f"{settings}: an include(...) call has no quoted project path")
 
     modules: list[Module] = []
-    for match in _INCLUDE.finditer(text):
-        name = match.group(1)
+    for name in names:
         directory = project_dirs.get(name, name.lstrip(":").replace(":", "/"))
         if (root / directory / "src" / "main").is_dir():
             report = (Path(directory) / _REPORT_SUFFIX).as_posix()
