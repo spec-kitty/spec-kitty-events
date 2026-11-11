@@ -169,6 +169,9 @@
       "last_event_id": "01M759KHN937254PFJB2JB5MA9",
       "last_transition_at": "2026-11-11T12:33:57.929538+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "89/91 ack cases run over HTTP with byte assertions against committed ack-bytes.json (encoder-mode bootstrap; CI core --check in write-core-parity proves it); 2 ack cases asserted-excluded (no wire form / WP_NOT_FOUND precondition). Out-of-map edit: none. WP06: tests/test_service_workflows.py must list the new step 'Check the status-transition ack bytes against core' (scripts/conformance/extract_ack_bytes.py --check)."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 10527,
