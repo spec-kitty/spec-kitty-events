@@ -9,6 +9,7 @@ jacoco {
     toolVersion = libs.findVersion("jacoco").get().requiredVersion
 }
 
+// :domain-model and :event-log classes are also in the :mission-status-api aggregate; Sonar merges the duplicates.
 tasks.named<Test>("test") {
     finalizedBy("jacocoTestReport")
 }

@@ -74,11 +74,12 @@ Without the `SONAR_TOKEN` secret (forks) the job skips green with a notice.
 Java library types resolve from explicit classpaths. The `sonarLibraries` Gradle task, registered
 by the root build, writes each Java project's compile classpath to `build/sonar/libraries.txt` and
 its test classpath to `build/sonar/test-libraries.txt`. The collect step joins those files into
-`sonar.java.libraries` and `sonar.java.test.libraries`. Only when no such file exists does it fall
+`sonar.java.libraries` and `sonar.java.test.libraries`. Only when the classpaths step failed or wrote no such file does it fall
 back to the `modules-2` Gradle cache glob, with a warning.
 
-`sonar-project.properties` sets `sonar.test.inclusions=**/test_*.py`, so the packaged conformance
-tests under `src/spec_kitty_events/conformance/` count as test code. `sonar.sources` lists
+`sonar-project.properties` sets no `sonar.test.inclusions` (it only narrows files already under
+`sonar.tests`, so it would drop the Java tests), and the packaged conformance tests under
+`src/spec_kitty_events/conformance/` are scanned as main code. `sonar.sources` lists
 `java/src/main/java` and no source root overlaps a test root.
 
 The analysis steps run under `!cancelled()` rather than `always()`, so a cancelled run does not
