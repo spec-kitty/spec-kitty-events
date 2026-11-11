@@ -1,0 +1,40 @@
+[
+  {
+    "id": 26558116,
+    "name": "main",
+    "target": "branch",
+    "source_type": "Repository",
+    "source": "spec-kitty/spec-kitty-events",
+    "enforcement": "active",
+    "node_id": "RRS_lACqUmVwb3NpdG9yec5EJVwhzgGVPqQ",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/spec-kitty/spec-kitty-events/rulesets/26558116"
+      },
+      "html": {
+        "href": "https://github.com/spec-kitty/spec-kitty-events/rules/26558116"
+      }
+    },
+    "created_at": "2026-11-04T20:07:08.302+01:00",
+    "updated_at": "2026-11-05T18:19:11.813+01:00"
+  },
+  {
+    "id": 26752412,
+    "name": "service-release-tags",
+    "target": "tag",
+    "source_type": "Repository",
+    "source": "spec-kitty/spec-kitty-events",
+    "enforcement": "active",
+    "node_id": "RRS_lACqUmVwb3NpdG9yec5EJVwhzgGYNZw",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/spec-kitty/spec-kitty-events/rulesets/26752412"
+      },
+      "html": {
+        "href": "https://github.com/spec-kitty/spec-kitty-events/rules/26752412"
+      }
+    },
+    "created_at": "2026-11-07T10:38:11.505+01:00",
+    "updated_at": "2026-11-07T10:38:11.576+01:00"
+  }
+]

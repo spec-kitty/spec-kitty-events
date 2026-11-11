@@ -1,0 +1,129 @@
+{
+  "environments": [
+    "github-pages",
+    "pypi",
+    "service-release",
+    "testpypi"
+  ],
+  "repository": "spec-kitty/spec-kitty-events",
+  "rulesets": {
+    "main": {
+      "conditions": {
+        "ref_name": {
+          "exclude": [],
+          "include": [
+            "~DEFAULT_BRANCH"
+          ]
+        }
+      },
+      "enforcement": "active",
+      "rules": [
+        {
+          "type": "deletion"
+        },
+        {
+          "type": "non_fast_forward"
+        },
+        {
+          "parameters": {
+            "allowed_merge_methods": [
+              "merge",
+              "rebase",
+              "squash"
+            ],
+            "dismiss_stale_reviews_on_push": false,
+            "dismissal_restriction": {
+              "allowed_actors": [],
+              "enabled": false
+            },
+            "require_code_owner_review": false,
+            "require_extra_approval_for_unattributed_changes": true,
+            "require_last_push_approval": false,
+            "required_approving_review_count": 0,
+            "required_review_thread_resolution": false,
+            "required_reviewers": []
+          },
+          "type": "pull_request"
+        },
+        {
+          "type": "required_linear_history"
+        },
+        {
+          "parameters": {
+            "do_not_enforce_on_create": false,
+            "required_status_checks": [
+              {
+                "context": "acceptance",
+                "integration_id": 15368
+              },
+              {
+                "context": "cross-repo-harness-tests",
+                "integration_id": 15368
+              },
+              {
+                "context": "docs-build",
+                "integration_id": 15368
+              },
+              {
+                "context": "service-gate",
+                "integration_id": 15368
+              }
+            ],
+            "strict_required_status_checks_policy": false
+          },
+          "type": "required_status_checks"
+        }
+      ],
+      "target": "branch"
+    },
+    "service-release-tags": {
+      "conditions": {
+        "ref_name": {
+          "exclude": [],
+          "include": [
+            "refs/tags/service-v*"
+          ]
+        }
+      },
+      "enforcement": "active",
+      "rules": [
+        {
+          "type": "creation"
+        },
+        {
+          "type": "deletion"
+        },
+        {
+          "type": "non_fast_forward"
+        },
+        {
+          "type": "update"
+        }
+      ],
+      "target": "tag"
+    }
+  },
+  "service_release": {
+    "can_admins_bypass": false,
+    "deployment_branch_policy": {
+      "custom_branch_policies": true,
+      "protected_branches": false
+    },
+    "deployment_policies": [
+      {
+        "name": "service-v*",
+        "type": "tag"
+      }
+    ],
+    "prevent_self_review": true,
+    "protection_rules": [
+      "branch_policy",
+      "required_reviewers"
+    ],
+    "reviewers": [
+      "Team:admins",
+      "User:stijn-dejongh"
+    ],
+    "wait_timer": 0
+  }
+}
