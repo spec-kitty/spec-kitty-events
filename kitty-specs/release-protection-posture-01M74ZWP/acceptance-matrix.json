@@ -108,10 +108,10 @@
       "criterion_id": "FR-011",
       "description": "Verify FR-011 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "tests/test_release_protection_audit.py summary written incl. ERROR line; exit codes 0/1/2",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T11:54:17.307746+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
