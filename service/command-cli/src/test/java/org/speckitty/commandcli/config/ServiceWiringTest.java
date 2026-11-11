@@ -36,13 +36,14 @@ class ServiceWiringTest {
           InstanceId.mint(System.currentTimeMillis(), random), WriteToken.mint(random), RepositoryIdentity.of(gcd),
           "test", ignored -> { });
       ServiceWiring wiring = new ServiceWiring();
-      Duration budget = wiring.writeBudget();
+      Duration budget = wiring.defaultWriteBudget();
       assertThat(budget).isEqualTo(Duration.ofSeconds(10));
       FilesystemMissionCatalog missions = wiring.missionCatalog(runtime);
-      StatusLog statusLog = wiring.statusLog(runtime, missions);
+      ServiceWiring.RepositoryRoot root = wiring.repositoryRoot(runtime, missions);
+      StatusLog statusLog = wiring.statusLog(runtime, root);
       WriteTurn turn = wiring.writeTurn();
       LongSupplier clock = wiring.nanoClock();
-      WriteService writes = wiring.writeService(runtime, missions, statusLog, wiring.rowCodec(), turn, budget, clock,
+      WriteService writes = wiring.writeService(root, missions, statusLog, wiring.rowCodec(), turn, budget, clock,
           new org.speckitty.commandcli.application.lifecycle.ServiceLifecycle(java.time.Clock.systemUTC(), () -> { }));
       assertThat(writes.budget()).isEqualTo(Duration.ofSeconds(10));
     }

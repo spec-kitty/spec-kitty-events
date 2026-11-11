@@ -20,7 +20,6 @@ import org.speckitty.commandcli.domain.authority.Authority;
 import org.speckitty.commandcli.domain.service.WriteToken;
 import org.speckitty.missionstatus.adapter.out.statuslog.StatusLogAppender;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.web.server.context.WebServerInitializedEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
@@ -35,6 +34,9 @@ import tools.jackson.databind.json.JsonMapper;
  */
 @Configuration(proxyBeanMethods = false)
 class ServiceWiring {
+
+  /** The repository root checkout, as its own type so the catalog is injected only through its port. */
+  record RepositoryRoot(java.nio.file.Path path) {}
 
   @Bean
   ServeRuntime serveRuntime() {
@@ -77,10 +79,9 @@ class ServiceWiring {
     return new WriteTurn();
   }
 
-  /** The one write budget a write and a repair share across the turn and the Mission lock (R7). A test may register its own. */
+  /** The one write budget a write and a repair share across the turn and the Mission lock (R7). A test overrides it with a {@code @Primary} Duration bean. */
   @Bean
-  @ConditionalOnMissingBean(name = "writeBudget")
-  Duration writeBudget() {
+  Duration defaultWriteBudget() {
     return Duration.ofSeconds(10);
   }
 
@@ -94,15 +95,16 @@ class ServiceWiring {
     return new FilesystemMissionCatalog(runtime.options().gitCommonDir());
   }
 
+  /** The repository root checkout: the catalog's resolution, else the git common dir's parent. */
   @Bean
-  StatusLog statusLog(ServeRuntime runtime, FilesystemMissionCatalog missions) {
-    return new EventLogStatusLog(new StatusLogAppender(), runtime.options().gitCommonDir(), root(runtime, missions));
+  RepositoryRoot repositoryRoot(ServeRuntime runtime, FilesystemMissionCatalog missions) {
+    java.nio.file.Path gcd = runtime.options().gitCommonDir();
+    return new RepositoryRoot(missions.root().orElse(gcd.toAbsolutePath().getParent()));
   }
 
-  /** The repository root checkout: the catalog's resolution, else the git common dir's parent. */
-  private static java.nio.file.Path root(ServeRuntime runtime, FilesystemMissionCatalog missions) {
-    java.nio.file.Path gcd = runtime.options().gitCommonDir();
-    return missions.root().orElse(gcd.toAbsolutePath().getParent());
+  @Bean
+  StatusLog statusLog(ServeRuntime runtime, RepositoryRoot root) {
+    return new EventLogStatusLog(new StatusLogAppender(), runtime.options().gitCommonDir(), root.path());
   }
 
   @Bean
@@ -111,9 +113,9 @@ class ServiceWiring {
   }
 
   @Bean
-  WriteService writeService(ServeRuntime runtime, FilesystemMissionCatalog missions, StatusLog statusLog, RowCodec codec,
+  WriteService writeService(RepositoryRoot root, MissionCatalog missions, StatusLog statusLog, RowCodec codec,
       WriteTurn turn, Duration writeBudget, LongSupplier nanoClock, ServiceLifecycle lifecycle) {
-    return new WriteService(missions, statusLog, codec, turn, Authority.standard(root(runtime, missions).toString()), writeBudget,
+    return new WriteService(missions, statusLog, codec, turn, Authority.standard(root.path().toString()), writeBudget,
         nanoClock, lifecycle::draining);
   }
 
