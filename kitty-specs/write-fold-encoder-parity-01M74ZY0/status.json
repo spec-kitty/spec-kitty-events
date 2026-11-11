@@ -1,7 +1,7 @@
 {
-  "event_count": 35,
-  "last_event_id": "01M758WD4HS04PMA3ZGYWB2MY1",
-  "materialized_at": "2026-11-11T12:21:19.633802+00:00",
+  "event_count": 36,
+  "last_event_id": "01M758Y2TVV2V5HXH32TK31BTE",
+  "materialized_at": "2026-11-11T12:22:14.619114+00:00",
   "mission_number": "",
   "mission_slug": "write-fold-encoder-parity-01M74ZY0",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 3
   },
   "work_packages": {
@@ -122,24 +122,24 @@
       }
     },
     "WP04": {
-      "actor": "claude",
-      "agent": "claude",
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "for_review",
-      "last_event_id": "01M758WD4HS04PMA3ZGYWB2MY1",
-      "last_transition_at": "2026-11-11T12:21:19.633802+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M758Y2TVV2V5HXH32TK31BTE",
+      "last_transition_at": "2026-11-11T12:22:14.619114+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "- 2026-11-11T12:10:57Z – claude – shell_pid=31293 – Blocked: removing unforced for_review->in_progress and for_review->done fails 2 packaged conformance fixtures (edge_cases/valid/wp_status_changed_unforced_for_review_to_in_progress_with_review_ref.json, lifecycle/valid/wp_status_changed_summary_done.json); escalating per prompt, no fixture edited. Pin graph matches research D-6 exactly. Draft status.py patch saved in scratchpad (wp04-status-edges.patch); tree reverted.",
         "11.5.0: validate_transition/reduce_status_events = core edge graph at 512567ee (matches research D-6, no diff at pin). Removed unforced edges: for_review->approved|done|in_progress|planned, in_review->for_review, genesis->blocked, blocked->blocked; blocked/canceled now explicit per state. 8 tests in test_status.py changed (rerouted via in_review or forced, same intent). New: exhaustive test_validate_transition_core_edges.py, exact-violation tests, reducer anomaly test. Out-of-map edits (operator ruling D4 full, DM-01M758AR0XV801HVGA8ZPQWATR): conformance manifest.json + 2 valid fixtures forced + 2 new invalid twins (min_version 11.5.0) + zeitgeist_attrs/valid/wp_status_changed_done_drops_evidence.json from_lane for_review->in_review (also asserted a removed edge). Java :java-binding:test green (no java transition validator). npm run validate NOT run (doc-toolkit 401 from npm.pkg.github.com); docs_index --clean leaves tree clean. tests/test_version_not_amended.py 2 failures are pre-existing shallow-checkout failures."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 31293,
-      "shell_pid_created_at": "1794398983.93",
+      "role": "reviewer",
+      "shell_pid": 6845,
+      "shell_pid_created_at": "1794399731.3",
       "subtasks": {
         "T013": "done",
         "T017": "done",
