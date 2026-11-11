@@ -65,6 +65,9 @@
       "last_event_id": "01M757ESGM38BZJPMCBQCCWAGW",
       "last_transition_at": "2026-11-11T11:56:24.980762+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "StatusLogAppender takes an injected LongSupplier nano clock (additive ctors; defaults System::nanoTime); ServiceWiring.statusLog passes the nanoClock bean. Mutation check: reverting to System.nanoTime fails 2/3 appender and 1/2 adapter clock tests. event-log 582 tests, command-cli 1671, 0 failures. No out-of-map edits."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 19193,
