@@ -170,7 +170,8 @@
       "last_transition_at": "2026-11-11T12:38:02.966092+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "89/91 ack cases run over HTTP with byte assertions against committed ack-bytes.json (encoder-mode bootstrap; CI core --check in write-core-parity proves it); 2 ack cases asserted-excluded (no wire form / WP_NOT_FOUND precondition). Out-of-map edit: none. WP06: tests/test_service_workflows.py must list the new step 'Check the status-transition ack bytes against core' (scripts/conformance/extract_ack_bytes.py --check)."
+        "89/91 ack cases run over HTTP with byte assertions against committed ack-bytes.json (encoder-mode bootstrap; CI core --check in write-core-parity proves it); 2 ack cases asserted-excluded (no wire form / WP_NOT_FOUND precondition). Out-of-map edit: none. WP06: tests/test_service_workflows.py must list the new step 'Check the status-transition ack bytes against core' (scripts/conformance/extract_ack_bytes.py --check).",
+        "Approved: 89/91 ack cases over HTTP with real appended-bytes assertions (prior bytes untouched + suffix == concatenated unit texts; resource keys == ack cases run; mutation of batch-cross-wp-claims fails the test). Resource equals json.dumps(sort_keys) of request rows for all 91 entries. extract_ack_bytes.py core-mode guard mirrors generate_status_append.py; core mode imports stdlib+core only; service.yml one added step (bash -eo pipefail via job shell: bash). Non-blocking: NFR-002/SC-004 literal 100% vs 89/91 - record the two exclusions as a mission ruling; follow-ups for WP_NOT_FOUND-vs-core-emit divergence and sequential annotation+transition over HTTP; ackBytes() reparses per call."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
