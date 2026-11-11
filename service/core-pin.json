@@ -1,1 +1,1 @@
-{"repository": "spec-kitty/spec-kitty", "sha": "512567eee71e31bb39f580c4f7acf8b865e9d1b2", "purpose": "CI-only peers: lock interop and the nightly corpus oracle (ADR 0002 D4)"}
+{"repository": "spec-kitty/spec-kitty", "sha": "512567eee71e31bb39f580c4f7acf8b865e9d1b2", "purpose": "CI-only peers: lock interop, the nightly corpus oracle and the write-core-parity oracles (status_append, transition parity, fromisoformat vectors, ack bytes) (ADR 0002 D4)"}

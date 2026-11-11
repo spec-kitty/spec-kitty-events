@@ -1,0 +1,37 @@
+{
+  "expected": {
+    "unreducible": "TypeError"
+  },
+  "id": "idless-same-timestamp-unorderable",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:01+00:00",
+      "event_id": null,
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "in_review",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "planned",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:01+00:00",
+      "event_id": "01J00000000000000000000001",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "planned",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "claimed",
+      "wp_id": "WP01"
+    }
+  ],
+  "notes": "Same at: an id-less in_review->planned rollback and a forward planned->claimed share a timestamp. Because core never finds an id-less setter, arm (i) of the arbitration cannot fire for it; and the two rows tie on every sort key before the id, so the sort compares None with a string and raises TypeError: the log is unreducible in core and in Java (both folds refuse, before and after the fix). This pins that the same-timestamp arm is unreachable through an id-less setter on the plain path; no lane-differing log was constructible for it."
+}

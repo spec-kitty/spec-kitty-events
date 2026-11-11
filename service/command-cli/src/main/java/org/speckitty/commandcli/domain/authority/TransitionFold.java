@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.speckitty.commandcli.domain.authority.WriteFold.Transition;
 import org.speckitty.missionstatus.domain.model.CodePoints;
@@ -15,6 +16,9 @@ final class TransitionFold {
   private static final Set<Lane> ROLLBACK_TARGETS = Set.of(Lane.PLANNED, Lane.CLAIMED, Lane.IN_PROGRESS);
   private static final List<String> RUNTIME_SLOTS = List.of("shell_pid", "shell_pid_created_at", "subtasks", "notes",
       "tracker_refs", "agent", "assignee", "review", "role", "agent_profile", "agent_profile_version", "model", "provider");
+
+  /** Internal slot: the {@link TransitionId} of the event that set the lane in force (absent slot = no setter). */
+  static final String SETTER = "__setter";
 
   private TransitionFold() {}
 
@@ -42,7 +46,8 @@ final class TransitionFold {
     state.put("actor", Actors.project(event.actor()));
     state.put("__raw_actor", event.actor());
     state.put("last_transition_at", event.at());
-    state.put("last_event_id", event.id());
+    state.put(SETTER, event.id());
+    state.put("last_event_id", event.id().spelling());
     int priorForce = previous == null ? 0 : ((Number) previous.getOrDefault("force_count", 0)).intValue();
     state.put("force_count", priorForce + (event.force() ? 1 : 0));
     if (previous != null) {
@@ -70,19 +75,22 @@ final class TransitionFold {
 
   private static Verdict arbitrate(Map<String, Object> current, Transition event, List<Transition> all) {
     if (current == null) return Verdict.APPLY;
-    Transition setter = find(String.valueOf(current.get("last_event_id")), all);
-    if (setter != null && current.get("last_transition_at").equals(event.at())) {
+    Optional<Transition> found = setterOf(current, all);
+    if (found.isEmpty()) return Verdict.APPLY;
+    Transition setter = found.get();
+    if (current.get("last_transition_at").equals(event.at())) {
       Verdict timestamp = sameTimestamp(event, setter, all);
       if (timestamp != null) return timestamp;
     }
-    boolean stale = setter != null && !event.force() && !event.from().wire().equals(current.get("lane"))
+    boolean stale = !event.force() && !event.from().wire().equals(current.get("lane"))
         && !continuityExempt(event, setter, all);
     return stale ? Verdict.LOST_ON_CONTINUITY : Verdict.APPLY;
   }
 
-  private static Transition find(String eventId, List<Transition> all) {
-    if ("null".equals(eventId)) return null;
-    return all.stream().filter(event -> event.id().equals(eventId)).findFirst().orElse(null);
+  /** Core's {@code _find_event_by_id}: an id-less setter is no setter, so neither the same-timestamp nor the continuity arm applies. */
+  private static Optional<Transition> setterOf(Map<String, Object> current, List<Transition> all) {
+    if (!(current.get(SETTER) instanceof TransitionId id) || !id.identified()) return Optional.empty();
+    return all.stream().filter(event -> event.id().equals(id)).findFirst();
   }
 
   private static Verdict sameTimestamp(Transition event, Transition setter, List<Transition> all) {

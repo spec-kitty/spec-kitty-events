@@ -18,19 +18,21 @@ final class EventOrdering {
 
   static int compare(Transition left, Transition right) {
     int at = CodePoints.compare(left.at(), right.at());
-    return at != 0 ? at : EventIds.compare(left.idKey(), right.idKey());
+    return at != 0 ? at : left.id().compareTo(right.id());
   }
 
   /**
-   * First-wins dedupe by core's id equality. The fold keys several maps by an id's spelling, so two ids that spell alike without being
-   * equal (the text {@code "1"} and the number {@code 1}), which core tells apart, make the log unreducible here rather than merge.
+   * First-wins dedupe by core's id equality, keyed by {@link TransitionId}. Two ids that spell alike without being equal (the
+   * text {@code "1"} and the number {@code 1}), which core tells apart, still make the log unreducible here: that refusal is a
+   * conservative pre-existing rule kept from before the maps were keyed by {@code TransitionId}; dropping it is tracked in #259.
    */
   static List<Transition> dedup(List<Transition> transitions) {
-    Map<Object, List<Transition>> groups = new LinkedHashMap<>();
-    transitions.forEach(event -> groups.computeIfAbsent(event.idKey(), ignored -> new ArrayList<>()).add(event));
+    Map<TransitionId, List<Transition>> groups = new LinkedHashMap<>();
+    transitions.forEach(event -> groups.computeIfAbsent(event.id(), ignored -> new ArrayList<>()).add(event));
     Set<String> spellings = new HashSet<>();
     for (List<Transition> rows : groups.values()) {
-      if (!spellings.add(rows.getFirst().id())) throw new UnreducibleLog("Event ids that spell alike are not equal");
+      TransitionId id = rows.getFirst().id();
+      if (id.identified() && !spellings.add(id.spelling())) throw new UnreducibleLog("Event ids that spell alike are not equal");
     }
     List<Transition> unique = new ArrayList<>();
     groups.values().forEach(rows -> unique.add(rows.size() > 1 && rows.stream().allMatch(Transition::seed)
@@ -39,7 +41,7 @@ final class EventOrdering {
   }
 
   static List<Transition> order(List<Transition> events) {
-    Map<String, String> lifted = approvedDepartureSortAt(events);
+    Map<TransitionId, String> lifted = approvedDepartureSortAt(events);
     Carry carry = carry(events, lifted);
     List<String> approvals = events.stream()
         .filter(event -> event.to() == Lane.APPROVED && event.from() != Lane.APPROVED && !event.seed())
@@ -56,7 +58,7 @@ final class EventOrdering {
     result = Boolean.compare(afterApproval(left, carry, approvals), afterApproval(right, carry, approvals));
     if (result != 0) return result;
     result = Integer.compare(carry.sequence().getOrDefault(left.id(), 0), carry.sequence().getOrDefault(right.id(), 0));
-    return result != 0 ? result : EventIds.compare(left.idKey(), right.idKey());
+    return result != 0 ? result : left.id().compareTo(right.id());
   }
 
   private static boolean afterApproval(Transition event, Carry carry, List<String> approvals) {
@@ -64,7 +66,7 @@ final class EventOrdering {
         || (event.from() == Lane.APPROVED && !event.seed() && approvals.contains(event.wpId() + "\u0000" + event.at()));
   }
 
-  private static Map<String, String> approvedDepartureSortAt(List<Transition> events) {
+  private static Map<TransitionId, String> approvedDepartureSortAt(List<Transition> events) {
     Map<String, List<Transition>> arrivals = new HashMap<>();
     Map<String, List<Transition>> departures = new HashMap<>();
     for (Transition event : events) {
@@ -75,13 +77,13 @@ final class EventOrdering {
         departures.computeIfAbsent(event.wpId(), ignored -> new ArrayList<>()).add(event);
       }
     }
-    Map<String, String> lifted = new HashMap<>();
+    Map<TransitionId, String> lifted = new HashMap<>();
     departures.forEach((wpId, wpDepartures) -> pairDepartures(wpDepartures,
         arrivals.getOrDefault(wpId, List.of()).stream().sorted(EventOrdering::compare).collect(java.util.stream.Collectors.toCollection(ArrayList::new)), lifted));
     return lifted;
   }
 
-  private static void pairDepartures(List<Transition> departures, List<Transition> unbound, Map<String, String> lifted) {
+  private static void pairDepartures(List<Transition> departures, List<Transition> unbound, Map<TransitionId, String> lifted) {
     List<Transition> skewed = new ArrayList<>();
     for (Transition departure : departures.stream().sorted(EventOrdering::compare).toList()) {
       List<Transition> earlier = unbound.stream().filter(arrival -> CodePoints.compare(arrival.at(), departure.at()) <= 0).toList();
@@ -97,10 +99,10 @@ final class EventOrdering {
     }
   }
 
-  private static Carry carry(List<Transition> events, Map<String, String> lifted) {
+  private static Carry carry(List<Transition> events, Map<TransitionId, String> lifted) {
     if (lifted.isEmpty()) return new Carry(Map.of(), Map.of());
-    Map<String, String> effective = new HashMap<>(lifted);
-    Map<String, Integer> sequence = new HashMap<>();
+    Map<TransitionId, String> effective = new HashMap<>(lifted);
+    Map<TransitionId, Integer> sequence = new HashMap<>();
     Map<String, String> floors = new HashMap<>();
     int position = 0;
     for (Transition event : events.stream().sorted(EventOrdering::compare).toList()) {
@@ -143,5 +145,5 @@ final class EventOrdering {
     return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
   }
 
-  private record Carry(Map<String, String> effective, Map<String, Integer> sequence) {}
+  private record Carry(Map<TransitionId, String> effective, Map<TransitionId, Integer> sequence) {}
 }

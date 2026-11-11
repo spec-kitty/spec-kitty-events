@@ -1,0 +1,51 @@
+{
+  "expected": {
+    "WP01": "in_review"
+  },
+  "id": "idless-setter-cascade-acknowledged-core-drops",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:01+00:00",
+      "event_id": null,
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "planned",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "claimed",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:02+00:00",
+      "event_id": "01J00000000000000000000001",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "for_review",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "in_review",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:03+00:00",
+      "event_id": "01J00000000000000000000003",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "claimed",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "in_progress",
+      "wp_id": "WP01"
+    }
+  ],
+  "notes": "Across a log, the pre-fix fold acknowledges what core drops. Row 2 (for_review->in_review) applies in core (no id-less setter) and row 3 (claimed->in_progress) is then dropped on continuity (in_review). The pre-fix fold dropped row 2 against the id-less row, so row 3 continued claimed and was applied (in_progress). Divergence direction: Java applied, core dropped."
+}

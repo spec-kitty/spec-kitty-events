@@ -177,11 +177,26 @@ def test_write_core_parity_checks_oracles_with_core_python() -> None:
     assert len(checkouts) == 2
     assert all(s["with"]["persist-credentials"] is False for s in checkouts)
     runs = [s.get("run", "") for s in job["steps"]]
+    # The oracles refuse any interpreter but core's own (.python-version), and the job-wide UV_PYTHON
+    # from setup-uv would otherwise pick 3.12 for core's venv (#230, 7ae9dde9).
+    core_pin = 'UV_PYTHON="$(cat .python-version)"'
+    core_sync = [
+        s
+        for s in job["steps"]
+        if s.get("working-directory") == "core" and "uv sync" in s.get("run", "")
+    ]
+    assert len(core_sync) == 1
+    assert core_sync[0]["run"].startswith(f"{core_pin} uv sync")
+    sync_packs = [s for s in job["steps"] if "sync_packs.py" in s.get("run", "")]
+    assert len(sync_packs) == 1
+    assert sync_packs[0]["run"].index(core_pin) < sync_packs[0]["run"].index("uv run")
     commands = [
         'SPEC_KITTY_CORE_CHECKOUT="$GITHUB_WORKSPACE/core" core/.venv/bin/python '
         "scripts/conformance/generate_status_append.py --check",
         'SPEC_KITTY_CORE_CHECKOUT="$GITHUB_WORKSPACE/core" core/.venv/bin/python '
         "scripts/conformance/generate_transition_parity.py --check",
+        'SPEC_KITTY_CORE_CHECKOUT="$GITHUB_WORKSPACE/core" core/.venv/bin/python '
+        "scripts/conformance/extract_ack_bytes.py --check",
         "core/.venv/bin/python scripts/conformance/generate_fromisoformat_vectors.py --check",
     ]
     for command in commands:

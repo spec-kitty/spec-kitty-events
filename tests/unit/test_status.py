@@ -718,13 +718,14 @@ class TestTransitionMatrix:
                 Lane.APPROVED,
                 {"evidence": None},
             ),
+            (Lane.FOR_REVIEW, Lane.IN_REVIEW, {}),
             (
-                Lane.FOR_REVIEW,
+                Lane.IN_REVIEW,
                 Lane.APPROVED,
                 {"evidence": None},
             ),
             (
-                Lane.FOR_REVIEW,
+                Lane.IN_REVIEW,
                 Lane.DONE,
                 {"evidence": None},  # placeholder, replaced below
             ),
@@ -734,9 +735,15 @@ class TestTransitionMatrix:
                 {"evidence": None},
             ),
             (
-                Lane.FOR_REVIEW,
+                Lane.IN_REVIEW,
                 Lane.IN_PROGRESS,
                 {"review_ref": "PR#42"},
+            ),
+            # for_review -> in_progress is not an unforced core edge (D4); forced it is valid.
+            (
+                Lane.FOR_REVIEW,
+                Lane.IN_PROGRESS,
+                {"review_ref": "PR#42", "force": True, "reason": "rework needed"},
             ),
             (
                 Lane.FOR_REVIEW,
@@ -776,10 +783,12 @@ class TestTransitionMatrix:
             "start",
             "submit",
             "approve-direct",
+            "claim-review",
             "approve-from-review",
-            "approve",
+            "done-from-review",
             "merge-approved",
             "rollback",
+            "rollback-forced-from-for-review",
             "reject-from-review",
             "reopen-approved",
             "reject-approved",
@@ -870,9 +879,39 @@ class TestGuardConditions:
             from_lane=Lane.FOR_REVIEW,
             to_lane=Lane.IN_PROGRESS,
             review_ref="PR#42",
+            force=True,
+            reason="rework needed",
         )
         result = validate_transition(payload)
         assert result.valid is True
+
+    def test_unforced_for_review_to_in_progress_reports_edge_violation(self) -> None:
+        """D4: for_review -> in_progress is not a core edge; review_ref alone is not enough."""
+        payload = _make_payload(
+            from_lane=Lane.FOR_REVIEW,
+            to_lane=Lane.IN_PROGRESS,
+            review_ref="PR#42",
+        )
+        result = validate_transition(payload)
+        assert result.valid is False
+        assert result.violations == (
+            f"Transition {Lane.FOR_REVIEW} -> {Lane.IN_PROGRESS} is not allowed",
+        )
+
+    def test_unforced_for_review_to_planned_reports_edge_rejection_and_review_ref(self) -> None:
+        """D4: unforced for_review -> planned reports the edge, the family and review_ref."""
+        payload = _make_payload(
+            from_lane=Lane.FOR_REVIEW,
+            to_lane=Lane.PLANNED,
+            reason="not ready",
+        )
+        result = validate_transition(payload)
+        assert result.valid is False
+        assert result.violations == (
+            "review-rejection rollback for_review -> planned requires force=True",
+            f"Transition {Lane.FOR_REVIEW} -> {Lane.PLANNED} is not allowed",
+            "for_review -> planned requires review_ref",
+        )
 
     def test_for_review_to_in_progress_with_blank_review_ref(self) -> None:
         payload = _make_payload(
@@ -1099,7 +1138,7 @@ class TestReduceStatusEvents:
     """Test reduce_status_events function."""
 
     def test_happy_path_full_lifecycle(self) -> None:
-        """planned -> claimed -> in_progress -> for_review -> approved -> done."""
+        """planned -> claimed -> in_progress -> for_review -> in_review -> approved -> done."""
         base_t = datetime(2026, 1, 1, tzinfo=timezone.utc)
         evidence = DoneEvidence(
             repos=[RepoEvidence(repo="test", branch="main", commit="abc123")],
@@ -1138,9 +1177,17 @@ class TestReduceStatusEvents:
                 "01HV0000000000000000000005",
                 "WP01",
                 Lane.FOR_REVIEW,
-                Lane.APPROVED,
+                Lane.IN_REVIEW,
                 5,
                 timestamp=base_t + timedelta(seconds=4),
+            ),
+            _make_event(
+                "01HV0000000000000000000007",
+                "WP01",
+                Lane.IN_REVIEW,
+                Lane.APPROVED,
+                6,
+                timestamp=base_t + timedelta(seconds=5),
                 evidence=evidence,
             ),
             _make_event(
@@ -1148,8 +1195,8 @@ class TestReduceStatusEvents:
                 "WP01",
                 Lane.APPROVED,
                 Lane.DONE,
-                6,
-                timestamp=base_t + timedelta(seconds=5),
+                7,
+                timestamp=base_t + timedelta(seconds=6),
                 evidence=evidence,
             ),
         ]
@@ -1160,7 +1207,44 @@ class TestReduceStatusEvents:
         assert state.last_event_id == "01HV0000000000000000000006"
         assert state.evidence is not None
         assert result.anomalies == []
-        assert result.event_count == 6
+        assert result.event_count == 7
+
+    def test_unforced_for_review_to_done_in_log_becomes_anomaly(self) -> None:
+        """D4: reduce_status_events follows core's edge graph; for_review -> done is not an edge."""
+        base_t = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        evidence = _make_evidence()
+        steps = [
+            (None, Lane.PLANNED),
+            (Lane.PLANNED, Lane.CLAIMED),
+            (Lane.CLAIMED, Lane.IN_PROGRESS),
+            (Lane.IN_PROGRESS, Lane.FOR_REVIEW),
+        ]
+        events = [
+            _make_event(
+                f"01HV00000000000000000D000{i}",
+                "WP01",
+                f,
+                t,
+                i + 1,
+                timestamp=base_t + timedelta(seconds=i),
+            )
+            for i, (f, t) in enumerate(steps)
+        ]
+        events.append(
+            _make_event(
+                "01HV00000000000000000D0009",
+                "WP01",
+                Lane.FOR_REVIEW,
+                Lane.DONE,
+                9,
+                timestamp=base_t + timedelta(seconds=9),
+                evidence=evidence,
+            )
+        )
+        result = reduce_status_events(events)
+        assert [a.event_id for a in result.anomalies] == ["01HV00000000000000000D0009"]
+        assert "is not allowed" in result.anomalies[0].reason
+        assert result.wp_states["WP01"].current_lane == Lane.FOR_REVIEW
 
     def test_reducer_preserves_approved_without_done(self) -> None:
         base_t = datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -1379,6 +1463,8 @@ class TestReduceStatusEvents:
             5,
             timestamp=base_t + timedelta(seconds=4),
             evidence=evidence,
+            force=True,
+            reason="merge-time completion",
         )
         e_rollback = _make_event(
             "01HV0000000000000000000006",
@@ -1388,6 +1474,8 @@ class TestReduceStatusEvents:
             5,
             timestamp=base_t + timedelta(seconds=4),
             review_ref="PR#42",
+            force=True,
+            reason="rework needed",
         )
         events.extend([e_done, e_rollback])
         result = reduce_status_events(events)
@@ -1437,6 +1525,8 @@ class TestReduceStatusEvents:
                 5,
                 timestamp=base_t + timedelta(seconds=4),
                 evidence=evidence,
+                force=True,
+                reason="merge-time completion",
             ),
             _make_event(
                 "01HV0000000000000000000015",
@@ -1454,6 +1544,8 @@ class TestReduceStatusEvents:
                 5,
                 timestamp=base_t + timedelta(seconds=6),
                 review_ref="PR#42",
+                force=True,
+                reason="rework needed",
             ),
         ]
         result = reduce_status_events(events)
@@ -1781,6 +1873,8 @@ class TestBootstrapPlannedInitializeOnly:
                 5,
                 timestamp=base_t + timedelta(seconds=4),
                 evidence=evidence,
+                force=True,
+                reason="merge-time completion",
             ),
         ]
         late_bootstrap = _make_event(

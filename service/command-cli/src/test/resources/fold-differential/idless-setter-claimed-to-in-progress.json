@@ -1,0 +1,37 @@
+{
+  "expected": {
+    "WP01": "for_review"
+  },
+  "id": "idless-setter-claimed-to-in-progress",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:01+00:00",
+      "event_id": null,
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "planned",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "claimed",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:02+00:00",
+      "event_id": "01J00000000000000000000001",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "in_progress",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "for_review",
+      "wp_id": "WP01"
+    }
+  ],
+  "notes": "Around claimed->in_progress (#231 4.16): an id-less planned->claimed, then a non-forced in_progress->for_review whose from_lane is not the lane in force. Core, with no setter, applies it (for_review); the pre-fix Java fold dropped it (claimed). Divergence direction: Java dropped, core applied. The cascade case below shows the opposite direction across a log."
+}

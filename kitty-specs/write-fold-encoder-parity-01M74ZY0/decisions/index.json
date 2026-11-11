@@ -1,0 +1,103 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-11-11T09:45:18.930412Z",
+      "decision_id": "01M74ZYQTJR0SBKAC3A3208WSW",
+      "final_answer": "Model an id-less transition explicitly through its own constructor/type (not a null or a 'None' sentinel string, not basic CRUD checks); its semantics mirror core: an id-less setter is no setter.",
+      "input_key": "null_event_id_policy",
+      "mission_id": "01M74ZY0SE67V2DDNWTJA9DSQD",
+      "mission_slug": "write-fold-encoder-parity-01M74ZY0",
+      "opened_by": "cli",
+      "options": [
+        "Mirror core: a null-id setter is no setter",
+        "Refuse null transition ids when reading the log",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": true,
+      "question": "How should the write fold treat a transition with a null event_id (#231 4.16)?",
+      "rationale": null,
+      "resolved_at": "2026-11-11T11:20:25.836748Z",
+      "resolved_by": null,
+      "slot_key": "specify.fold.null-event-id",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-11T09:45:20.896547Z",
+      "decision_id": "01M74ZYSR06CFAAN7FAK274HX6",
+      "final_answer": "Extract the expected appended bytes from core's corpus/system and store them as test resources in spec-kitty-events; no hard coupling between the repositories (events owns the events system now).",
+      "input_key": "ack_bytes_oracle",
+      "mission_id": "01M74ZY0SE67V2DDNWTJA9DSQD",
+      "mission_slug": "write-fold-encoder-parity-01M74ZY0",
+      "opened_by": "cli",
+      "options": [
+        "Core generator records appended bytes in the parity corpus",
+        "Compare with the Python reference encoder only",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": true,
+      "question": "Where do the ack cases' expected appended bytes come from (#231 4.9)?",
+      "rationale": null,
+      "resolved_at": "2026-11-11T11:20:27.755857Z",
+      "resolved_by": null,
+      "slot_key": "specify.assurance.ack-bytes-oracle",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-11T09:45:22.851747Z",
+      "decision_id": "01M74ZYVN3GG64XGV19JKW10X9",
+      "final_answer": "Bump pyproject and __version__ to 11.5.0 in this PR",
+      "input_key": "version_bump",
+      "mission_id": "01M74ZY0SE67V2DDNWTJA9DSQD",
+      "mission_slug": "write-fold-encoder-parity-01M74ZY0",
+      "opened_by": "cli",
+      "options": [
+        "Bump pyproject and __version__ to 11.5.0 in this PR",
+        "Leave the bump to the release PR; the fragment flags it",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "How is ruling D4's minor version bump taken?",
+      "rationale": null,
+      "resolved_at": "2026-11-11T11:20:29.875979Z",
+      "resolved_by": null,
+      "slot_key": "specify.release.version-bump",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-11-11T12:11:40.957478Z",
+      "decision_id": "01M758AR0XV801HVGA8ZPQWATR",
+      "final_answer": "Full D4: adopt core's graph everywhere; move the two fixtures to force=true (or invalid/ with a forced valid twin); rewrite the force-exempt-by-contract section to match core (#6514); note the reduce_status_events behaviour change in COMPATIBILITY 11.5.0.",
+      "input_key": "d4_fixture_conflict",
+      "mission_id": "01M74ZY0SE67V2DDNWTJA9DSQD",
+      "mission_slug": "write-fold-encoder-parity-01M74ZY0",
+      "opened_by": "cli",
+      "options": [
+        "Full D4: update fixtures + contract text, minor bump",
+        "D4 except the contract-protected edges",
+        "Document validate_transition as legacy; no edge change",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "D4 (validate_transition = core edge graph) conflicts with two packaged valid fixtures and the 'force-exempt by contract' rule for for_review->in_progress (#48), and reduce_status_events would drop those events as anomalies. How to resolve?",
+      "rationale": null,
+      "resolved_at": "2026-11-11T12:14:43.268268Z",
+      "resolved_by": null,
+      "slot_key": "plan.d4.contract-fixtures",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M74ZY0SE67V2DDNWTJA9DSQD",
+  "version": 1
+}

@@ -1,0 +1,38 @@
+{
+  "expected": {
+    "WP01": "claimed",
+    "WP02": "claimed"
+  },
+  "id": "idless-and-string-none",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:01+00:00",
+      "event_id": null,
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "planned",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "claimed",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:02+00:00",
+      "event_id": "None",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "planned",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "claimed",
+      "wp_id": "WP02"
+    }
+  ],
+  "notes": "An id-less row and a row whose id is the string 'None' (different WPs, different at) are different keys in core, which folds the log. The pre-fix Java dedupe refused the log as ids that spell alike. Divergence direction: Java refused, core reduced."
+}

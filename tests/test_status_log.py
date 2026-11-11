@@ -4,14 +4,21 @@ from __future__ import annotations
 
 import copy
 import json
+import sys
+from collections.abc import Iterator
 from typing import Any
 
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from spec_kitty_events.status_log import (
+    IntegerTooLarge,
     NonFiniteNumber,
+    NonStringKey,
     SessionTimesNotSubtractable,
     StatusRowRefused,
+    UnsupportedValue,
     encode_status_row,
     sanitize_status_row,
 )
@@ -30,7 +37,7 @@ def _assert_key_absent(value: Any, key: str) -> None:
         assert key not in value
         for nested in value.values():
             _assert_key_absent(nested, key)
-    elif isinstance(value, list):
+    elif isinstance(value, (list, tuple)):
         for nested in value:
             _assert_key_absent(nested, key)
 
@@ -76,15 +83,17 @@ def test_non_object_row_is_refused(row: list[str]) -> None:
 def test_session_pair_computes_truncated_duration(
     started: str, ended: str, existing_duration: int, expected_duration: int
 ) -> None:
-    sanitized = sanitize_status_row(
-        {
-            "session_started_at": started,
-            "session_ended_at": ended,
-            "session_duration_s": existing_duration,
-        }
-    )
+    row = {
+        "session_started_at": started,
+        "session_ended_at": ended,
+        "session_duration_s": existing_duration,
+    }
+    snapshot = copy.deepcopy(row)
+
+    sanitized = sanitize_status_row(row)
 
     assert sanitized == {"session_duration_s": expected_duration}
+    assert row == snapshot
 
 
 @pytest.mark.parametrize(
@@ -122,7 +131,10 @@ def test_session_pair_computes_truncated_duration(
 def test_incomplete_or_unparseable_session_pair_preserves_existing_duration(
     row: dict[str, Any],
 ) -> None:
+    snapshot = copy.deepcopy(row)
+
     assert sanitize_status_row(row) == {"session_duration_s": 9}
+    assert row == snapshot
 
 
 def test_nested_session_names_are_not_replaced() -> None:
@@ -145,8 +157,12 @@ def test_nested_session_names_are_not_replaced() -> None:
     ],
 )
 def test_mixed_naive_and_aware_session_pair_is_refused(started: str, ended: str) -> None:
+    row = {"session_started_at": started, "session_ended_at": ended}
+    snapshot = copy.deepcopy(row)
+
     with pytest.raises(SessionTimesNotSubtractable):
-        sanitize_status_row({"session_started_at": started, "session_ended_at": ended})
+        sanitize_status_row(row)
+    assert row == snapshot
 
 
 @pytest.mark.parametrize(
@@ -162,8 +178,23 @@ def test_mixed_naive_and_aware_session_pair_is_refused(started: str, ended: str)
 def test_session_timestamp_grammar_matches_pinned_core(
     started: str, ended: str, expected: int
 ) -> None:
-    sanitized = sanitize_status_row({"session_started_at": started, "session_ended_at": ended})
+    row = {"session_started_at": started, "session_ended_at": ended}
+    snapshot = copy.deepcopy(row)
+
+    sanitized = sanitize_status_row(row)
+
     assert sanitized == {"session_duration_s": expected}
+    assert row == snapshot
+
+
+def test_plus_00_00_00_000001_offset_is_311_exact_on_every_interpreter() -> None:
+    # CPython 3.11 drops the offset's fraction (offset 0); 3.12+ native keeps
+    # it as +1 microsecond (duration 1 here), which the port must not follow.
+    row = {
+        "session_started_at": "2026-01-01T00:00:00+00:00:00.000001",
+        "session_ended_at": "2026-01-01T00:00:00.999999+00:00",
+    }
+    assert encode_status_row(row) == b'{"session_duration_s": 0}\n'
 
 
 @pytest.mark.parametrize(
@@ -242,3 +273,123 @@ def test_status_refusals_are_value_errors() -> None:
     assert issubclass(StatusRowRefused, ValueError)
     assert issubclass(NonFiniteNumber, StatusRowRefused)
     assert issubclass(SessionTimesNotSubtractable, StatusRowRefused)
+    assert issubclass(IntegerTooLarge, StatusRowRefused)
+    assert issubclass(NonStringKey, StatusRowRefused)
+    assert issubclass(UnsupportedValue, StatusRowRefused)
+
+
+@pytest.mark.parametrize(
+    ("row", "expected"),
+    [
+        ({"x": ({"hostname": "h", "keep": 1},)}, {"x": ({"keep": 1},)}),
+        ({"x": ([({"machine_name": "m", "k": 2},)],)}, {"x": ([({"k": 2},)],)}),
+        ({"x": ()}, {"x": ()}),
+    ],
+)
+def test_tuples_are_sanitised_recursively_and_stay_tuples(
+    row: dict[str, Any], expected: dict[str, Any]
+) -> None:
+    snapshot = copy.deepcopy(row)
+
+    assert sanitize_status_row(row) == expected
+    assert row == snapshot
+
+
+def test_tuple_encodes_as_array_without_pii() -> None:
+    row = {"x": ({"hostname": "h", "k": 1}, ())}
+    snapshot = copy.deepcopy(row)
+
+    assert encode_status_row(row) == b'{"x": [{"k": 1}, []]}\n'
+    assert row == snapshot
+
+
+@pytest.fixture(autouse=True)
+def _default_int_digit_limit() -> Iterator[None]:
+    """Pin the int-to-str digit limit so the limit tests ignore PYTHONINTMAXSTRDIGITS."""
+    if not hasattr(sys, "set_int_max_str_digits"):
+        yield
+        return
+    previous = sys.get_int_max_str_digits()
+    sys.set_int_max_str_digits(4300)
+    try:
+        yield
+    finally:
+        sys.set_int_max_str_digits(previous)
+
+
+def test_oversized_integer_is_refused_not_reported_as_non_finite() -> None:
+    with pytest.raises(IntegerTooLarge):
+        encode_status_row({"a": 10**5000})
+    with pytest.raises(IntegerTooLarge):
+        encode_status_row({"a": [{"b": -(10**5000)}]})
+
+
+def test_integer_at_the_digit_limit_is_accepted() -> None:
+    value = 10**4299
+    assert encode_status_row({"a": value}) == f'{{"a": {value}}}\n'.encode("ascii")
+
+
+def test_negative_integer_at_the_digit_limit_is_accepted_and_one_past_is_refused() -> None:
+    at_limit = -(10**4300 - 1)  # sign plus 4300 digits
+    row = json.loads('{"a": -' + "9" * 4300 + "}")
+    assert row == {"a": at_limit}
+    assert encode_status_row(row) == (json.dumps(row, sort_keys=True) + "\n").encode("ascii")
+    with pytest.raises(IntegerTooLarge):
+        encode_status_row({"a": -(10**4300)})
+
+
+def test_oversized_integer_in_a_dropped_session_field_does_not_refuse() -> None:
+    row = {"session_started_at": 10**5000, "k": 1}
+    assert encode_status_row(row) == b'{"k": 1}\n'
+
+
+@pytest.mark.parametrize(
+    "row",
+    [{1: "x"}, {"a": {1: "x"}}, {"a": [{None: 1}]}, {"a": ({1.5: 1},)}, {"b": 1, 2: 3}],
+)
+def test_non_string_keys_are_refused_at_any_depth(row: dict[Any, Any]) -> None:
+    with pytest.raises(NonStringKey):
+        encode_status_row(row)
+
+
+@pytest.mark.parametrize("value", [{1, 2}, b"x", object(), {"a": 1}.items()])
+def test_other_unsupported_values_are_refused_with_a_typed_error(value: Any) -> None:
+    with pytest.raises(UnsupportedValue):
+        encode_status_row({"a": value})
+
+
+def test_non_finite_is_the_only_floating_point_refusal() -> None:
+    with pytest.raises(NonFiniteNumber):
+        encode_status_row({"a": (float("nan"),)})
+
+
+_JSON_LEAVES = st.one_of(
+    st.none(),
+    st.booleans(),
+    st.integers(min_value=-(2**70), max_value=2**70),
+    st.floats(allow_nan=False, allow_infinity=False),
+    st.text(max_size=8),
+)
+_JSON_LIKE = st.recursive(
+    _JSON_LEAVES,
+    lambda inner: st.one_of(
+        st.lists(inner, max_size=4),
+        st.lists(inner, max_size=4).map(tuple),
+        st.dictionaries(st.sampled_from(["a", "b", "hostname", "machine_name"]), inner, max_size=4),
+    ),
+    max_leaves=12,
+)
+
+
+@settings(deadline=None)
+@given(st.dictionaries(st.sampled_from(["a", "b", "hostname", "x"]), _JSON_LIKE, max_size=4))
+def test_json_like_rows_encode_without_mutation_or_bare_errors(row: dict[str, Any]) -> None:
+    snapshot = copy.deepcopy(row)
+
+    encoded = encode_status_row(row)
+
+    assert row == snapshot
+    assert encoded.endswith(b"\n")
+    sanitized = sanitize_status_row(row)
+    _assert_key_absent(sanitized, "hostname")
+    assert json.loads(encoded.decode("ascii")) == json.loads(json.dumps(sanitized, sort_keys=True))

@@ -637,6 +637,8 @@ jobs:
         run: SPEC_KITTY_CORE_CHECKOUT="$GITHUB_WORKSPACE/core" core/.venv/bin/python scripts/conformance/generate_status_append.py --check | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Check the status-transition parity oracle
         run: SPEC_KITTY_CORE_CHECKOUT="$GITHUB_WORKSPACE/core" core/.venv/bin/python scripts/conformance/generate_transition_parity.py --check | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Check the status-transition ack bytes against core
+        run: SPEC_KITTY_CORE_CHECKOUT="$GITHUB_WORKSPACE/core" core/.venv/bin/python scripts/conformance/extract_ack_bytes.py --check | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Check the fromisoformat vectors
         run: core/.venv/bin/python scripts/conformance/generate_fromisoformat_vectors.py --check | tee -a "$GITHUB_STEP_SUMMARY"
 

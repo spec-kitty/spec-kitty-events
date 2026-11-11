@@ -1,0 +1,7 @@
+---
+section: Changed
+---
+
+- `spec_kitty_events.status_log` now sanitises tuples recursively, as core's sanitiser does, so a PII key inside a tuple-held object is dropped (#237; #231 item 4.1).
+- `encode_status_row` and `sanitize_status_row` refuse unencodable input with typed errors: new `IntegerTooLarge` (an integer past the interpreter's int-to-str digit limit, no longer misreported as `NonFiniteNumber`), `NonStringKey` and `UnsupportedValue`, all `StatusRowRefused` subclasses. `NonFiniteNumber` is raised only for non-finite floats. Core leaks a bare `ValueError`/`TypeError` for oversized integers and non-JSON values, but for non-string keys (`int`/`float`/`bool`/`None`) core's `serialize_event_line` coerces them through `json.dumps` and writes the row, as the `11.4.0` encoder did; `NonStringKey` is a deliberate narrowing, and none of these inputs is reachable from `json.loads` (#237; #231 item 4.2). Oversized integers now raise `IntegerTooLarge` instead of `NonFiniteNumber`.
+- Session timestamps are parsed with the CPython 3.11 `fromisoformat` port on every interpreter, instead of the interpreter's own `fromisoformat` on 3.11+. Output on 3.11+ is now core-exact for malformed or edge-case session timestamps (for example `+00:00:00.000001`), and bytes no longer differ between 3.10, 3.11 and 3.13; on 3.11+ the `session_duration_s` bytes for some malformed timestamps change from `11.4.0` (#237; #231 item 4.4).

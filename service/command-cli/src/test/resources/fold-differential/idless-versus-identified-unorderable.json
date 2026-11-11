@@ -1,0 +1,37 @@
+{
+  "expected": {
+    "unreducible": "TypeError"
+  },
+  "id": "idless-versus-identified-unorderable",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:01+00:00",
+      "event_id": null,
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "planned",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "claimed",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:01+00:00",
+      "event_id": "01J00000000000000000000001",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "planned",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "claimed",
+      "wp_id": "WP02"
+    }
+  ],
+  "notes": "Same at on two WPs, one row id-less and one identified: the sort key's last component compares None with a string, which raises TypeError, so the log is unreducible in core and in Java."
+}

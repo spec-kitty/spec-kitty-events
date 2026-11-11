@@ -1,0 +1,259 @@
+{
+  "event_count": 62,
+  "last_event_id": "01M75ACA2NTH4B38E7F30JQNB0",
+  "materialized_at": "2026-11-11T12:47:29.365516+00:00",
+  "mission_number": "",
+  "mission_slug": "write-fold-encoder-parity-01M74ZY0",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 7,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M7578H7GBTK0XR8K6S4W5GVW",
+      "last_transition_at": "2026-11-11T11:52:59.888722+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "TransitionId (Identified|Absent) models event_id; id-less setter finds no setter (core parity); 7 differential cases from package reducer; NonFiniteLogIdTest; :command-cli:test 1667 pass",
+        "Cycle 1 fix: added idless-setter-cascade-acknowledged-core-drops (+identified-cascade-control) showing the Java-applies/core-drops direction across a log (old fold: in_progress, core: in_review); corrected impossibility notes; _expected catches only TypeError. Out-of-map edit rationale: StateProjections.java one-line change (seen set keyed by TransitionId.id()) forced by removing Transition.idKey(), semantically neutral. FoldDifferentialTest (domain) imports adapter EventLogRowCodec on purpose, to decode rows as the service does (test-only). Extension: expected may be {unreducible: <ExceptionType>}. :command-cli:test 1669 pass.",
+        "Review passed (cycle 2): FR-003 blocker resolved; cascade case verified failing on pre-fix fold; :command-cli:test 1669/0, pytest 11, --check/ruff/mypy clean. Non-blocking: StateProjections out-of-map edit (forced by idKey removal, neutral); test imports adapter codec (test-only)."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/kitty-specs/write-fold-encoder-parity-01M74ZY0/tasks/WP01-idless-transition-fold/review-cycle-2.md",
+        "reference": "review-cycle://write-fold-encoder-parity-01M74ZY0/WP01-idless-transition-fold/review-cycle-2.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 15248,
+      "shell_pid_created_at": "1794397775.01",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done",
+        "T004": "done",
+        "T005": "done",
+        "T006": "done"
+      }
+    },
+    "WP02": {
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M757JBHMP8X2RB2BB0V2KDT3",
+      "last_transition_at": "2026-11-11T11:58:21.748829+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "StatusLogAppender takes an injected LongSupplier nano clock (additive ctors; defaults System::nanoTime); ServiceWiring.statusLog passes the nanoClock bean. Mutation check: reverting to System.nanoTime fails 2/3 appender and 1/2 adapter clock tests. event-log 582 tests, command-cli 1671, 0 failures. No out-of-map edits.",
+        "Review passed: one injected clock for the write budget and the Mission lock wait (write and repair paths through EventLogStatusLog); mutation re-run fails 3 of 5 new tests; event-log 582/0, command-cli 1671/0. Non-blocking: aFreeLockIsTaken... test does not discriminate under the mutation."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/kitty-specs/write-fold-encoder-parity-01M74ZY0/tasks/WP02-one-clock/review-cycle-1.md",
+        "reference": "review-cycle://write-fold-encoder-parity-01M74ZY0/WP02-one-clock/review-cycle-1.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 22492,
+      "shell_pid_created_at": "1794398199.68",
+      "subtasks": {
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done"
+      }
+    },
+    "WP03": {
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M7586AKXYTF1AE55VBVGR6AB",
+      "last_transition_at": "2026-11-11T12:09:16.157231+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Tuples sanitised; IntegerTooLarge/NonStringKey/UnsupportedValue typed refusals; 3.11 grammar port on every interpreter; no-mutation checks; 0 differing bytes across 3.10/3.11/3.13; fragment added",
+        "Cycle 1 fixes: IntegerTooLarge counts digits not sign (regression tests), fragment item refs corrected, hypothesis assertion made structural",
+        "Cycle 2 approved. MAJOR resolved: _check_int counts digits without sign (74be464b); negative 4300-digit int encodes == json.dumps, -(10**4300) refused. Fragment item refs and hypothesis assertion fixed. 258 passed on 3.10/3.11/3.13; conformance 1233; status_append valid bytes identical on all three and equal expected_line; port vs native 3.11 fromisoformat 0 diffs over 200k fuzzed forms; ruff/mypy --strict/changelog check+guard clean."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/kitty-specs/write-fold-encoder-parity-01M74ZY0/tasks/WP03-reference-encoder/review-cycle-2.md",
+        "reference": "review-cycle://write-fold-encoder-parity-01M74ZY0/WP03-reference-encoder/review-cycle-2.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 30333,
+      "shell_pid_created_at": "1794398903.28",
+      "subtasks": {
+        "T011": "done",
+        "T012": "done",
+        "T014": "done",
+        "T015": "done",
+        "T016": "done"
+      }
+    },
+    "WP04": {
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M7597WGD2RJKR4CFB8728J0P",
+      "last_transition_at": "2026-11-11T12:27:35.821711+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "- 2026-11-11T12:10:57Z – claude – shell_pid=31293 – Blocked: removing unforced for_review->in_progress and for_review->done fails 2 packaged conformance fixtures (edge_cases/valid/wp_status_changed_unforced_for_review_to_in_progress_with_review_ref.json, lifecycle/valid/wp_status_changed_summary_done.json); escalating per prompt, no fixture edited. Pin graph matches research D-6 exactly. Draft status.py patch saved in scratchpad (wp04-status-edges.patch); tree reverted.",
+        "11.5.0: validate_transition/reduce_status_events = core edge graph at 512567ee (matches research D-6, no diff at pin). Removed unforced edges: for_review->approved|done|in_progress|planned, in_review->for_review, genesis->blocked, blocked->blocked; blocked/canceled now explicit per state. 8 tests in test_status.py changed (rerouted via in_review or forced, same intent). New: exhaustive test_validate_transition_core_edges.py, exact-violation tests, reducer anomaly test. Out-of-map edits (operator ruling D4 full, DM-01M758AR0XV801HVGA8ZPQWATR): conformance manifest.json + 2 valid fixtures forced + 2 new invalid twins (min_version 11.5.0) + zeitgeist_attrs/valid/wp_status_changed_done_drops_evidence.json from_lane for_review->in_review (also asserted a removed edge). Java :java-binding:test green (no java transition validator). npm run validate NOT run (doc-toolkit 401 from npm.pkg.github.com); docs_index --clean leaves tree clean. tests/test_version_not_amended.py 2 failures are pre-existing shallow-checkout failures.",
+        "Review cycle 1 fixes: COMPATIBILITY 11.5.0 and changelog fragment now list all three changed fixtures (zeitgeist_attrs done_drops_evidence rerouted for_review->in_review, golden expected_attrs change); stale force-exempt comments fixed in status.py, test_status.py docstring, and diary.py (out-of-map, docs-only comment: it claimed the family is force-exempt, false for for_review->in_progress since D4).",
+        "Cycle 2 approved. Blocker resolved: COMPATIBILITY 11.5.0 and fragment list all three changed packaged fixtures incl. zeitgeist wp_status_changed_done_drops_evidence (rerouted for_review->in_review, Zeitgeist golden noted). Stale comments fixed (status.py:657, test_status.py:1141, diary.py:1148-1154 comment-only, out-of-map per coordinator). Edge graph == core wp_state.py@512567ee + (None,planned); 7 removals, 0 additions; force/guards unchanged. Shared-file note: diary.py touched comment-only outside owned_files; fixtures/manifest edits per DM-01M758AR0XV801HVGA8ZPQWATR. Tests: 6 files 1026 passed/88 skipped; conformance 1235 passed; ruff clean; mypy strict clean; changelog check/guard rc 0."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/kitty-specs/write-fold-encoder-parity-01M74ZY0/tasks/WP04-validate-transition-edges/review-cycle-2.md",
+        "reference": "review-cycle://write-fold-encoder-parity-01M74ZY0/WP04-validate-transition-edges/review-cycle-2.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 9762,
+      "shell_pid_created_at": "1794400023.44",
+      "subtasks": {
+        "T013": "done",
+        "T017": "done",
+        "T018": "done",
+        "T019": "done",
+        "T020": "done",
+        "T021": "done"
+      }
+    },
+    "WP05": {
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M759V0YPR0XNY0KPZNDQHJKX",
+      "last_transition_at": "2026-11-11T12:38:02.966092+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "89/91 ack cases run over HTTP with byte assertions against committed ack-bytes.json (encoder-mode bootstrap; CI core --check in write-core-parity proves it); 2 ack cases asserted-excluded (no wire form / WP_NOT_FOUND precondition). Out-of-map edit: none. WP06: tests/test_service_workflows.py must list the new step 'Check the status-transition ack bytes against core' (scripts/conformance/extract_ack_bytes.py --check).",
+        "Approved: 89/91 ack cases over HTTP with real appended-bytes assertions (prior bytes untouched + suffix == concatenated unit texts; resource keys == ack cases run; mutation of batch-cross-wp-claims fails the test). Resource equals json.dumps(sort_keys) of request rows for all 91 entries. extract_ack_bytes.py core-mode guard mirrors generate_status_append.py; core mode imports stdlib+core only; service.yml one added step (bash -eo pipefail via job shell: bash). Non-blocking: NFR-002/SC-004 literal 100% vs 89/91 - record the two exclusions as a mission ruling; follow-ups for WP_NOT_FOUND-vs-core-emit divergence and sequential annotation+transition over HTTP; ackBytes() reparses per call."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/kitty-specs/write-fold-encoder-parity-01M74ZY0/tasks/WP05-ack-bytes-over-http/review-cycle-1.md",
+        "reference": "review-cycle://write-fold-encoder-parity-01M74ZY0/WP05-ack-bytes-over-http/review-cycle-1.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 14959,
+      "shell_pid_created_at": "1794400474.2",
+      "subtasks": {
+        "T022": "done",
+        "T023": "done",
+        "T024": "done",
+        "T025": "done",
+        "T026": "done"
+      }
+    },
+    "WP06": {
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M75A4B1D456FT1NBQ366THK7",
+      "last_transition_at": "2026-11-11T12:43:08.205847+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "WP06 done at d96e0902. T027: write-core-parity test asserts core uv sync and sync_packs use UV_PYTHON=$(cat .python-version), and lists extract_ack_bytes --check; positive control (copy without prefix, same test function via module SERVICE override) FAILED as required, unmodified PASSES. T028: static PROCESS_CREATION_ONLY_IN_MISSION ArchUnit rule in ArchitectureRulesTest (passes on main). T029: planted PlantedProcessCreator violates, PlantedPidReader passes (ProcessCreationRuleTest 2/2). T030: core-pin purpose only, JSON valid, no test reads it. Commands: pytest test_service_workflows 36 passed 1 skipped; gradle :command-cli:test --tests '*architecture*' green (ArchitectureRulesTest 7, ProcessCreationRuleTest 2); full :command-cli:test 1760 tests 0 failures; ruff check + format clean; changelog check/guard ok; conformance 1235 passed.",
+        "Reviewed d96e0902: UV_PYTHON pins asserted (positive control fails on either removal), ack-bytes command matches service.yml; ArchUnit process-creation rule + planted tests pass (architecture 18 tests, 0 failures); core-pin.json only purpose changed, jq .sha unaffected; changelog accurate; ruff, changelog check clean."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/kitty-specs/write-fold-encoder-parity-01M74ZY0/tasks/WP06-assurance-rules/review-cycle-1.md",
+        "reference": "review-cycle://write-fold-encoder-parity-01M74ZY0/WP06-assurance-rules/review-cycle-1.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 22725,
+      "shell_pid_created_at": "1794400926.32",
+      "subtasks": {
+        "T027": "done",
+        "T028": "done",
+        "T029": "done",
+        "T030": "done"
+      }
+    },
+    "WP07": {
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 1,
+      "implementer_of_record": "claude",
+      "lane": "approved",
+      "last_event_id": "01M75ACA2NTH4B38E7F30JQNB0",
+      "last_transition_at": "2026-11-11T12:47:29.365516+00:00",
+      "model": "__resolved_model_absent__",
+      "notes": [
+        "Issue matrix completed (9 rows); research.md 'Findings during implementation' records DM-01M758AR full-D4 ruling, per-WP outcomes, 89/91 ack coverage with the two pre-existing exclusions, environment notes.",
+        "Cycle 1 fix: #48 and #6514 rows added; #237 row names WP07.",
+        "Cycle 2: matrix covers all 11 cited issues (#48, #6514 added, source files set, #237 names WP07); JSON parses; research.md claims verified in cycle 1."
+      ],
+      "provider": "__resolved_provider_absent__",
+      "review": null,
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-events/kitty-specs/write-fold-encoder-parity-01M74ZY0/tasks/WP07-mission-records/review-cycle-2.md",
+        "reference": "review-cycle://write-fold-encoder-parity-01M74ZY0/WP07-mission-records/review-cycle-2.md",
+        "reviewer": "claude-reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 26662,
+      "shell_pid_created_at": "1794401207.84",
+      "subtasks": {
+        "T031": "done",
+        "T032": "done"
+      }
+    }
+  }
+}

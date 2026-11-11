@@ -1,0 +1,37 @@
+{
+  "expected": {
+    "WP01": "in_review"
+  },
+  "id": "idless-setter-stale-forward-applies",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:01+00:00",
+      "event_id": null,
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "planned",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "claimed",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:02+00:00",
+      "event_id": "01J00000000000000000000001",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "for_review",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "in_review",
+      "wp_id": "WP01"
+    }
+  ],
+  "notes": "An id-less setter is no setter in core, so a later non-forced for_review->in_review has no continuity to fail and applies (in_review). The pre-fix Java fold found the id-less row itself as the setter and dropped the event (claimed). Divergence direction: Java dropped, core applied."
+}

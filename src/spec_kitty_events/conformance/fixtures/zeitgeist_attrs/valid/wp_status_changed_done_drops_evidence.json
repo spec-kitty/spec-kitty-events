@@ -7,7 +7,7 @@
   "payload": {
     "mission_slug": "demo-mission",
     "wp_id": "WP03",
-    "from_lane": "for_review",
+    "from_lane": "in_review",
     "to_lane": "done",
     "actor": "robert",
     "force": false,
@@ -36,7 +36,7 @@
     "occurred_at": "2026-08-25T09:00:00+00:00",
     "mission_slug": "demo-mission",
     "wp_id": "WP03",
-    "from_lane": "for_review",
+    "from_lane": "in_review",
     "to_lane": "done",
     "actor": "robert",
     "force": "false",

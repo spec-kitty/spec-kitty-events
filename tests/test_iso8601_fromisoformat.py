@@ -4,15 +4,14 @@ The oracle is the vector set shared with the Java ``PyIsoDateTime`` binding,
 generated from CPython 3.11 by
 ``scripts/conformance/generate_fromisoformat_vectors.py``. Every vector must
 produce the same naive or UTC-epoch microsecond value through
-:func:`spec_kitty_events._iso8601._parse_isoformat_311` on 3.10 and on later
-interpreters, and the same accept/reject boundary.
+:func:`spec_kitty_events._iso8601._parse_isoformat_311` on every
+interpreter, and the same accept/reject boundary.
 """
 
 from __future__ import annotations
 
 import json
-import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -20,7 +19,6 @@ import pytest
 
 from spec_kitty_events._iso8601 import (
     _parse_isoformat_311,
-    normalize_iso8601_shape,
     parse_iso8601_datetime,
 )
 
@@ -63,12 +61,8 @@ def test_311_parser_matches_every_vector(vector: Dict[str, Any]) -> None:
     _assert_matches_vector(_parse_isoformat_311(vector["text"]), vector)
 
 
-@pytest.mark.skipif(
-    sys.version_info >= (3, 11),
-    reason="3.11+ keeps its native datetime.fromisoformat path; the port is tested above",
-)
 @pytest.mark.parametrize("vector", _VECTORS, ids=_VECTOR_IDS)
-def test_floor_status_parser_matches_every_vector(vector: Dict[str, Any]) -> None:
+def test_status_parser_matches_every_vector_on_every_interpreter(vector: Dict[str, Any]) -> None:
     if not vector["parses"]:
         with pytest.raises(ValueError):
             parse_iso8601_datetime(vector["text"])
@@ -76,17 +70,7 @@ def test_floor_status_parser_matches_every_vector(vector: Dict[str, Any]) -> Non
     _assert_matches_vector(parse_iso8601_datetime(vector["text"]), vector)
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 11),
-    reason="3.11+ must keep delegating to datetime.fromisoformat as before",
-)
-@pytest.mark.parametrize("vector", _VECTORS, ids=_VECTOR_IDS)
-def test_native_path_is_unchanged_on_311_plus(vector: Dict[str, Any]) -> None:
-    text = vector["text"]
-    try:
-        expected = datetime.fromisoformat(normalize_iso8601_shape(text))
-    except ValueError:
-        with pytest.raises(ValueError):
-            parse_iso8601_datetime(text)
-        return
-    assert parse_iso8601_datetime(text) == expected
+def test_sub_minute_offset_with_fraction_is_311_exact_on_every_interpreter() -> None:
+    parsed = parse_iso8601_datetime("2026-01-01T00:00:00+00:00:00.000001")
+    # CPython 3.11 drops the offset's fraction (3.12+ keeps it as +1 microsecond).
+    assert parsed.utcoffset() == timedelta(0)

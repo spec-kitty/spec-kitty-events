@@ -2,7 +2,7 @@
 title: Work and Status Events
 description: The work-package lane-transition family and the append-only status diary reducer that together track where every work package sits on the kanban board.
 doc_status: active
-updated: 2026-10-18T00:00:00Z
+updated: 2026-11-11T00:00:00Z
 type: Integration
 kind: Reference
 related:
@@ -47,7 +47,26 @@ transition semantics.
 
 **Validation.** `validate_transition(payload)` returns a
 `TransitionValidationResult` describing whether a `from_lane` → `to_lane` move
-is permitted, including the review-rejection backward transitions.
+is permitted. Since 11.5.0 it checks core's lane machine (the unforced edges of
+`wp_state.py` in spec-kitty, plus the package's initial `None` → `planned`
+edge) and then the package's guard checks (`review_ref`, `reason`, evidence and
+the review-rejection family). The write service is the write authority; the
+package mirrors it. `force=True` bypasses the edge check, never the guards.
+
+| from | unforced targets |
+|---|---|
+| `genesis` | `planned`, `canceled` |
+| `planned` | `claimed`, `blocked`, `canceled` |
+| `claimed` | `in_progress`, `blocked`, `canceled` |
+| `in_progress` | `for_review`, `approved`, `planned`, `blocked`, `canceled` |
+| `for_review` | `in_review`, `blocked`, `canceled` |
+| `in_review` | `approved`, `done`, `in_progress`, `planned`, `blocked`, `canceled` |
+| `approved` | `done`, `in_progress`, `planned`, `blocked`, `canceled` |
+| `blocked` | `in_progress`, `canceled` |
+| `done`, `canceled` | none (terminal) |
+
+Moves off this graph, such as `for_review` → `done` or `for_review` →
+`in_progress`, need `force=True` with a reason.
 
 **Reducer.** `reduce_status_events` filters to `WPStatusChanged`, deduplicates,
 applies rollback-aware ordering, and folds into a frozen `ReducedStatus` — a

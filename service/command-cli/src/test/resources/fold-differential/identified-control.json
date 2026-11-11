@@ -1,0 +1,37 @@
+{
+  "expected": {
+    "WP01": "claimed"
+  },
+  "id": "identified-control",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:01+00:00",
+      "event_id": "01J00000000000000000000002",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "planned",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "claimed",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T00:00:02+00:00",
+      "event_id": "01J00000000000000000000001",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "for_review",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "in_review",
+      "wp_id": "WP01"
+    }
+  ],
+  "notes": "Positive control: the same log with a ULID on the first row. The setter is found, continuity fails, and the event is dropped (claimed) in core and in Java."
+}

@@ -1,0 +1,287 @@
+{
+  "alias-doing-force": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-11T10:00:04+00:00\", \"event_id\": \"000000000000000000000DBBA3\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"operator alias\", \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "alias-doing-from-blocked": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-11T07:13:26+00:00\", \"event_id\": \"000000000000000000000D9495\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"blocked\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "annotation-review-delta": [
+    "{\"actor\": \"reviewer-a\", \"at\": \"2026-01-14T18:33:31+00:00\", \"delta\": {\"review\": {\"actor\": \"reviewer-a\", \"at\": \"2026-01-01T00:00:00+00:00\", \"reason\": \"review complete\", \"wp_id\": \"WP01\"}}, \"event_id\": \"0000000000000000000012287C\", \"kind\": \"annotation\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "annotation-standalone-agent": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-14T15:46:45+00:00\", \"delta\": {\"agent\": \"codex\"}, \"event_id\": \"00000000000000000000120166\", \"kind\": \"annotation\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "annotation-standalone-role": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-14T13:00:05+00:00\", \"delta\": {\"role\": \"implementer\"}, \"event_id\": \"0000000000000000000011DA56\", \"kind\": \"annotation\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "annotation-subtasks-complete-unlocks-review": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-14T10:13:27+00:00\", \"delta\": {\"subtasks\": {\"T001\": \"done\"}}, \"event_id\": \"0000000000000000000011B348\", \"kind\": \"annotation\", \"wp_id\": \"WP01\"}\n",
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-14T10:13:30+00:00\", \"event_id\": \"0000000000000000000011B349\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"for_review\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "batch-clock-ahead-approved-departure": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-14T04:40:14+00:00\", \"event_id\": \"0000000000000000000011652D\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"approved\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": \"review/WP01/rework\", \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n",
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-14T04:40:16+00:00\", \"event_id\": \"0000000000000000000011652F\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"for_review\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "batch-cross-wp-claims": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-13T09:13:26+00:00\", \"event_id\": \"000000000000000000001053B5\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP01\"}\n",
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-13T09:13:28+00:00\", \"event_id\": \"000000000000000000001053B7\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "batch-cross-wp-three-units": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-13T12:00:08+00:00\", \"event_id\": \"00000000000000000000107AC7\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP01\"}\n",
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-13T12:00:10+00:00\", \"event_id\": \"00000000000000000000107AC9\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"blocked\", \"wp_id\": \"WP02\"}\n",
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-13T12:00:12+00:00\", \"event_id\": \"00000000000000000000107ACB\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"canceled\", \"wp_id\": \"WP03\"}\n"
+  ],
+  "batch-dependency-after-first": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-13T20:20:06+00:00\", \"event_id\": \"0000000000000000000010EFF5\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"operator approve\", \"review_ref\": null, \"to_lane\": \"approved\", \"wp_id\": \"WP01\"}\n",
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-13T20:20:08+00:00\", \"event_id\": \"0000000000000000000010EFF7\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "batch-review-exit-sequence": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-13T23:06:52+00:00\", \"event_id\": \"0000000000000000000011170B\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_review\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": \"review/WP01/rework\", \"review_result\": {\"reference\": \"review/WP01/rework\", \"reviewer\": \"reviewer-a\", \"verdict\": \"changes_requested\"}, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n",
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-13T23:06:54+00:00\", \"event_id\": \"0000000000000000000011170D\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"for_review\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "batch-sequential-same-wp": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-13T06:26:44+00:00\", \"event_id\": \"00000000000000000000102CA3\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP01\"}\n",
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-13T06:26:46+00:00\", \"event_id\": \"00000000000000000000102CA5\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "batch-start-planned": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-14T01:53:23+00:00\", \"event_id\": \"00000000000000000000113E14\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP01\"}\n",
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-14T01:53:23+00:00\", \"event_id\": \"00000000000000000000113E15\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "catalog-broken-sibling-meta": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-09T13:33:38+00:00\", \"event_id\": \"000000000000000000000B4AB1\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "claim-placeholder-implement-command": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-12T22:06:45+00:00\", \"event_id\": \"000000000000000000000FB776\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "claim-placeholder-unknown": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-13T00:53:25+00:00\", \"event_id\": \"000000000000000000000FDE86\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "claim-placeholder-user": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-13T03:40:05+00:00\", \"event_id\": \"00000000000000000000100596\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "claim-start-force-review-accepted": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-21T08:53:32+00:00\", \"event_id\": \"000000000000000000001ADB0B\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"in_review\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"Operator force: operator override\", \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "claim-start-from-claimed": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-11T15:33:25+00:00\", \"event_id\": \"000000000000000000000E09C6\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "claim-start-from-planned-two-units": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-11T12:46:43+00:00\", \"event_id\": \"000000000000000000000DE2B4\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP01\"}\n",
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-11T12:46:43+00:00\", \"event_id\": \"000000000000000000000DE2B5\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "claim-start-review": [
+    "{\"actor\": \"reviewer-b\", \"at\": \"2026-01-11T18:20:10+00:00\", \"event_id\": \"000000000000000000000E30D9\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"for_review\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"Started review via action command\", \"review_ref\": \"action-review-claim\", \"to_lane\": \"in_review\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "claim-structured-actor-tool": [
+    "{\"actor\": \"codex\", \"at\": \"2026-01-12T19:20:05+00:00\", \"event_id\": \"000000000000000000000F9066\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "dependency-approved-claimed-accepted": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-09T05:13:36+00:00\", \"event_id\": \"000000000000000000000AD57F\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "dependency-approved-in-progress-accepted": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-09T08:00:18+00:00\", \"event_id\": \"000000000000000000000AFC91\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "dependency-canceled-operator-accepted": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-09T16:20:08+00:00\", \"event_id\": \"000000000000000000000B71B7\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "dependency-done-claimed-accepted": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-09T10:46:58+00:00\", \"event_id\": \"000000000000000000000B23A1\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "dependency-done-in-progress-accepted": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-09T13:33:40+00:00\", \"event_id\": \"000000000000000000000B4AB3\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "dependency-force-bypass": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-08T23:40:10+00:00\", \"event_id\": \"000000000000000000000A8759\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"operator override\", \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "dependency-frontmatter-bom": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-22T21:00:18+00:00\", \"event_id\": \"000000000000000000001CD6E1\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "dependency-frontmatter-cr-only": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-22T23:46:58+00:00\", \"event_id\": \"000000000000000000001CFDF1\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "dependency-frontmatter-empty": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-23T05:20:18+00:00\", \"event_id\": \"000000000000000000001D4C11\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "dependency-frontmatter-fence-trailing-space": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-23T02:33:38+00:00\", \"event_id\": \"000000000000000000001D2501\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "dependency-legacy-bare": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-09T19:07:08+00:00\", \"event_id\": \"000000000000000000000B98DB\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP03\"}\n"
+  ],
+  "dependency-legacy-bare-unmet": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-10T03:27:02+00:00\", \"event_id\": \"000000000000000000000C0E05\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP03\"}\n"
+  ],
+  "dependency-legacy-comma": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-09T21:53:48+00:00\", \"event_id\": \"000000000000000000000BBFEB\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP03\"}\n"
+  ],
+  "dependency-legacy-empty-string": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-10T00:40:28+00:00\", \"event_id\": \"000000000000000000000BE6FB\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP03\"}\n"
+  ],
+  "dependency-no-tasks-file-accepted": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-08T09:46:44+00:00\", \"event_id\": \"0000000000000000000009C403\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "dependency-non-gated-blocked": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-09T02:26:50+00:00\", \"event_id\": \"000000000000000000000AAE69\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"blocked\", \"wp_id\": \"WP02\"}\n"
+  ],
+  "edge-01-genesis-to-planned": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-01T02:46:42+00:00\", \"event_id\": \"00000000000000000000002711\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"genesis\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"planned\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-02-genesis-to-canceled": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-01T05:33:22+00:00\", \"event_id\": \"00000000000000000000004E21\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"genesis\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"canceled\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-03-planned-to-claimed": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-01T08:20:04+00:00\", \"event_id\": \"00000000000000000000007533\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-04-planned-to-blocked": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-01T11:06:44+00:00\", \"event_id\": \"00000000000000000000009C43\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"blocked\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-05-planned-to-canceled": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-01T13:53:24+00:00\", \"event_id\": \"0000000000000000000000C353\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"canceled\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-06-claimed-to-in-progress": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-01T16:40:06+00:00\", \"event_id\": \"0000000000000000000000EA65\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-07-claimed-to-blocked": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-01T19:26:46+00:00\", \"event_id\": \"00000000000000000000011175\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"blocked\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-08-claimed-to-canceled": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-01T22:13:26+00:00\", \"event_id\": \"00000000000000000000013885\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"canceled\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-09-in-progress-to-for-review": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-02T01:00:08+00:00\", \"event_id\": \"00000000000000000000015F97\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"for_review\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-10-in-progress-to-approved": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-02T03:46:48+00:00\", \"event_id\": \"000000000000000000000186A7\", \"evidence\": {\"review\": {\"reference\": \"review/WP01/approved\", \"reviewer\": \"reviewer-a\", \"verdict\": \"approved\"}}, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"approved\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-11-in-progress-to-planned": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-02T06:33:28+00:00\", \"event_id\": \"0000000000000000000001ADB7\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"rework\", \"review_ref\": null, \"to_lane\": \"planned\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-12-in-progress-to-blocked": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-02T09:20:08+00:00\", \"event_id\": \"0000000000000000000001D4C7\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"blocked\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-13-in-progress-to-canceled": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-02T12:06:48+00:00\", \"event_id\": \"0000000000000000000001FBD7\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"canceled\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-14-for-review-to-in-review": [
+    "{\"actor\": \"reviewer-b\", \"at\": \"2026-01-02T14:53:30+00:00\", \"event_id\": \"000000000000000000000222E9\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"for_review\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_review\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-15-for-review-to-blocked": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-02T17:40:10+00:00\", \"event_id\": \"000000000000000000000249F9\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"for_review\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"blocked\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-16-for-review-to-canceled": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-02T20:26:50+00:00\", \"event_id\": \"00000000000000000000027109\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"for_review\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"canceled\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-17-in-review-to-approved": [
+    "{\"actor\": \"reviewer-a\", \"at\": \"2026-01-02T23:13:32+00:00\", \"event_id\": \"0000000000000000000002981B\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_review\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"review_result\": {\"reference\": \"review/WP01/approved\", \"reviewer\": \"reviewer-a\", \"verdict\": \"approved\"}, \"to_lane\": \"approved\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-18-in-review-to-done": [
+    "{\"actor\": \"reviewer-a\", \"at\": \"2026-01-03T02:00:12+00:00\", \"event_id\": \"0000000000000000000002BF2B\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_review\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"review_result\": {\"reference\": \"review/WP01/approved\", \"reviewer\": \"reviewer-a\", \"verdict\": \"approved\"}, \"to_lane\": \"done\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-19-in-review-to-in-progress": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-03T04:46:52+00:00\", \"event_id\": \"0000000000000000000002E63B\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_review\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": \"review/WP01/rework\", \"review_result\": {\"reference\": \"review/WP01/rework\", \"reviewer\": \"reviewer-a\", \"verdict\": \"changes_requested\"}, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-20-in-review-to-planned": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-03T07:33:32+00:00\", \"event_id\": \"00000000000000000000030D4B\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_review\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": \"review/WP01/rework\", \"review_result\": {\"reference\": \"review/WP01/rework\", \"reviewer\": \"reviewer-a\", \"verdict\": \"changes_requested\"}, \"to_lane\": \"planned\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-21-in-review-to-blocked": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-03T10:20:12+00:00\", \"event_id\": \"0000000000000000000003345B\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_review\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"review_result\": {\"reference\": \"review/WP01/rework\", \"reviewer\": \"reviewer-a\", \"verdict\": \"changes_requested\"}, \"to_lane\": \"blocked\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-22-in-review-to-canceled": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-03T13:06:52+00:00\", \"event_id\": \"00000000000000000000035B6B\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_review\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"review_result\": {\"reference\": \"review/WP01/rework\", \"reviewer\": \"reviewer-a\", \"verdict\": \"changes_requested\"}, \"to_lane\": \"canceled\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-23-approved-to-done": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-03T15:53:34+00:00\", \"event_id\": \"0000000000000000000003827D\", \"evidence\": {\"review\": {\"reference\": \"review/WP01/approved\", \"reviewer\": \"reviewer-a\", \"verdict\": \"approved\"}}, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"approved\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"done\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-24-approved-to-in-progress": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-03T18:40:14+00:00\", \"event_id\": \"0000000000000000000003A98D\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"approved\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": \"review/WP01/rework\", \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-25-approved-to-planned": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-03T21:26:54+00:00\", \"event_id\": \"0000000000000000000003D09D\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"approved\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": \"review/WP01/rework\", \"to_lane\": \"planned\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-26-approved-to-blocked": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-04T00:13:34+00:00\", \"event_id\": \"0000000000000000000003F7AD\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"approved\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"blocked\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-27-approved-to-canceled": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-04T03:00:14+00:00\", \"event_id\": \"00000000000000000000041EBD\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"approved\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"canceled\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-28-blocked-to-in-progress": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-04T05:46:46+00:00\", \"event_id\": \"000000000000000000000445C5\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"blocked\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "edge-29-blocked-to-canceled": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-04T08:33:26+00:00\", \"event_id\": \"00000000000000000000046CD5\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"blocked\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"canceled\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "fold-crlf-replay": [
+    ""
+  ],
+  "fold-first-wins-duplicate-id": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-14T07:26:44+00:00\", \"event_id\": \"00000000000000000000118C33\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"blocked\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "fold-retrospective-capture-failed": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-21T03:20:04+00:00\", \"event_id\": \"000000000000000000001A8CE3\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "fold-retrospective-captured": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-21T00:33:24+00:00\", \"event_id\": \"000000000000000000001A65D3\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "fold-retrospective-event-name": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-20T21:46:44+00:00\", \"event_id\": \"000000000000000000001A3EC3\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "fold-retrospective-skipped": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-21T06:06:44+00:00\", \"event_id\": \"000000000000000000001AB3F3\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "force-approved-noted-exit": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-10T22:53:34+00:00\", \"event_id\": \"000000000000000000000D1F6D\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"approved\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"operator rework\", \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "force-arbitrary-review-lane": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-10T20:06:44+00:00\", \"event_id\": \"000000000000000000000CF853\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"operator review\", \"review_ref\": null, \"to_lane\": \"in_review\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "force-canceled-to-canceled": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-11T01:40:06+00:00\", \"event_id\": \"000000000000000000000D4675\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"canceled\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"operator reaffirm\", \"review_ref\": null, \"to_lane\": \"canceled\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "force-canceled-to-in-progress": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-10T11:46:46+00:00\", \"event_id\": \"000000000000000000000C8325\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"canceled\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"operator resume\", \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "force-done-to-planned": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-10T09:00:16+00:00\", \"event_id\": \"000000000000000000000C5C1F\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"done\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"operator rework\", \"review_ref\": null, \"to_lane\": \"planned\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "force-done-to-uninitialized": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-11T04:26:56+00:00\", \"event_id\": \"000000000000000000000D6D8F\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"done\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"operator reset\", \"review_ref\": null, \"to_lane\": \"uninitialized\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "force-to-same-lane": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-10T17:20:04+00:00\", \"event_id\": \"000000000000000000000CD143\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"operator reaffirm\", \"review_ref\": null, \"to_lane\": \"planned\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "force-to-uninitialized": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-10T14:33:24+00:00\", \"event_id\": \"000000000000000000000CAA33\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"operator reset\", \"review_ref\": null, \"to_lane\": \"uninitialized\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "guard-evidence-explicit-false-forced": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-24T03:33:28+00:00\", \"event_id\": \"000000000000000000001E8487\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": true, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": \"operator\", \"review_ref\": null, \"to_lane\": \"for_review\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "guard-evidence-explicit-false-other-transition": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-24T06:20:08+00:00\", \"event_id\": \"000000000000000000001EAB97\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"blocked\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "guard-evidence-explicit-true": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-23T22:00:08+00:00\", \"event_id\": \"000000000000000000001E3667\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"for_review\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "guard-shell-pid-bigstr": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-23T16:26:48+00:00\", \"event_id\": \"000000000000000000001DE847\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"for_review\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "guard-shell-pid-str-padded": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-23T13:40:08+00:00\", \"event_id\": \"000000000000000000001DC137\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"for_review\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "guard-subtasks-roster-nonstring-ids-complete": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-23T10:53:30+00:00\", \"event_id\": \"000000000000000000001D9A29\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"for_review\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "guard-subtasks-roster-padded-id-complete": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-22T15:26:50+00:00\", \"event_id\": \"000000000000000000001C88B9\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"in_progress\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"for_review\", \"wp_id\": \"WP01\"}\n"
+  ],
+  "replay-all-replayed-batch": [
+    "",
+    ""
+  ],
+  "replay-stale-from-is-still-replay": [
+    ""
+  ],
+  "replay-then-new-batch": [
+    "",
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-12T13:46:46+00:00\", \"event_id\": \"000000000000000000000F4245\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": null, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ]
+}
