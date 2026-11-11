@@ -1,7 +1,7 @@
 {
-  "event_count": 16,
-  "last_event_id": "01M756YQBVJYQGMYCH65VSCDMY",
-  "materialized_at": "2026-11-11T11:47:38.491818+00:00",
+  "event_count": 18,
+  "last_event_id": "01M756YZN7PWADGBMKAJ5YJPTB",
+  "materialized_at": "2026-11-11T11:47:46.980231+00:00",
   "mission_number": "",
   "mission_slug": "release-protection-posture-01M74ZWP",
   "mission_type": "software-dev",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 2
+    "planned": 1
   },
   "work_packages": {
     "WP01": {
@@ -57,11 +57,20 @@
       }
     },
     "WP02": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M7563BGGEZ9F89ZCBN0JW1VP",
-      "last_transition_at": "2026-11-11T11:32:41.616147+00:00"
+      "implementer_of_record": "claude",
+      "lane": "in_progress",
+      "last_event_id": "01M756YZN7PWADGBMKAJ5YJPTB",
+      "last_transition_at": "2026-11-11T11:47:46.980231+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 9844,
+      "shell_pid_created_at": "1794397646.38"
     },
     "WP03": {
       "actor": "finalize-tasks",
