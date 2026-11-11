@@ -87,7 +87,7 @@ def test_unparseable_settings_fail_instead_of_dropping_modules(
         java_modules(tmp_path)
 
 
-def test_cli_prints_tab_separated_module_report_rows() -> None:
+def test_cli_prints_the_expected_tab_separated_module_report_rows() -> None:
     result = subprocess.run(
         [sys.executable, str(SCRIPT)],
         cwd=ROOT,
@@ -96,7 +96,7 @@ def test_cli_prints_tab_separated_module_report_rows() -> None:
         text=True,
     )
 
-    assert result.stdout.splitlines() == ["\t".join(module) for module in java_modules(ROOT)]
+    assert {tuple(row.split("\t")) for row in result.stdout.splitlines()} == EXPECTED_MODULES
 
 
 def test_line_counter_reads_the_report_level_line_counter(tmp_path: Path) -> None:
