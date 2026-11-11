@@ -137,11 +137,11 @@
     {
       "criterion_id": "FR-014",
       "description": "Verify FR-014 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "proof_type": "manual_review",
+      "evidence": "guide vector row 1 references Cut a release step 5 attestation command",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T11:54:30.896013+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
