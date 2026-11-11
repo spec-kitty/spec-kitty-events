@@ -117,11 +117,11 @@
     {
       "criterion_id": "FR-012",
       "description": "Verify FR-012 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "proof_type": "manual_review",
+      "evidence": "docs/guides/service-protocol-and-releases.md 'Release-protection posture': 6 vector rows; D5/D6/D7 sign-offs with date and revisit condition",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T11:54:22.046487+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
