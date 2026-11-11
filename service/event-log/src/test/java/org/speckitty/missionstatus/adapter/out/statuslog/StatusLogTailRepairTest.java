@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.speckitty.missionstatus.adapter.out.ledger.LedgerLock;
 import org.speckitty.missionstatus.adapter.out.ledger.LedgerLocks;
 import org.speckitty.missionstatus.adapter.out.statuslog.TailRepair.Action;
@@ -113,15 +115,18 @@ class StatusLogTailRepairTest {
     assertThat(Files.readAllBytes(torn)).isEqualTo(concat(FRAGMENT, new byte[] {'\n'}));
   }
 
-  @Test
-  void aSecondQuarantineAppendsAndNeverRewritesEarlierContent() throws Exception {
-    byte[] earlier = "earlier fragment\n".getBytes(StandardCharsets.UTF_8);
+  /** The second case is an earlier quarantine that lost its final LF (power loss before its force, or a hand edit): one fragment per line must hold. */
+  @ParameterizedTest
+  @ValueSource(strings = {"earlier fragment\n", "earlier fragment"})
+  void aSecondQuarantineAppendsOneFragmentPerLineAndNeverRewritesEarlierContent(String earlierText) throws Exception {
+    byte[] earlier = earlierText.getBytes(StandardCharsets.UTF_8);
+    byte[] separator = earlierText.endsWith("\n") ? new byte[0] : new byte[] {'\n'};
     Files.write(torn, earlier);
     Files.write(log, concat(ROWS, FRAGMENT));
 
     repair(NEVER);
 
-    assertThat(Files.readAllBytes(torn)).isEqualTo(concat(earlier, concat(FRAGMENT, new byte[] {'\n'})));
+    assertThat(Files.readAllBytes(torn)).isEqualTo(concat(earlier, concat(separator, concat(FRAGMENT, new byte[] {'\n'}))));
     assertThat(Files.readAllBytes(log)).isEqualTo(ROWS);
   }
 
