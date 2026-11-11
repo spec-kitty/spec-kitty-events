@@ -1,0 +1,91 @@
+{
+  "event_count": 18,
+  "last_event_id": "01M71177MDFBX62H5GJD8RTQD9",
+  "materialized_at": "2026-11-09T20:50:28.109461+00:00",
+  "mission_number": "",
+  "mission_slug": "sonar-coverage-hygiene-01M70TKQ",
+  "mission_type": "software-dev",
+  "schema_version": 2,
+  "summary": {
+    "approved": 3,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "agent": "claude:claude-opus-5-5:reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "lane": "approved",
+      "last_event_id": "01M70Y3JSA6GT6F9SZ5379NK8Y",
+      "last_transition_at": "2026-11-09T19:56:02.730207+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://sonar-coverage-hygiene-01M70TKQ/WP01-gradle-jacoco-xml-every-module/review-cycle-1.md",
+        "reviewer": "claude:claude-opus-5-5:reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T001": "done",
+        "T002": "done",
+        "T003": "done"
+      }
+    },
+    "WP02": {
+      "actor": "claude",
+      "agent": "claude:claude-opus-5-5:reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "lane": "approved",
+      "last_event_id": "01M7114S2WRMY31R1W6FR3ZMB2",
+      "last_transition_at": "2026-11-09T20:49:07.676323+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://sonar-coverage-hygiene-01M70TKQ/WP02-sonar-workflow-properties-tests/review-cycle-1.md",
+        "reviewer": "claude:claude-opus-5-5:reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T004": "done",
+        "T005": "done",
+        "T006": "done",
+        "T007": "done"
+      }
+    },
+    "WP03": {
+      "actor": "claude",
+      "agent": "claude:claude-opus-5-5:reviewer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
+      "force_count": 0,
+      "lane": "approved",
+      "last_event_id": "01M71177MDFBX62H5GJD8RTQD9",
+      "last_transition_at": "2026-11-09T20:50:28.109461+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://sonar-coverage-hygiene-01M70TKQ/WP03-docs-and-changelog/review-cycle-1.md",
+        "reviewer": "claude:claude-opus-5-5:reviewer",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "subtasks": {
+        "T008": "done",
+        "T009": "done"
+      }
+    }
+  }
+}

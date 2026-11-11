@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "mission_slug": "sonar-coverage-hygiene-01M70TKQ",
+  "mission_id": "01M70TKQG809D1D57065ASNX14",
+  "mission_branch": "issue-238-sonar-coverage-hygiene",
+  "target_branch": "issue-238-sonar-coverage-hygiene",
+  "lanes": [
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP01",
+        "WP02",
+        "WP03"
+      ],
+      "write_scope": [
+        ".github/workflows/sonar.yml",
+        "build-logic/src/main/kotlin/**",
+        "build.gradle.kts",
+        "docs/changelog/unreleased/238-sonar-coverage-hygiene.md",
+        "docs/guides/contributing.md",
+        "scripts/sonar_java_modules.py",
+        "sonar-project.properties",
+        "tests/test_sonar_java_modules.py",
+        "tests/test_sonar_workflow.py"
+      ],
+      "predicted_surfaces": [],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-11-09T18:57:21.715972+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP03"
+  ],
+  "planning_commit_sha": "b3edcedf564933c0c5e90fa27d5b4ee22ada2207"
+}
