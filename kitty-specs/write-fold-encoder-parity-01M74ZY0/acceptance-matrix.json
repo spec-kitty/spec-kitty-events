@@ -38,10 +38,10 @@
       "criterion_id": "FR-004",
       "description": "Verify FR-004 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "NonFiniteLogIdTest: NaN/Infinity/1e400 -> 500 STATUS_EVENT_PERSISTENCE_VERIFICATION_FAILED, log unchanged; finite control 201",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T12:48:38.682022+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
