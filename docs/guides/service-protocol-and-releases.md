@@ -307,7 +307,12 @@ A prerelease is checked the same way but only warns (D8). A rehearsal publishes 
 
 Run the audit by hand from Actions → release-protection-audit → Run workflow, or with
 `gh workflow run release-protection-audit.yml`. Run it after changing a setting and after publishing a release.
-To run it locally, see `kitty-specs/release-protection-posture-01M74ZWP/quickstart.md`.
+To check the settings locally (read-only, with a `gh` login that can read the repository):
+
+```bash
+python3 scripts/release/release_protection_audit.py --repo spec-kitty/spec-kitty-events \
+  --expected scripts/release/release-protection-expected.json --skip-releases
+```
 
 The audit exits with one of three codes:
 
