@@ -1138,7 +1138,7 @@ class TestReduceStatusEvents:
     """Test reduce_status_events function."""
 
     def test_happy_path_full_lifecycle(self) -> None:
-        """planned -> claimed -> in_progress -> for_review -> approved -> done."""
+        """planned -> claimed -> in_progress -> for_review -> in_review -> approved -> done."""
         base_t = datetime(2026, 1, 1, tzinfo=timezone.utc)
         evidence = DoneEvidence(
             repos=[RepoEvidence(repo="test", branch="main", commit="abc123")],

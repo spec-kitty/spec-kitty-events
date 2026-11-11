@@ -49,12 +49,16 @@ removed moves with a non-empty `reason`, and with a `review_ref` where required
 (`for_review -> in_progress`), as core does; or route through `in_review` for approval and
 completion. The write service is the write authority; the package mirrors it.
 
-Packaged conformance fixtures changed to stay core-valid:
+Three packaged conformance fixtures changed to stay core-valid:
 
 - `wp-status-changed-unforced-for-review-to-in-progress-with-review-ref-valid` and
   `lifecycle-wp-status-changed-summary-done-valid` keep their ids and stay valid, but the
   events are now forced (with a reason).
-- Their unforced forms are registered as invalid, `min_version` `11.5.0`:
+- `zeitgeist_attrs/valid/wp_status_changed_done_drops_evidence.json` (manifest id
+  `wp_status_changed_done_drops_evidence`) is rerouted: `payload.from_lane` and
+  `expected_attrs.from_lane` change from `for_review` to `in_review`; same id, still valid
+  and unforced. Zeitgeist consumers' golden `expected_attrs` change with it.
+- The unforced forms of the first two are registered as invalid, `min_version` `11.5.0`:
   `wp-status-changed-unforced-for-review-to-in-progress-with-review-ref-invalid` and
   `wp-status-changed-unforced-for-review-to-done-invalid`.
 
@@ -68,7 +72,7 @@ Also additive: `spec_kitty_events.status_log` exports the encoder refusal classe
 - **Writers and replayers of status events:** audit moves out of `for_review` other than
   `-> in_review`, `-> blocked` and `-> canceled`, and `genesis -> blocked`/`blocked -> blocked`;
   send them with `force=True` and a reason, or fix the lane path.
-- **Conformance consumers:** refresh the two fixtures above and register the two new invalid
+- **Conformance consumers:** refresh the three fixtures above (including the Zeitgeist golden `expected_attrs`) and register the two new invalid
   ones; the Java binding has no transition validator and is unaffected beyond its version.
 
 ## `11.4.0` — the events-side write core: status-row encoding and status-transition parity (minor)

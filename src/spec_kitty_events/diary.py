@@ -1148,8 +1148,10 @@ def _is_rollback_event(event: StatusEvent) -> bool:
       ordered after its approval (``_approved_departure_sort_at``, 10.5.1) and
       judged by arm (ii) continuity unless forced. ``force=True`` skips
       continuity, so a stale forced reopen arriving after ``approved -> done``
-      would move a ``done`` WP back to ``in_progress``. That is why the contract
-      keeps the family force-exempt.
+      would move a ``done`` WP back to ``in_progress``. That is why
+      ``approved -> in_progress`` and ``in_review -> in_progress`` stay core
+      edges that need no force (``for_review -> in_progress`` needs force
+      since 11.5.0, as it is not a core edge).
     """
     if event.from_lane == Lane.IN_REVIEW:
         return event.to_lane in _REJECTION_ROLLBACK_TARGETS
