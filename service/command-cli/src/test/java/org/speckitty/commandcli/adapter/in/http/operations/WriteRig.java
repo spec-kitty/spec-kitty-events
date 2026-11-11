@@ -62,8 +62,8 @@ final class WriteRig implements AutoCloseable {
     application.initializers(registry -> {
       org.springframework.context.support.GenericApplicationContext generic =
           (org.springframework.context.support.GenericApplicationContext) registry;
-      // ServiceWiring declares its writeBudget bean only when none is registered, so a test can shorten the shared write budget.
-      if (budget != null) generic.registerBean("writeBudget", Duration.class, () -> budget);
+      // A @Primary Duration wins over ServiceWiring's default, so a test can shorten the shared write budget.
+      if (budget != null) generic.registerBean("writeBudget", Duration.class, () -> budget, definition -> definition.setPrimary(true));
       if (customizer != null) customizer.accept(generic);
     });
     context = application.run();
