@@ -66,7 +66,8 @@
       "last_transition_at": "2026-11-11T11:58:21.748829+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "StatusLogAppender takes an injected LongSupplier nano clock (additive ctors; defaults System::nanoTime); ServiceWiring.statusLog passes the nanoClock bean. Mutation check: reverting to System.nanoTime fails 2/3 appender and 1/2 adapter clock tests. event-log 582 tests, command-cli 1671, 0 failures. No out-of-map edits."
+        "StatusLogAppender takes an injected LongSupplier nano clock (additive ctors; defaults System::nanoTime); ServiceWiring.statusLog passes the nanoClock bean. Mutation check: reverting to System.nanoTime fails 2/3 appender and 1/2 adapter clock tests. event-log 582 tests, command-cli 1671, 0 failures. No out-of-map edits.",
+        "Review passed: one injected clock for the write budget and the Mission lock wait (write and repair paths through EventLogStatusLog); mutation re-run fails 3 of 5 new tests; event-log 582/0, command-cli 1671/0. Non-blocking: aFreeLockIsTaken... test does not discriminate under the mutation."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
