@@ -58,7 +58,7 @@
     },
     "WP02": {
       "actor": "reviewer-renata",
-      "agent": "claude",
+      "agent": "reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
@@ -68,7 +68,8 @@
       "last_transition_at": "2026-11-11T11:49:49.017442+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "Ready for review"
+        "Ready for review",
+        "Approved: workflow matches contract; 4 guard/mutant pairs; service-release.yml comment-only; actionlint not installed locally"
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
