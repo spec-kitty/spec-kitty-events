@@ -53,12 +53,13 @@ def test_synthetic_module_needs_main_sources_and_defaults_to_its_project_name(
         'include(":new-module")\n'
         'include(":multi-a", "multi-b")  // several paths, one without a colon\n'
         '// include(":commented-out")\n'
-        'include(":without-main")\n'
+        'include(":without-main")\ninclude(":resources-only")\n'
         'include(":moved")\nproject(":moved").projectDir = file("elsewhere/moved")\n',
         encoding="utf-8",
     )
     for directory in ("new-module", "multi-a", "multi-b", "elsewhere/moved", "commented-out"):
-        (tmp_path / directory / "src" / "main").mkdir(parents=True)
+        (tmp_path / directory / "src" / "main" / "java").mkdir(parents=True)
+    (tmp_path / "resources-only" / "src" / "main" / "resources").mkdir(parents=True)
     (tmp_path / "without-main" / "src" / "test").mkdir(parents=True)
 
     suffix = "build/reports/jacoco/test/jacocoTestReport.xml"

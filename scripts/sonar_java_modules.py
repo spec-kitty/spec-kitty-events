@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""List Gradle projects with main sources and their Sonar JaCoCo report paths."""
+"""List Gradle projects with main Java sources and their Sonar JaCoCo report paths."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ def _project_path(name: str) -> str:
 
 
 def java_modules(root: Path, settings_path: Path | None = None) -> list[Module]:
-    """Return ``(project name, directory, report)`` rows for projects with main sources."""
+    """Return ``(project name, directory, report)`` rows for projects with main Java sources."""
     settings = settings_path if settings_path is not None else root / "settings.gradle.kts"
     text = _LINE_COMMENT.sub("", settings.read_text(encoding="utf-8"))
     project_dirs = {_project_path(m.group(1)): m.group(2) for m in _PROJECT_DIR.finditer(text)}
@@ -46,7 +46,7 @@ def java_modules(root: Path, settings_path: Path | None = None) -> list[Module]:
     modules: list[Module] = []
     for name in names:
         directory = project_dirs.get(name, name.lstrip(":").replace(":", "/"))
-        if (root / directory / "src" / "main").is_dir():
+        if (root / directory / "src" / "main" / "java").is_dir():
             report = (Path(directory) / _REPORT_SUFFIX).as_posix()
             modules.append((name, directory, report))
     return sorted(modules)

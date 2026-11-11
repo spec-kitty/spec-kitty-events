@@ -30,6 +30,8 @@ BUILD_OUTCOMES = {
     "BUNDLE_OUTCOME": "bundle",
     "GRADLE_OUTCOME": "gradle",
     "CLASSPATHS_OUTCOME": "classpaths",
+    "COVERAGE_OUTCOME": "coverage",
+    "SCAN_OUTCOME": "scan",
 }
 
 
@@ -40,7 +42,10 @@ def _load(path: Path) -> dict[str, Any]:
 
 
 def _steps() -> list[dict[str, Any]]:
-    steps: list[dict[str, Any]] = _load(SONAR)["jobs"]["scan"]["steps"]
+    jobs = _load(SONAR)["jobs"]
+    # A second job would escape every per-step check below.
+    assert set(jobs) == {"scan"}
+    steps: list[dict[str, Any]] = jobs["scan"]["steps"]
     return steps
 
 
@@ -89,14 +94,19 @@ def test_nightly_cron_is_off_the_hour_and_clear_of_every_other_workflow_cron() -
         entry["cron"]
         for path in WORKFLOWS.glob("*.yml")
         if path != SONAR
-        for entry in (_load(path)["on"].get("schedule") or [])
+        for triggers in [_load(path)["on"]]
+        if isinstance(triggers, dict)  # `on: push` and `on: [push]` carry no schedule
+        for entry in (triggers.get("schedule") or [])
     }
     assert other_crons, "no cron parsed from the sibling workflows; the collision check is vacuous"
     assert cron not in other_crons
 
 
 def test_workflow_permissions_are_contents_read_only() -> None:
-    assert _load(SONAR)["permissions"] == {"contents": "read"}
+    workflow = _load(SONAR)
+    assert workflow["permissions"] == {"contents": "read"}
+    job_permissions = workflow["jobs"]["scan"].get("permissions")
+    assert job_permissions in (None, {"contents": "read"})
 
 
 def test_missing_token_skips_green_with_a_notice() -> None:
@@ -110,13 +120,15 @@ def test_missing_token_skips_green_with_a_notice() -> None:
 
 def test_scan_and_build_steps_are_gated_by_the_token_guard() -> None:
     assert TOKEN_OUTPUT in _step("coverage")["if"]
-    # The scan itself runs whenever the token is present, even when coverage is absent.
-    assert TOKEN_OUTPUT in _step("scan")["if"]
+    # The scan needs the collect step's scan-args, but not Java coverage or binaries.
+    for step_id in ("scan", "quality_gate"):
+        assert TOKEN_OUTPUT in _step(step_id)["if"]
+        assert "steps.coverage.outcome == 'success'" in _step(step_id)["if"]
 
 
 @pytest.mark.parametrize("step_id", ["coverage", "scan", "quality_gate", "report"])
 def test_analysis_steps_continue_after_failures_but_not_cancellation(step_id: str) -> None:
-    assert _step(step_id)["if"] == f"!cancelled() && {TOKEN_OUTPUT}"
+    assert _step(step_id)["if"].startswith(f"!cancelled() && {TOKEN_OUTPUT}")
 
 
 def test_always_is_not_used_anywhere_even_in_comments() -> None:
@@ -128,10 +140,15 @@ def test_scan_environment_contains_only_the_sonar_token() -> None:
 
 
 def test_build_steps_do_not_receive_the_sonar_token() -> None:
+    workflow = _load(SONAR)
+    # Workflow- or job-level env would hand the secret to every step.
+    assert "env" not in workflow
+    assert "env" not in workflow["jobs"]["scan"]
     token_steps = {"sonar_token", "scan", "quality_gate"}
     for step in _steps():
         if step.get("id") not in token_steps:
-            assert "SONAR_TOKEN" not in step.get("env", {}), step["name"]
+            # No spelling of the secret anywhere in the step: env, with:, run:.
+            assert "secrets." not in yaml.safe_dump(step), step["name"]
 
 
 def test_run_blocks_never_interpolate_actions_expressions() -> None:
@@ -171,15 +188,21 @@ def test_collect_derives_reports_and_joins_the_gradle_classpath_files() -> None:
     run = _step("coverage")["run"]
     assert "python3 scripts/sonar_java_modules.py" in run
     assert "::warning::sonar: no JaCoCo report for $name ($report)" in run
-    assert "libraries.txt" in run
+    assert "::warning::sonar: the JaCoCo report for $name covers no lines" in run
     assert "test-libraries.txt" in run
     assert "-Dsonar.java.libraries=" in run
     assert "-Dsonar.java.test.libraries=" in run
-    assert "paste -sd," in run
+    assert "classpath_entries libraries.txt | sort -u | paste -sd, -" in run
+    assert "classpath_entries test-libraries.txt | sort -u | paste -sd, -" in run
     assert "GITHUB_STEP_SUMMARY" in run
-    assert "fallback" in run
-    assert "python3 scripts/sonar_java_modules.py --coverage" in run
-    assert "lines covered" in run
+    # Both classpaths fall back to the modules-2 cache, with a warning, when the
+    # classpaths step did not succeed or wrote nothing.
+    assert run.count('[ "$CLASSPATHS_OUTCOME" = "success" ]') == 2
+    assert "::warning::sonar: no complete libraries.txt files" in run
+    assert "::warning::sonar: no complete test-libraries.txt files" in run
+    assert run.count("modules-2/files-2.1/**/*.jar") == 2
+    assert 'coverage_rows="$(python3 scripts/sonar_java_modules.py --coverage)"' in run
+    assert "$covered lines covered, $missed missed" in run
 
 
 def test_explicit_classpath_task_is_best_effort_and_gradle_gated() -> None:
@@ -253,7 +276,16 @@ def test_every_derived_java_module_uses_the_shared_jacoco_xml_wiring() -> None:
 
     for name, directory, report in modules:
         assert report == f"{directory}/build/reports/jacoco/test/jacocoTestReport.xml"
-        build_script = (ROOT / directory / "build.gradle.kts").read_text(encoding="utf-8")
+        script_path = next(
+            (
+                p
+                for p in (ROOT / directory / "build.gradle.kts", ROOT / directory / "build.gradle")
+                if p.is_file()
+            ),
+            None,
+        )
+        assert script_path is not None, f"{name}: no build.gradle(.kts) in {directory}"
+        build_script = re.sub(r"//[^\n]*", "", script_path.read_text(encoding="utf-8"))
         applies_convention = (
             'id("events.library")' in build_script or 'id("events.service")' in build_script
         )
