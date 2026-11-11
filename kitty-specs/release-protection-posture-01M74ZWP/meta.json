@@ -1,4 +1,16 @@
 {
+  "acceptance_history": [
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-11-11T11:54:41.524936+00:00",
+      "accepted_by": "system",
+      "accepted_from_commit": "aa36964bfd00d4ccbe18d9b9f74c70c18026d24b"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-11-11T11:54:41.524936+00:00",
+  "accepted_by": "system",
+  "accepted_from_commit": "aa36964bfd00d4ccbe18d9b9f74c70c18026d24b",
   "created_at": "2026-11-11T09:44:12.881686+00:00",
   "flattened": false,
   "friendly_name": "Release-protection posture for the service-v* line",
