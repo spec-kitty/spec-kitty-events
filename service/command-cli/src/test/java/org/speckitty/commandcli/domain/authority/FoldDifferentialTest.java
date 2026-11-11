@@ -32,7 +32,7 @@ class FoldDifferentialTest {
   @TestFactory
   Stream<DynamicTest> everyCaseFoldsToTheLanesCoreReaches() throws Exception {
     List<Path> files = caseFiles();
-    assertTrue(files.size() >= 6, "the differential directory must hold its cases, found " + files.size());
+    assertTrue(files.size() >= 9, "the differential directory must hold its cases, found " + files.size());
     return files.stream().map(file -> DynamicTest.dynamicTest(file.getFileName().toString(), () -> check(file)));
   }
 

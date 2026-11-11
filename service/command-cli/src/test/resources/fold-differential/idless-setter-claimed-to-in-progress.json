@@ -33,5 +33,5 @@
       "wp_id": "WP01"
     }
   ],
-  "notes": "Around claimed->in_progress (#231 4.16): an id-less planned->claimed, then a non-forced in_progress->for_review whose from_lane is not the lane in force. Core, with no setter, applies it (for_review); the pre-fix Java fold dropped it (claimed). Divergence direction: Java dropped, core applied. The opposite direction (Java applies, core drops) cannot be built: core drops an event only against a found setter, and an identified setter is found identically by both folds, while with an id-less setter core always applies and the pre-fix fold could only drop more."
+  "notes": "Around claimed->in_progress (#231 4.16): an id-less planned->claimed, then a non-forced in_progress->for_review whose from_lane is not the lane in force. Core, with no setter, applies it (for_review); the pre-fix Java fold dropped it (claimed). Divergence direction: Java dropped, core applied. The cascade case below shows the opposite direction across a log."
 }

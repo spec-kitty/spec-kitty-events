@@ -67,6 +67,11 @@ def _cases() -> List[Case]:
         transition(None, "WP01", "planned", "claimed", "2026-01-01T00:00:01+00:00"),
         transition(ULID_A, "WP01", "for_review", "in_review", "2026-01-01T00:00:02+00:00"),
     ]
+    cascade = [
+        transition(None, "WP01", "planned", "claimed", "2026-01-01T00:00:01+00:00"),
+        transition(ULID_A, "WP01", "for_review", "in_review", "2026-01-01T00:00:02+00:00"),
+        transition(ULID_C, "WP01", "claimed", "in_progress", "2026-01-01T00:00:03+00:00"),
+    ]
     return [
         {
             "id": "idless-setter-stale-forward-applies",
@@ -92,10 +97,7 @@ def _cases() -> List[Case]:
                 "Around claimed->in_progress (#231 4.16): an id-less planned->claimed, then a "
                 "non-forced in_progress->for_review whose from_lane is not the lane in force. Core, with "
                 "no setter, applies it (for_review); the pre-fix Java fold dropped it (claimed). "
-                "Divergence direction: Java dropped, core applied. The opposite direction (Java applies, "
-                "core drops) cannot be built: core drops an event only against a found setter, and an "
-                "identified setter is found identically by both folds, while with an id-less setter "
-                "core always applies and the pre-fix fold could only drop more."
+                "Divergence direction: Java dropped, core applied. The cascade case below shows the opposite direction across a log."
             ),
             "log": [
                 transition(None, "WP01", "planned", "claimed", "2026-01-01T00:00:01+00:00"),
@@ -103,6 +105,25 @@ def _cases() -> List[Case]:
                     ULID_A, "WP01", "in_progress", "for_review", "2026-01-01T00:00:02+00:00"
                 ),
             ],
+        },
+        {
+            "id": "idless-setter-cascade-acknowledged-core-drops",
+            "notes": (
+                "Across a log, the pre-fix fold acknowledges what core drops. Row 2 (for_review->in_review) "
+                "applies in core (no id-less setter) and row 3 (claimed->in_progress) is then dropped on "
+                "continuity (in_review). The pre-fix fold dropped row 2 against the id-less row, so row 3 "
+                "continued claimed and was applied (in_progress). Divergence direction: Java applied, core "
+                "dropped."
+            ),
+            "log": cascade,
+        },
+        {
+            "id": "identified-cascade-control",
+            "notes": (
+                "Control: the same cascade with a ULID on row 1. Row 1 is a found setter, row 2 is dropped on "
+                "continuity and row 3 applies (in_progress) in core and in Java."
+            ),
+            "log": [dict(cascade[0], event_id=ULID_B)] + cascade[1:],
         },
         {
             "id": "idless-same-timestamp-unorderable",
@@ -162,7 +183,7 @@ def _cases() -> List[Case]:
 def _expected(log: Sequence[Row]) -> Dict[str, Any]:
     try:
         state = reduce([dict(row) for row in log])
-    except (TypeError, ValueError) as error:
+    except TypeError as error:  # unorderable ids only; a malformed case must raise
         return {"unreducible": type(error).__name__}
     return {wp: data["lane"] for wp, data in sorted(state.work_packages.items())}
 

@@ -28,7 +28,7 @@ def test_files_match_the_reducer() -> None:
 
 
 def test_there_are_cases() -> None:
-    assert len(_GENERATOR.build()) >= 6
+    assert len(_GENERATOR.build()) >= 9
 
 
 @pytest.mark.parametrize("name", sorted(_GENERATOR.build()))
