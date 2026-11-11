@@ -168,10 +168,10 @@
       "criterion_id": "FR-017",
       "description": "Verify FR-017 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "service/core-pin.json purpose names lock interop, nightly corpus oracle and write-core-parity oracles; SHA unchanged",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T12:49:20.792419+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
