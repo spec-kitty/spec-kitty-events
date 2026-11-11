@@ -1,7 +1,7 @@
 {
-  "event_count": 50,
-  "last_event_id": "01M75A1QRW0M34BNX6CXZJF465",
-  "materialized_at": "2026-11-11T12:41:42.940907+00:00",
+  "event_count": 51,
+  "last_event_id": "01M75A2HJ2YEVS097F4ZZ081Z3",
+  "materialized_at": "2026-11-11T12:42:09.346556+00:00",
   "mission_number": "",
   "mission_slug": "write-fold-encoder-parity-01M74ZY0",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 1
   },
   "work_packages": {
@@ -192,23 +192,23 @@
       }
     },
     "WP06": {
-      "actor": "claude",
-      "agent": "claude",
+      "actor": "claude-reviewer",
+      "agent": "claude-reviewer",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude",
-      "lane": "for_review",
-      "last_event_id": "01M75A1QRW0M34BNX6CXZJF465",
-      "last_transition_at": "2026-11-11T12:41:42.940907+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M75A2HJ2YEVS097F4ZZ081Z3",
+      "last_transition_at": "2026-11-11T12:42:09.346556+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "WP06 done at d96e0902. T027: write-core-parity test asserts core uv sync and sync_packs use UV_PYTHON=$(cat .python-version), and lists extract_ack_bytes --check; positive control (copy without prefix, same test function via module SERVICE override) FAILED as required, unmodified PASSES. T028: static PROCESS_CREATION_ONLY_IN_MISSION ArchUnit rule in ArchitectureRulesTest (passes on main). T029: planted PlantedProcessCreator violates, PlantedPidReader passes (ProcessCreationRuleTest 2/2). T030: core-pin purpose only, JSON valid, no test reads it. Commands: pytest test_service_workflows 36 passed 1 skipped; gradle :command-cli:test --tests '*architecture*' green (ArchitectureRulesTest 7, ProcessCreationRuleTest 2); full :command-cli:test 1760 tests 0 failures; ruff check + format clean; changelog check/guard ok; conformance 1235 passed."
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 18856,
-      "shell_pid_created_at": "1794400723.59",
+      "role": "reviewer",
+      "shell_pid": 22725,
+      "shell_pid_created_at": "1794400926.32",
       "subtasks": {
         "T027": "done",
         "T028": "done",
