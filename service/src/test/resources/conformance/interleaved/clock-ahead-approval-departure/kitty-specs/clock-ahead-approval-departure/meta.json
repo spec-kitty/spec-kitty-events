@@ -1,0 +1,10 @@
+{
+  "created_at": "2026-09-02T10:00:00+00:00",
+  "friendly_name": "Fixture clock-ahead-approval-departure",
+  "mission_id": "01J70000000000000000000170",
+  "mission_number": null,
+  "mission_slug": "clock-ahead-approval-departure",
+  "mission_type": "software-dev",
+  "slug": "clock-ahead-approval-departure",
+  "target_branch": "main"
+}

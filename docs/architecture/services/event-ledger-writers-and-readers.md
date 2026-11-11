@@ -2,7 +2,7 @@
 title: Event ledger writers and readers
 description: 'Core-side map of every event log and ledger core writes and reads, the target the event ADRs set, and the cited gaps with remedies. Imported from core with its history.'
 doc_status: active
-updated: 2026-11-08T00:00:00Z
+updated: 2026-11-11T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -150,7 +150,7 @@ core's Python writers during the strangler. Its code is in
 | changelog acceptance | `release/changelog.py:129-155` `_wp_lane_from_event_log` | raw `json.loads` loop over `mission_dir` | none | **last `to_lane` in file order** |
 | status-surface guard | `coordination/status_surface_guard.py` | raw lines, event ids only | none | set membership |
 | retrospective readers | `retrospective/summary.py`, `gate.py`, `generator.py` | raw rows | own fold | own `lamport` field |
-| Mission Status Read API (Java) | core's `services/mission-status-api/.../reducer/StatusReducer.java`, now this repository's [`service/event-log/`](https://github.com/spec-kitty/spec-kitty-events/tree/main/service/event-log) (`domain.readmodel.reducer.StatusReducer`), ordering `AtThenEventId.java` | the log | own port of `reduce_parsed` | plain `(at, event_id)`, **no approved-departure lift** |
+| Mission Status Read API (Java) | core's `services/mission-status-api/.../reducer/StatusReducer.java`, now this repository's [`service/event-log/`](https://github.com/spec-kitty/spec-kitty-events/tree/main/service/event-log) (`domain.readmodel.reducer.StatusReducer`), ordering `AtThenEventId.java` | the log | own port of `reduce_parsed` | wall clock `at`, then `event_id`, with the approved-departure lift (ported by #170) |
 | Read API reference oracle | `tests/contract/_mission_status_*.py` | the log | `materialize_snapshot`, `tail_reader` | same as the CLI |
 | migration ledger | `upgrade/ledger.py`, `registry.py` `migration_settled`, `spec-kitty migrate ledger` | both partitions | own normalizer | last record per id in file order |
 
@@ -246,7 +246,7 @@ flowchart LR
 | G-1 | **Partly closed (#6603):** the EventBridge port skeleton exists (`runtime/next/event_bridge.py`; local file adapter `specify_cli/events/event_bridge.py`) and the three work package transition doors call it; every other writer remains. No single canonical writer; about fifteen append implementations | table above; `runtime/next/event_bridge.py` (port), `specify_cli/events/event_bridge.py` (local file adapter); `status/_unsafe.py:75-113` contains only `status.events.jsonl` writers | 2026-10-14-1 D-1, D-2 | Done for the WP transition (the flat doors `_persist_prepared` and `emit_status_transition_batch`, and `BookkeepingTransaction.append_events`, call `record_work_package_transition`); still open: `emit_inner_state_changed` writes standalone annotations to the same file outside the port, and the port's unit is the append only (the coordination shell still materializes, commits and cuts the log on failure in process), narrower than ADR 2026-10-22-1's one unit of work, so #6675 must route that door and widen the unit; then move the other writers behind the port, one log at a time (#6193), with the Java write service's client as the adapter (#6675) | file new (supersedes the premise of #1927) |
 | G-2 | **Partly closed (#6603):** `tests/architectural/test_event_log_writes_gate.py` freezes the door callers, raw writers and unresolved log-shaped writes of every named log; it drains as each log moves (#6193). Open: the gate drains only as logs move to the write service, and the residuals in its docstring (parameter-only and glob-built paths) | `tests/architectural/test_status_events_writes_gate.py` (`status.events.jsonl`) and `tests/architectural/test_event_log_writes_gate.py` (every other named log) | 2026-10-14-1 Confirmation (gate over `*.events.jsonl`, `canonical-events.jsonl`, `run.events.jsonl`, `mission-events.jsonl`, `kitty-ops/*.jsonl`) | Extend the gate to every named file, frozen at today's writers, draining with G-1 | file new (with G-1) |
 | G-3 | Docs say the status path is Lamport-ordered; it is wall clock | `status/reducer.py:17-18`, `:205`, `:401`; ADR 2026-10-14-1 "Reducer duality" bullet; ADR 2026-02-09-3 (sort "primary: `logical_clock`", "`status emit` ticks the logical clock", the gate "uses the Lamport reduction wrapper"); ADR 2026-10-01-2 (overview "through the Lamport reducer", "ports the Lamport reduction"); `docs/architecture/diagrams/01_context/README.md`, `02_containers/README.md`; `docs/plans/domains/api-dashboard-domain-plan.md` | 2026-02-09-3 Decision; 2026-10-01-2 D-5 | Factual amendments (wording only); whether to make ordering truly Lamport-primary is an operator decision needing a clock on CLI rows (events #72) | file new (#6213 closed after step 1 only) |
-| G-4 | Java read API does not port the #4941 approved-departure lift | `StatusReducer.java` Javadoc on `PORTED_EVENTS_VERSION` ("NOT yet ported"); `AtThenEventId.java` plain `(at, event_id)`; no golden covers the clock-ahead case | 2026-10-01-2 D-11 (conformance to the Python reducer) | Add the clock-ahead golden, port the lift before more read routes ship | #6268 |
+| G-4 | ~~Java read API does not port the #4941 approved-departure lift~~ **Closed (#170, which took over spec-kitty#6268):** `StatusReducer` ports `_approved_departure_sort_at` and `_carry_lifted_sort_at`; with nothing lifted the order is the 10.4.6 one: `(at, event_id)` (`AtThenEventId`), a departure following its same-`at` approval | `service/event-log/.../reducer/StatusReducer.java`; `ApprovedDepartureLiftTest`; the `interleaved/clock-ahead-approval-departure` conformance fixture | 2026-10-01-2 D-11 (conformance to the Python reducer) | None open | #170 |
 | G-5 | ~~Eight unlocked plain appends, no torn-tail refusal~~ **Closed (#6606):** each takes the interim lock in `kernel.event_log_append` and refuses a torn tail | `invocation/lifecycle.py:65`, `events/decision_log.py:252`, `mission_v1/events.py:60-66`, `engine.py:107-123`, `policy/audit.py`, `missions/_archive.py`, `invocation/propagator.py`, `charter/activation/_io.py` | 2026-10-14-1 D-1 | Route through `persistence.append_event` where a model exists; otherwise its `O_APPEND` single write and torn-tail check | file new (Op family: #6564) |
 | G-6 | Decision-point rows bypass the contract writer the library publishes for them | `decisions/emit.py:117-152`; `spec-kitty-events` `docs/api/ledger-write-contract.md`, "Unclocked envelopes" | 2026-10-13-2 D-1 ("the CLI then writes from the package's models") | Migrate this family next after glossary | #6412 |
 | G-7 | Internal lifecycle modules and their exemptions remain | `status/lifecycle_events.py` (`"5.0.0"`, `#1198` at `:303`, `:314`); `retrospective/lifecycle_events.py`; 15 `canonical-producer-exempt` markers in `src/` | 2026-10-14-1 D-4 | Retire after G-1; payload models first (#6438) | #6185 (blocked on owner ruling), #6438 |
@@ -269,7 +269,7 @@ flowchart LR
    #6117's modules (ADR 2026-10-22-1). Its migration order (port, module extraction, Java
    binding, lock spike, one file at a time) governs G-1, G-2, G-5 to G-8.
 2. **No dependencies, in parallel**: G-17 and G-19 (test guardrails, before G-14), G-14
-   (lock refresh), G-3 (doc amendments), G-4 (#6268), #6409
+   (lock refresh), G-3 (doc amendments), G-4 (#170, closed), #6409
    (then close #957). G-11, G-16 and G-18 are closed (#6607, #6614, 2026-10-22).
 3. **G-1 and G-2 together**: the port skeleton and the multi-file writes gate.
 4. **After G-1**: G-6, G-7 (#6438, the lifecycle half of #6185), G-5, G-9, then G-8 and G-10.
@@ -289,7 +289,9 @@ somewhere unexpected:
 - **Two reducer implementations must agree**: the Python fold and the Java port. The
   Java service records the library version it is coupled to (`PORTED_EVENTS_VERSION`),
   and `ManifestCouplingTest` holds it equal to the version the conformance goldens were
-  generated with, but a behaviour change no golden exercises passes that check (G-4).
+  generated with, but a behaviour change no golden exercises passes that check: the 10.5.1
+  approved-departure lift did until #170 ported it with a golden that covers it (G-4, closed).
+  The write service holds its own copy of that ordering (#249).
 
 The history of the recent bumps shows one recurring class: the library ships reducer
 behaviour changes as **patch** releases (its `COMPATIBILITY.md` records each), and the
