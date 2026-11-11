@@ -3,23 +3,21 @@ work_package_id: WP03
 title: Reference encoder parity (#231 4.1-4.5)
 dependencies: []
 requirement_refs:
+- C-006
 - FR-006
 - FR-007
-- FR-008
 - FR-009
 - FR-010
 - NFR-001
 - NFR-005
 - SC-002
 - SC-003
-- C-006
 planning_base_branch: issue-237-write-fold-encoder-parity
 merge_target_branch: issue-237-write-fold-encoder-parity
 branch_strategy: Single-branch mission. Planning, base and merge target are issue-237-write-fold-encoder-parity; the finished branch goes to main through one PR.
 subtasks:
 - T011
 - T012
-- T013
 - T014
 - T015
 - T016
@@ -36,7 +34,6 @@ execution_mode: code_change
 owned_files:
 - src/spec_kitty_events/status_log.py
 - src/spec_kitty_events/_iso8601.py
-- src/spec_kitty_events/__init__.py
 - tests/test_status_log.py
 - tests/test_iso8601_fromisoformat.py
 - docs/changelog/unreleased/237-reference-encoder.md
@@ -105,9 +102,8 @@ empty tuple.
    `{"a": {1: "x"}}` → `NonStringKey`; existing `test_status_refusals_are_value_errors` extended to
    the new classes.
 
-### T013 — Docstring [P]
-Add a `status_log` bullet to the package docstring's module inventory in `__init__.py`. Do not
-re-export.
+### (T013 moved to WP04)
+The package docstring bullet for `status_log` (#231 4.3) is done by WP04, which owns `__init__.py`.
 
 ### T014 — 3.11 grammar everywhere
 1. `parse_iso8601_datetime` always calls `_parse_isoformat_311`. Remove the version branch; keep

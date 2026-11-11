@@ -3,6 +3,7 @@ work_package_id: WP04
 title: 'validate_transition = core edge graph; 11.5.0 (D4, #231 4.6)'
 dependencies: []
 requirement_refs:
+- FR-008
 - FR-011
 - FR-012
 - FR-013
@@ -11,6 +12,7 @@ planning_base_branch: issue-237-write-fold-encoder-parity
 merge_target_branch: issue-237-write-fold-encoder-parity
 branch_strategy: Single-branch mission. Planning, base and merge target are issue-237-write-fold-encoder-parity; the finished branch goes to main through one PR.
 subtasks:
+- T013
 - T017
 - T018
 - T019
@@ -59,8 +61,9 @@ machine and take a minor version bump. Operator ruling **M2-R3**: the bump (11.4
 this PR. Scope is the **unforced edge graph**; force semantics (force bypasses the edge check, as in
 core's `check_transition`) and the guard checks stay as they are.
 
-`__init__.py` is shared with WP03 (WP03 edits only the module docstring; you edit only
-`__version__`). Coordinate by touching only your line.
+You also own `src/spec_kitty_events/__init__.py`: bump `__version__` and add a `status_log` bullet
+to the package docstring's module inventory (T013, #231 4.3; do not re-export `status_log`,
+consistent with `total_order` and `producer_contract`).
 
 ## Context
 
@@ -91,6 +94,10 @@ core's `check_transition`) and the guard checks stay as they are.
   `conformance/fixtures/manifest.json` or `loader.py` (those name the version a fixture appeared in).
 
 ## Subtasks
+
+### T013 — Package docstring
+Add a `status_log` bullet to the module inventory in `src/spec_kitty_events/__init__.py`'s docstring
+(#231 4.3). No re-export. Include it in the `Changed` fragment of T021 or WP03's fragment wording.
 
 ### T017 — Edge graph
 Rewrite `_ALLOWED_TRANSITIONS` as core's graph plus `(None, PLANNED)`, and replace the generic
