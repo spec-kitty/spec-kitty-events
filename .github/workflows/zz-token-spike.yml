@@ -1,0 +1,56 @@
+# Throwaway spike for #239: which settings endpoints can a read-only GITHUB_TOKEN read?
+# Lives only on branch issue-239-token-spike; never merged.
+name: zz-token-spike
+on:
+  push:
+    branches: [issue-239-token-spike]
+permissions:
+  contents: read
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scope: contents-read-only
+          - scope: plus-actions-attestations-read
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: ${{ matrix.scope == 'contents-read-only' && 'none' || 'read' }}
+      attestations: ${{ matrix.scope == 'contents-read-only' && 'none' || 'read' }}
+    steps:
+      - name: Probe
+        env:
+          GH_TOKEN: ${{ github.token }}
+          R: ${{ github.repository }}
+        run: |
+          probe() { code=$(gh api -i "$1" 2>/dev/null | head -1 | awk '{print $2}'); echo "PROBE $1 -> ${code:-ERR}"; }
+          probe "repos/$R/rulesets"
+          probe "repos/$R/rulesets/26558116"
+          echo "main bypass_actors: $(gh api repos/$R/rulesets/26558116 --jq '.bypass_actors' 2>&1)"
+          echo "main can_bypass: $(gh api repos/$R/rulesets/26558116 --jq '.current_user_can_bypass' 2>&1)"
+          probe "repos/$R/rulesets/26752412"
+          echo "tags bypass_actors: $(gh api repos/$R/rulesets/26752412 --jq '.bypass_actors' 2>&1)"
+          probe "repos/$R/environments"
+          probe "repos/$R/environments/service-release"
+          echo "env rules: $(gh api repos/$R/environments/service-release --jq '{p: [.protection_rules[] | {type, prevent_self_review, reviewers: [.reviewers[]?.reviewer.login // .reviewers[]?.reviewer.slug]}], d: .deployment_branch_policy, admins: .can_admins_bypass}' 2>&1)"
+          probe "repos/$R/environments/service-release/deployment-branch-policies"
+          echo "policies: $(gh api repos/$R/environments/service-release/deployment-branch-policies --jq '[.branch_policies[] | {name,type}]' 2>&1)"
+          probe "repos/$R/releases?per_page=5"
+          probe "repos/$R/attestations/sha256:257f1bceedaf6848a50223fa5a090f041cbcacf5bc48fc00d8c26fc4a18690d7"
+          echo "attestations: $(gh api repos/$R/attestations/sha256:257f1bceedaf6848a50223fa5a090f041cbcacf5bc48fc00d8c26fc4a18690d7 --jq '.attestations | length' 2>&1)"
+          probe "repos/$R/branches/main/protection"
+          probe "repos/$R/actions/permissions"
+          probe "repos/$R/actions/permissions/workflow"
+          probe "repos/$R"
+          echo "repo perms: $(gh api repos/$R --jq '.permissions' 2>&1)"
+      - name: gh attestation verify (one rc.2 asset)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          R: ${{ github.repository }}
+        run: |
+          gh release download service-v0.1.0-rc.2 --repo "$R" --pattern 'command-cli-0.1.0-rc.2-linux-x64' --dir "$RUNNER_TEMP" && \
+          gh attestation verify "$RUNNER_TEMP/command-cli-0.1.0-rc.2-linux-x64" --repo "$R" \
+            --signer-workflow "$R/.github/workflows/service-release.yml" --source-ref refs/tags/service-v0.1.0-rc.2 \
+            && echo "VERIFY ok" || echo "VERIFY failed rc=$?"
