@@ -1,7 +1,7 @@
 {
   "rows": {
     "#152": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "context: the closed issue that added the service-release environment",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -9,7 +9,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#170": {
