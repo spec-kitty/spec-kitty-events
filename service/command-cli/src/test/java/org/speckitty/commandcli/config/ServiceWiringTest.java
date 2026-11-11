@@ -40,9 +40,9 @@ class ServiceWiringTest {
       assertThat(budget).isEqualTo(Duration.ofSeconds(10));
       FilesystemMissionCatalog missions = wiring.missionCatalog(runtime);
       ServiceWiring.RepositoryRoot root = wiring.repositoryRoot(runtime, missions);
-      StatusLog statusLog = wiring.statusLog(runtime, root);
       WriteTurn turn = wiring.writeTurn();
       LongSupplier clock = wiring.nanoClock();
+      StatusLog statusLog = wiring.statusLog(runtime, root, clock);
       WriteService writes = wiring.writeService(root, missions, statusLog, wiring.rowCodec(), turn, budget, clock,
           new org.speckitty.commandcli.application.lifecycle.ServiceLifecycle(java.time.Clock.systemUTC(), () -> { }));
       assertThat(writes.budget()).isEqualTo(Duration.ofSeconds(10));

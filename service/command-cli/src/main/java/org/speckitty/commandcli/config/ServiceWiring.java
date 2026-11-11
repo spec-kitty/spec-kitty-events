@@ -103,8 +103,8 @@ class ServiceWiring {
   }
 
   @Bean
-  StatusLog statusLog(ServeRuntime runtime, RepositoryRoot root) {
-    return new EventLogStatusLog(new StatusLogAppender(), runtime.options().gitCommonDir(), root.path());
+  StatusLog statusLog(ServeRuntime runtime, RepositoryRoot root, LongSupplier nanoClock) {
+    return new EventLogStatusLog(new StatusLogAppender(nanoClock), runtime.options().gitCommonDir(), root.path());
   }
 
   @Bean
