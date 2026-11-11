@@ -1,7 +1,7 @@
 {
   "rows": {
     "#170": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Context: sibling mission (Mission Status API StatusReducer); out of scope (C-002)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -9,7 +9,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#231": {
