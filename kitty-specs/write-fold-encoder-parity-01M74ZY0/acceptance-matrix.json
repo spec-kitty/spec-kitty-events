@@ -48,10 +48,10 @@
       "criterion_id": "FR-005",
       "description": "Verify FR-005 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "StatusLogAppender(LongSupplier) + ServiceWiring nanoClock; StatusLogAppenderClockTest 3, EventLogStatusLogClockTest 2; mutation fails 3/5",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T12:48:41.998930+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
