@@ -73,7 +73,7 @@
       "wp": null
     },
     "#6195": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Context: core spec-kitty/spec-kitty#6195; WP01 must land before it (C-005)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -81,7 +81,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     }
   },
