@@ -88,10 +88,10 @@
       "criterion_id": "FR-009",
       "description": "Verify FR-009 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "tests/test_release_protection_audit.py AC3 cases: rcs pass, non-bot author, failed asset, no non-checksum assets, prerelease warns",
+      "pass_fail": "pass",
+      "verified_by": "claude:orchestrator",
+      "verified_at": "2026-11-11T11:54:08.130987+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
