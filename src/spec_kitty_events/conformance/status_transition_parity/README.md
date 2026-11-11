@@ -76,4 +76,10 @@ protocol case is left untouched.
 
 `unreachable.json` maps a wholly unreachable reason URN to its proven cause. Its
 `partial` object records an unreachable half of a reason that remains reachable
-through another half. Every other reason has a committed refusal case.
+through another half; it may be empty or absent, as it is when every half is
+reachable. Every other reason has a committed refusal case.
+
+`case.schema.json` is closed (`additionalProperties: false`) on the unit, so a
+copy of it taken from an earlier release rejects the cases that use
+`implementationEvidencePresent`. Refresh your schema copy from the package
+whenever you update it, or validate against the packaged file directly.

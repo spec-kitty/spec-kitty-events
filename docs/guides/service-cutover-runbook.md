@@ -561,6 +561,16 @@ MISSION_DIR="kitty-specs/<mission-slug>"                  # the Mission's direct
 tail -c 1 "$MISSION_DIR/status.events.jsonl" | od -An -c
 ```
 
+Then check that no writer holds the log. The repair takes the same Mission lock a write takes, but
+a writer outside the service (a stray core process, an editor) is not bound by it. The command
+must print nothing:
+
+```bash
+fuser "$MISSION_DIR/status.events.jsonl" 2>/dev/null || lsof "$MISSION_DIR/status.events.jsonl" 2>/dev/null
+```
+
+If it lists a process, wait for it or stop it, and check again before you call the operation.
+
 ### Call the operation with curl
 
 Until core's repair verb ships (spec-kitty/spec-kitty#7482, linked to spec-kitty/spec-kitty#6195),
@@ -575,11 +585,13 @@ PORT="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["port"])
 TOKEN="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["token"])' "$EP")"
 MISSION_ID="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["mission_id"])' "$MISSION_DIR/meta.json")"
 
-curl -sS -X POST "http://127.0.0.1:$PORT/api/v1/missions/$MISSION_ID/status-log-repairs" \
-  -H "Authorization: Bearer $TOKEN" \
+# The token goes in on stdin as a curl config, so it never appears in the process list.
+printf 'header = "Authorization: Bearer %s"\n' "$TOKEN" | curl -sS --config - -X POST \
+  "http://127.0.0.1:$PORT/api/v1/missions/$MISSION_ID/status-log-repairs" \
   -H "Spec-Kitty-Write-Protocol: 1" \
   -H "Content-Type: application/json" \
   -d "{\"context\": {\"actor\": \"<your-actor>\", \"checkout\": \".\", \"missionDirectory\": \"$MISSION_DIR\", \"writeSurface\": \"checkout_append\", \"destinationRef\": null}}"
+unset TOKEN
 ```
 
 The request body has one member, `context`. Its `actor` is any non-empty string. `checkout` is `.`
@@ -608,8 +620,8 @@ Other answers:
 
 ### After the repair
 
-- **`quarantined`.** The fragment is in `$MISSION_DIR/status.events.jsonl.torn`. Read it, then
-  delete it or commit it. The file is untracked, inside a tracked Mission directory, so core's
+- **`quarantined`.** The fragment is in `$MISSION_DIR/status.events.jsonl.torn`. Read it, and
+  keep it until the cause of the tear is understood: it is the only copy of those bytes. The file is untracked, inside a tracked Mission directory, so core's
   dirty-tree checks may notice it. The contract and this repository do not say how core's checks
   treat it. Check `git status` before the next lifecycle command, and if a check stops on the
   file, state that uncertainty and ask.
