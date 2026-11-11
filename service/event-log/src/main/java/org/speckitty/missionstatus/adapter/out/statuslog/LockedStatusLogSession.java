@@ -153,7 +153,7 @@ final class LockedStatusLogSession implements StatusLogSession {
     try (FileOps.AppendChannel tornChannel = files.openForAppend(torn)) {
       long tornStart = tornChannel.size();
       try {
-        copyFragment(tornChannel, bytes, lastLf);
+        copyFragment(tornChannel, bytes, lastLf, tornStart > 0 && !endsWithLf(files.read(torn)));
         requireUnchanged(logChannel, bytes.length);
       } catch (IOException | RuntimeException failure) {
         throw restore(tornChannel, tornStart, failure);
@@ -163,8 +163,17 @@ final class LockedStatusLogSession implements StatusLogSession {
     return new TailRepair(TailRepair.Action.QUARANTINED, bytes.length - (lastLf + 1), Arrays.copyOf(bytes, lastLf + 1));
   }
 
-  private void copyFragment(FileOps.AppendChannel tornChannel, byte[] bytes, int lastLf) throws IOException {
-    byte[] entry = Arrays.copyOfRange(bytes, lastLf + 1, bytes.length + 1);
+  /**
+   * Appends the fragment plus a LF in one write. When the existing quarantine does not end in LF (a power loss before its force, or a
+   * hand edit), a separating LF leads the same write, so the fragment never joins the previous line and a rollback removes both.
+   */
+  private void copyFragment(FileOps.AppendChannel tornChannel, byte[] bytes, int lastLf, boolean separate) throws IOException {
+    int lead = separate ? 1 : 0;
+    byte[] entry = new byte[lead + bytes.length - (lastLf + 1) + 1];
+    if (separate) {
+      entry[0] = '\n';
+    }
+    System.arraycopy(bytes, lastLf + 1, entry, lead, bytes.length - (lastLf + 1));
     entry[entry.length - 1] = '\n';
     writeFully(tornChannel, entry);
     tornChannel.force();
@@ -192,6 +201,10 @@ final class LockedStatusLogSession implements StatusLogSession {
       // The fragment is durable in quarantine and the log is at its last LF; a re-run answers NONE. Never roll the quarantine back.
       throw PersistenceFailedException.repairFailed(failure);
     }
+  }
+
+  private static boolean endsWithLf(byte[] content) {
+    return content.length > 0 && content[content.length - 1] == '\n';
   }
 
   private static boolean logIsUntouched(FileOps.AppendChannel logChannel, long originalSize) {
