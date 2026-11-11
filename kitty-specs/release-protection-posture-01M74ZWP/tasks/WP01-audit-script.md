@@ -109,11 +109,12 @@ Implement pure functions (no I/O) in the script:
 ```python
 def normalise_settings(
     repository: str,
-    environments: dict[str, Any],            # GET /environments
-    service_release: dict[str, Any],         # GET /environments/service-release
-    branch_policies: dict[str, Any],         # GET …/deployment-branch-policies
-    rulesets: list[dict[str, Any]],          # one GET /rulesets/{id} per ruleset in the list
+    environments: dict[str, Any],  # GET /environments
+    service_release: dict[str, Any],  # GET /environments/service-release
+    branch_policies: dict[str, Any],  # GET …/deployment-branch-policies
+    rulesets: list[dict[str, Any]],  # one GET /rulesets/{id} per ruleset in the list
 ) -> dict[str, Any]: ...
+
 
 def diff_settings(expected: dict[str, Any], live: dict[str, Any]) -> list[Finding]: ...
 ```
@@ -138,14 +139,21 @@ Create `scripts/release/release-protection-expected.json` by running `normalise_
 **Purpose:** FR-007, FR-008, FR-009 (pure logic, injected verifier).
 
 ```python
-SERVICE_TAG = re.compile(r"^service-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$")   # same as service-release.yml gate
+SERVICE_TAG = re.compile(
+    r"^service-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$"
+)  # same as service-release.yml gate
 BOT = "github-actions[bot]"
+
 
 class AssetVerdict(NamedTuple):
     ok: bool
-    reason: str          # empty when ok
+    reason: str  # empty when ok
 
-AssetVerifier = Callable[[str, dict[str, Any]], AssetVerdict]   # (tag, asset) -> verdict; raises AuditError on infrastructure faults
+
+AssetVerifier = Callable[
+    [str, dict[str, Any]], AssetVerdict
+]  # (tag, asset) -> verdict; raises AuditError on infrastructure faults
+
 
 def audit_releases(releases: list[dict[str, Any]], verify: AssetVerifier) -> list[Finding]: ...
 ```
