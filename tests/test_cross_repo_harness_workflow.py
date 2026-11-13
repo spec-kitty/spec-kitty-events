@@ -116,7 +116,11 @@ _TOKEN = re.compile(r"\s*(\(|\)|&&|\|\||!=|==|!|,|'[^']*'|[A-Za-z_][\w.\-*]*)")
 
 
 def _evaluate(expression: str, context: dict) -> object:
-    """Evaluate the subset of GitHub's expression syntax these `if:`s use."""
+    """Evaluate the subset of GitHub's expression syntax these `if:`s use.
+
+    Modelled semantics: `==`, `!=` and `contains` ignore case; a missing property is null; a
+    null never equals a string; the `*` object filter of a missing value is an empty array.
+    """
     tokens, pos = [], 0
     expression = expression.strip()
     while pos < len(expression):
@@ -134,7 +138,7 @@ def _evaluate(expression: str, context: dict) -> object:
                 if not isinstance(value, list):
                     return []
                 rest = path.split(".*.", 1)[1]
-                return [item[rest] for item in value]
+                return [item.get(rest) for item in value if isinstance(item, dict)]
             value = value.get(part) if isinstance(value, dict) else None
         return value
 
@@ -157,6 +161,7 @@ def _evaluate(expression: str, context: dict) -> object:
         if i < len(tokens) and tokens[i] in ("==", "!="):
             op = tokens[i]
             right, i = parse_unary(i + 1)
+            left, right = _fold(left), _fold(right)
             left = (left == right) if op == "==" else (left != right)
         return left, i
 
@@ -177,12 +182,16 @@ def _evaluate(expression: str, context: dict) -> object:
             assert tokens[i] == ","
             needle, i = parse_or(i + 1)
             assert tokens[i] == ")"
-            return needle in (haystack or []), i + 1
+            return _fold(needle) in [_fold(item) for item in haystack or []], i + 1
         return lookup(token), i + 1
 
     value, end = parse_or(0)
     assert end == len(tokens), f"trailing tokens {tokens[end:]}"
     return value
+
+
+def _fold(value: object) -> object:
+    return value.lower() if isinstance(value, str) else value
 
 
 def _context(event: str, head_repo: str | None = REPO, labels: tuple[str, ...] = ()) -> dict:
@@ -208,6 +217,9 @@ def test_the_evaluator_reads_the_expressions_it_is_given():
     ctx = _context("pull_request", labels=("x",))
     assert _evaluate("contains(github.event.pull_request.labels.*.name, 'x')", ctx) is True
     assert _evaluate("!(github.event_name == 'push') && 'a' != 'b'", ctx) is True
+    assert _evaluate(
+        "'ABC' == 'abc' && contains(github.event.pull_request.labels.*.name, 'X')", ctx
+    )
     with pytest.raises(AssertionError):
         _evaluate("github.event_name == 'push' ? 1", ctx)
 
@@ -218,6 +230,11 @@ CASES = {
     "upstream PR": (_context("pull_request"), True, False),
     "fork PR": (_context("pull_request", "contributor/spec-kitty-events"), False, True),
     "fork PR from a deleted fork": (_context("pull_request", None), False, True),
+    "upstream PR, name in another case": (
+        _context("pull_request", "Spec-Kitty/Spec-Kitty-Events"),
+        True,
+        False,
+    ),
     "fork PR whose owner mimics ours": (
         _context("pull_request", "spec-kitty-evil/spec-kitty-events"),
         False,

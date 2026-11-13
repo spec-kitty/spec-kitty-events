@@ -75,3 +75,18 @@ Searched open issues for fork, harness, required check, secrets, `pull_request_t
   either), not changed here.
 - #59, #203, #219, #151: workflow follow-ups with no fork/secret aspect; unaffected.
 - #261, #7, #121: "harness" in another sense; unrelated.
+
+## Squad review (one round)
+
+- [MAJOR, folded] The maintainer re-run pushes fork code upstream, where it runs with the
+  repository secrets and a write-capable token (the pushed commit's own workflow files run, and
+  a new `on: push` workflow fires on the push alone). The docs had claimed nothing runs fork code
+  with secrets. Fixed: the procedure now starts with a full diff review (with `.github/**`,
+  build and test configuration called out), and the guide, the workflow header, AGENTS.md and the
+  fragment say that no workflow hands secrets to fork code on its own, while the re-run does.
+- Minors folded: the test evaluator ignores case like GitHub (plus a case-variant case), skips
+  label objects without a name, and documents its modelled semantics; the guide says to re-check
+  the fork head SHA just before merging it, that `origin` is this repository, that fork runs may
+  wait for approval, and words #189 → #204 as a re-land.
+- Minor kept as accepted risk (operator ruling): a fork PR's required check passes without the
+  harness; the deferral notice is a `::notice`, and the re-run is procedural.

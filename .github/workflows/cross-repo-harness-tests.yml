@@ -18,9 +18,10 @@
 # and the harness cannot be cloned. On a fork PR the gate job is skipped by its `if:`,
 # which GitHub reports as success for the required `cross-repo-harness-tests` check, and
 # `fork-pr-harness-deferred` says so on the PR. The harness is not run on fork code here:
-# a maintainer pushes the fork head unchanged to an upstream branch and runs the gate
-# there before merge (docs/guides/contributing.md > "Pull requests from forks"); a push
-# to main runs it again. No pull_request_target, no secret ever reaches fork code.
+# after reviewing the diff (pushing it upstream gives it the secrets), a maintainer pushes
+# the fork head unchanged to an upstream branch and runs the gate there before merge
+# (docs/guides/contributing.md > "Pull requests from forks"); a push to main runs it again.
+# No pull_request_target: no workflow hands a secret to fork code on its own.
 
 name: cross-repo-harness-tests
 
