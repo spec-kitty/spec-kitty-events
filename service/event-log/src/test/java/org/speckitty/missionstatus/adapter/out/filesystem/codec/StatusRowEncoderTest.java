@@ -40,6 +40,33 @@ class StatusRowEncoderTest {
             + "\\u007f\\u0080\\u00e9\\u2028\\ud83d\\ude00\\ud800\"");
   }
 
+  /**
+   * #229 (core contract status-event-wp-window.md, W-5/W-7): a relayed {@code policy_metadata.wp_window} leaves the
+   * encoder as the same JSON value, sorted like every other key, whichever of its shapes it has, valid or not.
+   */
+  @Test
+  void policyMetadataWpWindowIsRelayedAsTheSameJsonValue() {
+    List<String> windows = List.of(
+        "{\"schema_version\":1,\"open_sha\":\"3f1c0d9e8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e\"}",
+        "{\"schema_version\":1,\"gap\":{\"reason\":\"lane_branch_missing\",\"detail\":\"refs/heads/x not found\"}}",
+        "{\"schema_version\":1,\"gap\":{\"reason\":\"capture_failed\",\"cause\":\"git_error\",\"detail\":\"d\u00e9tail\"}}",
+        "{\"schema_version\":2,\"open_sha\":\"NOT-A-SHA\",\"gap\":{\"reason\":\"not_recorded\"},\"extra\":true}");
+    for (String window : windows) {
+      String rowJson = "{\"to_lane\":\"claimed\",\"policy_metadata\":{\"wp_window\":" + window + ",\"agent\":\"a\"}}";
+      @SuppressWarnings("unchecked")
+      Map<String, Object> row = (Map<String, Object>) PythonJson.parse(rowJson);
+      String line = new String(StatusRowEncoder.encodeLine(row), StandardCharsets.US_ASCII);
+      assertThat(line).endsWith("\n");
+      assertThat(PythonJson.parse(line.strip())).as(window).isEqualTo(PythonJson.parse(rowJson));
+    }
+    @SuppressWarnings("unchecked")
+    Map<String, Object> gap = (Map<String, Object>) PythonJson.parse(
+        "{\"policy_metadata\":{\"wp_window\":{\"schema_version\":1,\"gap\":{\"reason\":\"capture_failed\",\"cause\":\"git_error\",\"detail\":\"d\u00e9tail\"}}}}");
+    assertThat(new String(StatusRowEncoder.encodeLine(gap), StandardCharsets.US_ASCII)).isEqualTo(
+        "{\"policy_metadata\": {\"wp_window\": {\"gap\": {\"cause\": \"git_error\", \"detail\": \"d\\u00e9tail\", "
+            + "\"reason\": \"capture_failed\"}, \"schema_version\": 1}}}\n");
+  }
+
   @Test
   void bigNegativeIntegersAndFloatsKeepTheirPythonNumberKinds() {
     BigInteger huge = new BigInteger("-1234567890123456789012345678901234567890");

@@ -53,7 +53,7 @@ class ProtocolCorpusTest {
   private static final Set<String> GUARD_REASONS = ConcurrentHashMap.newKeySet();
   private static final String EVIDENCE_FIELD_SUFFIX = " (with implementationEvidencePresent)";
   private static final Set<String> EVIDENCE_FIELD_CASES = ConcurrentHashMap.newKeySet();
-  private static final int ACK_COUNT = 91; // 86 domain + 5 service ack cases of the corpus.
+  private static final int ACK_COUNT = 97; // 91 domain + 6 service ack cases of the corpus.
   private static WriteRig rig;
 
   /** What the service answers instead of the domain ack, and why the ack cannot be reached over the wire. */
