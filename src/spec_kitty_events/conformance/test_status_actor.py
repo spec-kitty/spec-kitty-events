@@ -1,7 +1,8 @@
 """Packaged gate: the diary decoder and the producer contract agree on the structured actor (#263).
 
 ``diary.decode_actor`` (what every status read goes through) and the producer contract's
-``actorbinding`` schema (what the Python and Java CloudEvents validators read) state the
+``actorbinding`` schema and the registry's lifted ``actor`` legacy schema (what the Python
+and Java CloudEvents validators read) state the
 same rule: exactly ``{role, profile, tool, model}``, or those four plus ``profile_source``
 in ``invocation``, ``flag``, ``agent_string``, ``wp_frontmatter`` or null, null exactly
 when ``profile`` is null. This module checks that both accept and refuse the same actors:
@@ -53,8 +54,22 @@ def _binding_schema(name: str) -> Dict[str, Any]:
     return binding
 
 
+def _legacy_actor_schema(name: str) -> Dict[str, Any]:
+    """The object branch of the registry's lifted ``actor`` ``legacy_schema``."""
+    for item in pc.get_entry(name)["lifted"]:
+        if item["member"] == "actor":
+            for branch in item["legacy_schema"]["anyOf"]:
+                if branch.get("type") == "object":
+                    found: Dict[str, Any] = branch
+                    return found
+    raise AssertionError(f"{name}: no structured actor legacy_schema")
+
+
 def _schema_accepts(name: str, actor: Dict[str, Any]) -> bool:
-    return bool(jsonschema.Draft202012Validator(_binding_schema(name)).is_valid(actor))
+    binding = jsonschema.Draft202012Validator(_binding_schema(name)).is_valid(actor)
+    legacy = jsonschema.Draft202012Validator(_legacy_actor_schema(name)).is_valid(actor)
+    assert binding is legacy, f"{name}: actorbinding and legacy actor schema disagree on {actor!r}"
+    return bool(binding)
 
 
 def _decoder_accepts(actor: Dict[str, Any]) -> bool:

@@ -122,16 +122,18 @@ are unchanged: the member is optional and a 4-key binding is valid as before.
 `StatusTransitionPayload.actor` stays an open `Union[str, Dict]` (its description now names
 the fifth key); tightening it would refuse dict actors it accepts today.
 
-New fixtures: the producer row `rows/valid/lane.transitioned.v1.profile_source.json`;
+New fixtures: the producer rows `rows/valid/lane.transitioned.v1.profile_source.json` and
+`rows/valid/wp.innerstate.changed.v1.profile_source.json`;
 `rows/invalid/lane.transitioned.v1.profile_source_unknown.json` (`enum`),
 `…profile_source_without_profile.json` and `…profile_source_null_with_profile.json`
+(`anyOf`); `rows/invalid/wp.innerstate.changed.v1.profile_source_without_profile.json`
 (`anyOf`); `rows/legacy_invalid/lane.transitioned.v1.profile_source_unknown.json`; the
 status-diary replay golden `status-diary-replay-with-profile-source` (and `-output`),
-`min_version` `11.5.0`; and ten upcast corpus cases (`edge/structured-actor-profile-source*`,
-`cli/lane.transitioned.v1.profile_source`, `diary/status_diary_with_profile_source.00[1-6]`).
+`min_version` `11.5.0`; and eleven upcast corpus cases (`edge/structured-actor-profile-source*`,
+`cli/lane.transitioned.v1.profile_source`, `cli/wp.innerstate.changed.v1.profile_source`, `diary/status_diary_with_profile_source.00[1-6]`).
 No existing fixture or corpus case changes. The packaged gate
 `spec_kitty_events.conformance.test_status_actor` pins that the decoder and the
-`actorbinding` schema give the same verdict on every structured actor in those fixtures.
+`actorbinding` and legacy actor schemas give the same verdict on every structured actor in those fixtures.
 
 **Release classification.** Additive: every actor `11.4.0` accepted is still accepted with
 the same result; only actors it refused are now accepted. It is a **forward-compatibility
@@ -155,6 +157,9 @@ own gate (`command-cli` refuses to write the 5-key actor, `event-log` reads only
   has `11.5.0` as its floor, and never a source without a profile.
 - **Conformance consumers:** refresh the three fixtures above (including the Zeitgeist golden `expected_attrs`) and register the two new invalid
   ones; the Java binding has no transition validator and is unaffected beyond its version.
+  Also register the #263 fixtures listed above (seven producer rows, the
+  `status-diary-replay-with-profile-source` pair and the eleven upcast corpus cases); the Java
+  binding runs the corpus cases.
 
 ## `11.4.0` — the events-side write core: status-row encoding and status-transition parity (minor)
 
