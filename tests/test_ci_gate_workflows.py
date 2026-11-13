@@ -183,14 +183,20 @@ def test_ci_scripts_read_event_values_from_env_not_interpolation() -> None:
 # --- acceptance and the harness gate ----------------------------------------------------
 
 
-@pytest.mark.parametrize(
-    ("path", "job"),
-    [(ACCEPTANCE, "acceptance"), (HARNESS, "cross-repo-harness-tests")],
-    ids=["acceptance", "harness"],
-)
-def test_single_job_gates_are_pausable_on_prs_only(path: Path, job: str) -> None:
-    condition = " ".join(_load(path)["jobs"][job]["if"].split())
+def test_single_job_gates_are_pausable_on_prs_only() -> None:
+    condition = " ".join(_load(ACCEPTANCE)["jobs"]["acceptance"]["if"].split())
     assert condition == f"github.event_name != 'pull_request' || {PAUSE_GUARD}"
+
+
+def test_harness_gate_is_pausable_and_skips_fork_prs_only() -> None:
+    # #95: a fork PR has no secrets, so the gate skips (a skipped job satisfies a required
+    # check) and fork-pr-harness-deferred reports it; tests/test_cross_repo_harness_workflow.py
+    # evaluates both conditions over every case.
+    condition = " ".join(_load(HARNESS)["jobs"]["cross-repo-harness-tests"]["if"].split())
+    assert condition == (
+        f"github.event_name != 'pull_request' || ({PAUSE_GUARD} && "
+        "github.event.pull_request.head.repo.full_name == github.repository)"
+    )
 
 
 # --- in-job path detection (service.yml, docs-site.yml) ---------------------------------

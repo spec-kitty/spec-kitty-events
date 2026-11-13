@@ -17,7 +17,10 @@ a push to `main` that touches `docs/**`, `site/**`, `contracts/**`,
 anything beyond the operator's ruleset on `main`: required checks only (`acceptance`,
 `cross-repo-harness-tests`, `service-gate`, `docs-build`), "up to date before merging" off,
 no merge queue. `ci.yml`'s `suite` is not required, and a `pr:pause-ci` label pauses a PR's CI
-(`pr-pause-ci.yml`; ADR 0005 D3, amended 2026-11-02, #177). The deterministic CI suite is
+(`pr-pause-ci.yml`; ADR 0005 D3, amended 2026-11-02, #177). On a fork PR, which gets no
+secrets, the `cross-repo-harness-tests` gate job is skipped (a pass to the required check) and
+a maintainer re-runs the harness on an upstream branch at the same head before merge (#95,
+[contributing guide](./docs/guides/contributing.md#pull-requests-from-forks)). The deterministic CI suite is
 `.github/workflows/ci.yml` (Blacksmith, per `planning#274`); the other workflows run the
 acceptance and cross-repo harness checks (`acceptance.yml`, `cross-repo-harness-tests.yml`)
 and the daily CI canary (`ci-pr-lane-canary.yml`) and the daily read-only release-protection audit

@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 import pytest
@@ -99,3 +100,178 @@ def test_no_privileged_pr_trigger_or_job_credential_exposure(config):
     assert "env" not in workflow
     assert "env" not in config
     assert "continue-on-error" not in config
+
+
+# --- fork pull requests (#95) ------------------------------------------------------------
+#
+# GitHub withholds repository secrets from a `pull_request` run whose head is a fork, so the
+# gate cannot mint its App token there. Operator ruling (Q1, option a): on a fork PR the gate
+# job is skipped (GitHub reports a job skipped by `if:` as success to a required check) and
+# `fork-pr-harness-deferred` says so; a maintainer runs the harness on an upstream branch.
+# The tests below evaluate the workflow's own `if:` expressions, not a copy of them.
+
+REPO = "spec-kitty/spec-kitty-events"
+NOTICE_JOB = "fork-pr-harness-deferred"
+_TOKEN = re.compile(r"\s*(\(|\)|&&|\|\||!=|==|!|,|'[^']*'|[A-Za-z_][\w.\-*]*)")
+
+
+def _evaluate(expression: str, context: dict) -> object:
+    """Evaluate the subset of GitHub's expression syntax these `if:`s use."""
+    tokens, pos = [], 0
+    expression = expression.strip()
+    while pos < len(expression):
+        match = _TOKEN.match(expression, pos)
+        assert match, f"unsupported syntax at {expression[pos:]!r}"
+        tokens.append(match.group(1))
+        pos = match.end()
+        while pos < len(expression) and expression[pos].isspace():
+            pos += 1
+
+    def lookup(path: str) -> object:
+        value: object = context
+        for part in path.split("."):
+            if part == "*":  # GitHub's object filter; a missing value filters to nothing
+                if not isinstance(value, list):
+                    return []
+                rest = path.split(".*.", 1)[1]
+                return [item[rest] for item in value]
+            value = value.get(part) if isinstance(value, dict) else None
+        return value
+
+    def parse_or(i: int) -> tuple[object, int]:
+        left, i = parse_and(i)
+        while i < len(tokens) and tokens[i] == "||":
+            right, i = parse_and(i + 1)
+            left = left or right
+        return left, i
+
+    def parse_and(i: int) -> tuple[object, int]:
+        left, i = parse_cmp(i)
+        while i < len(tokens) and tokens[i] == "&&":
+            right, i = parse_cmp(i + 1)
+            left = left and right
+        return left, i
+
+    def parse_cmp(i: int) -> tuple[object, int]:
+        left, i = parse_unary(i)
+        if i < len(tokens) and tokens[i] in ("==", "!="):
+            op = tokens[i]
+            right, i = parse_unary(i + 1)
+            left = (left == right) if op == "==" else (left != right)
+        return left, i
+
+    def parse_unary(i: int) -> tuple[object, int]:
+        token = tokens[i]
+        if token == "!":
+            value, i = parse_unary(i + 1)
+            return not value, i
+        if token == "(":
+            value, i = parse_or(i + 1)
+            assert tokens[i] == ")"
+            return value, i + 1
+        if token.startswith("'"):
+            return token[1:-1], i + 1
+        if token == "contains":
+            assert tokens[i + 1] == "("
+            haystack, i = parse_or(i + 2)
+            assert tokens[i] == ","
+            needle, i = parse_or(i + 1)
+            assert tokens[i] == ")"
+            return needle in (haystack or []), i + 1
+        return lookup(token), i + 1
+
+    value, end = parse_or(0)
+    assert end == len(tokens), f"trailing tokens {tokens[end:]}"
+    return value
+
+
+def _context(event: str, head_repo: str | None = REPO, labels: tuple[str, ...] = ()) -> dict:
+    github: dict = {"event_name": event, "repository": REPO, "event": {}}
+    if event == "pull_request":
+        head = {"sha": "a" * 40, "repo": None if head_repo is None else {"full_name": head_repo}}
+        github["event"] = {
+            "pull_request": {"head": head, "labels": [{"name": name} for name in labels]}
+        }
+    return {"github": github}
+
+
+def _runs(job: dict, context: dict) -> bool:
+    return bool(_evaluate(job["if"], context))
+
+
+@pytest.fixture
+def jobs():
+    return yaml.load(FILE.read_text(), Loader=yaml.BaseLoader)["jobs"]
+
+
+def test_the_evaluator_reads_the_expressions_it_is_given():
+    ctx = _context("pull_request", labels=("x",))
+    assert _evaluate("contains(github.event.pull_request.labels.*.name, 'x')", ctx) is True
+    assert _evaluate("!(github.event_name == 'push') && 'a' != 'b'", ctx) is True
+    with pytest.raises(AssertionError):
+        _evaluate("github.event_name == 'push' ? 1", ctx)
+
+
+CASES = {
+    # case: (context, gate runs, notice runs)
+    "push to main": (_context("push"), True, False),
+    "upstream PR": (_context("pull_request"), True, False),
+    "fork PR": (_context("pull_request", "contributor/spec-kitty-events"), False, True),
+    "fork PR from a deleted fork": (_context("pull_request", None), False, True),
+    "fork PR whose owner mimics ours": (
+        _context("pull_request", "spec-kitty-evil/spec-kitty-events"),
+        False,
+        True,
+    ),
+    "paused upstream PR": (_context("pull_request", labels=("pr:pause-ci",)), False, False),
+    "paused fork PR": (
+        _context("pull_request", "contributor/spec-kitty-events", ("pr:pause-ci",)),
+        False,
+        False,
+    ),
+}
+
+
+@pytest.mark.parametrize("case", CASES)
+def test_each_event_runs_exactly_the_expected_job(jobs, case):
+    context, gate, notice = CASES[case]
+    assert _runs(jobs["cross-repo-harness-tests"], context) is gate
+    assert _runs(jobs[NOTICE_JOB], context) is notice
+
+
+def test_the_required_check_name_stays_on_the_gate_and_the_notice_cannot_shadow_it(jobs):
+    assert jobs["cross-repo-harness-tests"]["name"] == "cross-repo-harness-tests"
+    assert jobs[NOTICE_JOB]["name"] != "cross-repo-harness-tests"
+    assert set(jobs) == {"cross-repo-harness-tests", NOTICE_JOB}
+
+
+def test_fork_notice_job_runs_no_pr_code_and_holds_no_credential(jobs):
+    notice = jobs[NOTICE_JOB]
+    assert notice["permissions"] == {}
+    text = json.dumps(notice)
+    assert "secrets." not in text and "github.token" not in text and "GH_TOKEN" not in text
+    assert "needs" not in notice and "continue-on-error" not in notice
+    for step in notice["steps"]:
+        assert "uses" not in step  # no checkout, no third-party action
+        assert "${{" not in step["run"]  # event values only through env
+
+
+def test_fork_notice_script_reports_the_deferral_and_succeeds(jobs, tmp_path):
+    step = jobs[NOTICE_JOB]["steps"][0]
+    summary = tmp_path / "summary"
+    result = subprocess.run(
+        ["bash", "-e", "-c", step["run"]],
+        env={
+            "PATH": os.environ["PATH"],
+            "GITHUB_STEP_SUMMARY": str(summary),
+            "HEAD_REPO": "contributor/spec-kitty-events",
+            "HEAD_SHA": "b" * 40,
+        },
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.startswith("::notice title=cross-repo-harness-tests deferred::")
+    written = summary.read_text()
+    assert "b" * 40 in written and "`contributor/spec-kitty-events`" in written
+    assert "Pull requests from forks" in written

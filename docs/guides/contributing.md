@@ -2,7 +2,7 @@
 title: Contributing
 description: How a change lands in spec-kitty-events — the one-issue-one-branch-one-PR flow, the tests and conformance gate to run, and the adversarial review.
 doc_status: active
-updated: 2026-11-09T00:00:00Z
+updated: 2026-11-13T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -29,6 +29,25 @@ required check and is skipped under the label.
 The ruleset on `main` requires those four checks, with "require branches to be up to date
 before merging" off, and there is no merge queue (ADR 0005 D3, amended 2026-11-02). A PR
 therefore merges on its own passing checks, without being re-tested against a newer `main`.
+
+## Pull requests from forks
+
+GitHub gives no repository secrets to a `pull_request` run whose head is a fork, and
+`cross-repo-harness-tests` needs them to clone the private harness. On a fork PR that gate
+job is therefore skipped, which GitHub reports as a pass to the required check, and a
+`cross-repo-harness-tests deferred (fork PR)` job says so on the PR (#95). The other three
+required checks run on fork PRs as on any other. Nothing runs fork code with secrets: there
+is no `pull_request_target` path.
+
+The harness has not tested the fork's change, so a maintainer runs it before merge:
+
+1. Push the fork PR's head, unchanged, to an upstream branch:
+   `git fetch origin pull/<n>/head && git push origin FETCH_HEAD:refs/heads/issue-<issue>-<slug>`.
+2. Open a pull request from that branch to `main` (a draft is enough). Its
+   `cross-repo-harness-tests` runs with the secrets.
+3. Once it is green on that exact head SHA, merge that pull request and close the fork PR
+   with a link to it (as #189 landed as #204), or, if the fork head has not moved, merge the
+   fork PR and close the upstream one. A push to `main` runs the harness again either way.
 
 ## The flow
 
