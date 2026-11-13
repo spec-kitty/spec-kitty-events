@@ -492,7 +492,11 @@ class StatusTransitionPayload(BaseModel):
             "Who initiated the transition. Accepts either a plain string identifier "
             "(e.g. 'claude', 'user', 'migration') or a structured dict carrying "
             "richer audit fields such as {role, profile, tool, model}. Use "
-            "``actor_label`` for a canonical string form."
+            "``actor_label`` for a canonical string form. The status diary "
+            "(``diary.decode_actor``) accepts exactly {role, profile, tool, model}, "
+            "or those four plus profile_source (one of invocation, flag, "
+            "agent_string, wp_frontmatter, or null; null exactly when profile is "
+            "null)."
         ),
     )
     force: bool = Field(False, description="Whether this is a forced transition")
