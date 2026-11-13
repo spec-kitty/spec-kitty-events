@@ -1,0 +1,38 @@
+{
+  "event_count": 5,
+  "last_event_id": "01JAAAA0000000000000000268",
+  "materialized_at": "2026-11-13T10:05:00+00:00",
+  "mission_number": "263",
+  "mission_slug": "263-profile-source",
+  "mission_type": "software-dev",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 1,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 1,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "claude",
+      "force_count": 0,
+      "lane": "in_progress",
+      "last_event_id": "01JAAAA0000000000000000265",
+      "last_transition_at": "2026-11-13T10:02:00+00:00",
+      "subtasks": {
+        "T001": "done"
+      }
+    },
+    "WP02": {
+      "actor": "codex",
+      "force_count": 0,
+      "lane": "claimed",
+      "last_event_id": "01JAAAA0000000000000000268",
+      "last_transition_at": "2026-11-13T10:05:00+00:00"
+    }
+  }
+}

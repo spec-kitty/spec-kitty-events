@@ -44,6 +44,7 @@ _GOLDEN_REPLAYS = (
     "status-diary-replay-seed-payload-fold",
     "status-diary-replay-seed-lane-authority",
     "status-diary-replay-skipped-subtask",
+    "status-diary-replay-with-profile-source",
 )
 
 

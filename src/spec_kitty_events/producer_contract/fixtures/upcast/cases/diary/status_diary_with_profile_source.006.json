@@ -1,0 +1,17 @@
+{
+  "case": "status_diary_with_profile_source.006",
+  "group": "diary",
+  "origin": "conformance/fixtures/status_diary/replay/status_diary_with_profile_source.jsonl:6",
+  "notes": "A status.events.jsonl line, read with the Mission id from context.",
+  "context": {
+    "missionid": "01J0000000000000000000RP09"
+  },
+  "line": "{\"actor\": {\"model\": null, \"profile\": \"implementer-ivan\", \"role\": \"implementer\", \"tool\": \"codex\"}, \"at\": \"2026-11-13T10:05:00+00:00\", \"event_id\": \"01JAAAA0000000000000000268\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_slug\": \"263-profile-source\", \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"codex\",\"data\":{\"actorbinding\":{\"model\":null,\"profile\":\"implementer-ivan\",\"role\":\"implementer\",\"tool\":\"codex\"},\"evidence\":null,\"force\":false,\"from_lane\":\"planned\",\"reason\":null,\"review_ref\":null,\"to_lane\":\"claimed\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:lane.transitioned.v1\",\"executionmode\":\"worktree\",\"id\":\"01JAAAA0000000000000000268\",\"missionid\":\"01J0000000000000000000RP09\",\"missionslug\":\"263-profile-source\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000RP09\",\"specversion\":\"1.0\",\"subject\":\"WP02\",\"time\":\"2026-11-13T10:05:00+00:00\",\"type\":\"ai.spec-kitty.lane.transitioned.v1\"}",
+    "valid": true
+  }
+}

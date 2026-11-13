@@ -153,6 +153,19 @@
                 "string",
                 "null"
               ]
+            },
+            "profile_source": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "invocation",
+                "flag",
+                "agent_string",
+                "wp_frontmatter",
+                null
+              ]
             }
           },
           "required": [
@@ -161,7 +174,41 @@
             "tool",
             "model"
           ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "dependentSchemas": {
+            "profile_source": {
+              "anyOf": [
+                {
+                  "properties": {
+                    "role": {},
+                    "profile": {
+                      "type": "null"
+                    },
+                    "tool": {},
+                    "model": {},
+                    "profile_source": {
+                      "type": "null"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "properties": {
+                    "role": {},
+                    "profile": {
+                      "type": "string"
+                    },
+                    "tool": {},
+                    "model": {},
+                    "profile_source": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          }
         }
       ]
     },

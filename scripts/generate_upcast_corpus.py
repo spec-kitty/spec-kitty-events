@@ -389,6 +389,54 @@ EDGE: List[Tuple[str, Any, Optional[Dict[str, str]], str]] = [
         "An actor object without tool or role: no actor attribute, the binding kept whole; the binding schema needs all four members, so the result is not valid.",
     ),
     (
+        "structured-actor-profile-source",
+        _json_line(
+            _lane(
+                actor={
+                    "role": "implementer",
+                    "profile": "implementer-ivan",
+                    "tool": "claude",
+                    "model": None,
+                    "profile_source": "wp_frontmatter",
+                }
+            )
+        ),
+        CTX,
+        "The optional fifth key profile_source (#263): the binding is kept whole and is valid.",
+    ),
+    (
+        "structured-actor-profile-source-unknown",
+        _json_line(
+            _lane(
+                actor={
+                    "role": "implementer",
+                    "profile": "implementer-ivan",
+                    "tool": "claude",
+                    "model": None,
+                    "profile_source": "guessed",
+                }
+            )
+        ),
+        CTX,
+        "profile_source outside the closed vocabulary (#263): mapped, but the binding schema refuses it.",
+    ),
+    (
+        "structured-actor-profile-source-without-profile",
+        _json_line(
+            _lane(
+                actor={
+                    "role": "system",
+                    "profile": None,
+                    "tool": "spec-kitty",
+                    "model": None,
+                    "profile_source": "flag",
+                }
+            )
+        ),
+        CTX,
+        "profile_source names a source while profile is null (#263): mapped, but the binding schema refuses it.",
+    ),
+    (
         "lane-missing-execution-mode",
         _json_line({k: v for k, v in _lane().items() if k != "execution_mode"}),
         CTX,
