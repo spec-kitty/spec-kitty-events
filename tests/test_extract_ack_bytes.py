@@ -44,7 +44,7 @@ def test_case_count_equals_the_corpus_ack_count() -> None:
 
     committed = json.loads(module.OUTPUT.read_text(encoding="utf-8"))
 
-    assert len(ack_ids) == 91
+    assert len(ack_ids) == 97
     assert set(committed) == ack_ids
     assert all(t == "" or t.endswith("\n") for texts in committed.values() for t in texts)
 
