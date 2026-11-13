@@ -22,8 +22,21 @@ Write-service cut-over readiness (#236) adds, inside the same unreleased version
 status-log repair, the implementation-evidence wire input and operator-facing wording, all needed
 before spec-kitty/spec-kitty#6195 removes core's status-log writer. These additions are additive.
 
+The window-opening record `policy_metadata.wp_window` (spec-kitty/spec-kitty-events#229) is typed in
+the same unreleased version, for `service-v0.1.0-rc.3`. It documents a key the CLI already sends and
+the service already relays; no request the service accepted before is refused.
+
 ### Added
 
+- `EventRow.policy_metadata.wp_window`, typed by the closed `_shared` schemas `WpWindow`,
+  `WpWindowGap`, `WpWindowGapReason` (`capture_failed`, `lane_branch_missing`) and `WpWindowGapCause`
+  (`git_error`, `probe_error`), exactly as core's
+  `kitty-specs/consolidation-window-provenance-01M6Y84D/contracts/status-event-wp-window.md` states
+  `schema_version` 1. The rest of `policy_metadata` stays untyped. The service relays the value
+  unchanged and never refuses, delays or retries a unit because of it, even a value outside the
+  schema (contract rules W-4, W-7); it takes no lane-head reading of its own. Example
+  `TransitionUnit.claim-wp-window.yaml`; both gap vocabularies are pinned in `enum_pins.json`
+  (#229).
 - `POST /missions/{missionId}/status-log-repairs`: an explicit, operator-invoked and locked repair,
   separate from the write path, with the closed `StatusLogRepairRequest`, `StatusLogRepairAck` and
   `StatusLogRepairAction` schemas. The actions are `none`, `completed` and `quarantined`; examples

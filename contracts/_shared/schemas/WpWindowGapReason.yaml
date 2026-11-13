@@ -1,0 +1,15 @@
+title: WpWindowGapReason
+description: >-
+  Why a window-opening move recorded no lane head (core contract status-event-wp-window.md,
+  schema_version 1, W-3). capture_failed: the lane branch exists but reading its head failed;
+  it carries a WpWindowGapCause. lane_branch_missing: the lane branch did not exist at the move (for
+  example a claim before implement); it carries no cause. Only these two are ever written. The
+  reader-derived gaps not_recorded and not_on_lane are never written; a value carrying either is
+  outside the schema and reads as not recorded (R-5). A new reason needs a schema_version bump.
+type: string
+enum:
+  - capture_failed
+  - lane_branch_missing
+x-source:
+  path: src/specify_cli/status/wp_window.py
+  symbol: RecordedGapReason

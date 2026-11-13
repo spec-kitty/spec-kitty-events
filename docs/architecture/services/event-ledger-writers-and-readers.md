@@ -2,7 +2,7 @@
 title: Event ledger writers and readers
 description: 'Core-side map of every event log and ledger core writes and reads, the target the event ADRs set, and the cited gaps with remedies. Imported from core with its history.'
 doc_status: active
-updated: 2026-11-11T00:00:00Z
+updated: 2026-11-13T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -285,7 +285,9 @@ somewhere unexpected:
   work packages a `consolidate` lands. The approval-stamp bound, per-WP attribution and
   the status-surface guard also read `policy_metadata.lane_head`, `review_result`, `force`
   and actor provenance from the rows (ADR 2026-10-14-1, "What must stay true during the
-  migration").
+  migration"). Per-WP attribution also reads `policy_metadata.wp_window`, the window-opening
+  record of core's `status-event-wp-window` contract; the write service relays it unchanged and
+  never refuses on it (#229).
 - **Two reducer implementations must agree**: the Python fold and the Java port. The
   Java service records the library version it is coupled to (`PORTED_EVENTS_VERSION`),
   and `ManifestCouplingTest` holds it equal to the version the conformance goldens were

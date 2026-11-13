@@ -16,4 +16,25 @@ properties:
     x-source:
       path: src/specify_cli/status/models.py
       symbol: StatusEvent.event_id
+  policy_metadata:
+    description: >-
+      The row's policy metadata as the CLI built it (an object or null). Untyped, as before, except for the one key this contract
+      types: wp_window, the window-opening record of core's status-event-wp-window contract
+      (spec-kitty/spec-kitty-events#229), which the CLI stamps from the same lane-head reading as
+      lane_head. The service relays the whole object, wp_window included, as the same JSON value
+      (sanitized and key-sorted like every other field; contract rule W-7), and never takes a
+      lane-head reading of its own. It never refuses, delays or retries a unit because of wp_window
+      (W-4): a value outside WpWindow is still appended unchanged, and readers read it as not
+      recorded (R-5).
+    properties:
+      wp_window:
+        $ref: ../../_shared/schemas/WpWindow.yaml
+        description: Where the work package's review window opens, on a window-opening move only.
+        x-source:
+          path: src/specify_cli/status/wp_window.py
+          symbol: WP_WINDOW_KEY
+    additionalProperties: true
+    x-source:
+      path: src/specify_cli/status/models.py
+      symbol: StatusEvent.policy_metadata
 additionalProperties: true

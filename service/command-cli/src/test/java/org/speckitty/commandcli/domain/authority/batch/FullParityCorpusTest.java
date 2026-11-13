@@ -22,11 +22,12 @@ class FullParityCorpusTest {
       Map.entry("replay-new-then-replayed-conflict", "request replay conflicts precede new-unit authority"),
       Map.entry("replay-partial-unit-conflict", "partial-unit replay comparison belongs to replay classification"),
       Map.entry("replay-stale-from-is-still-replay", "an already-logged row is replay despite its stale from_lane"),
-      Map.entry("replay-then-new-batch", "replay classification precedes sequential batch authority"));
+      Map.entry("replay-then-new-batch", "replay classification precedes sequential batch authority"),
+      Map.entry("wp-window-replay-is-replay", "an identical retry of a row carrying policy_metadata.wp_window is replay (#229)"));
 
   @Test
   void everyLaterLayerCaseHasAProtocolReasonForWp08() {
-    assertThat(LATER_LAYER_REASONS).hasSize(14).allSatisfy((id, reason) -> {
+    assertThat(LATER_LAYER_REASONS).hasSize(15).allSatisfy((id, reason) -> {
       assertThat(id).isNotBlank();
       assertThat(reason).isNotBlank();
     });

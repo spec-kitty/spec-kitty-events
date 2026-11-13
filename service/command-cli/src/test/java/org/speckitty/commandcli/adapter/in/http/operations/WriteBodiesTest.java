@@ -262,7 +262,7 @@ class WriteBodiesTest {
   void everyContractExampleWithRowsPassesTheNewRules() throws Exception {
     try (Stream<Path> files = Files.list(ContractSchemas.root().resolve("examples"))) {
       List<Path> examples = files.filter(path -> path.toString().endsWith(".yaml")).filter(WriteBodiesTest::carriesRows).sorted().toList();
-      assertThat(examples).hasSize(4);
+      assertThat(examples).hasSize(5);
       for (Path example : examples) {
         JsonNode root = ContractSchemas.yaml(example);
         byte[] body = OperationsTest.body(example).getBytes(StandardCharsets.UTF_8);

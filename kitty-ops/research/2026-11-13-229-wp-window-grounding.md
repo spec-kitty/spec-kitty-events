@@ -71,6 +71,24 @@ byte for byte. Nothing proves it, and no contract types it.
    conformance gate validates them against the unchanged `case.schema.json`, and only the service
    consumes them; the Java binding (`java/`) does not read that corpus. So every consumer of the
    changed fixtures is updated in this change, and the rule holds.
+5. **Where the type lives.** The closed schemas (`WpWindow`, `WpWindowGap`, `WpWindowGapReason`,
+   `WpWindowGapCause`) go in `contracts/_shared/schemas/`: they are vocabulary of the status row,
+   not a resource of one module, and `contracts/README.md` ("_shared admission") puts a piece any
+   module can refer to there, while module-to-module references have no precedent. mission-write's
+   `EventRow.policy_metadata.wp_window` refers to them. mission-status's `StatusTransitionEvent`
+   keeps its allow-list (it omits `policy_metadata` by design, and adding a field to a closed
+   response is its own contract decision), so the mission-status bundle is unchanged; a later read
+   field refers to the same `_shared` schema.
+
+## Follow-up: when the service takes its own reading
+
+[ADR-0007](../../docs/adr/0007-write-service-commits-coordination-status-by-ref.md) D-4 has the
+service stamp `policy_metadata.lane_head` from `refs/heads/<lane>` for `coordination_ref_commit`
+once write-location resolution moves into the service (migration step 4). That is not built: no
+lane-head reading exists in `service/` today. When it is, W-2 binds the service: it must write
+`wp_window` from that same reading, on the same moves (W-1), with the same shapes (W-3), and the
+relay rule of this change no longer suffices for that surface. To be filed as a follow-up issue
+from this PR.
 
 ## Similar surfaces
 
@@ -81,7 +99,7 @@ byte for byte. Nothing proves it, and no contract types it.
 | `SeedKey` (event-log) | copies `policy_metadata` whole into the seed key | no change; a relayed value stays part of the row identity |
 | Replay judgement (`ReplayClassifier`) | compares sanitized rows as JSON values | no change; core's pipeline builds the value once per event, so a retry carries the same value. A retry with a different value under the same `event_id` is an `event_id` conflict, as for any other field; it is not a refusal because of the key |
 | `StatusLogRepairService` | quarantines or completes torn lines; never re-encodes a good row | no change |
-| mission-status read API (`StatusTransitionEvent`) | closed allow-list projection that omits `policy_metadata` | see the contract decision in the PR |
+| mission-status read API (`StatusTransitionEvent`) | closed allow-list projection that omits `policy_metadata` | unchanged (decision 5); exposing it is its own contract decision |
 | `producer_contract` `lane.transitioned.v1` (package) | `policy_metadata` is an open object | no change (decision 4) |
 
 ## Tracked issues
@@ -91,5 +109,5 @@ byte for byte. Nothing proves it, and no contract types it.
 | #243 core-pin bump (R24, `session_pair` fixtures) | would make core-oracle `wp_window` parity possible | not taken (blocked by #240/#241); parity from the contract file instead |
 | #240 core row robustness | non-finite numbers, separators, BOM | no overlap: `wp_window` holds no float and no raw separator; the service stays strict |
 | #241 core WP-fact resolution | case-insensitive WP file lookup | no overlap |
-| #196 service-line changelog | where a service-only entry lives | no `docs/changelog/service-unreleased/` machinery on `main`; asked the operator (see the PR) |
+| #196 service-line changelog | where a service-only entry lives | no `docs/changelog/service-unreleased/` machinery on `main`; orchestrator ruling: fragment in `docs/changelog/unreleased/`, tagged service line, moves when #196 lands |
 | #220 mission-record citations | records of #208 | no overlap |
