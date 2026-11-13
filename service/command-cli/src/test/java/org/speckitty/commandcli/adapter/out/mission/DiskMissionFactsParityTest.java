@@ -133,7 +133,7 @@ class DiskMissionFactsParityTest {
 
   @AfterAll
   static void report() {
-    assertThat(PASSED).hasSize(249);
-    System.out.printf("DiskMissionFacts parity: %d/249 domain cases passed%n", PASSED.size());
+    assertThat(PASSED).hasSize(250);
+    System.out.printf("DiskMissionFacts parity: %d/250 domain cases passed%n", PASSED.size());
   }
 }

@@ -1,0 +1,90 @@
+{
+  "area": "lane_machine",
+  "expected": {
+    "result": "ack",
+    "units": [
+      {
+        "appendedLines": 1,
+        "replayed": false
+      }
+    ]
+  },
+  "id": "wp-window-non-object-never-refused",
+  "layer": "domain",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T16:40:02+00:00",
+      "event_id": "0000000000000000000000EA61",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "genesis",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "planned",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T16:40:04+00:00",
+      "event_id": "0000000000000000000000EA63",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "planned",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "claimed",
+      "wp_id": "WP01"
+    }
+  ],
+  "mission": {
+    "directory": "999-status-transition-parity",
+    "mission_id": "01J00000000000000000000000",
+    "mission_slug": "999-status-transition-parity"
+  },
+  "notes": "#229, W-4/W-7 of spec-kitty core kitty-specs/consolidation-window-provenance-01M6Y84D/contracts/status-event-wp-window.md: a wp_window that is not an object, on a claimed -> in_progress move, is no reason to refuse; the row is acknowledged and appended with the value as sent.",
+  "operation": "transition",
+  "oracle": "protocol",
+  "request": {
+    "kind": "unit",
+    "units": [
+      {
+        "operation": "transition",
+        "rows": [
+          {
+            "actor": "implementer-a",
+            "at": "2026-01-01T16:40:06+00:00",
+            "event_id": "0000000000000000000000EA65",
+            "evidence": null,
+            "execution_mode": "worktree",
+            "force": false,
+            "from_lane": "claimed",
+            "mission_id": "01J00000000000000000000000",
+            "mission_slug": "999-status-transition-parity",
+            "policy_metadata": {
+              "wp_window": "not-an-object"
+            },
+            "reason": null,
+            "review_ref": null,
+            "to_lane": "in_progress",
+            "wp_id": "WP01"
+          }
+        ],
+        "wpId": "WP01"
+      }
+    ]
+  },
+  "tasks": {
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP03\n"
+  }
+}

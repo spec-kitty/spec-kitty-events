@@ -17,7 +17,10 @@ required:
 properties:
   schema_version:
     const: 1
-    description: The version of this value's shape; only 1 exists.
+    description: >-
+      The version of this value's shape; only 1 exists. Writers send the integer 1. JSON Schema
+      compares numbers by value, so this also accepts 1.0, which core's reader rejects (it requires
+      an integer), as it does the boolean true.
     x-source:
       path: src/specify_cli/status/wp_window.py
       symbol: WP_WINDOW_SCHEMA_VERSION

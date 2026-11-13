@@ -53,7 +53,7 @@ class ProtocolCorpusTest {
   private static final Set<String> GUARD_REASONS = ConcurrentHashMap.newKeySet();
   private static final String EVIDENCE_FIELD_SUFFIX = " (with implementationEvidencePresent)";
   private static final Set<String> EVIDENCE_FIELD_CASES = ConcurrentHashMap.newKeySet();
-  private static final int ACK_COUNT = 97; // 91 domain + 6 service ack cases of the corpus.
+  private static final int ACK_COUNT = 98; // 92 domain + 6 service ack cases of the corpus.
   private static WriteRig rig;
 
   /** What the service answers instead of the domain ack, and why the ack cannot be reached over the wire. */
@@ -365,7 +365,7 @@ class ProtocolCorpusTest {
     assertThat(ACK_RUN).as("resource keys are exactly the ack cases run (no orphans)")
         .containsExactlyInAnyOrderElementsOf(expectedBytes.propertyNames().stream()
             .filter(key -> !ACK_EXCLUSIONS.containsKey(key)).toList());
-    assertThat(PASSED).hasSize(35 + ACK_COUNT - 5 - ACK_EXCLUSIONS.size());
-    System.out.printf("Protocol/service corpus 14/14; guard reasons 15/15 (+1 recorded unreachable; evidence field case 1/1); invalid status rows 5/5 passed; ack cases %d/%d over HTTP with byte assertions%n", ACK_RUN.size(), ACK_COUNT);
+    assertThat(PASSED).hasSize(36 + ACK_COUNT - 5 - ACK_EXCLUSIONS.size());
+    System.out.printf("Protocol/service corpus 16/16; guard reasons 15/15 (+1 recorded unreachable; evidence field case 1/1); invalid status rows 5/5 passed; ack cases %d/%d over HTTP with byte assertions%n", ACK_RUN.size(), ACK_COUNT);
   }
 }

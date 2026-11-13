@@ -293,6 +293,9 @@
   "wp-window-malformed-never-refused": [
     "{\"actor\": \"implementer-a\", \"at\": \"2026-01-01T08:20:04+00:00\", \"event_id\": \"00000000000000000000007533\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": {\"agent\": \"claude\", \"wp_window\": {\"extra\": true, \"gap\": {\"reason\": \"not_recorded\"}, \"open_sha\": \"NOT-A-SHA\", \"schema_version\": 2}}, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP01\"}\n"
   ],
+  "wp-window-non-object-never-refused": [
+    "{\"actor\": \"implementer-a\", \"at\": \"2026-01-01T16:40:06+00:00\", \"event_id\": \"0000000000000000000000EA65\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"claimed\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": {\"wp_window\": \"not-an-object\"}, \"reason\": null, \"review_ref\": null, \"to_lane\": \"in_progress\", \"wp_id\": \"WP01\"}\n"
+  ],
   "wp-window-open-sha-claim": [
     "{\"actor\": \"implementer-a\", \"at\": \"2026-01-01T08:20:04+00:00\", \"event_id\": \"00000000000000000000007533\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_id\": \"01J00000000000000000000000\", \"mission_slug\": \"999-status-transition-parity\", \"policy_metadata\": {\"lane_head\": \"3f1c0d9e8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e\", \"wp_window\": {\"open_sha\": \"3f1c0d9e8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e\", \"schema_version\": 1}}, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP01\"}\n"
   ],

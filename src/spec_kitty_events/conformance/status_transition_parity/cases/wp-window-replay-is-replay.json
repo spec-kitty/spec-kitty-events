@@ -56,7 +56,7 @@
     "mission_id": "01J00000000000000000000000",
     "mission_slug": "999-status-transition-parity"
   },
-  "notes": "#229, W-7 of spec-kitty core kitty-specs/consolidation-window-provenance-01M6Y84D/contracts/status-event-wp-window.md: an identical retry of a claim whose wp_window is already in the log is a replay (no bytes appended); the key takes part in the JSON-value comparison like any other.",
+  "notes": "#229, W-7 of spec-kitty core kitty-specs/consolidation-window-provenance-01M6Y84D/contracts/status-event-wp-window.md: an identical retry of a claim whose wp_window is already in the log is a replay (no bytes appended); wp-window-changed-retry-conflicts covers the retry whose wp_window differs.",
   "operation": "transition",
   "oracle": "protocol",
   "request": {

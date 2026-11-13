@@ -58,7 +58,7 @@
     "mission_id": "01J00000000000000000000000",
     "mission_slug": "999-status-transition-parity"
   },
-  "notes": "#229, W-1/W-3/W-7 of spec-kitty core kitty-specs/consolidation-window-provenance-01M6Y84D/contracts/status-event-wp-window.md: a claimed -> in_progress row with a 64-hex open_sha is relayed verbatim; the prior claim row's lane_branch_missing gap folds like any other policy_metadata.",
+  "notes": "#229, W-1/W-3/W-7 of spec-kitty core kitty-specs/consolidation-window-provenance-01M6Y84D/contracts/status-event-wp-window.md: a claimed -> in_progress row with a 64-hex open_sha is acknowledged and appended verbatim on a log whose claim row carries a lane_branch_missing gap.",
   "operation": "transition",
   "oracle": "protocol",
   "request": {

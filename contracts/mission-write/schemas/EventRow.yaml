@@ -22,10 +22,13 @@ properties:
       types: wp_window, the window-opening record of core's status-event-wp-window contract
       (spec-kitty/spec-kitty-events#229), which the CLI stamps from the same lane-head reading as
       lane_head. The service relays the whole object, wp_window included, as the same JSON value
-      (sanitized and key-sorted like every other field; contract rule W-7), and never takes a
-      lane-head reading of its own. It never refuses, delays or retries a unit because of wp_window
-      (W-4): a value outside WpWindow is still appended unchanged, and readers read it as not
-      recorded (R-5).
+      (contract rule W-7), subject only to the row-wide rules every field obeys: the PII keys are
+      stripped at any depth, keys are sorted, and a non-finite number, a duplicate key or an
+      over-deep or oversized body is refused. It never takes a lane-head reading of its own and
+      never refuses, delays or retries a unit because of the wp_window value (W-4): a value outside
+      WpWindow is appended as sent, and readers read it as not recorded (R-5). WpWindow therefore
+      documents the shape a conforming writer sends; it is not a request constraint, and a client,
+      gateway or generated SDK must not refuse a row for violating it.
     properties:
       wp_window:
         $ref: ../../_shared/schemas/WpWindow.yaml

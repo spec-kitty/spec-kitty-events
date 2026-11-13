@@ -34,7 +34,7 @@
     "mission_id": "01J00000000000000000000000",
     "mission_slug": "999-status-transition-parity"
   },
-  "notes": "#229, W-4/W-7 and R-5 of spec-kitty core kitty-specs/consolidation-window-provenance-01M6Y84D/contracts/status-event-wp-window.md: a wp_window outside schema version 1 (both branches, a reader-only reason, an unknown field) and a sibling policy_metadata key are never a reason to refuse; the row is appended verbatim and readers treat the value as not recorded.",
+  "notes": "#229, W-4/W-7 of spec-kitty core kitty-specs/consolidation-window-provenance-01M6Y84D/contracts/status-event-wp-window.md: a wp_window outside schema version 1 (both branches, a reader-only reason, an unknown field) beside a sibling policy_metadata key is never a reason to refuse; the row is appended verbatim (core's readers treat such a value as not recorded, R-5, which this corpus does not exercise).",
   "operation": "transition",
   "oracle": "protocol",
   "request": {

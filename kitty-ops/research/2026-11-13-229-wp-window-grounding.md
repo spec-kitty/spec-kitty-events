@@ -87,8 +87,8 @@ service stamp `policy_metadata.lane_head` from `refs/heads/<lane>` for `coordina
 once write-location resolution moves into the service (migration step 4). That is not built: no
 lane-head reading exists in `service/` today. When it is, W-2 binds the service: it must write
 `wp_window` from that same reading, on the same moves (W-1), with the same shapes (W-3), and the
-relay rule of this change no longer suffices for that surface. To be filed as a follow-up issue
-from this PR.
+relay rule of this change no longer suffices for that surface. Proposed as a follow-up issue in the
+PR; whether it is filed is the operator's call.
 
 ## Similar surfaces
 
@@ -96,8 +96,9 @@ from this PR.
 |---|---|---|
 | `StatusRowSanitizer` / `StatusRowEncoder` (event-log) | deep PII strip, sorted keys | preserves `wp_window`; pinned by a new encoder test |
 | `TransitionFold`, `StateProjections`, `StatusRowShape` (command-cli) | read `agent`, `shell_pid*`; refuse a non-object on a claim | no change; `wp_window` is never read |
+| `RowClassifier`, `StatusEvent` (event-log, domain-model) | read `policy_metadata.agent` only | no change |
 | `SeedKey` (event-log) | copies `policy_metadata` whole into the seed key | no change; a relayed value stays part of the row identity |
-| Replay judgement (`ReplayClassifier`) | compares sanitized rows as JSON values | no change; core's pipeline builds the value once per event, so a retry carries the same value. A retry with a different value under the same `event_id` is an `event_id` conflict, as for any other field; it is not a refusal because of the key |
+| Replay judgement (`ReplayClassifier`) | compares the encoded rows | no change; core's pipeline builds the value once per event, so a retry carries the same value. A retry with a different value under the same `event_id` is an `event_id` conflict, as for any other field (case `wp-window-changed-retry-conflicts`); it is not a refusal because of the key |
 | `StatusLogRepairService` | quarantines or completes torn lines; never re-encodes a good row | no change |
 | mission-status read API (`StatusTransitionEvent`) | closed allow-list projection that omits `policy_metadata` | unchanged (decision 5); exposing it is its own contract decision |
 | `producer_contract` `lane.transitioned.v1` (package) | `policy_metadata` is an open object | no change (decision 4) |

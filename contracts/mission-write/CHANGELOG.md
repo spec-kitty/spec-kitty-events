@@ -24,7 +24,10 @@ before spec-kitty/spec-kitty#6195 removes core's status-log writer. These additi
 
 The window-opening record `policy_metadata.wp_window` (spec-kitty/spec-kitty-events#229) is typed in
 the same unreleased version, for `service-v0.1.0-rc.3`. It documents a key the CLI already sends and
-the service already relays; no request the service accepted before is refused.
+the service already relays. The service refuses no request it accepted before. The schema does narrow
+the documented request type (a malformed `wp_window` now falls outside `EventRow`), inside an unreleased
+snapshot; the description states the type is not to be enforced on requests, because the service must
+never refuse on it (W-4).
 
 ### Added
 
