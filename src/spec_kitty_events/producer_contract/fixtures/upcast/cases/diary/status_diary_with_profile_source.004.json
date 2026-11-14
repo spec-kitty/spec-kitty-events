@@ -1,0 +1,17 @@
+{
+  "case": "status_diary_with_profile_source.004",
+  "group": "diary",
+  "origin": "conformance/fixtures/status_diary/replay/status_diary_with_profile_source.jsonl:4",
+  "notes": "A status.events.jsonl line, read with the Mission id from context.",
+  "context": {
+    "missionid": "01J0000000000000000000RP09"
+  },
+  "line": "{\"actor\": {\"model\": \"m\", \"profile\": \"implementer-ivan\", \"profile_source\": \"flag\", \"role\": \"implementer\", \"tool\": \"claude\"}, \"at\": \"2026-11-13T10:03:00+00:00\", \"delta\": {\"subtasks\": {\"T001\": \"done\"}}, \"event_id\": \"01JAAAA0000000000000000266\", \"kind\": \"annotation\", \"wp_id\": \"WP01\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"claude\",\"data\":{\"actorbinding\":{\"model\":\"m\",\"profile\":\"implementer-ivan\",\"profile_source\":\"flag\",\"role\":\"implementer\",\"tool\":\"claude\"},\"delta\":{\"subtasks\":{\"T001\":\"done\"}}},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:wp.innerstate.changed.v1\",\"id\":\"01JAAAA0000000000000000266\",\"missionid\":\"01J0000000000000000000RP09\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000RP09\",\"specversion\":\"1.0\",\"subject\":\"WP01\",\"time\":\"2026-11-13T10:03:00+00:00\",\"type\":\"ai.spec-kitty.wp.innerstate.changed.v1\"}",
+    "valid": true
+  }
+}

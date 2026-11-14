@@ -1,0 +1,43 @@
+{
+  "class": "producer_row_invalid",
+  "expected": "invalid",
+  "type": "ai.spec-kitty.lane.transitioned.v1",
+  "base": "lane.transitioned.v1",
+  "violation": "profile_source_nullness",
+  "expected_error_path": "/data/actorbinding",
+  "expected_keyword": "anyOf",
+  "input": {
+    "specversion": "1.0",
+    "id": "01J0000000000000000000F033",
+    "source": "/spec-kitty/missions/01J0000000000000000000MSN1",
+    "type": "ai.spec-kitty.lane.transitioned.v1",
+    "time": "2026-01-01T00:00:00+00:00",
+    "datacontenttype": "application/json",
+    "dataschema": "urn:ai.spec-kitty:schema:lane.transitioned.v1",
+    "schemaversion": "4.0.0",
+    "lamportclock": 41,
+    "nodeid": "0123456789ab",
+    "subject": "WP01",
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-reducer-unification",
+    "actor": "claude",
+    "executionmode": "worktree",
+    "data": {
+      "from_lane": "planned",
+      "to_lane": "claimed",
+      "force": false,
+      "reason": null,
+      "review_ref": null,
+      "evidence": null,
+      "policy_metadata": null,
+      "actorbinding": {
+        "role": "implementer",
+        "profile": "implementer-ivan",
+        "tool": "claude",
+        "model": null,
+        "profile_source": null
+      }
+    }
+  },
+  "notes": "profile_source is null while profile is set; it must be null exactly when profile is null (#263)."
+}

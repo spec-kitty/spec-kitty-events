@@ -3062,6 +3062,24 @@
       "min_version": "10.6.0"
     },
     {
+      "id": "status-diary-replay-with-profile-source",
+      "path": "status_diary/replay/status_diary_with_profile_source.jsonl",
+      "fixture_type": "replay_stream",
+      "event_type": "mixed",
+      "expected_result": "valid",
+      "notes": "Lane rows and an annotation whose structured actor carries the optional fifth key profile_source (wp_frontmatter, invocation, flag, and null with a null profile), beside a 4-key and a string actor (#263)",
+      "min_version": "11.5.0"
+    },
+    {
+      "id": "status-diary-replay-with-profile-source-output",
+      "path": "status_diary/replay/status_diary_with_profile_source_output.json",
+      "fixture_type": "reducer_output",
+      "event_type": "State",
+      "expected_result": "valid",
+      "notes": "Golden reduce() output for status_diary_with_profile_source.jsonl: the 5-key actors decode and project to their tool, exactly as the 4-key actor does",
+      "min_version": "11.5.0"
+    },
+    {
       "id": "status-diary-replay-seed-lane-authority",
       "path": "status_diary/replay/status_diary_seed_lane_authority.jsonl",
       "fixture_type": "replay_stream",

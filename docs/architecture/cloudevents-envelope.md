@@ -2,7 +2,7 @@
 title: CloudEvents envelope design
 description: 'CloudEvents 1.0 envelope design: field mapping from the 3.0.0 envelope and status-diary row, the upcaster contract, and a phased rollout.'
 doc_status: active
-updated: 2026-10-27T00:00:00Z
+updated: 2026-11-13T00:00:00Z
 type: Architecture
 kind: Explanation
 ---
@@ -170,7 +170,7 @@ fields, so several attributes are constants or supplied by context (the Mission'
 | `wp_id` | `subject` | String | Copied; enough to filter by work package, so not duplicated as an extension. | ok |
 | `at` | `time` | Timestamp | Copied as written; must be RFC 3339. | ok |
 | `actor` (string) | `actor` | String | Copied; an empty string is omitted. | 5: ok |
-| `actor` (structured `{role, profile, tool, model}`) | `actor` + `data.actorbinding` | String + object | `actor` = `actor_identity_str` projection (`tool`, else `role`); the dict is kept whole in `data.actorbinding`. An object cannot be a context attribute. | ok |
+| `actor` (structured `{role, profile, tool, model}`, optionally with `profile_source`, #263) | `actor` + `data.actorbinding` | String + object | `actor` = `actor_identity_str` projection (`tool`, else `role`); the dict is kept whole in `data.actorbinding`. An object cannot be a context attribute. | ok |
 | `execution_mode` | `executionmode` | String | Copied. | 13: ok |
 | `from_lane`, `to_lane` | `data.from_lane`, `data.to_lane` | Lane | Copied (`from_lane` may be null). | n/a (`data`) |
 | `force`, `reason`, `review_ref`, `evidence`, `review_result`, `policy_metadata` | `data.<same name>` | Boolean; String or null; `DoneEvidence`; object | Copied; null kept inside `data`; `review_result` only when present. | n/a |

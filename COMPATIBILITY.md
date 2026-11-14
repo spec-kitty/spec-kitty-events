@@ -98,13 +98,68 @@ under `Breaking`; precedent: `8.2.1` shipped a breaking entry without a major.
   the session-duration bytes for some malformed timestamps change (the 3.11 `fromisoformat`
   port is used everywhere, core-exact).
 
+### Also in 11.5.0: the optional `profile_source` key on the structured status actor (additive)
+
+`diary.decode_actor`, which every status read goes through (`parse_diary`, `reduce`,
+`reduce_parsed`, `materialize`, `StatusEvent` / `InnerStateChanged` `from_dict`), accepts
+the structured actor `{role, profile, tool, model}` as before, **or** those four keys plus
+`profile_source` (spec-kitty-events#263; core spec-kitty/spec-kitty#6721, #6400).
+`profile_source` says where `profile` came from: one of `invocation`, `flag`,
+`agent_string`, `wp_frontmatter`, or `null`, and it is `null` exactly when `profile` is
+`null`. The rule is core's `specify_cli.status.models.decode_actor`. Everything else stays
+fail-closed: an unknown key, an unknown source, a non-string source, a source without a
+profile and a `null` source with a profile raise `ValueError` (a `DiaryError` in a
+reduction). The decoded 5-key dict keeps all five keys; the reduced snapshot still records
+the actor's `tool` (else `role`), so a 5-key row reduces exactly like its 4-key form.
+
+The producer contract follows: the `actorbinding` member of `lane.transitioned.v1` and
+`wp.innerstate.changed.v1`, and the registry's lifted `actor` `legacy_schema` of both
+types, gain the optional `profile_source` member with the same vocabulary and the same
+null rule (`dependentSchemas`); the composed write, read and legacy schemas are
+regenerated. The Python and Java CloudEvents validators read these files, so both
+bindings accept an upcast 5-key row. The `dataschema` URNs and `registry_version` (`1.1.0`)
+are unchanged: the member is optional and a 4-key binding is valid as before.
+`StatusTransitionPayload.actor` stays an open `Union[str, Dict]` (its description now names
+the fifth key); tightening it would refuse dict actors it accepts today.
+
+New fixtures: the producer rows `rows/valid/lane.transitioned.v1.profile_source.json` and
+`rows/valid/wp.innerstate.changed.v1.profile_source.json`;
+`rows/invalid/lane.transitioned.v1.profile_source_unknown.json` (`enum`),
+`…profile_source_without_profile.json` and `…profile_source_null_with_profile.json`
+(`anyOf`); `rows/invalid/wp.innerstate.changed.v1.profile_source_without_profile.json`
+(`anyOf`); `rows/legacy_invalid/lane.transitioned.v1.profile_source_unknown.json`; the
+status-diary replay golden `status-diary-replay-with-profile-source` (and `-output`),
+`min_version` `11.5.0`; and eleven upcast corpus cases (`edge/structured-actor-profile-source*`,
+`cli/lane.transitioned.v1.profile_source`, `cli/wp.innerstate.changed.v1.profile_source`, `diary/status_diary_with_profile_source.00[1-6]`).
+No existing fixture or corpus case changes. The packaged gate
+`spec_kitty_events.conformance.test_status_actor` pins that the decoder and the
+`actorbinding` and legacy actor schemas give the same verdict on every structured actor in those fixtures.
+
+**Release classification.** Additive: every actor `11.4.0` accepted is still accepted with
+the same result; only actors it refused are now accepted. It is a **forward-compatibility
+boundary for logs**, though: a reader on `11.4.0` or earlier (or on an older copy of the
+producer-contract schemas) refuses a 5-key row and fails the whole reduction. Committed
+status logs are shared across clones, so a writer must not emit `profile_source` until
+every reader of those logs is on `11.5.0`; core does this with an explicit
+`spec-kitty-events` floor bump in #6721 rather than a capability probe. The events-domain
+services (`service-v*`) mirror core's decoder at `service/core-pin.json` and keep their
+own gate (`command-cli` refuses to write the 5-key actor, `event-log` reads only the
+4-key one); they move on their own line.
+
 ### Adopting 11.5.0
 
 - **Writers and replayers of status events:** audit moves out of `for_review` other than
   `-> in_review`, `-> blocked` and `-> canceled`, and `genesis -> blocked`/`blocked -> blocked`;
   send them with `force=True` and a reason, or fix the lane path.
+- **Status readers (core, SaaS, tools that reduce `status.events.jsonl`):** take `11.5.0`
+  before any writer emits `profile_source`; a reader that inspects the actor dict must
+  allow the fifth key. **Writers:** emit `profile_source` only once every reader of the log
+  has `11.5.0` as its floor, and never a source without a profile.
 - **Conformance consumers:** refresh the three fixtures above (including the Zeitgeist golden `expected_attrs`) and register the two new invalid
   ones; the Java binding has no transition validator and is unaffected beyond its version.
+  Also register the #263 fixtures listed above (seven producer rows, the
+  `status-diary-replay-with-profile-source` pair and the eleven upcast corpus cases); the Java
+  binding runs the corpus cases.
 
 ## `11.4.0` — the events-side write core: status-row encoding and status-transition parity (minor)
 

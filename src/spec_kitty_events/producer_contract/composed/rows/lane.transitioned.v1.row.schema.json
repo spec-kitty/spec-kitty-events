@@ -304,6 +304,19 @@
                 "string",
                 "null"
               ]
+            },
+            "profile_source": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "invocation",
+                "flag",
+                "agent_string",
+                "wp_frontmatter",
+                null
+              ]
             }
           },
           "required": [
@@ -313,7 +326,41 @@
             "model"
           ],
           "additionalProperties": false,
-          "description": "Structured resolved-binding actor, kept whole when the row's actor is an object."
+          "description": "Structured resolved-binding actor, kept whole when the row's actor is an object. profile_source (where profile came from) is optional and null exactly when profile is null (#263).",
+          "dependentSchemas": {
+            "profile_source": {
+              "anyOf": [
+                {
+                  "properties": {
+                    "role": {},
+                    "profile": {
+                      "type": "null"
+                    },
+                    "tool": {},
+                    "model": {},
+                    "profile_source": {
+                      "type": "null"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "properties": {
+                    "role": {},
+                    "profile": {
+                      "type": "string"
+                    },
+                    "tool": {},
+                    "model": {},
+                    "profile_source": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          }
         }
       },
       "required": [

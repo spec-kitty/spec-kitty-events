@@ -1,0 +1,44 @@
+{
+  "class": "producer_row_invalid",
+  "expected": "invalid",
+  "type": "ai.spec-kitty.wp.innerstate.changed.v1",
+  "base": "wp.innerstate.changed.v1",
+  "violation": "profile_source_nullness",
+  "expected_error_path": "/data/actorbinding",
+  "expected_keyword": "anyOf",
+  "input": {
+    "specversion": "1.0",
+    "id": "01J0000000000000000000F034",
+    "source": "/spec-kitty/missions/01J0000000000000000000MSN1",
+    "type": "ai.spec-kitty.wp.innerstate.changed.v1",
+    "time": "2026-01-01T00:00:00+00:00",
+    "datacontenttype": "application/json",
+    "dataschema": "urn:ai.spec-kitty:schema:wp.innerstate.changed.v1",
+    "schemaversion": "4.0.0",
+    "lamportclock": 42,
+    "nodeid": "0123456789ab",
+    "subject": "WP01",
+    "missionid": "01J0000000000000000000MSN1",
+    "missionslug": "041-reducer-unification",
+    "actor": "claude",
+    "data": {
+      "delta": {
+        "agent": "claude",
+        "shell_pid": 4242,
+        "shell_pid_created_at": "2026-01-01T00:00:00+00:00",
+        "subtasks": {
+          "T001": "done",
+          "T002": "skipped"
+        }
+      },
+      "actorbinding": {
+        "role": "reviewer",
+        "profile": null,
+        "tool": "claude",
+        "model": "claude-opus",
+        "profile_source": "flag"
+      }
+    }
+  },
+  "notes": "profile_source names a source while profile is null; it must be null exactly when profile is null (#263)."
+}

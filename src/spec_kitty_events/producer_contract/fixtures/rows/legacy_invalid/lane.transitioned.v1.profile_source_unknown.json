@@ -1,0 +1,32 @@
+{
+  "class": "producer_row_legacy_invalid",
+  "expected": "invalid",
+  "type": "ai.spec-kitty.lane.transitioned.v1",
+  "base": "lane.transitioned.v1",
+  "violation": "enum_violation",
+  "expected_error_path": "/actor",
+  "expected_keyword": "anyOf",
+  "input": {
+    "event_id": "01J0000000000000000000F033",
+    "mission_slug": "041-reducer-unification",
+    "mission_id": "01J0000000000000000000MSN1",
+    "wp_id": "WP01",
+    "from_lane": "planned",
+    "to_lane": "claimed",
+    "at": "2026-01-01T00:00:00+00:00",
+    "actor": {
+      "role": "implementer",
+      "profile": "implementer-ivan",
+      "tool": "claude",
+      "model": null,
+      "profile_source": "guessed"
+    },
+    "force": false,
+    "execution_mode": "worktree",
+    "reason": null,
+    "review_ref": null,
+    "evidence": null,
+    "policy_metadata": null
+  },
+  "notes": "Legacy lane row whose structured actor carries an unknown profile_source (#263)."
+}

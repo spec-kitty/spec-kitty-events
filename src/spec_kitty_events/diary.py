@@ -254,38 +254,58 @@ def is_terminal_subtask(value: SubtaskStatus) -> bool:
 # ---------------------------------------------------------------------------
 
 #: The ``actor`` on a ``StatusEvent`` / ``InnerStateChanged`` is EITHER a plain
-#: ``str`` identity (the common case) OR a ``{role, profile, tool, model}``
-#: structured *resolved binding*. The dict form is the delivery vehicle that
-#: lets the SaaS fan-out ride the transition's *resolved* identity;
+#: ``str`` identity (the common case) OR a structured *resolved binding*: the
+#: ``{role, profile, tool, model}`` dict, optionally with a fifth key
+#: ``profile_source`` (#263). The dict form is the delivery vehicle that lets the
+#: SaaS fan-out ride the transition's *resolved* identity;
 #: ``spec_kitty_events.status.StatusTransitionPayload.actor`` accepts
 #: ``Union[str, Dict]``, so both shapes ride the envelope uncorrupted.
 ActorField: TypeAlias = str | dict[str, str | None]
 
+#: Key set of the structured actor every writer emits.
 _STRUCTURED_ACTOR_FIELDS = ("role", "profile", "tool", "model")
+#: The optional fifth key: where ``profile`` came from (#263, core #6400 / #6721).
+_PROFILE_SOURCE_FIELD = "profile_source"
+#: The closed ``profile_source`` vocabulary, core's ``ProfileSource``. ``null`` is
+#: also accepted, exactly when ``profile`` is null.
+_PROFILE_SOURCES: frozenset[str] = frozenset(
+    {"invocation", "flag", "agent_string", "wp_frontmatter"}
+)
+_PROVENANCE_ACTOR_FIELDS = (*_STRUCTURED_ACTOR_FIELDS, _PROFILE_SOURCE_FIELD)
+_ACCEPTED_ACTOR_KEY_SETS: tuple[frozenset[str], ...] = (
+    frozenset(_STRUCTURED_ACTOR_FIELDS),
+    frozenset(_PROVENANCE_ACTOR_FIELDS),
+)
 
 
 def decode_actor(value: Any) -> ActorField:
     """Decode a wire ``actor`` value, preserving a structured (dict) actor.
 
-    A resolved-binding actor is a ``{role, profile, tool, model}`` dict that MUST
-    survive the ``status.events.jsonl`` round-trip uncorrupted. The legacy
-    ``from_dict`` decoders coerced *every* actor with ``str(...)`` -- silently
-    flattening such a dict to its ``repr`` (``"{'role': …}"``) with **no**
-    exception (the load-bearing silent-corruption trap). This decoder validates
-    and copies the dict so only those four keys with ``str | None`` values can
-    cross the persistence/fan-out boundary. Every other value is coerced to
-    ``str`` (the legacy string-actor contract).
+    A resolved-binding actor MUST survive the ``status.events.jsonl`` round-trip
+    uncorrupted. The legacy ``from_dict`` decoders coerced *every* actor with
+    ``str(...)`` -- silently flattening such a dict to its ``repr``
+    (``"{'role': …}"``) with **no** exception (the load-bearing silent-corruption
+    trap). This decoder validates and copies the dict, accepting exactly two key
+    sets: ``{role, profile, tool, model}`` and those four plus ``profile_source``
+    (#263). Every value must be ``str | None``; ``profile_source`` must be one of
+    ``invocation``, ``flag``, ``agent_string``,
+    ``wp_frontmatter`` or null, and null exactly when ``profile`` is null.
+    Every other dict raises ``ValueError`` (fail closed). Every non-dict value is
+    coerced to ``str`` (the legacy string-actor contract). The rule is core's
+    ``specify_cli.status.models.decode_actor``.
     """
     if isinstance(value, dict):
-        expected = set(_STRUCTURED_ACTOR_FIELDS)
-        actual = set(value)
-        if actual != expected:
+        actual = frozenset(value)
+        if actual not in _ACCEPTED_ACTOR_KEY_SETS:
             raise ValueError(
                 "structured actor must contain exactly "
-                f"{sorted(expected)!r}; got {sorted(actual)!r}"
+                f"{sorted(_STRUCTURED_ACTOR_FIELDS)!r} or "
+                f"{sorted(_PROVENANCE_ACTOR_FIELDS)!r}; got {sorted(actual)!r}"
             )
         decoded: dict[str, str | None] = {}
-        for field_name in _STRUCTURED_ACTOR_FIELDS:
+        for field_name in _PROVENANCE_ACTOR_FIELDS:
+            if field_name not in actual:
+                continue
             field_value = value[field_name]
             if field_value is not None and not isinstance(field_value, str):
                 raise ValueError(
@@ -293,8 +313,24 @@ def decode_actor(value: Any) -> ActorField:
                     f"{field_name!r} was {type(field_value).__name__}"
                 )
             decoded[field_name] = field_value
+        if _PROFILE_SOURCE_FIELD in decoded:
+            _check_profile_source(decoded)
         return decoded
     return str(value)
+
+
+def _check_profile_source(decoded: dict[str, str | None]) -> None:
+    """Refuse an unknown ``profile_source`` or one whose null-ness differs from ``profile``."""
+    source = decoded[_PROFILE_SOURCE_FIELD]
+    if source is not None and source not in _PROFILE_SOURCES:
+        raise ValueError(
+            "structured actor profile_source must be one of "
+            f"{sorted(_PROFILE_SOURCES)!r} or null; got {source!r}"
+        )
+    if (source is None) != (decoded["profile"] is None):
+        raise ValueError(
+            "structured actor profile_source must be null exactly when profile is null"
+        )
 
 
 def actor_identity_str(actor: ActorField) -> str:

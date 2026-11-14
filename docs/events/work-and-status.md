@@ -2,7 +2,7 @@
 title: Work and Status Events
 description: The work-package lane-transition family and the append-only status diary reducer that together track where every work package sits on the kanban board.
 doc_status: active
-updated: 2026-11-11T00:00:00Z
+updated: 2026-11-13T00:00:00Z
 type: Integration
 kind: Reference
 related:
@@ -41,8 +41,9 @@ need the coarser board — `SyncLaneV1` (`planned`, `doing`, `for_review`,
 whether the transition happened in a `worktree` or `direct_repo`.
 `StatusTransitionPayload` accepts a `doing` alias that resolves to
 `in_progress`, and its `actor` may be a plain string or a structured
-`{role, profile, tool, model}` dict (use `actor_label` for the canonical string
-form). See the [lane vocabulary](/api/lane-vocabulary/) for the full
+`{role, profile, tool, model}` dict, optionally with a fifth key `profile_source`
+(`invocation`, `flag`, `agent_string`, `wp_frontmatter`, or null exactly when
+`profile` is null; #263). Use `actor_label` for the canonical string form. See the [lane vocabulary](/api/lane-vocabulary/) for the full
 transition semantics.
 
 **Validation.** `validate_transition(payload)` returns a
