@@ -2,7 +2,7 @@
 title: Contributing
 description: How a change lands in spec-kitty-events — the one-issue-one-branch-one-PR flow, the tests and conformance gate to run, and the adversarial review.
 doc_status: active
-updated: 2026-11-09T00:00:00Z
+updated: 2026-11-13T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -29,6 +29,35 @@ required check and is skipped under the label.
 The ruleset on `main` requires those four checks, with "require branches to be up to date
 before merging" off, and there is no merge queue (ADR 0005 D3, amended 2026-11-02). A PR
 therefore merges on its own passing checks, without being re-tested against a newer `main`.
+
+## Pull requests from forks
+
+GitHub gives no repository secrets to a `pull_request` run whose head is a fork, and
+`cross-repo-harness-tests` needs them to clone the private harness. On a fork PR that gate
+job is therefore skipped, which GitHub reports as a pass to the required check, and a
+`cross-repo-harness-tests deferred (fork PR)` job says so on the PR (#95). The other three
+required checks run on fork PRs as on any other, once a maintainer approves the run where
+GitHub asks for approval. No workflow runs fork code with secrets on its own: there is no
+`pull_request_target` path. The maintainer re-run below does give the fork's code the
+repository secrets, so it follows review.
+
+The harness has not tested the fork's change, so a maintainer runs it before merge:
+
+1. **Review the whole fork diff first.** Pushing it upstream runs it with the repository
+   secrets and a write-capable token: the workflow files in the pushed commit are the ones
+   that run, and a new `on: push` workflow fires on the push alone. Do not push a change to
+   `.github/**`, build or test configuration (`pyproject.toml`, `conftest.py`, `Makefile`,
+   `scripts/`, Gradle files) or anything else CI executes until you have read and accepted it.
+   A push touching `.github/workflows/**` is refused unless your credential has the
+   `workflow` scope; treat that refusal as a stop, not an obstacle.
+2. Push the fork PR's head, unchanged, to an upstream branch (`origin` being this repository):
+   `git fetch origin pull/<n>/head && git push origin FETCH_HEAD:refs/heads/issue-<issue>-<slug>`.
+3. Open a pull request from that branch to `main` (a draft is enough). Its
+   `cross-repo-harness-tests` runs with the secrets.
+4. Once it is green on that head SHA, merge that pull request and close the fork PR with a
+   link to it (#189 was re-landed from an upstream branch as #204). Merge the fork PR instead
+   only after checking, just before merging, that its head is still the SHA you tested. A
+   push to `main` runs the harness again either way.
 
 ## The flow
 

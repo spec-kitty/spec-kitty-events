@@ -12,6 +12,16 @@
 #
 # Pinned SHA: 193f5c0eb07c8fdb6943d91d205ab892b98d6dfc
 # SHA-bump procedure: see README.md > "Identity-Boundary CI Gate".
+#
+# Fork pull requests (#95, operator ruling Q1 option a): GitHub withholds repository
+# secrets from `pull_request` runs whose head is a fork, so no App token can be minted
+# and the harness cannot be cloned. On a fork PR the gate job is skipped by its `if:`,
+# which GitHub reports as success for the required `cross-repo-harness-tests` check, and
+# `fork-pr-harness-deferred` says so on the PR. The harness is not run on fork code here:
+# after reviewing the diff (pushing it upstream gives it the secrets), a maintainer pushes
+# the fork head unchanged to an upstream branch and runs the gate there before merge
+# (docs/guides/contributing.md > "Pull requests from forks"); a push to main runs it again.
+# No pull_request_target: no workflow hands a secret to fork code on its own.
 
 name: cross-repo-harness-tests
 
@@ -28,8 +38,12 @@ concurrency:
 jobs:
   cross-repo-harness-tests:
     name: cross-repo-harness-tests
-    # A PR labelled pr:pause-ci runs nothing (pr-pause-ci.yml); every other event always runs.
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'pr:pause-ci')
+    # A PR labelled pr:pause-ci runs nothing (pr-pause-ci.yml), nor does a PR from a fork, which
+    # has no secrets (#95; fork-pr-harness-deferred reports it). Every other event always runs.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (!contains(github.event.pull_request.labels.*.name, 'pr:pause-ci') &&
+      github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 6
     permissions:
@@ -100,3 +114,29 @@ jobs:
           name: identity-boundary-failure-artifacts
           path: e2e/artifacts/sync_identity_boundary/
           if-no-files-found: ignore
+
+  # Fork PRs only (#95): the gate above is skipped, which satisfies the required check, so this
+  # job makes the deferral visible on the PR. It checks out nothing, runs no PR code, holds no
+  # token permission and reads no secret; event values reach the script through env only.
+  fork-pr-harness-deferred:
+    name: cross-repo-harness-tests deferred (fork PR)
+    if: >-
+      github.event_name == 'pull_request' &&
+      !contains(github.event.pull_request.labels.*.name, 'pr:pause-ci') &&
+      github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+      - name: Report that the harness runs on an upstream branch before merge
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          msg="Fork PR: the harness needs repository secrets GitHub withholds from forks, so it did not run here. A maintainer runs it on an upstream branch at this head before merge (docs/guides/contributing.md, Pull requests from forks)."
+          echo "::notice title=cross-repo-harness-tests deferred::$msg"
+          {
+            echo "### cross-repo-harness-tests deferred (fork PR, #95)"
+            echo
+            printf 'Head %s from `%s`. %s\n' "$HEAD_SHA" "${HEAD_REPO:-a deleted fork}" "$msg"
+          } >> "$GITHUB_STEP_SUMMARY"
