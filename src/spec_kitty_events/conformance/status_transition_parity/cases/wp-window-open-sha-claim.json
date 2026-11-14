@@ -1,0 +1,78 @@
+{
+  "area": "lane_machine",
+  "expected": {
+    "result": "ack",
+    "units": [
+      {
+        "appendedLines": 1,
+        "replayed": false
+      }
+    ]
+  },
+  "id": "wp-window-open-sha-claim",
+  "layer": "domain",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T08:20:02+00:00",
+      "event_id": "00000000000000000000007531",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "genesis",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "planned",
+      "wp_id": "WP01"
+    }
+  ],
+  "mission": {
+    "directory": "999-status-transition-parity",
+    "mission_id": "01J00000000000000000000000",
+    "mission_slug": "999-status-transition-parity"
+  },
+  "notes": "#229, W-1/W-2/W-7 of spec-kitty core kitty-specs/consolidation-window-provenance-01M6Y84D/contracts/status-event-wp-window.md: a planned -> claimed row carrying lane_head and wp_window {schema_version: 1, open_sha} from the same reading is acknowledged and appended verbatim.",
+  "operation": "transition",
+  "oracle": "protocol",
+  "request": {
+    "kind": "unit",
+    "units": [
+      {
+        "operation": "transition",
+        "rows": [
+          {
+            "actor": "implementer-a",
+            "at": "2026-01-01T08:20:04+00:00",
+            "event_id": "00000000000000000000007533",
+            "evidence": null,
+            "execution_mode": "worktree",
+            "force": false,
+            "from_lane": "planned",
+            "mission_id": "01J00000000000000000000000",
+            "mission_slug": "999-status-transition-parity",
+            "policy_metadata": {
+              "lane_head": "3f1c0d9e8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e",
+              "wp_window": {
+                "open_sha": "3f1c0d9e8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e",
+                "schema_version": 1
+              }
+            },
+            "reason": null,
+            "review_ref": null,
+            "to_lane": "claimed",
+            "wp_id": "WP01"
+          }
+        ],
+        "wpId": "WP01"
+      }
+    ]
+  },
+  "tasks": {
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: \"[]\"\nsubtasks: []\n---\n\n# WP03\n"
+  }
+}

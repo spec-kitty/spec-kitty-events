@@ -1,0 +1,49 @@
+title: WpWindow
+description: >-
+  The value of policy_metadata.wp_window on a status-transition row: where a work package's
+  review window opens (core contract
+  kitty-specs/consolidation-window-provenance-01M6Y84D/contracts/status-event-wp-window.md,
+  schema_version 1; spec-kitty/spec-kitty-events#229). Exactly one of open_sha (the lane head
+  commit at the move, equal to the row's policy_metadata.lane_head) or gap (why none was
+  recorded). Written on every non-migration move of a lane-mapped work package into claimed or
+  in_progress, from the same lane-head reading as lane_head; a move into blocked writes nothing.
+  The key set is closed at both levels: adding any field, even an optional one, needs a
+  schema_version bump. A reader treats a row without the key as gap not_recorded (R-2) and a value
+  outside this schema the same way (R-5), never as an error.
+type: object
+additionalProperties: false
+required:
+  - schema_version
+properties:
+  schema_version:
+    const: 1
+    description: >-
+      The version of this value's shape; only 1 exists. Writers send the integer 1. JSON Schema
+      compares numbers by value, so this also accepts 1.0, which core's reader rejects (it requires
+      an integer), as it does the boolean true.
+    x-source:
+      path: src/specify_cli/status/wp_window.py
+      symbol: WP_WINDOW_SCHEMA_VERSION
+  open_sha:
+    type: string
+    pattern: '^([0-9a-f]{40}|[0-9a-f]{64})$'
+    description: >-
+      The lane head commit when the window opened, a SHA-1 or SHA-256 object name in lower case. It
+      is branch-relative provenance, valid for one consolidation attempt (core ADR 2026-11-07-1).
+    x-source:
+      path: src/specify_cli/status/wp_window.py
+      symbol: encode_open
+  gap:
+    $ref: WpWindowGap.yaml
+    description: Why the move recorded no lane head.
+oneOf:
+  - required:
+      - open_sha
+    not:
+      required:
+        - gap
+  - required:
+      - gap
+    not:
+      required:
+        - open_sha

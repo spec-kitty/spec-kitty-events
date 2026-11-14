@@ -25,6 +25,8 @@
     "StatusLogRepairAction": ["completed", "none", "quarantined"],
     "WriteOperation": ["transition", "start_implementation", "start_review"],
     "WriteSurface": ["checkout_append", "coordination_ref_commit"],
-    "HealthStatus": ["ready", "draining"]
+    "HealthStatus": ["ready", "draining"],
+    "WpWindowGapReason": ["capture_failed", "lane_branch_missing"],
+    "WpWindowGapCause": ["git_error", "probe_error"]
   }
 }

@@ -1,0 +1,100 @@
+{
+  "area": "replay",
+  "expected": {
+    "result": "ack",
+    "units": [
+      {
+        "appendedLines": 0,
+        "replayed": true
+      }
+    ]
+  },
+  "id": "wp-window-replay-is-replay",
+  "layer": "service",
+  "log": [
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T08:20:02+00:00",
+      "event_id": "00000000000000000000007531",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "genesis",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": null,
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "planned",
+      "wp_id": "WP01"
+    },
+    {
+      "actor": "implementer-a",
+      "at": "2026-01-01T08:20:04+00:00",
+      "event_id": "00000000000000000000007533",
+      "evidence": null,
+      "execution_mode": "worktree",
+      "force": false,
+      "from_lane": "planned",
+      "mission_id": "01J00000000000000000000000",
+      "mission_slug": "999-status-transition-parity",
+      "policy_metadata": {
+        "lane_head": "3f1c0d9e8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e",
+        "wp_window": {
+          "open_sha": "3f1c0d9e8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e",
+          "schema_version": 1
+        }
+      },
+      "reason": null,
+      "review_ref": null,
+      "to_lane": "claimed",
+      "wp_id": "WP01"
+    }
+  ],
+  "mission": {
+    "directory": "999-status-transition-parity",
+    "mission_id": "01J00000000000000000000000",
+    "mission_slug": "999-status-transition-parity"
+  },
+  "notes": "#229, W-7 of spec-kitty core kitty-specs/consolidation-window-provenance-01M6Y84D/contracts/status-event-wp-window.md: an identical retry of a claim whose wp_window is already in the log is a replay (no bytes appended); wp-window-changed-retry-conflicts covers the retry whose wp_window differs.",
+  "operation": "transition",
+  "oracle": "protocol",
+  "request": {
+    "kind": "unit",
+    "units": [
+      {
+        "operation": "transition",
+        "rows": [
+          {
+            "actor": "implementer-a",
+            "at": "2026-01-01T08:20:04+00:00",
+            "event_id": "00000000000000000000007533",
+            "evidence": null,
+            "execution_mode": "worktree",
+            "force": false,
+            "from_lane": "planned",
+            "mission_id": "01J00000000000000000000000",
+            "mission_slug": "999-status-transition-parity",
+            "policy_metadata": {
+              "lane_head": "3f1c0d9e8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e",
+              "wp_window": {
+                "open_sha": "3f1c0d9e8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e",
+                "schema_version": 1
+              }
+            },
+            "reason": null,
+            "review_ref": null,
+            "to_lane": "claimed",
+            "wp_id": "WP01"
+          }
+        ],
+        "wpId": "WP01"
+      }
+    ]
+  },
+  "tasks": {
+    "WP01.md": "---\nwork_package_id: WP01\ntitle: WP01 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP01\n",
+    "WP02.md": "---\nwork_package_id: WP02\ntitle: WP02 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP02\n",
+    "WP03.md": "---\nwork_package_id: WP03\ntitle: WP03 parity\ndependencies: []\nsubtasks: []\n---\n\n# WP03\n"
+  }
+}

@@ -271,7 +271,9 @@ Only cross-module pieces live in `_shared/`, and only under `schemas/`,
 1. It is vocabulary, not a resource: an error shape, a paging cursor, a paging
    parameter. A schema that describes one module's resource stays in that module.
 2. More than one module refers to it, or it is written so that any module can
-   (today `Problem`, `PageInfo` and `PageCursor`, used by `mission-status`).
+   (today `Problem`, `PageInfo` and `PageCursor`, used by `mission-status`, and the status-row
+   vocabulary `WpWindow`, `WpWindowGap`, `WpWindowGapReason` and `WpWindowGapCause`, used by
+   `mission-write` and written for any module that exposes status rows).
 3. It never refers back into a module. `layout_check.py` fails with `SHARED_MISUSE`
    when it does.
 

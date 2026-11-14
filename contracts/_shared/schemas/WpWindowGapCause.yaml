@@ -1,0 +1,12 @@
+title: WpWindowGapCause
+description: >-
+  The cause of a capture_failed gap (core contract status-event-wp-window.md, schema_version 1):
+  git_error when git failed reading the lane head, probe_error when the probe around it failed. A
+  new cause needs a schema_version bump.
+type: string
+enum:
+  - git_error
+  - probe_error
+x-source:
+  path: src/specify_cli/status/wp_window.py
+  symbol: CAPTURE_FAILED_CAUSES

@@ -94,6 +94,7 @@ class OperationsTest {
     String base = "/api/v1/missions/" + MISSION;
     return Stream.of(
         Arguments.of("TransitionUnit.claim", base + "/work-package-transitions", examples.resolve("TransitionUnit.claim.yaml")),
+        Arguments.of("TransitionUnit.claim-wp-window", base + "/work-package-transitions", examples.resolve("TransitionUnit.claim-wp-window.yaml")),
         Arguments.of("TransitionBatch.two-units", base + "/work-package-transitions/batch", examples.resolve("TransitionBatch.two-units.yaml")),
         Arguments.of("AnnotationRequest.note", base + "/inner-state-annotations", examples.resolve("AnnotationRequest.note.yaml")));
   }

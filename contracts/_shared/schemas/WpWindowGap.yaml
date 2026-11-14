@@ -1,0 +1,38 @@
+title: WpWindowGap
+description: >-
+  The typed gap a window-opening move records when its lane-head reading has no SHA (core contract
+  status-event-wp-window.md, schema_version 1, W-3). A capture_failed gap carries a cause; a
+  lane_branch_missing gap must not. The key set is closed.
+type: object
+additionalProperties: false
+required:
+  - reason
+properties:
+  reason:
+    $ref: WpWindowGapReason.yaml
+    description: Why no lane head was recorded.
+  cause:
+    $ref: WpWindowGapCause.yaml
+    description: Present exactly when reason is capture_failed.
+  detail:
+    type: string
+    maxLength: 500
+    description: The reading's diagnostic, cut to 500 characters by the writer; optional.
+    x-source:
+      path: src/specify_cli/status/wp_window.py
+      symbol: GAP_DETAIL_MAX_LENGTH
+oneOf:
+  - properties:
+      reason:
+        const: capture_failed
+    required:
+      - cause
+  - properties:
+      reason:
+        const: lane_branch_missing
+    not:
+      required:
+        - cause
+x-source:
+  path: src/specify_cli/status/wp_window.py
+  symbol: encode_gap

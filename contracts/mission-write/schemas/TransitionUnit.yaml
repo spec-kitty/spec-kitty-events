@@ -52,4 +52,5 @@ properties:
       symbol: TransitionRequest.implementation_evidence_present
 examples:
   - $ref: ../examples/TransitionUnit.claim.yaml
+  - $ref: ../examples/TransitionUnit.claim-wp-window.yaml
   - $ref: ../examples/TransitionUnit.start-implementation.yaml

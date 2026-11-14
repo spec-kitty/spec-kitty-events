@@ -2,3 +2,7 @@ files:
   - PageCursor.yaml
   - PageInfo.yaml
   - Problem.yaml
+  - WpWindow.yaml
+  - WpWindowGap.yaml
+  - WpWindowGapCause.yaml
+  - WpWindowGapReason.yaml
