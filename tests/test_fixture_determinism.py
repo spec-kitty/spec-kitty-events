@@ -25,6 +25,9 @@ from typing import Any, Iterator
 
 import pytest
 
+from tests.support.class_taxonomy import FIXTURES_ROOT as _FIXTURES_ROOT
+from tests.support.class_taxonomy import list_class_fixtures
+
 # ---------------------------------------------------------------------------
 # Pinned anchors (R-06)
 # ---------------------------------------------------------------------------
@@ -32,22 +35,22 @@ import pytest
 PINNED_TIMESTAMP: str = "2026-01-01T00:00:00+00:00"
 PINNED_ULID_PREFIX: str = "01J0000000000000000000"
 
-# Class directories that are governed by the eight-class fixture taxonomy.
-# Other directories under ``fixtures/`` are pre-existing fixture suites with
-# their own conventions (different determinism rules) and are not audited
-# here. The eight-class layout lives under ``class_taxonomy/`` so it can
-# coexist with the legacy fixture tree without disturbing the existing
-# loader (which filters by event-type-category prefix).
-CLASS_DIRS: tuple[str, ...] = (
-    "class_taxonomy/envelope_valid_canonical",
-    "class_taxonomy/envelope_valid_historical_synthesized",
-    "class_taxonomy/envelope_invalid_unknown_lane",
-    "class_taxonomy/envelope_invalid_forbidden_key",
-    "class_taxonomy/envelope_invalid_payload_schema",
-    "class_taxonomy/envelope_invalid_shape",
-    "class_taxonomy/historical_row_raw",
-    "class_taxonomy/lane_mapping_legacy/valid",
-    "class_taxonomy/lane_mapping_legacy/invalid",
+# Classes governed by the eight-class fixture taxonomy, listed through the shared
+# test-only lister (tests/support/class_taxonomy.py). Other directories under
+# ``fixtures/`` are pre-existing fixture suites with their own conventions
+# (different determinism rules) and are not audited here. The eight-class layout
+# lives under ``class_taxonomy/`` so it can coexist with the legacy fixture tree
+# without disturbing the existing loader (which filters by event-type-category
+# prefix).
+CLASSES: tuple[str, ...] = (
+    "envelope_valid_canonical",
+    "envelope_valid_historical_synthesized",
+    "envelope_invalid_unknown_lane",
+    "envelope_invalid_forbidden_key",
+    "envelope_invalid_payload_schema",
+    "envelope_invalid_shape",
+    "historical_row_raw",
+    "lane_mapping_legacy",
 )
 
 # A 26-char Crockford-base32 string. Crockford-base32 excludes I, L, O, U.
@@ -57,19 +60,10 @@ _ULID_RE = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")
 _TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$")
 
 
-_FIXTURES_ROOT = (
-    Path(__file__).resolve().parents[1] / "src" / "spec_kitty_events" / "conformance" / "fixtures"
-)
-
-
 def _iter_class_fixture_paths() -> Iterator[Path]:
     """Yield every JSON fixture path under the eight class directories."""
-    for sub in CLASS_DIRS:
-        directory = _FIXTURES_ROOT / sub
-        if not directory.exists():
-            continue
-        for path in sorted(directory.rglob("*.json")):
-            yield path
+    for fixture in list_class_fixtures(*CLASSES):
+        yield fixture.path
 
 
 def _walk_strings(
@@ -125,5 +119,5 @@ def test_fixture_corpus_non_empty() -> None:
     """The eight-class fixture corpus must not be empty."""
     paths = _collect_fixture_paths()
     assert paths, (
-        f"No fixtures found under the eight-class taxonomy directories. Searched: {CLASS_DIRS}"
+        f"No fixtures found under the eight-class taxonomy directories. Searched: {CLASSES}"
     )

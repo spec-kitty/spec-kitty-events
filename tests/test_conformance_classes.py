@@ -2,27 +2,12 @@
 eight-class taxonomy, asserts each fixture's expected outcome (and the
 ``expected_error_code`` for invalid fixtures).
 
-This test reads ``manifest.json``'s ``classes.entries`` array (added in
-WP05), runs a small package-level envelope validator built on the real
-public surface of ``spec_kitty_events`` — including the canonical
-``Event`` model in ``spec_kitty_events.models`` — and asserts agreement.
-
-The validator's order of checks (deterministic):
-
-1. Wrapper must be a JSON object.
-2. Required *Event* envelope fields must be present.
-3. No forbidden legacy keys (recursive walk via
-   :func:`spec_kitty_events.forbidden_keys.find_forbidden_keys`).
-4. ``payload`` must be a JSON object.
-5. Lane fields (when present, on ``WPStatusChanged``) must be in the
-   canonical vocabulary; aliases like ``doing`` are accepted.
-6. The full envelope must validate against
-   :class:`spec_kitty_events.models.Event`. A ``payload``-localised
-   failure becomes ``PAYLOAD_SCHEMA_FAIL``; any other envelope-level
-   failure becomes ``ENVELOPE_SHAPE_INVALID``.
-7. The typed payload model (when known) must accept the inner payload
-   — this catches payload-level rejections (e.g. ``extra='forbid'``,
-   missing required fields, type mismatches).
+The fixtures are listed by the shared test-only lister
+(:func:`tests.support.class_taxonomy.list_class_fixtures`) and joined with
+``manifest.json``'s ``classes.entries`` rows; each is judged by the shared
+test-only verdict (:mod:`tests.support.class_verdict`), whose fixed check
+order is documented there. The ``envelope/`` BDD scenarios under
+``tests/scenarios/`` use the same lister and verdict (spec-kitty-events#197).
 
 For ``historical_row_raw`` fixtures, the validator is not yet expected
 to distinguish them from generic envelope-shape failures; the test
@@ -34,41 +19,24 @@ code for a future WP.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import pytest
-from pydantic import ValidationError as PydanticValidationError
 
 from spec_kitty_events import (
-    LANE_ALIASES,
     MISSION_CLOSED,
     MISSION_CREATED,
-    MissionClosedPayload,
-    MissionCreatedPayload,
-    StatusTransitionPayload,
     WP_STATUS_CHANGED,
-    Lane,
-)
-from spec_kitty_events.forbidden_keys import (
-    FORBIDDEN_LEGACY_KEYS,
-    find_forbidden_keys,
 )
 from spec_kitty_events.models import Event
-from spec_kitty_events.validation_errors import (
-    ValidationError,
-    ValidationErrorCode,
+from spec_kitty_events.validation_errors import ValidationErrorCode
+from tests.support.class_taxonomy import (
+    FIXTURES_ROOT,
+    ClassFixtureEntry,
+    list_class_fixtures,
+    manifest_class_entries,
 )
-
-# ---------------------------------------------------------------------------
-# Manifest loading
-# ---------------------------------------------------------------------------
-
-_FIXTURES_ROOT = (
-    Path(__file__).resolve().parents[1] / "src" / "spec_kitty_events" / "conformance" / "fixtures"
-)
-_MANIFEST_PATH = _FIXTURES_ROOT / "manifest.json"
+from tests.support.class_verdict import class_verdict
 
 
 # Eight named classes (canonical order matches the contract).
@@ -84,283 +52,21 @@ EIGHT_CLASSES: tuple[str, ...] = (
 )
 
 
-@dataclass(frozen=True)
-class ClassFixtureEntry:
-    """Manifest entry for a single class-directory fixture."""
-
-    id: str
-    fixture_class: str
-    path: str
-    expected: str
-    expected_error_code: str | None
-    event_type: str
-
-
 def _load_class_entries() -> list[ClassFixtureEntry]:
-    with _MANIFEST_PATH.open("r", encoding="utf-8") as fh:
-        manifest: dict[str, Any] = json.load(fh)
-
+    """The manifest row of every fixture the shared lister finds in the eight classes."""
     entries: list[ClassFixtureEntry] = []
-    for raw in manifest["classes"]["entries"]:
-        entries.append(
-            ClassFixtureEntry(
-                id=raw["id"],
-                fixture_class=raw["class"],
-                path=raw["path"],
-                expected=raw["expected"],
-                expected_error_code=raw.get("expected_error_code"),
-                event_type=raw.get("event_type", "<n/a>"),
-            )
+    for fixture in list_class_fixtures(*EIGHT_CLASSES):
+        assert fixture.entry is not None, (
+            f"Fixture {fixture.rel_path} has no manifest.json classes.entries row."
         )
+        entries.append(fixture.entry)
     return entries
 
 
 def _load_fixture_file(rel_path: str) -> dict[str, Any]:
-    full = _FIXTURES_ROOT / rel_path
-    with full.open("r", encoding="utf-8") as fh:
+    with (FIXTURES_ROOT / rel_path).open("r", encoding="utf-8") as fh:
         result: dict[str, Any] = json.load(fh)
     return result
-
-
-# ---------------------------------------------------------------------------
-# Validator (built from the real public surface, including Event)
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class _ValidationOutcome:
-    ok: bool
-    error: ValidationError | None
-
-
-_PAYLOAD_MODELS: dict[str, type] = {
-    MISSION_CREATED: MissionCreatedPayload,
-    MISSION_CLOSED: MissionClosedPayload,
-    WP_STATUS_CHANGED: StatusTransitionPayload,
-}
-
-# Required envelope fields per the public Event model. We pre-check
-# these so the wrapper can emit ENVELOPE_SHAPE_INVALID with a clear
-# missing-fields list before Event.model_validate runs (which would
-# emit a Pydantic-internal "Field required" error).
-_REQUIRED_ENVELOPE_FIELDS: tuple[str, ...] = (
-    "event_id",
-    "event_type",
-    "aggregate_id",
-    "payload",
-    "timestamp",
-    "build_id",
-    "node_id",
-    "lamport_clock",
-    "correlation_id",
-    "project_uuid",
-)
-
-_CANONICAL_LANE_VALUES: frozenset[str] = frozenset(member.value for member in Lane)
-
-
-def _classify_pydantic_error(exc: PydanticValidationError) -> ValidationErrorCode:
-    """Map a Pydantic Event-level error to a public ValidationErrorCode.
-
-    Errors anchored at ``payload`` (or below) are payload schema
-    failures; anything else is an envelope shape failure.
-    """
-
-    for err in exc.errors():
-        loc = err.get("loc") or ()
-        if loc and loc[0] == "payload":
-            return ValidationErrorCode.PAYLOAD_SCHEMA_FAIL
-    return ValidationErrorCode.ENVELOPE_SHAPE_INVALID
-
-
-def _validate_envelope(envelope: Any) -> _ValidationOutcome:
-    """Validate a JSON-shape envelope against the package contract.
-
-    Uses the real :class:`Event` model as the envelope source of truth.
-    """
-
-    # 1. Wrapper shape.
-    if not isinstance(envelope, dict):
-        return _ValidationOutcome(
-            ok=False,
-            error=ValidationError(
-                code=ValidationErrorCode.ENVELOPE_SHAPE_INVALID,
-                message="envelope must be a JSON object",
-                path=[],
-                details={"actual_type": type(envelope).__name__},
-            ),
-        )
-
-    # 2. Required envelope fields (pre-check so ENVELOPE_SHAPE_INVALID
-    # surfaces a clean missing-fields list ahead of Pydantic).
-    missing = [f for f in _REQUIRED_ENVELOPE_FIELDS if f not in envelope]
-    if missing:
-        return _ValidationOutcome(
-            ok=False,
-            error=ValidationError(
-                code=ValidationErrorCode.ENVELOPE_SHAPE_INVALID,
-                message=f"envelope missing required fields: {missing!r}",
-                path=[],
-                details={"missing": missing},
-            ),
-        )
-
-    # 3. Forbidden keys (recursive). Runs before Event.model_validate so
-    # that a deeply nested or array-element forbidden key reports
-    # FORBIDDEN_KEY rather than getting masked by a Pydantic
-    # extra='forbid' rejection.
-    first_forbidden = next(
-        find_forbidden_keys(envelope, forbidden=FORBIDDEN_LEGACY_KEYS),
-        None,
-    )
-    if first_forbidden is not None:
-        return _ValidationOutcome(ok=False, error=first_forbidden)
-
-    # 4. Payload shape.
-    payload = envelope["payload"]
-    if not isinstance(payload, dict):
-        return _ValidationOutcome(
-            ok=False,
-            error=ValidationError(
-                code=ValidationErrorCode.PAYLOAD_SCHEMA_FAIL,
-                message="payload must be a JSON object",
-                path=["payload"],
-                details={"actual_type": type(payload).__name__},
-            ),
-        )
-
-    # 5. Lane vocabulary check (only meaningful for WPStatusChanged).
-    event_type = envelope["event_type"]
-    if event_type == WP_STATUS_CHANGED:
-        for lane_field in ("from_lane", "to_lane"):
-            value = payload.get(lane_field)
-            if value is None:
-                continue
-            if not isinstance(value, str):
-                return _ValidationOutcome(
-                    ok=False,
-                    error=ValidationError(
-                        code=ValidationErrorCode.PAYLOAD_SCHEMA_FAIL,
-                        message=f"{lane_field} must be a string",
-                        path=["payload", lane_field],
-                        details={"actual_type": type(value).__name__},
-                    ),
-                )
-            if value not in _CANONICAL_LANE_VALUES and value not in LANE_ALIASES:
-                return _ValidationOutcome(
-                    ok=False,
-                    error=ValidationError(
-                        code=ValidationErrorCode.UNKNOWN_LANE,
-                        message=f"{lane_field}={value!r} is outside the canonical lane vocabulary",
-                        path=["payload", lane_field],
-                        details={"value": value},
-                    ),
-                )
-
-    # 6. Real Event model validation. Public envelope SSOT.
-    try:
-        Event.model_validate(envelope)
-    except PydanticValidationError as exc:
-        code = _classify_pydantic_error(exc)
-        return _ValidationOutcome(
-            ok=False,
-            error=ValidationError(
-                code=code,
-                message=str(exc),
-                path=["payload"] if code == ValidationErrorCode.PAYLOAD_SCHEMA_FAIL else [],
-                details={"event_type": event_type},
-            ),
-        )
-
-    # 7. Typed payload model (catches payload-level errors that Event
-    # doesn't constrain because it carries `payload: Dict[str, Any]`).
-    model = _PAYLOAD_MODELS.get(event_type)
-    if model is not None:
-        try:
-            model(**payload)
-        except Exception as exc:  # pydantic.ValidationError or similar
-            return _ValidationOutcome(
-                ok=False,
-                error=ValidationError(
-                    code=ValidationErrorCode.PAYLOAD_SCHEMA_FAIL,
-                    message=str(exc),
-                    path=["payload"],
-                    details={"event_type": event_type},
-                ),
-            )
-
-    return _ValidationOutcome(ok=True, error=None)
-
-
-def _validate_lane_mapping(input_obj: dict[str, Any]) -> _ValidationOutcome:
-    """Validate a lane_mapping_legacy fixture.
-
-    The fixture's ``input`` carries a ``legacy_lane`` and (for valid cases) a
-    ``canonical_lane``. The mapping is valid iff ``legacy_lane`` resolves to
-    a canonical ``Lane`` (directly or via ``LANE_ALIASES``) and, when
-    ``canonical_lane`` is provided, equals it.
-    """
-
-    legacy = input_obj.get("legacy_lane")
-    if not isinstance(legacy, str):
-        return _ValidationOutcome(
-            ok=False,
-            error=ValidationError(
-                code=ValidationErrorCode.PAYLOAD_SCHEMA_FAIL,
-                message="legacy_lane must be a string",
-                path=["legacy_lane"],
-                details={},
-            ),
-        )
-
-    resolved: Lane | None
-    if legacy in _CANONICAL_LANE_VALUES:
-        resolved = Lane(legacy)
-    elif legacy in LANE_ALIASES:
-        resolved = LANE_ALIASES[legacy]
-    else:
-        return _ValidationOutcome(
-            ok=False,
-            error=ValidationError(
-                code=ValidationErrorCode.UNKNOWN_LANE,
-                message=f"legacy lane {legacy!r} is outside the canonical lane vocabulary and not in LANE_ALIASES",
-                path=["legacy_lane"],
-                details={"value": legacy},
-            ),
-        )
-
-    expected_canonical = input_obj.get("canonical_lane")
-    if expected_canonical is not None and resolved.value != expected_canonical:
-        return _ValidationOutcome(
-            ok=False,
-            error=ValidationError(
-                code=ValidationErrorCode.UNKNOWN_LANE,
-                message=(
-                    f"legacy lane {legacy!r} resolved to {resolved.value!r}, "
-                    f"not the declared canonical {expected_canonical!r}"
-                ),
-                path=["canonical_lane"],
-                details={"resolved": resolved.value},
-            ),
-        )
-
-    return _ValidationOutcome(ok=True, error=None)
-
-
-def _validate_for_class(fixture_class: str, input_obj: Any) -> _ValidationOutcome:
-    if fixture_class == "lane_mapping_legacy":
-        if not isinstance(input_obj, dict):
-            return _ValidationOutcome(
-                ok=False,
-                error=ValidationError(
-                    code=ValidationErrorCode.PAYLOAD_SCHEMA_FAIL,
-                    message="lane_mapping fixture input must be a JSON object",
-                    path=[],
-                    details={},
-                ),
-            )
-        return _validate_lane_mapping(input_obj)
-    return _validate_envelope(input_obj)
 
 
 # ---------------------------------------------------------------------------
@@ -399,7 +105,7 @@ def test_fixture_outcome_matches_expected(entry: ClassFixtureEntry) -> None:
             f"({entry.expected_error_code!r})."
         )
 
-    outcome = _validate_for_class(entry.fixture_class, fixture["input"])
+    outcome = class_verdict(entry.fixture_class, fixture["input"])
 
     if entry.expected == "valid":
         assert outcome.ok, (
@@ -442,6 +148,17 @@ def test_fixture_outcome_matches_expected(entry: ClassFixtureEntry) -> None:
         f"Fixture {entry.path}: expected_error_code={entry.expected_error_code!r} "
         f"but validator returned {actual_code!r} ({outcome.error.message!r})."
     )
+
+
+def test_every_manifest_entry_is_a_listed_fixture() -> None:
+    """No ``classes.entries`` row of the eight classes points at a file the lister cannot see."""
+    listed = {entry.path for entry in _ALL_ENTRIES}
+    unlisted = [
+        entry.path
+        for entry in manifest_class_entries()
+        if entry.fixture_class in EIGHT_CLASSES and entry.path not in listed
+    ]
+    assert not unlisted, f"manifest classes.entries rows with no fixture file: {unlisted}"
 
 
 def test_every_class_has_at_least_one_fixture() -> None:

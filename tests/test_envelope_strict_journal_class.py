@@ -26,30 +26,20 @@ invariant) and validates them against the real
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from typing import Any
 
 import pytest
 
 from spec_kitty_events.strict import validate_strict_envelope
-
-_FIXTURES_ROOT = (
-    Path(__file__).resolve().parent.parent
-    / "src"
-    / "spec_kitty_events"
-    / "conformance"
-    / "fixtures"
-)
-_CLASS_DIR = _FIXTURES_ROOT / "class_taxonomy" / "envelope_strict_journal"
+from tests.support.class_taxonomy import list_class_fixtures
 
 
 def _load_entries() -> list[dict[str, Any]]:
+    """Every fixture of the class, through the shared test-only lister."""
     entries = []
-    for path in sorted(_CLASS_DIR.glob("*.json")):
-        with path.open("r", encoding="utf-8") as fh:
-            data = json.load(fh)
-        data["_path"] = path.name
+    for fixture in list_class_fixtures("envelope_strict_journal"):
+        data = fixture.load()
+        data["_path"] = fixture.path.name
         entries.append(data)
     return entries
 
