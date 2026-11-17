@@ -10,7 +10,7 @@ no JVM counterpart to bind. Promises: [`PROMISES.md`](PROMISES.md).
 |-----------|--------|
 | `accepted-envelopes/` | Every `envelope_valid_*` fixture is accepted |
 | `refused-envelopes/` | Every `envelope_invalid_*` fixture is refused with its pinned code: forbidden key, unknown lane, payload schema, shape |
-| `unknown-event-type/` | An envelope of an unregistered event type is refused by the strict journal profile (fails closed) |
+| `unknown-event-type/` | The strict journal profile refuses an envelope of an unregistered event type (fails closed) |
 | `legacy-lane-mapping/` | Every `lane_mapping_legacy` fixture resolves, or is refused, as it pins |
 
 The envelope verdict is the test-only `tests/support/class_verdict.py`, shared with

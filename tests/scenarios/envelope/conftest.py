@@ -12,12 +12,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from importlib.resources import files
+from pathlib import Path
 from typing import Any
 
 from pytest_bdd import given, parsers, then, when
 
 from spec_kitty_events.strict import validate_strict_envelope
-from tests.support.class_taxonomy import ClassFixture, list_class_fixtures
+from tests.support.class_taxonomy import (
+    CLASS_TAXONOMY_DIR,
+    FIXTURES_ROOT,
+    ClassFixture,
+    list_class_fixtures,
+)
 from tests.support.class_verdict import class_verdict
 
 
@@ -44,8 +50,10 @@ def _selected(fixture_class: str) -> list[ClassFixture]:
 
 @given("the conformance fixtures shipped with the package")
 def packaged_fixtures() -> None:
+    # The lister reads FIXTURES_ROOT, which is resolved through the installed package.
     taxonomy = files("spec_kitty_events.conformance").joinpath("fixtures", "class_taxonomy")
     assert taxonomy.is_dir(), "spec_kitty_events.conformance ships no class_taxonomy fixtures"
+    assert Path(str(taxonomy)) == FIXTURES_ROOT / CLASS_TAXONOMY_DIR
 
 
 @given(

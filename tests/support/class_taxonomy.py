@@ -14,12 +14,13 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from functools import lru_cache
+from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
-FIXTURES_ROOT: Path = (
-    Path(__file__).resolve().parents[2] / "src" / "spec_kitty_events" / "conformance" / "fixtures"
-)
+# Read through the installed package, so the scenarios judge the fixtures the package ships
+# (with the editable install the suite runs under, this is src/spec_kitty_events/...).
+FIXTURES_ROOT: Path = Path(str(files("spec_kitty_events.conformance").joinpath("fixtures")))
 MANIFEST_PATH: Path = FIXTURES_ROOT / "manifest.json"
 CLASS_TAXONOMY_DIR: str = "class_taxonomy"
 

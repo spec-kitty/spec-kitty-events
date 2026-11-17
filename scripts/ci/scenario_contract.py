@@ -12,18 +12,24 @@ checks, without running anything:
 * the tag vocabulary of ``tests/scenarios/README.md`` (a closed set: an unknown tag is an error):
   every scenario carries a well-formed ``@promise:PR-EVENTS-<AREA>-NNN``, promise ids are unique
   across the suite, and a ``@wip`` scenario names its owner and start date;
-* every step of a gating scenario (not ``@wip``) matches exactly one step definition of the
-  reference ``python`` binding, keyword included (pytest-bdd matches Given, When and Then
-  separately; And and But take the keyword before them). In a ``@wip`` scenario such findings
-  are ``info``;
+* every step of a gating scenario (not ``@wip``) matches exactly one step definition in each
+  binding the scenario claims (``python`` always, ``jvm`` too when tagged ``@jvm``), keyword
+  included (pytest-bdd matches Given, When and Then separately; And and But take the keyword
+  before them; a first step must be Given, When or Then). A python definition inside the
+  features folder serves only the features below its own folder, as pytest-bdd scopes an
+  area's ``conftest.py``. In a ``@wip`` scenario such findings are ``info``;
 * each area has a ``README.md`` whose ``| Group | Step |`` table is consistent (Arrange and Assume
   rows are ``Given``, Act rows ``When``, Assert rows ``Then``), and a ``PROMISES.md`` that declares
   whether the JVM binding covers the area (``JVM binding: none|partial|full``), gives every
   promise a Binding (``python``, ``python, jvm`` or ``@wip``), and indexes exactly the promises the
-  area's scenarios carry.
+  area's scenarios carry, once each. The three binding claims must agree
+  (``BINDING_MISMATCH``): a row's Binding follows its scenario's ``@wip`` and ``@jvm`` tags, and
+  ``JVM binding`` is ``none``, ``partial`` or ``full`` as the gating rows claim ``jvm``.
 
-Step definitions are read through :data:`STEP_SOURCES`, a registry keyed by binding name. Only
-``python`` (pytest-bdd decorators, read with :mod:`ast`, never imported) is registered; until
+Step definitions are read through :data:`STEP_SOURCES`, a registry keyed by binding name. A
+binding counts as registered only when it has both a reader there and a step folder to read
+(``--steps BINDING=DIR``). Only ``python`` (pytest-bdd decorators, read with :mod:`ast`, never
+imported) is registered; until
 D3 (#199) or D4 (#270) registers a ``jvm`` source, every ``jvm`` claim -- an ``@jvm`` tag, a
 ``JVM binding`` other than ``none``, a ``python, jvm`` promise row -- is a
 ``BAD_BINDING_DECLARATION``.
@@ -33,7 +39,8 @@ de-duplicated and sorted by file, line, code and message.
 
 Known limits of the python step reader: only ``@given``, ``@when``, ``@then`` and ``@step``
 decorators are read, with the step text as a string literal, ``parsers.parse("...")`` (fields
-``{name}``, ``{name:d}`` and ``{name:w}`` only) or ``parsers.re("...")``. Anything else is an
+``{name}``, ``{name:d}`` and ``{name:w}`` only, matched ignoring case as the parse library does)
+or ``parsers.re("...")``. Anything else is an
 ``UNSUPPORTED_EXPRESSION``, so the steps it binds fail loudly rather than pass silently.
 
 Usage::
@@ -91,6 +98,7 @@ STEP_GROUP_MISMATCH = "STEP_GROUP_MISMATCH"
 MISSING_BINDING_DECLARATION = "MISSING_BINDING_DECLARATION"
 BAD_BINDING_DECLARATION = "BAD_BINDING_DECLARATION"
 PROMISE_NOT_INDEXED = "PROMISE_NOT_INDEXED"
+BINDING_MISMATCH = "BINDING_MISMATCH"
 INDEXED_PROMISE_UNUSED = "INDEXED_PROMISE_UNUSED"
 
 PYTHON = "python"
@@ -172,6 +180,7 @@ class StepDefinition:
     expression: str
     source: str
     regex: re.Pattern[str]
+    path: Path | None = None  # the defining file, for pytest-bdd's conftest scoping
 
 
 class UnsupportedExpressionError(ValueError):
@@ -371,9 +380,8 @@ class _Reader:
         word, text = match.group(1), match.group(2)
         if word in _STEP_KEYWORDS:
             block.last_keyword = word
-        elif block.last_keyword is None and word == "*":
-            block.last_keyword = "*"
         elif block.last_keyword is None:
+            # pytest-bdd refuses this too: the first step must be Given, When or Then.
             self.error(PARSE_ERROR, number, f"{word!r} step has no preceding Given, When or Then")
             return
         assert block.last_keyword is not None
@@ -609,14 +617,14 @@ def validate_tags(scenario: Scenario, registered: Sequence[str] = (PYTHON,)) -> 
 
 
 def check_unique_promises(scenarios: Sequence[Scenario]) -> list[Problem]:
-    """A promise id tags one scenario (an outline counts once) across the whole suite."""
+    """A promise id tags one scenario (an outline counts once) across the whole suite.
+
+    Every expanded row is read, so a promise on an ``Examples:`` block is checked too.
+    """
     owner: dict[str, tuple[str, int]] = {}
     problems: list[Problem] = []
-    ordered = sorted(
-        {(s.file, s.line): s for s in scenarios}.values(), key=lambda s: (s.file, s.line)
-    )
-    for scenario in ordered:
-        for value, tag in dict((v, t) for v, t in _values(scenario, "promise")).items():
+    for scenario in sorted(scenarios, key=lambda s: (s.file, s.line)):
+        for value, tag in _values(scenario, "promise"):
             first = owner.setdefault(value, (scenario.file, scenario.line))
             if first != (scenario.file, scenario.line):
                 problems.append(
@@ -673,7 +681,8 @@ def parse_format_to_regex(fmt: str) -> re.Pattern[str]:
         else:
             parts.append(re.escape(char))
             index += 1
-    return re.compile("".join(parts))
+    # The parse library behind parsers.parse matches case-insensitively and across newlines.
+    return re.compile("".join(parts), re.IGNORECASE | re.DOTALL)
 
 
 def _expression(node: ast.expr) -> tuple[str, re.Pattern[str]]:
@@ -748,7 +757,7 @@ def _python_definitions_in(path: Path) -> tuple[list[StepDefinition], list[Probl
                 continue
             defs.append(
                 StepDefinition(
-                    PYTHON, keyword, expression, f"{path.name}:{decorator.lineno}", regex
+                    PYTHON, keyword, expression, f"{path.name}:{decorator.lineno}", regex, path
                 )
             )
     return defs, problems, found
@@ -779,21 +788,45 @@ StepSource = Callable[[Path], tuple[list[StepDefinition], list[Problem]]]
 STEP_SOURCES: dict[str, StepSource] = {PYTHON: load_python_step_definitions}
 
 
-def match_steps(scenario: Scenario, definitions: Sequence[StepDefinition]) -> list[Problem]:
-    """Report steps that match no definition, or more than one, of the reference binding."""
+def claimed_bindings(scenario: Scenario) -> tuple[str, ...]:
+    """``python`` binds every scenario; an ``@jvm`` scenario is bound by the JVM as well."""
+    return (PYTHON, JVM) if any(tag.name == JVM for tag in scenario.tags) else (PYTHON,)
+
+
+def match_steps(
+    scenario: Scenario,
+    definitions: Sequence[StepDefinition],
+    registered: Sequence[str] = (PYTHON,),
+) -> list[Problem]:
+    """Report steps that match no definition, or more than one, in each binding the scenario
+    claims and that has a step source (an unregistered claim is reported by the tag rules)."""
+    problems: list[Problem] = []
+    for binding in claimed_bindings(scenario):
+        if binding in registered:
+            problems += _match_binding(scenario, definitions, binding)
+    return problems
+
+
+def _match_binding(
+    scenario: Scenario, definitions: Sequence[StepDefinition], binding: str
+) -> list[Problem]:
     severity = ERROR if is_gating(scenario) else INFO
     problems: list[Problem] = []
     for step in scenario.steps:
         hits = [
             d
             for d in definitions
-            if d.binding == PYTHON
+            if d.binding == binding
             and (d.keyword == "*" or step.keyword in ("*", d.keyword))
             and d.regex.fullmatch(step.text)
         ]
         if len(hits) == 1:
             continue
-        shown = f"{step.keyword} {step.text}"
+        shown = (
+            f"{step.keyword} {step.text}"
+            if binding == PYTHON
+            else f"{step.keyword} {step.text} ({binding})"
+        )
         if not hits:
             problems.append(
                 _problem(
@@ -893,6 +926,8 @@ class AreaPromises:
     present: bool
     promises: dict[str, int]  # id -> line in PROMISES.md
     problems: list[Problem]
+    bindings: dict[str, str] = field(default_factory=dict)  # id -> a valid Binding value
+    jvm_declaration: tuple[int, str] | None = None  # (line, a valid JVM_COVERAGE value)
 
 
 def check_area_promises(area: Path, registered: Sequence[str]) -> AreaPromises:
@@ -923,7 +958,10 @@ def check_area_promises(area: Path, registered: Sequence[str]) -> AreaPromises:
                 f"PROMISES.md does not declare whether the JVM binding covers the area: add 'JVM binding: {'|'.join(JVM_COVERAGE)}'",
             )
         )
+    jvm_declaration: tuple[int, str] | None = None
     for number, value in declarations:
+        if value in JVM_COVERAGE and jvm_declaration is None:
+            jvm_declaration = (number, value)
         if value not in JVM_COVERAGE:
             problems.append(
                 _problem(
@@ -943,6 +981,7 @@ def check_area_promises(area: Path, registered: Sequence[str]) -> AreaPromises:
                 )
             )
     promises: dict[str, int] = {}
+    bindings: dict[str, str] = {}
     for table in _tables(text):
         header = [c.strip() for c in table[0][1]]
         if not header or header[0] != "Promise" or "Binding" not in header:
@@ -950,9 +989,31 @@ def check_area_promises(area: Path, registered: Sequence[str]) -> AreaPromises:
         binding_column = header.index("Binding")
         for number, cells in table[1:]:
             promise = _unquote(cells[0])
-            promises.setdefault(promise, number)
+            if not _PROMISE_RE.fullmatch(promise):
+                problems.append(
+                    _problem(
+                        BAD_PROMISE_ID,
+                        path,
+                        number,
+                        f"{promise}: expected an id matching {PROMISE_PATTERN}",
+                    )
+                )
+                continue
+            if promise in promises:
+                problems.append(
+                    _problem(
+                        DUPLICATE_PROMISE,
+                        path,
+                        number,
+                        f"{promise} already has a row at line {promises[promise]}",
+                    )
+                )
+                continue
+            promises[promise] = number
             binding = cells[binding_column].strip() if binding_column < len(cells) else ""
             claimed = PROMISE_BINDINGS.get(binding)
+            if claimed is not None:
+                bindings.setdefault(promise, binding)
             if claimed is None:
                 problems.append(
                     _problem(
@@ -972,7 +1033,7 @@ def check_area_promises(area: Path, registered: Sequence[str]) -> AreaPromises:
                         f"{promise}: Binding {binding!r}, but no {missing} step source is registered",
                     )
                 )
-    return AreaPromises(True, promises, problems)
+    return AreaPromises(True, promises, problems, bindings, jvm_declaration)
 
 
 def check_promise_index(
@@ -986,7 +1047,7 @@ def check_promise_index(
     for scenario in scenarios:
         for value, tag in _values(scenario, "promise"):
             used.add(value)
-            if value not in index.promises:
+            if value not in index.promises and _PROMISE_RE.fullmatch(value):
                 problems.append(
                     _problem(
                         PROMISE_NOT_INDEXED,
@@ -995,6 +1056,7 @@ def check_promise_index(
                         f"@promise:{value} has no row in {area.name}/PROMISES.md",
                     )
                 )
+    problems += _check_binding_consistency(area, index, scenarios)
     for promise, number in index.promises.items():
         if promise not in used:
             problems.append(
@@ -1003,6 +1065,54 @@ def check_promise_index(
                     area / "PROMISES.md",
                     number,
                     f"{promise} tags no scenario in {area.name}/",
+                )
+            )
+    return problems
+
+
+def _expected_binding(scenario: Scenario) -> str:
+    if not is_gating(scenario):
+        return "@wip"
+    return "python, jvm" if JVM in claimed_bindings(scenario) else "python"
+
+
+def _check_binding_consistency(
+    area: Path, index: AreaPromises, scenarios: Sequence[Scenario]
+) -> list[Problem]:
+    """The three binding claims agree: each promise row's Binding matches its scenario's tags
+    (``@wip``, ``@jvm``), and the area's ``JVM binding`` matches its rows."""
+    path = area / "PROMISES.md"
+    problems: list[Problem] = []
+    for scenario in scenarios:
+        expected = _expected_binding(scenario)
+        for value, _tag in _values(scenario, "promise"):
+            declared = index.bindings.get(value)
+            if declared is not None and declared != expected:
+                problems.append(
+                    _problem(
+                        BINDING_MISMATCH,
+                        path,
+                        index.promises[value],
+                        f"{value}: Binding {declared!r}, but its scenario's tags make it {expected!r}",
+                    )
+                )
+    if index.jvm_declaration is not None:
+        line, declared = index.jvm_declaration
+        gating = [b for b in index.bindings.values() if b != "@wip"]
+        jvm_rows = sum(1 for b in gating if JVM in PROMISE_BINDINGS[b])
+        if jvm_rows == 0:
+            actual = "none"
+        elif jvm_rows == len(gating):
+            actual = "full"
+        else:
+            actual = "partial"
+        if declared != actual:
+            problems.append(
+                _problem(
+                    BINDING_MISMATCH,
+                    path,
+                    line,
+                    f"JVM binding {declared!r}, but the promise rows make it {actual!r}",
                 )
             )
     return problems
@@ -1047,7 +1157,7 @@ def _check_scenarios(
     problems: list[Problem] = []
     for scenario in scenarios:
         problems += validate_tags(scenario, registered)
-        problems += match_steps(scenario, definitions)
+        problems += match_steps(scenario, definitions, registered)
     return problems
 
 
@@ -1061,6 +1171,22 @@ def check_feature_file(
         + _check_scenarios(scenarios, definitions, registered)
         + check_unique_promises(scenarios)
     )
+
+
+def visible_definitions(
+    definitions: Sequence[StepDefinition], features_dir: Path, feature: Path
+) -> list[StepDefinition]:
+    """The definitions pytest-bdd lets ``feature`` use: one defined inside ``features_dir`` is
+    visible only below its own folder (an area's ``conftest.py`` serves that area, the root
+    ``conftest.py`` every area); one defined outside it, in a separate step folder, serves all."""
+    root = features_dir.resolve()
+    folder = feature.resolve().parent
+    visible = []
+    for definition in definitions:
+        home = definition.path.resolve().parent if definition.path is not None else None
+        if home is None or not home.is_relative_to(root) or folder.is_relative_to(home):
+            visible.append(definition)
+    return visible
 
 
 def _check_layout(features_dir: Path, path: Path) -> list[Problem]:
@@ -1080,10 +1206,12 @@ def check_tree(
     """Check every area and ``.feature`` file under ``features_dir``.
 
     ``step_dirs`` maps a binding name to the directory its step source reads; by default the
-    ``python`` step definitions are read from ``features_dir`` itself.
+    ``python`` step definitions are read from ``features_dir`` itself. A binding counts as
+    registered only when ``sources`` has a reader for it *and* ``step_dirs`` names where its
+    step definitions live, so a ``jvm`` claim is never accepted without reading JVM steps.
     """
     step_dirs = dict(step_dirs) if step_dirs is not None else {PYTHON: features_dir}
-    registered = sorted(sources)
+    registered = sorted(binding for binding in step_dirs if binding in sources)
     definitions, problems = load_definitions(step_dirs, sources)
     files = sorted(features_dir.rglob("*.feature"))
     if not files:
@@ -1093,7 +1221,8 @@ def check_tree(
     for path in files:
         problems += _check_layout(features_dir, path)
         scenarios, parse_problems = parse_feature(path)
-        problems += parse_problems + _check_scenarios(scenarios, definitions, registered)
+        visible = visible_definitions(definitions, features_dir, path)
+        problems += parse_problems + _check_scenarios(scenarios, visible, registered)
         all_scenarios += scenarios
         area = features_dir / path.relative_to(features_dir).parts[0]
         if area.is_dir():

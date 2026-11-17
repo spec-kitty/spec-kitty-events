@@ -22,7 +22,7 @@ tests/scenarios/<area>/test_*.py     # binds the area's features (pytest_bdd.sce
 
 | Area | Covers | Binding |
 |------|--------|---------|
-| [`envelope/`](envelope/README.md) | Accepting canonical envelopes, refusing invalid ones with the code their fixture pins, failing closed on an unknown event type, resolving legacy lanes | python |
+| [`envelope/`](envelope/README.md) | Accepting canonical envelopes, refusing invalid ones with the code their fixture pins, the strict journal profile failing closed on an unknown event type, resolving legacy lanes | python |
 
 ## Writing a scenario
 
@@ -64,13 +64,18 @@ a JDK, through `tests/test_scenario_contract.py`. By hand:
 
 - a feature is outside `<area>/<behaviour>/<behaviour>.feature`, fails to parse, or has no
   scenarios, or a scenario has no steps;
-- a step of a gating scenario matches no step definition, or more than one;
+- a step of a gating scenario matches no step definition, or more than one, in a binding it
+  claims (an area's `conftest.py` serves only that area, as in pytest-bdd), or a scenario's first
+  step is not Given, When or Then;
 - a promise id is missing, malformed or duplicated, or a tag is outside the vocabulary;
 - a `@wip` scenario lacks its owner or start date;
 - an area has no `README.md` steps table, or a row's keyword does not match its Group;
 - an area's `PROMISES.md` does not declare `JVM binding: none|partial|full`, gives a promise a
   Binding other than `python`, `python, jvm` or `@wip`, claims `jvm` while no `jvm` step source
-  is registered, or does not index exactly the promises its scenarios carry.
+  is registered, does not index exactly the promises its scenarios carry (once each, with
+  well-formed ids), or has binding claims that disagree (`BINDING_MISMATCH`: a row's Binding
+  must follow its scenario's `@wip` and `@jvm` tags, and `JVM binding` must be `none`, `partial`
+  or `full` as the gating rows claim `jvm`).
 
 Findings point at the offending line (for a tag, the tag's own line) and are sorted by file and
 line. Each rule has a broken fixture under `tests/fixtures/scenario_contract/` that proves it can

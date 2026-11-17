@@ -8,6 +8,7 @@ fail, then pins the reader's Background handling, the finding order and the CLI 
 from __future__ import annotations
 
 import ast
+import dataclasses
 import importlib.util
 import random
 import subprocess
@@ -53,6 +54,7 @@ def _codes(problems, severity: str = "error") -> list[str]:
 
 EXPECTED_FEATURE_ERRORS = {
     "parse_error.feature": ["PARSE_ERROR"],
+    "leading_bullet.feature": ["PARSE_ERROR"],
     "no_scenarios.feature": ["NO_SCENARIOS"],
     "no_steps.feature": ["NO_STEPS"],
     "outline_no_examples.feature": ["NO_EXAMPLES"],
@@ -66,6 +68,7 @@ EXPECTED_FEATURE_ERRORS = {
     "duplicate_promise.feature": ["DUPLICATE_PROMISE"],
     "duplicate_promise_across_scenarios.feature": ["DUPLICATE_PROMISE"],
     "feature_level_promise.feature": ["DUPLICATE_PROMISE"],
+    "duplicate_promise_examples.feature": ["DUPLICATE_PROMISE"],
     "unknown_tag.feature": ["UNKNOWN_TAG"],
     "unknown_prefixed_tag.feature": ["UNKNOWN_TAG"],
     "wip_missing_owner.feature": ["WIP_MISSING_OWNER"],
@@ -132,12 +135,14 @@ EXPECTED_AREA_ERRORS = {
     "missing_promises_file": ["MISSING_BINDING_DECLARATION"],
     "missing_jvm_declaration": ["MISSING_BINDING_DECLARATION"],
     "bad_jvm_declaration": ["BAD_BINDING_DECLARATION"],
-    "jvm_declaration_without_source": ["BAD_BINDING_DECLARATION"],
+    "jvm_bound": ["BAD_BINDING_DECLARATION"] * 3,  # the @jvm tag, the row and the area line
     "bad_promise_binding": ["BAD_BINDING_DECLARATION"],
-    "promise_binding_without_source": ["BAD_BINDING_DECLARATION"],
+    "binding_mismatch_wip": ["BINDING_MISMATCH"],
     "promise_not_indexed": ["PROMISE_NOT_INDEXED"],
     "indexed_promise_unused": ["INDEXED_PROMISE_UNUSED"],
     "duplicate_promise_across_files": ["DUPLICATE_PROMISE"],
+    "duplicate_promise_row": ["DUPLICATE_PROMISE"],
+    "bad_indexed_promise": ["BAD_PROMISE_ID"],
     "no_gating_scenarios": ["NO_GATING_SCENARIOS"],
     "no_features": ["NO_FEATURES"],
 }
@@ -154,31 +159,75 @@ def test_each_broken_area_reports_its_rule(name: str, codes: list[str]) -> None:
 
 def test_every_area_fixture_is_expected() -> None:
     on_disk = {p.name for p in FIXTURE_AREAS.iterdir() if p.is_dir()}
-    assert on_disk == set(EXPECTED_AREA_ERRORS) | {"valid"}
+    assert on_disk == set(EXPECTED_AREA_ERRORS) | set(EXPECTED_WITH_JVM) | {
+        "valid",
+        "step_from_another_area",
+    }
+
+
+def test_steps_are_scoped_to_their_area_as_pytest_bdd_scopes_conftest() -> None:
+    """A step defined in area a's conftest.py does not bind area b's feature, and a phrase both
+    areas define is not ambiguous."""
+    tree = FIXTURE_AREAS / "step_from_another_area"
+    problems = contract.check_tree(tree)
+    assert [(p.code, Path(p.file).relative_to(tree).as_posix(), p.line) for p in problems] == [
+        ("UNBOUND_STEP", "b/beh/beh.feature", 6)
+    ]
 
 
 def test_valid_area_is_clean() -> None:
     assert _check_area("valid") == []
 
 
-def test_step_sources_are_a_registry_keyed_by_binding_name() -> None:
-    """A registered ``jvm`` source makes the jvm claims valid; the reader is chosen by name."""
-    seen: list[Path] = []
+def _jvm_reader(definitions):
+    """A stand-in ``jvm`` step source that reads the given definitions as JVM ones."""
 
-    def jvm_reader(directory: Path):
-        seen.append(directory)
-        return [], []
+    def read(_directory: Path):
+        return [dataclasses.replace(d, binding="jvm") for d in definitions], []
 
-    sources = {**contract.STEP_SOURCES, "jvm": jvm_reader}
-    for name in ("jvm_declaration_without_source", "promise_binding_without_source"):
-        problems = contract.check_tree(
-            FIXTURE_AREAS / name,
-            {"python": FIXTURE_STEPS, "jvm": FIXTURE_STEPS},
-            sources=sources,
-        )
-        assert problems == []
-    assert seen == [FIXTURE_STEPS, FIXTURE_STEPS]
+    return read
+
+
+# Rules that only bite once a jvm step source is registered (D3 #199 / D4 #270).
+EXPECTED_WITH_JVM = {
+    "binding_mismatch_jvm_coverage": ["BINDING_MISMATCH"],
+}
+
+
+def _check_with_jvm(name: str, jvm_definitions) -> list:
+    return contract.check_tree(
+        FIXTURE_AREAS / name,
+        {"python": FIXTURE_STEPS, "jvm": FIXTURE_STEPS},
+        sources={**contract.STEP_SOURCES, "jvm": _jvm_reader(jvm_definitions)},
+    )
+
+
+@pytest.mark.parametrize("name,codes", sorted(EXPECTED_WITH_JVM.items()))
+def test_each_broken_area_reports_its_rule_once_jvm_is_registered(
+    name: str, codes: list[str], fixture_defs
+) -> None:
+    assert _codes(_check_with_jvm(name, fixture_defs)) == codes
+
+
+def test_step_sources_are_a_registry_keyed_by_binding_name(fixture_defs) -> None:
+    """Plugging a ``jvm`` reader in, with a step folder, is all a JVM binding needs."""
     assert sorted(contract.STEP_SOURCES) == ["python"]
+    assert _check_with_jvm("jvm_bound", fixture_defs) == []
+
+
+def test_a_jvm_scenario_is_matched_against_the_jvm_steps(fixture_defs) -> None:
+    problems = _check_with_jvm("jvm_bound", [])
+    assert _codes(problems) == ["UNBOUND_STEP"] * 3
+    assert all("(jvm)" in p.message for p in problems)
+
+
+def test_a_registered_source_without_a_step_folder_is_not_a_binding(fixture_defs) -> None:
+    problems = contract.check_tree(
+        FIXTURE_AREAS / "jvm_bound",
+        {"python": FIXTURE_STEPS},
+        sources={**contract.STEP_SOURCES, "jvm": _jvm_reader(fixture_defs)},
+    )
+    assert _codes(problems) == ["BAD_BINDING_DECLARATION"] * 3
 
 
 def test_steps_for_an_unregistered_binding_are_a_bad_binding_declaration() -> None:
@@ -216,6 +265,8 @@ def test_parse_fields_translate_to_full_match_regexes() -> None:
     assert regex.fullmatch('the class "envelope_x" holds 3 {items}')
     assert not regex.fullmatch('the class "a b" holds 3 {items}')
     assert not regex.fullmatch('the class "x" holds three {items}')
+    # The parse library behind parsers.parse ignores case; so does the check.
+    assert regex.fullmatch('The Class "x" HOLDS 3 {items}')
 
 
 # --- reader: Background steps ----------------------------------------------------------------

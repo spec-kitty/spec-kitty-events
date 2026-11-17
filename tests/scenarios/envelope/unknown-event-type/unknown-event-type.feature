@@ -4,16 +4,16 @@
 #   the envelope_strict_journal class that pin UNKNOWN_EVENT_TYPE.
 # - Promises are indexed in tests/scenarios/envelope/PROMISES.md.
 
-Feature: An unknown event type is refused
+Feature: The strict journal profile refuses an unknown event type
   As a consumer of the event contract
-  I want an envelope of an event type the contract does not register to be refused
-  So that the contract fails closed instead of passing on what it cannot judge
+  I want the strict journal profile to refuse an envelope of an event type it does not register
+  So that a strict journal fails closed instead of passing on what it cannot judge
 
   Background:
     Given the conformance fixtures shipped with the package
 
   @promise:PR-EVENTS-ENVELOPE-007
-  Scenario: An envelope of an unregistered event type is refused
+  Scenario: The strict journal profile refuses an envelope of an unregistered event type
     Given every fixture of the class "envelope_strict_journal" that pins the error code "UNKNOWN_EVENT_TYPE"
     When each fixture's input is judged against the strict journal profile
     Then every fixture is refused with the error code it pins
