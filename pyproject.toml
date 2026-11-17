@@ -29,6 +29,7 @@ dev = [
     "hypothesis>=6.0.0",
     "mypy>=1.0.0",
     "pyyaml>=6.0,<7",
+    "pytest-bdd>=9.0.1,<10",
 ]
 conformance = [
     "jsonschema>=4.21.0,<5.0.0",
@@ -205,5 +206,5 @@ dev = [
     "jsonschema>=4.21.0,<5.0.0",
     "ruff>=0.16,<0.17",
     "pyyaml>=6.0,<7",
-    "pytest-bdd>=8.1,<9",
+    "pytest-bdd>=9.0.1,<10",
 ]
