@@ -22,6 +22,8 @@ openapi-generator = "7.25.0"
 graalvm-native = "1.1.8"
 jacoco = "0.8.15"
 archunit = "1.4.2"
+# The Java binding's Cucumber-JVM, for the @jvm BDD scenarios (spec-kitty-events#199). Matches core's acceptance-jvm/.
+cucumber = "7.20.1"
 
 [libraries]
 jackson-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson" }
@@ -32,6 +34,7 @@ junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 # Gradle needs the launcher on the test runtime classpath to run JUnit 6; without it no test is found.
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 slf4j-nop = { module = "org.slf4j:slf4j-nop", version.ref = "slf4j" }
+cucumber-java = { module = "io.cucumber:cucumber-java", version.ref = "cucumber" }
 
 # The services: versions managed by the Spring Boot BOM.
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }

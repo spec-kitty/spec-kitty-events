@@ -28,14 +28,25 @@ checks, without running anything:
 
 Step definitions are read through :data:`STEP_SOURCES`, a registry keyed by binding name. A
 binding counts as registered only when it has both a reader there and a step folder to read
-(``--steps BINDING=DIR``). Only ``python`` (pytest-bdd decorators, read with :mod:`ast`, never
-imported) is registered; until
-D3 (#199) or D4 (#270) registers a ``jvm`` source, every ``jvm`` claim -- an ``@jvm`` tag, a
-``JVM binding`` other than ``none``, a ``python, jvm`` promise row -- is a
-``BAD_BINDING_DECLARATION``.
+(``--steps BINDING=DIR``, repeatable for several folders). Two are registered: ``python``
+(pytest-bdd decorators, read with :mod:`ast`, never imported) and ``jvm`` (Cucumber-JVM
+annotations, read from ``*.java`` source as text, never compiled; spec-kitty-events#199). A
+``jvm`` claim -- an ``@jvm`` tag, a ``JVM binding`` other than ``none``, a ``python, jvm`` promise
+row -- without a ``jvm`` step folder is a ``BAD_BINDING_DECLARATION``; with one, every step of an
+``@jvm`` scenario must match exactly one Java step definition. By default the CLI reads
+``python`` from the features folder and ``jvm`` from ``java/src/test/java``.
 
 Findings about a tag point at the line of that tag, not the scenario line. Findings are
 de-duplicated and sorted by file, line, code and message.
+
+Known limits of the jvm step reader: only ``@Given``, ``@When``, ``@Then``, ``@And`` and ``@But``
+(simple or qualified) are read, with one single-line string literal as the argument (``value =``
+allowed); comments are blanked out first. The expression is a regular expression when it starts
+with ``^``, ends with ``$`` or is wrapped in ``/``, and otherwise a Cucumber expression with the
+built-in parameter types, plain ``(optional)`` text and whitespace-bounded ``a/b`` alternation.
+Cucumber-JVM ignores the keyword when matching, so a JVM definition matches any keyword. A
+concatenated or constant argument, a text block, a custom ``@ParameterType`` or a regex Python
+cannot compile is an ``UNSUPPORTED_EXPRESSION``.
 
 Known limits of the python step reader: only ``@given``, ``@when``, ``@then`` and ``@step``
 decorators are read, with the step text as a string literal, ``parsers.parse("...")`` (fields
@@ -46,6 +57,8 @@ or ``parsers.re("...")``. Anything else is an
 Usage::
 
     python scripts/ci/scenario_contract.py [--features DIR] [--steps BINDING=DIR ...]
+
+(``--steps`` replaces both defaults: give ``python`` too when giving ``jvm``.)
 
 Exit status is 1 when any ``error`` finding is reported, otherwise 0.
 """
@@ -60,9 +73,12 @@ import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Union
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_FEATURES = REPO_ROOT / "tests" / "scenarios"
+#: Where the Cucumber-JVM step definitions live (read as source; no JDK needed).
+DEFAULT_JVM_STEPS = REPO_ROOT / "java" / "src" / "test" / "java"
 
 ERROR = "error"
 INFO = "info"
@@ -782,10 +798,300 @@ def load_python_step_definitions(steps_dir: Path) -> tuple[list[StepDefinition],
     return defs, problems
 
 
+# --- the jvm source: Cucumber-JVM annotations, read as source (no JDK, nothing compiled) ----
+
+#: A Cucumber-JVM step annotation, simple or qualified (``@Given`` or
+#: ``@io.cucumber.java.en.Given``), up to its opening parenthesis. Core's ``_JAVA_STEP_RE`` reads
+#: ``@(Given|When|Then)("...")`` in one pattern; here the argument is parsed separately, so an
+#: annotation whose argument is not one string literal is reported, never skipped.
+_JAVA_STEP_RE = re.compile(r"@(?:[A-Za-z_$][\w$]*\s*\.\s*)*(Given|When|Then|And|But)\s*\(")
+_JAVA_VALUE_RE = re.compile(r"\s*(?:value\s*=\s*)?")
+_JAVA_ESCAPES = {
+    "b": "\b",
+    "t": "\t",
+    "n": "\n",
+    "f": "\f",
+    "r": "\r",
+    "s": " ",
+    '"': '"',
+    "'": "'",
+    "\\": "\\",
+}
+_OCTAL_ESCAPE_RE = re.compile(r"[0-3][0-7]{0,2}|[4-7][0-7]?")
+_UNICODE_ESCAPE_RE = re.compile(r"u+([0-9a-fA-F]{4})")
+
+#: Cucumber's built-in parameter types (cucumber-expressions), as regexes. A custom
+#: ``@ParameterType`` is not modelled: a step using one is an ``UNSUPPORTED_EXPRESSION``.
+_INT_PATTERN = r"(?:-?\d+)|(?:\d+)"
+_FLOAT_PATTERN = r"[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)(?:[eE][-+]?\d+)?"
+_CUCUMBER_PARAMETERS = {
+    "int": _INT_PATTERN,
+    "byte": _INT_PATTERN,
+    "short": _INT_PATTERN,
+    "long": _INT_PATTERN,
+    "biginteger": _INT_PATTERN,
+    "float": _FLOAT_PATTERN,
+    "double": _FLOAT_PATTERN,
+    "bigdecimal": _FLOAT_PATTERN,
+    "word": r"[^\s]+",
+    "string": r"\"(?:[^\"\\]*(?:\\.[^\"\\]*)*)\"|'(?:[^'\\]*(?:\\.[^'\\]*)*)'",
+    "": r".*",
+}
+
+
+def _skip_java_literal(text: str, index: int) -> int:
+    """The index just past the string, text-block or char literal opening at ``index``."""
+    if text.startswith('"""', index):
+        end = index + 3
+        while end < len(text):
+            if text[end] == "\\":
+                end += 2
+            elif text.startswith('"""', end):
+                return end + 3
+            else:
+                end += 1
+        return len(text)
+    quote = text[index]
+    end = index + 1
+    while end < len(text) and text[end] not in (quote, "\n"):
+        end += 2 if text[end] == "\\" else 1
+    return min(end + 1, len(text))
+
+
+def strip_java_comments(text: str) -> str:
+    """Blank out ``//`` and ``/* */`` comments outside literals; line numbers are kept."""
+    out: list[str] = []
+    index = 0
+    while index < len(text):
+        char = text[index]
+        if char in "\"'":
+            end = _skip_java_literal(text, index)
+            out.append(text[index:end])
+            index = end
+        elif text.startswith("//", index):
+            end = text.find("\n", index)
+            end = len(text) if end == -1 else end
+            out.append(" " * (end - index))
+            index = end
+        elif text.startswith("/*", index):
+            end = text.find("*/", index + 2)
+            end = len(text) if end == -1 else end + 2
+            out.append(re.sub(r"[^\n]", " ", text[index:end]))
+            index = end
+        else:
+            out.append(char)
+            index += 1
+    return "".join(out)
+
+
+def _mask_java_literals(text: str) -> str:
+    """``text`` with every literal's content blanked (quotes and newlines kept), so an
+    annotation-shaped text inside a string is never read as an annotation."""
+    out: list[str] = []
+    index = 0
+    while index < len(text):
+        if text[index] in "\"'":
+            end = _skip_java_literal(text, index)
+            out.append(re.sub(r"[^\n\"']", " ", text[index:end]))
+            index = end
+        else:
+            out.append(text[index])
+            index += 1
+    return "".join(out)
+
+
+def _java_string_literal(text: str, index: int) -> tuple[str, int] | None:
+    """Decode the one-line string literal at ``index``; ``None`` when there is none."""
+    if not text.startswith('"', index) or text.startswith('"""', index):
+        return None
+    out: list[str] = []
+    end = index + 1
+    while end < len(text):
+        char = text[end]
+        if char == '"':
+            return "".join(out), end + 1
+        if char == "\n":
+            return None
+        if char != "\\":
+            out.append(char)
+            end += 1
+            continue
+        rest = text[end + 1 :]
+        if (m := _UNICODE_ESCAPE_RE.match(rest)) is not None:
+            out.append(chr(int(m.group(1), 16)))
+            end += 1 + m.end()
+        elif (m := _OCTAL_ESCAPE_RE.match(rest)) is not None:
+            out.append(chr(int(m.group(0), 8)))
+            end += 1 + m.end()
+        elif rest[:1] in _JAVA_ESCAPES:
+            out.append(_JAVA_ESCAPES[rest[0]])
+            end += 2
+        else:
+            return None
+    return None
+
+
+def _cucumber_text(chunk: str, expression: str, *, parameters: bool) -> str:
+    """One whitespace-free piece of a Cucumber expression (no alternation) as a regex."""
+    parts: list[str] = []
+    index = 0
+    while index < len(chunk):
+        char = chunk[index]
+        if char == "\\" and index + 1 < len(chunk):
+            parts.append(re.escape(chunk[index + 1]))
+            index += 2
+        elif char == "{" and parameters:
+            end = chunk.find("}", index)
+            name = chunk[index + 1 : end] if end != -1 else None
+            if name is None or name not in _CUCUMBER_PARAMETERS:
+                raise UnsupportedExpressionError(
+                    f"parameter {chunk[index : end + 1] if end != -1 else chunk[index:]!r} in step "
+                    f"expression {expression!r} is not a built-in Cucumber parameter type"
+                )
+            parts.append(f"({_CUCUMBER_PARAMETERS[name]})")
+            index = end + 1
+        elif char == "(":
+            end = chunk.find(")", index)
+            inner = chunk[index + 1 : end] if end != -1 else ""
+            if end == -1 or not inner or any(c in inner for c in "({/\\"):
+                raise UnsupportedExpressionError(
+                    f"optional text in step expression {expression!r} is not supported here; "
+                    "use plain (text) without nesting, parameters, alternation or escapes"
+                )
+            parts.append(f"(?:{re.escape(inner)})?")
+            index = end + 1
+        elif char in "{})":
+            raise UnsupportedExpressionError(
+                f"unmatched {char!r} in step expression {expression!r}; escape it with a backslash"
+            )
+        else:
+            parts.append(re.escape(char))
+            index += 1
+    return "".join(parts)
+
+
+def _split_unescaped(chunk: str, separator: str) -> list[str]:
+    pieces, current, index = [], [], 0
+    while index < len(chunk):
+        if chunk[index] == "\\" and index + 1 < len(chunk):
+            current.append(chunk[index : index + 2])
+            index += 2
+        elif chunk[index] == separator:
+            pieces.append("".join(current))
+            current = []
+            index += 1
+        else:
+            current.append(chunk[index])
+            index += 1
+    pieces.append("".join(current))
+    return pieces
+
+
+def cucumber_expression_to_regex(expression: str) -> re.Pattern[str]:
+    """Translate a Cucumber-JVM step expression to a regex; use ``fullmatch`` on step text.
+
+    As cucumber-expressions decides: an expression that starts with ``^`` or ends with ``$``, or
+    is wrapped in ``/``, is a regular expression; anything else is a Cucumber expression with the
+    built-in parameter types, ``(optional)`` text and ``a/b`` alternation (bounded by whitespace).
+    Matching is case-sensitive, as in Cucumber.
+    """
+    regex_source: str | None = None
+    if expression.startswith("^") or expression.endswith("$"):
+        regex_source = expression
+    elif len(expression) >= 2 and expression.startswith("/") and expression.endswith("/"):
+        regex_source = expression[1:-1]
+    if regex_source is not None:
+        try:
+            return re.compile(regex_source)
+        except re.error as exc:
+            raise UnsupportedExpressionError(
+                f"regular expression {expression!r} does not compile as a Python regex: {exc}"
+            ) from exc
+    parts: list[str] = []
+    for chunk in re.split(r"(\s+)", expression):
+        if not chunk or chunk.isspace():
+            parts.append(re.escape(chunk))
+            continue
+        alternatives = _split_unescaped(chunk, "/")
+        if len(alternatives) == 1:
+            parts.append(_cucumber_text(chunk, expression, parameters=True))
+            continue
+        if not all(alternatives) or any("{" in a.replace("\\{", "") for a in alternatives):
+            raise UnsupportedExpressionError(
+                f"alternation in step expression {expression!r} needs non-empty alternatives "
+                "without parameters"
+            )
+        branches = [_cucumber_text(a, expression, parameters=False) for a in alternatives]
+        parts.append(f"(?:{'|'.join(branches)})")
+    return re.compile("".join(parts))
+
+
+def _jvm_definitions_in(path: Path) -> tuple[list[StepDefinition], list[Problem], bool]:
+    try:
+        text = strip_java_comments(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError) as exc:
+        return [], [_problem(STEP_FILE_UNREADABLE, path, 1, f"cannot read: {exc}")], False
+    defs: list[StepDefinition] = []
+    problems: list[Problem] = []
+    found = False
+    for match in _JAVA_STEP_RE.finditer(_mask_java_literals(text)):
+        found = True
+        line = text.count("\n", 0, match.start()) + 1
+        value = _JAVA_VALUE_RE.match(text, match.end())
+        start = value.end() if value is not None else match.end()
+        literal = _java_string_literal(text, start)
+        try:
+            if literal is None or not text[literal[1] :].lstrip().startswith(")"):
+                raise UnsupportedExpressionError(
+                    f"@{match.group(1)} at line {line} does not take one string literal; "
+                    'use @Given("...") with a single-line literal (no concatenation, constant or text block)'
+                )
+            expression = literal[0]
+            regex = cucumber_expression_to_regex(expression)
+        except UnsupportedExpressionError as exc:
+            problems.append(_problem(UNSUPPORTED_EXPRESSION, path, line, str(exc)))
+            continue
+        # Cucumber-JVM matches a step definition whatever the step's keyword: '*' says so.
+        defs.append(StepDefinition(JVM, "*", expression, f"{path.name}:{line}", regex, path))
+    return defs, problems, found
+
+
+def load_jvm_step_definitions(steps_dir: Path) -> tuple[list[StepDefinition], list[Problem]]:
+    """Read Cucumber-JVM step annotations from every ``*.java`` under ``steps_dir`` (as text).
+
+    Comments are blanked out first, so a commented-out annotation binds nothing. Only
+    ``@Given``, ``@When``, ``@Then``, ``@And`` and ``@But`` with one string literal are read;
+    Cucumber's Java 8 lambda glue is not. The keyword of the annotation is not part of the
+    match (Cucumber-JVM ignores it), so two annotations with the same text are ambiguous.
+    """
+    defs: list[StepDefinition] = []
+    problems: list[Problem] = []
+    found_any = False
+    for path in sorted(steps_dir.rglob("*.java")):
+        file_defs, file_problems, found = _jvm_definitions_in(path)
+        defs += file_defs
+        problems += file_problems
+        found_any = found_any or found
+    if not found_any:
+        problems.append(
+            _problem(
+                NO_STEP_DEFINITIONS,
+                steps_dir,
+                1,
+                "no Cucumber-JVM @Given/@When/@Then step definitions found",
+            )
+        )
+    return defs, problems
+
+
 StepSource = Callable[[Path], tuple[list[StepDefinition], list[Problem]]]
 
-#: Step-definition readers keyed by binding name. D3 (#199) / D4 (#270) add ``jvm``.
-STEP_SOURCES: dict[str, StepSource] = {PYTHON: load_python_step_definitions}
+#: Step-definition readers keyed by binding name: ``python`` (pytest-bdd, #197) and ``jvm``
+#: (Cucumber-JVM, #199). A new binding plugs its reader in here and its folder in with ``--steps``.
+STEP_SOURCES: dict[str, StepSource] = {
+    PYTHON: load_python_step_definitions,
+    JVM: load_jvm_step_definitions,
+}
 
 
 def claimed_bindings(scenario: Scenario) -> tuple[str, ...]:
@@ -1128,26 +1434,35 @@ def sort_problems(problems: Sequence[Problem]) -> list[Problem]:
     return sorted(set(problems))
 
 
+StepDirs = Mapping[str, Union[Path, Sequence[Path]]]
+
+
+def _directories(value: Path | Sequence[Path]) -> list[Path]:
+    return [value] if isinstance(value, Path) else list(value)
+
+
 def load_definitions(
-    step_dirs: Mapping[str, Path], sources: Mapping[str, StepSource] = STEP_SOURCES
+    step_dirs: StepDirs, sources: Mapping[str, StepSource] = STEP_SOURCES
 ) -> tuple[list[StepDefinition], list[Problem]]:
+    """Read each binding's step folders (one folder, or several) through its registered source."""
     defs: list[StepDefinition] = []
     problems: list[Problem] = []
-    for binding, directory in sorted(step_dirs.items()):
+    for binding, value in sorted(step_dirs.items()):
         reader = sources.get(binding)
-        if reader is None:
-            problems.append(
-                _problem(
-                    BAD_BINDING_DECLARATION,
-                    directory,
-                    1,
-                    f"no step source is registered for binding {binding!r}",
+        for directory in _directories(value):
+            if reader is None:
+                problems.append(
+                    _problem(
+                        BAD_BINDING_DECLARATION,
+                        directory,
+                        1,
+                        f"no step source is registered for binding {binding!r}",
+                    )
                 )
-            )
-            continue
-        found, found_problems = reader(directory)
-        defs += found
-        problems += found_problems
+                continue
+            found, found_problems = reader(directory)
+            defs += found
+            problems += found_problems
     return defs, problems
 
 
@@ -1200,17 +1515,18 @@ def _check_layout(features_dir: Path, path: Path) -> list[Problem]:
 
 def check_tree(
     features_dir: Path,
-    step_dirs: Mapping[str, Path] | None = None,
+    step_dirs: StepDirs | None = None,
     sources: Mapping[str, StepSource] = STEP_SOURCES,
 ) -> list[Problem]:
     """Check every area and ``.feature`` file under ``features_dir``.
 
-    ``step_dirs`` maps a binding name to the directory its step source reads; by default the
-    ``python`` step definitions are read from ``features_dir`` itself. A binding counts as
+    ``step_dirs`` maps a binding name to the directory (or directories) its step source reads;
+    by default only the ``python`` step definitions are read, from ``features_dir`` itself. A binding counts as
     registered only when ``sources`` has a reader for it *and* ``step_dirs`` names where its
     step definitions live, so a ``jvm`` claim is never accepted without reading JVM steps.
     """
     step_dirs = dict(step_dirs) if step_dirs is not None else {PYTHON: features_dir}
+    step_dirs = {binding: value for binding, value in step_dirs.items() if _directories(value)}
     registered = sorted(binding for binding in step_dirs if binding in sources)
     definitions, problems = load_definitions(step_dirs, sources)
     files = sorted(features_dir.rglob("*.feature"))
@@ -1262,14 +1578,19 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         type=_step_dir,
         action="append",
         metavar="BINDING=DIR",
-        help="where a binding's step definitions live (default: python=<features>)",
+        help=(
+            "where a binding's step definitions live; repeat it to give a binding several folders "
+            f"(default: python=<features> jvm={DEFAULT_JVM_STEPS.relative_to(REPO_ROOT)})"
+        ),
     )
     return parser.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
-    step_dirs = dict(args.steps) if args.steps else None
+    step_dirs: dict[str, list[Path]] = {}
+    for binding, directory in args.steps or [(PYTHON, args.features), (JVM, DEFAULT_JVM_STEPS)]:
+        step_dirs.setdefault(binding, []).append(directory)
     problems = check_tree(args.features, step_dirs)
     if problems:
         print(format_problems(problems))

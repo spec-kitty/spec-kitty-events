@@ -194,7 +194,11 @@ def test_acceptance_runs_the_scenario_contract_and_the_scenarios_before_pytest()
     names = [s.get("name") for s in job["steps"]]
     contract = _step(ACCEPTANCE, "acceptance", "Check the scenario contract")
     scenarios = _step(ACCEPTANCE, "acceptance", "Run the BDD scenarios")
-    assert contract["run"].strip() == "python scripts/ci/scenario_contract.py"
+    # #199: both step sources, read as source text; the jvm one needs no JDK.
+    assert contract["run"].strip() == (
+        "python scripts/ci/scenario_contract.py"
+        " --steps python=tests/scenarios --steps jvm=java/src/test/java"
+    )
     assert scenarios["run"].split()[:2] == ["pytest", "tests/scenarios"]
     assert "error::pytest.PytestUnknownMarkWarning" in scenarios["run"]
     for step in (contract, scenarios):
@@ -203,7 +207,11 @@ def test_acceptance_runs_the_scenario_contract_and_the_scenarios_before_pytest()
         "Check the scenario contract"
     )
     assert names.index("Run the BDD scenarios") < names.index("Run pytest")
-    assert "runs-on" in job and "java" not in str(job).lower()
+    # No JDK in this job: the jvm step source is read as text, never compiled or run.
+    assert "runs-on" in job
+    for step in job["steps"]:
+        assert "setup-java" not in step.get("uses", "")
+        assert not any(tool in step.get("run", "") for tool in ("gradle", "javac", "mvn"))
 
 
 def test_harness_gate_is_pausable_and_skips_fork_prs_only() -> None:

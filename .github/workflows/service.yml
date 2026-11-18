@@ -42,6 +42,8 @@ on:
       - "src/spec_kitty_events/conformance/fixtures/status_append/**"
       - "src/spec_kitty_events/conformance/status_transition_parity/**"
       - "scripts/conformance/**"
+      # The Java binding's Cucumber-JVM run reads the @jvm BDD scenarios in place (#199).
+      - "tests/scenarios/**"
       - ".github/workflows/service.yml"
   # No path filter on pull requests (ADR 0005 D3): `service-gate` must report on
   # every PR to be a required check. `detect` diffs the change against the same paths as `push`
@@ -119,7 +121,7 @@ jobs:
         # A PR diffs its base tip against its head. If the SHAs cannot be fetched or diffed,
         # everything runs. The PATTERN mirrors the push paths (tests/test_ci_gate_workflows.py).
         run: |
-          PATTERN='^(service/|contracts/|java/|build-logic/|gradle/|settings\.gradle\.kts$|build\.gradle\.kts$|gradle\.properties$|gradlew$|gradlew\.bat$|src/spec_kitty_events/producer_contract/|src/spec_kitty_events/conformance/fixtures/status_append/|src/spec_kitty_events/conformance/status_transition_parity/|scripts/conformance/|\.github/workflows/service\.yml$)'
+          PATTERN='^(service/|contracts/|java/|build-logic/|gradle/|settings\.gradle\.kts$|build\.gradle\.kts$|gradle\.properties$|gradlew$|gradlew\.bat$|src/spec_kitty_events/producer_contract/|src/spec_kitty_events/conformance/fixtures/status_append/|src/spec_kitty_events/conformance/status_transition_parity/|scripts/conformance/|tests/scenarios/|\.github/workflows/service\.yml$)'
           case "$EVENT" in
             pull_request) base="$PR_BASE"; fetch_base="$PR_BASE"; head="$PR_HEAD" ;;
             *) echo "run=true" >> "$GITHUB_OUTPUT"; echo "$EVENT: every job runs"; exit 0 ;;

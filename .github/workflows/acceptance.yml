@@ -89,7 +89,7 @@ jobs:
       # pytest run below collects tests/scenarios again through testpaths; these steps make the
       # run visible in the log and fail the check on their own.
       - name: Check the scenario contract
-        run: python scripts/ci/scenario_contract.py
+        run: python scripts/ci/scenario_contract.py --steps python=tests/scenarios --steps jvm=java/src/test/java
 
       - name: Run the BDD scenarios
         run: pytest tests/scenarios --no-cov -W error::pytest.PytestUnknownMarkWarning

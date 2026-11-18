@@ -24,7 +24,9 @@ FIXTURES = REPO_ROOT / "tests" / "fixtures" / "scenario_contract"
 FIXTURE_FEATURES = FIXTURES / "features"
 FIXTURE_AREAS = FIXTURES / "areas"
 FIXTURE_STEPS = FIXTURES / "steps"
+FIXTURE_JVM_STEPS = FIXTURES / "steps_jvm"
 REAL_FEATURES = REPO_ROOT / "tests" / "scenarios"
+REAL_JVM_STEPS = REPO_ROOT / "java" / "src" / "test" / "java"
 
 
 def _load() -> ModuleType:
@@ -159,7 +161,9 @@ def test_each_broken_area_reports_its_rule(name: str, codes: list[str]) -> None:
 
 def test_every_area_fixture_is_expected() -> None:
     on_disk = {p.name for p in FIXTURE_AREAS.iterdir() if p.is_dir()}
-    assert on_disk == set(EXPECTED_AREA_ERRORS) | set(EXPECTED_WITH_JVM) | {
+    assert on_disk == set(EXPECTED_AREA_ERRORS) | set(EXPECTED_WITH_JVM) | set(
+        EXPECTED_WITH_JAVA_STEPS
+    ) | {
         "valid",
         "step_from_another_area",
     }
@@ -211,7 +215,8 @@ def test_each_broken_area_reports_its_rule_once_jvm_is_registered(
 
 def test_step_sources_are_a_registry_keyed_by_binding_name(fixture_defs) -> None:
     """Plugging a ``jvm`` reader in, with a step folder, is all a JVM binding needs."""
-    assert sorted(contract.STEP_SOURCES) == ["python"]
+    assert sorted(contract.STEP_SOURCES) == ["jvm", "python"]
+    assert contract.STEP_SOURCES["jvm"] is contract.load_jvm_step_definitions
     assert _check_with_jvm("jvm_bound", fixture_defs) == []
 
 
@@ -232,9 +237,148 @@ def test_a_registered_source_without_a_step_folder_is_not_a_binding(fixture_defs
 
 def test_steps_for_an_unregistered_binding_are_a_bad_binding_declaration() -> None:
     problems = contract.check_tree(
-        FIXTURE_AREAS / "valid", {"python": FIXTURE_STEPS, "jvm": FIXTURE_STEPS}
+        FIXTURE_AREAS / "valid", {"python": FIXTURE_STEPS, "kotlin": FIXTURE_STEPS}
     )
     assert _codes(problems) == ["BAD_BINDING_DECLARATION"]
+
+
+# --- the jvm step source: Cucumber-JVM annotations read as Java source (#199) ----------------
+
+# Areas checked with the real jvm reader over steps_jvm/ (Steps.java).
+EXPECTED_WITH_JAVA_STEPS = {
+    "jvm_step_missing": ["UNBOUND_STEP"],  # an @jvm claim whose step has no Java definition
+}
+
+
+def _check_with_java_steps(name: str) -> list:
+    return contract.check_tree(
+        FIXTURE_AREAS / name, {"python": FIXTURE_STEPS, "jvm": FIXTURE_JVM_STEPS}
+    )
+
+
+@pytest.mark.parametrize("name,codes", sorted(EXPECTED_WITH_JAVA_STEPS.items()))
+def test_a_jvm_claim_without_a_java_step_fails_the_check(name: str, codes: list[str]) -> None:
+    problems = _check_with_java_steps(name)
+    assert _codes(problems) == codes
+    (problem,) = problems
+    assert (Path(problem.file).name, problem.line) == ("behaviour.feature", 6)
+    assert problem.message == """no step definition matches 'Given the value "x" (jvm)'"""
+
+
+def test_a_jvm_claim_with_every_java_step_is_clean() -> None:
+    assert _check_with_java_steps("jvm_bound") == []
+
+
+def test_the_jvm_reader_reads_annotations_and_skips_comments() -> None:
+    defs, problems = contract.load_jvm_step_definitions(FIXTURE_JVM_STEPS)
+    assert problems == []
+    assert [(d.binding, d.keyword, d.expression, d.source) for d in defs] == [
+        ("jvm", "*", "a thing", "Steps.java:9"),
+        ("jvm", "*", "it happens", "Steps.java:12"),
+        ("jvm", "*", "it holds", "Steps.java:15"),
+    ]
+
+
+def test_unsupported_java_expressions_are_reported_with_their_line() -> None:
+    defs, problems = contract.load_jvm_step_definitions(FIXTURES / "steps_jvm_unsupported")
+    assert defs == []
+    assert [(p.code, p.line) for p in problems] == [
+        ("UNSUPPORTED_EXPRESSION", n) for n in (7, 10, 13, 17, 20, 23, 26)
+    ]
+
+
+def test_a_java_folder_without_step_annotations_is_reported(tmp_path: Path) -> None:
+    (tmp_path / "Plain.java").write_text("class Plain {}\n", encoding="utf-8")
+    _defs, problems = contract.load_jvm_step_definitions(tmp_path)
+    assert _codes(problems) == ["NO_STEP_DEFINITIONS"]
+
+
+def test_an_unreadable_java_file_is_reported(tmp_path: Path) -> None:
+    (tmp_path / "Bad.java").write_bytes(b"\xff\xfe")
+    _defs, problems = contract.load_jvm_step_definitions(tmp_path)
+    assert _codes(problems) == ["NO_STEP_DEFINITIONS", "STEP_FILE_UNREADABLE"]
+
+
+def test_cucumber_jvm_ignores_the_keyword_so_equal_texts_are_ambiguous(tmp_path: Path) -> None:
+    (tmp_path / "Steps.java").write_text(
+        '@Given("a thing") void a() {}\n@Then("a thing") void b() {}\n'
+        '@When("it happens") void c() {}\n@Then("it holds") void d() {}\n',
+        encoding="utf-8",
+    )
+    problems = contract.check_tree(
+        FIXTURE_AREAS / "jvm_bound", {"python": FIXTURE_STEPS, "jvm": tmp_path}
+    )
+    assert [(p.code, p.line) for p in problems] == [("AMBIGUOUS_STEP", 5)]
+    assert "Steps.java:1, Steps.java:2" in problems[0].message
+
+
+def test_a_binding_may_read_several_step_folders(tmp_path: Path) -> None:
+    (tmp_path / "More.java").write_text('@Given("the value {string}") void v() {}\n', "utf-8")
+    folders = {"python": FIXTURE_STEPS, "jvm": [FIXTURE_JVM_STEPS, tmp_path]}
+    assert contract.check_tree(FIXTURE_AREAS / "jvm_step_missing", folders) == []
+
+
+@pytest.mark.parametrize(
+    "expression,matches,misses",
+    [
+        ("a thing", ["a thing"], ["a  thing", "A thing", "a thing!"]),
+        ("the group {string}", ['the group "cli"', "the group 'cli'"], ['the group "a" or "b"']),
+        ("{int} cases", ["12 cases", "-3 cases"], ["1.5 cases", "x cases"]),
+        ("{float} percent", ["1.5 percent", "2 percent", ".5 percent"], ["x percent"]),
+        ("a {word} b", ["a x-y b"], ["a x y b"]),
+        ("all of {}", ["all of anything at all", "all of "], []),
+        ("a cucumber(s)", ["a cucumber", "a cucumbers"], ["a cucumberss"]),
+        ("in the belly/stomach", ["in the belly", "in the stomach"], ["in the belly/stomach"]),
+        (
+            r"an escaped \(paren\) and \{brace\} and a\/b",
+            ["an escaped (paren) and {brace} and a/b"],
+            [],
+        ),
+        ("^a (regex) of (\\d+)$", ["a regex of 12"], ["a (regex) of 12"]),
+        ("/wrapped (\\w+)/", ["wrapped word"], ["/wrapped word/"]),
+    ],
+)
+def test_cucumber_expressions_translate_to_full_match_regexes(
+    expression: str, matches: list[str], misses: list[str]
+) -> None:
+    regex = contract.cucumber_expression_to_regex(expression)
+    assert all(regex.fullmatch(text) for text in matches), regex.pattern
+    assert not any(regex.fullmatch(text) for text in misses), regex.pattern
+
+
+@pytest.mark.parametrize(
+    "expression",
+    ["a {color}", "a } b", "a ( b", "an (opt{int})", "x/{int}", "a//b", "^(unbalanced$"],
+)
+def test_unsupported_cucumber_expressions_are_refused(expression: str) -> None:
+    with pytest.raises(contract.UnsupportedExpressionError):
+        contract.cucumber_expression_to_regex(expression)
+
+
+@pytest.mark.parametrize(
+    "source,expected",
+    [
+        ("a // b\nc", "a     \nc"),
+        ("a /* b\nc */ d", "a     \n     d"),
+        ('s = "// not a comment"; // gone', 's = "// not a comment";        '),
+        ("c = '\"'; /* x */", "c = '\"';        "),
+        ('t = """\n  /* kept */\n  """; // gone', 't = """\n  /* kept */\n  """;        '),
+        ("/* unterminated\n", "               \n"),
+    ],
+)
+def test_strip_java_comments_keeps_literals_and_line_numbers(source: str, expected: str) -> None:
+    stripped = contract.strip_java_comments(source)
+    assert stripped == expected
+    assert stripped.count("\n") == source.count("\n")
+
+
+def test_java_string_escapes_are_decoded_before_translation(tmp_path: Path) -> None:
+    (tmp_path / "Steps.java").write_text(
+        '@Given("a \\"quoted\\" tab\\there \\u00e9 \\101 \\\\") void s() {}\n', "utf-8"
+    )
+    (definition,), problems = contract.load_jvm_step_definitions(tmp_path)
+    assert problems == []
+    assert definition.expression == 'a "quoted" tab\there \u00e9 A \\'
 
 
 # --- step sources ----------------------------------------------------------------------------
@@ -349,11 +493,31 @@ def test_findings_are_deduplicated_and_sorted_in_a_stable_order(tmp_path: Path) 
 
 
 def test_real_tree_is_clean_and_binds_through_python() -> None:
-    assert contract.check_tree(REAL_FEATURES) == []
+    assert (
+        contract.check_tree(REAL_FEATURES, {"python": REAL_FEATURES, "jvm": REAL_JVM_STEPS}) == []
+    )
     defs, problems = contract.load_python_step_definitions(REAL_FEATURES)
     assert problems == []
     assert {d.binding for d in defs} == {"python"}
     assert any(p.parent.name == "envelope" for p in REAL_FEATURES.glob("*/README.md"))
+
+
+def test_real_jvm_scenarios_bind_through_the_java_steps() -> None:
+    """#199: the upcast/ area is bound by Cucumber-JVM; without the Java steps it fails."""
+    defs, problems = contract.load_jvm_step_definitions(REAL_JVM_STEPS)
+    assert problems == []
+    assert {Path(d.source.split(":")[0]).name for d in defs} == {"UpcastSteps.java"}
+    without_jvm = contract.check_tree(REAL_FEATURES)
+    assert without_jvm and {p.code for p in without_jvm} == {"BAD_BINDING_DECLARATION"}
+    assert {Path(p.file).relative_to(REAL_FEATURES).parts[0] for p in without_jvm} == {"upcast"}
+
+
+def test_the_cli_reads_the_jvm_steps_by_default(capsys: pytest.CaptureFixture[str]) -> None:
+    assert contract.main([]) == 0
+    assert "scenario contract: ok" in capsys.readouterr().out
+    python_only = ["--steps", f"python={REAL_FEATURES}"]
+    assert contract.main(python_only) == 1
+    assert "BAD_BINDING_DECLARATION" in capsys.readouterr().out
 
 
 def test_cli_exit_codes(capsys: pytest.CaptureFixture[str]) -> None:
