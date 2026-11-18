@@ -23,6 +23,8 @@ tests/scenarios/<area>/test_*.py     # binds the area's features (pytest_bdd.sce
 | Area | Covers | Binding |
 |------|--------|---------|
 | [`envelope/`](envelope/README.md) | Accepting canonical envelopes, refusing invalid ones with the code their fixture pins, the strict journal profile failing closed on an unknown event type, resolving legacy lanes | python |
+| [`ledger/`](ledger/README.md) | Appending to a local JSONL ledger: the exact line an accepted append adds, a refused append leaving the ledger byte-identical, refusing a torn tail and NaN | python |
+| [`replay/`](replay/README.md) | Folding lifecycle and decision point replay streams to the reducer output they pin, whatever order their rows arrive in | python |
 
 ## Writing a scenario
 
