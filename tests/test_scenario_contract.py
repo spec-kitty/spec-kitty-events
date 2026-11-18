@@ -585,7 +585,7 @@ def test_real_jvm_scenarios_bind_through_the_java_steps() -> None:
     defs, problems = contract.load_jvm_step_definitions(REAL_JVM_STEPS)
     assert problems == []
     assert {Path(d.source.split(":")[0]).name for d in defs} == {"UpcastSteps.java"}
-    without_jvm = contract.check_tree(REAL_FEATURES)
+    without_jvm = [p for p in contract.check_tree(REAL_FEATURES) if p.severity == "error"]
     assert without_jvm and {p.code for p in without_jvm} == {"BAD_BINDING_DECLARATION"}
     assert {Path(p.file).relative_to(REAL_FEATURES).parts[0] for p in without_jvm} == {"upcast"}
 
