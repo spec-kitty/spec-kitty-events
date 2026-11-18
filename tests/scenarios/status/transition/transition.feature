@@ -3,6 +3,9 @@
 #   and by spec_kitty_events.status.validate_transition (the 11.5.0 core edge graph, #237).
 # - The legal edges are the ones the corpus accepts from an unforced request; the steps never
 #   list them. Their illegal twins are every other lane pair.
+# - validate_transition is stricter than core's write service in one documented place: the
+#   review-rejection family (* -> planned) needs force=True in the package, while the corpus
+#   acknowledges those edges unforced. TRANSITION-004 pins that, from the data.
 # - PR-EVENTS-STATUS-TRANSITION-007 applies a request to a prior log, which only the services
 #   (service/command-cli, service/event-log) do. It is @wip until the jvm step source (#283)
 #   lands; its two last steps have no Python binding (see PROMISES.md).
@@ -29,15 +32,16 @@ Feature: A status transition is acknowledged or refused as the parity corpus pin
     Then every refusal reason is reached by a case or has its cause recorded as unreachable
 
   @promise:PR-EVENTS-STATUS-TRANSITION-004
-  Scenario: The legal edges are exactly the ones the corpus accepts
+  Scenario: The edge check admits exactly the edges the corpus accepts
     Given the lane edges the parity corpus accepts from an unforced request
-    When every pair of lanes is validated as a transition that meets every guard
+    When every pair of lanes is validated as a transition carrying every guarded field
     Then exactly the edges the corpus accepts pass the unforced edge check
+    And of those edges only the review-rejection family is refused unforced, by its force guard
 
   @promise:PR-EVENTS-STATUS-TRANSITION-005
   Scenario: Every illegal twin is refused unless forced
     Given the lane edges the parity corpus accepts from an unforced request
-    When every pair of lanes is validated as a transition that meets every guard
+    When every pair of lanes is validated as a transition carrying every guarded field
     Then every other pair is refused unforced with an edge violation
     And forcing any pair lifts the edge check
 

@@ -82,6 +82,8 @@ EXPECTED_FEATURE_ERRORS = {
     "manual_missing_reason.feature": ["MANUAL_MISSING_REASON"],
     "manual_empty_reason.feature": ["BAD_MANUAL_REASON"],
     "manual_with_wip.feature": ["MANUAL_WITH_WIP"],
+    "manual_reason_without_manual.feature": ["MANUAL_REASON_WITHOUT_MANUAL"],
+    "manual_on_examples.feature": ["MANUAL_ON_EXAMPLES"] * 2,  # @manual and its reason
 }
 
 
@@ -132,6 +134,7 @@ TAG_LINES = {
     "manual_missing_reason.feature": 4,
     "manual_with_wip.feature": 4,
     "manual_empty_reason.feature": 4,
+    "manual_reason_without_manual.feature": 4,
 }
 
 
@@ -187,6 +190,7 @@ def test_every_area_fixture_is_expected() -> None:
     ) | {
         "valid",
         "manual_bound",
+        "manual_jvm_full",
         "step_from_another_area",
     }
 
@@ -230,6 +234,10 @@ def _check_with_jvm(name: str, jvm_definitions) -> list:
         {"python": FIXTURE_STEPS, "jvm": FIXTURE_STEPS},
         sources={**contract.STEP_SOURCES, "jvm": _jvm_reader(jvm_definitions)},
     )
+
+
+def test_manual_rows_never_count_towards_jvm_coverage(fixture_defs) -> None:
+    assert _check_with_jvm("manual_jvm_full", fixture_defs) == []
 
 
 @pytest.mark.parametrize("name,codes", sorted(EXPECTED_WITH_JVM.items()))
@@ -642,3 +650,54 @@ def test_wip_scenario_is_a_non_strict_xfail_and_other_tags_add_no_mark() -> None
     assert _marks_after(["wip", "wip-owner:someone", "jvm", "defect:1"]) == [
         ("xfail", {"reason": "@wip draft scenario", "strict": False})
     ]
+
+
+_RUNTIME_STEPS = """
+from pytest_bdd import given, scenarios
+
+scenarios(".")
+
+
+@given("a thing")
+def a_thing() -> None: ...
+"""
+
+_RUNTIME_FEATURE = """Feature: Runtime tags
+
+  @manual @manual-reason:needs-a-peer
+  Scenario: Manual
+    Given a thing
+
+  @manual-reason:stray
+  Scenario: Stray reason
+    Given a thing
+
+  @manual
+  Scenario: Manual without a reason
+    Given a thing
+
+  Rule: A rule-level manual tag
+    @manual @manual-reason:rule-level
+    Scenario: Under the rule
+      Given a thing
+"""
+
+
+def test_the_tag_hook_skips_manual_scenarios_in_a_real_pytest_bdd_run(tmp_path: Path) -> None:
+    """Only @manual with its reason skips; a stray reason, or @manual alone, still runs."""
+    (tmp_path / "conftest.py").write_text((REAL_FEATURES / "conftest.py").read_text())
+    (tmp_path / "test_runtime.py").write_text(_RUNTIME_STEPS)
+    (tmp_path / "runtime.feature").write_text(_RUNTIME_FEATURE)
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "--no-cov", "-rA", "-q", "."],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    out = result.stdout
+    assert result.returncode == 0, out + result.stderr
+    assert "@manual: needs-a-peer" in out
+    assert "@manual: rule-level" in out
+    assert "2 passed, 2 skipped" in out, out
+    assert "@manual: stray" not in out
