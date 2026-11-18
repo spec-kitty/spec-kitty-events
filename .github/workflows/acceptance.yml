@@ -84,6 +84,16 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev,conformance]" build
 
+      # #197: the BDD scenarios and their contract check, as named steps of this required,
+      # ungated, JDK-free check (ci.yml's `suite` is label-gated and not required). The full
+      # pytest run below collects tests/scenarios again through testpaths; these steps make the
+      # run visible in the log and fail the check on their own.
+      - name: Check the scenario contract
+        run: python scripts/ci/scenario_contract.py
+
+      - name: Run the BDD scenarios
+        run: pytest tests/scenarios --no-cov -W error::pytest.PytestUnknownMarkWarning
+
       - name: Run pytest
         run: pytest --cov --cov-report=xml
 
