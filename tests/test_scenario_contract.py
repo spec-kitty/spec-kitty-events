@@ -10,7 +10,9 @@ from __future__ import annotations
 import ast
 import dataclasses
 import importlib.util
+import json
 import random
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -79,6 +81,16 @@ EXPECTED_FEATURE_ERRORS = {
     "bad_wip_since.feature": ["BAD_WIP_SINCE"],
     "bad_defect.feature": ["BAD_DEFECT"],
     "jvm_tag.feature": ["BAD_BINDING_DECLARATION"],
+    "manual_missing_reason.feature": ["MANUAL_MISSING_REASON"],
+    "manual_empty_reason.feature": ["BAD_MANUAL_REASON"],
+    "manual_with_wip.feature": ["MANUAL_WITH_WIP"],
+    "manual_reason_without_manual.feature": ["MANUAL_REASON_WITHOUT_MANUAL"],
+    "manual_on_examples.feature": ["MANUAL_ON_EXAMPLES"] * 2,  # @manual and its reason
+    "jvm_only_tag.feature": ["BAD_BINDING_DECLARATION"],
+    # the Examples tag, and the unregistered jvm claim it gives its row
+    "jvm_only_on_examples.feature": ["BAD_BINDING_DECLARATION", "JVM_ONLY_ON_EXAMPLES"],
+    # both tags claim an unregistered jvm, and they contradict each other
+    "jvm_only_with_jvm.feature": ["BAD_BINDING_DECLARATION"] * 2 + ["JVM_ONLY_WITH_JVM"],
 }
 
 
@@ -90,7 +102,11 @@ def test_each_broken_feature_reports_its_rule(name: str, codes: list[str], fixtu
 
 def test_every_feature_fixture_is_expected() -> None:
     on_disk = {p.name for p in FIXTURE_FEATURES.glob("*.feature")}
-    assert on_disk == set(EXPECTED_FEATURE_ERRORS) | {"valid.feature", "wip_unbound.feature"}
+    assert on_disk == set(EXPECTED_FEATURE_ERRORS) | {
+        "valid.feature",
+        "wip_unbound.feature",
+        "manual_valid.feature",
+    }
 
 
 def test_valid_feature_is_clean(fixture_defs) -> None:
@@ -103,6 +119,16 @@ def test_unbound_steps_of_a_wip_scenario_are_information_only(fixture_defs) -> N
     assert _codes(problems, "info") == ["UNBOUND_STEP"]
 
 
+def test_manual_scenario_is_clean_and_does_not_gate(fixture_defs) -> None:
+    """A @manual promise with its reason passes; its unbound step is information only."""
+    path = FIXTURE_FEATURES / "manual_valid.feature"
+    problems = contract.check_feature_file(path, fixture_defs)
+    assert _codes(problems) == []
+    assert _codes(problems, "info") == ["UNBOUND_STEP"]
+    scenarios, _ = contract.parse_feature(path)
+    assert [contract.is_gating(s) for s in scenarios] == [False]
+
+
 # Findings about a tag point at the tag's line, not at the scenario line below it.
 TAG_LINES = {
     "bad_promise.feature": 3,
@@ -112,6 +138,10 @@ TAG_LINES = {
     "wip_missing_owner.feature": 4,
     "bad_wip_since.feature": 4,
     "jvm_tag.feature": 3,
+    "manual_missing_reason.feature": 4,
+    "manual_with_wip.feature": 4,
+    "manual_empty_reason.feature": 4,
+    "manual_reason_without_manual.feature": 4,
 }
 
 
@@ -140,6 +170,7 @@ EXPECTED_AREA_ERRORS = {
     "jvm_bound": ["BAD_BINDING_DECLARATION"] * 3,  # the @jvm tag, the row and the area line
     "bad_promise_binding": ["BAD_BINDING_DECLARATION"],
     "binding_mismatch_wip": ["BINDING_MISMATCH"],
+    "binding_mismatch_manual": ["BINDING_MISMATCH"],
     "promise_not_indexed": ["PROMISE_NOT_INDEXED"],
     "indexed_promise_unused": ["INDEXED_PROMISE_UNUSED"],
     "duplicate_promise_across_files": ["DUPLICATE_PROMISE"],
@@ -165,6 +196,9 @@ def test_every_area_fixture_is_expected() -> None:
         EXPECTED_WITH_JAVA_STEPS
     ) | {
         "valid",
+        "manual_bound",
+        "manual_jvm_full",
+        "jvm_only_bound",
         "step_from_another_area",
     }
 
@@ -183,6 +217,10 @@ def test_valid_area_is_clean() -> None:
     assert _check_area("valid") == []
 
 
+def test_manual_promise_counts_in_promises_with_binding_manual() -> None:
+    assert _check_area("manual_bound") == []
+
+
 def _jvm_reader(definitions):
     """A stand-in ``jvm`` step source that reads the given definitions as JVM ones."""
 
@@ -195,6 +233,8 @@ def _jvm_reader(definitions):
 # Rules that only bite once a jvm step source is registered (D3 #199 / D4 #270).
 EXPECTED_WITH_JVM = {
     "binding_mismatch_jvm_coverage": ["BINDING_MISMATCH"],
+    "binding_mismatch_jvm_only": ["BINDING_MISMATCH"],  # a @jvm-only row says python, jvm
+    "jvm_only_unbound": ["UNBOUND_STEP"],  # the jvm binds no step of a @jvm-only scenario
 }
 
 
@@ -204,6 +244,32 @@ def _check_with_jvm(name: str, jvm_definitions) -> list:
         {"python": FIXTURE_STEPS, "jvm": FIXTURE_STEPS},
         sources={**contract.STEP_SOURCES, "jvm": _jvm_reader(jvm_definitions)},
     )
+
+
+def _jvm_only_definition():
+    text = "only the jvm binds this"
+    return contract.StepDefinition(
+        binding="python",  # _jvm_reader re-labels every definition as jvm
+        keyword="Given",
+        expression=text,
+        source="Steps.java:1",
+        regex=re.compile(re.escape(text)),
+    )
+
+
+def test_a_jvm_only_promise_is_bound_by_the_jvm_alone(fixture_defs) -> None:
+    """Python has no step for it, yet the area is clean: the JVM alone binds a @jvm-only
+    scenario, its row says jvm, and it makes the area's JVM binding full."""
+    assert not any(d.regex.fullmatch("only the jvm binds this") for d in fixture_defs)
+    assert _check_with_jvm("jvm_only_bound", [*fixture_defs, _jvm_only_definition()]) == []
+    scenarios, _ = contract.parse_feature(
+        FIXTURE_AREAS / "jvm_only_bound" / "area" / "behaviour" / "behaviour.feature"
+    )
+    assert [contract.claimed_bindings(s) for s in scenarios] == [("jvm",)]
+
+
+def test_manual_rows_never_count_towards_jvm_coverage(fixture_defs) -> None:
+    assert _check_with_jvm("manual_jvm_full", fixture_defs) == []
 
 
 @pytest.mark.parametrize("name,codes", sorted(EXPECTED_WITH_JVM.items()))
@@ -492,29 +558,136 @@ def test_findings_are_deduplicated_and_sorted_in_a_stable_order(tmp_path: Path) 
 # --- the real tree and the CLI ---------------------------------------------------------------
 
 
+def _non_gating_scenario_lines() -> set[tuple[str, int]]:
+    """(file, step line) of every step of a @wip or @manual scenario in the real tree."""
+    lines: set[tuple[str, int]] = set()
+    for path in REAL_FEATURES.rglob("*.feature"):
+        scenarios, _ = contract.parse_feature(path)
+        for scenario in scenarios:
+            if not contract.is_gating(scenario):
+                lines |= {(str(path), step.line) for step in scenario.steps}
+    return lines
+
+
+REAL_RUNNERS = REAL_FEATURES / "jvm-runners.json"
+
+
+def _real_runners() -> list:
+    runners, problems = contract.load_jvm_runners(REAL_RUNNERS)
+    assert problems == []
+    return runners
+
+
 def test_real_tree_is_clean_and_binds_through_python() -> None:
-    assert (
-        contract.check_tree(REAL_FEATURES, {"python": REAL_FEATURES, "jvm": REAL_JVM_STEPS}) == []
+    problems = contract.check_tree(
+        REAL_FEATURES, {"python": REAL_FEATURES}, jvm_runners=_real_runners()
     )
+    assert problems == []
     defs, problems = contract.load_python_step_definitions(REAL_FEATURES)
     assert problems == []
     assert {d.binding for d in defs} == {"python"}
     assert any(p.parent.name == "envelope" for p in REAL_FEATURES.glob("*/README.md"))
 
 
-def test_real_jvm_scenarios_bind_through_the_java_steps() -> None:
-    """#199: the upcast/ area is bound by Cucumber-JVM; without the Java steps it fails."""
-    defs, problems = contract.load_jvm_step_definitions(REAL_JVM_STEPS)
-    assert problems == []
-    assert {Path(d.source.split(":")[0]).name for d in defs} == {"UpcastSteps.java"}
-    without_jvm = contract.check_tree(REAL_FEATURES)
+def test_real_jvm_scenarios_bind_through_each_runners_java_steps() -> None:
+    """#199, #270, #284: each runner's glue folder holds its step classes; without them the
+    JVM-bound areas (upcast/, status/) fail."""
+    runners = _real_runners()
+    assert {r.project: r.areas for r in runners} == {
+        ":java-binding": ("upcast",),
+        ":event-log": ("status/append",),
+        ":command-cli": ("status/transition",),
+    }
+    files = set()
+    for runner in runners:
+        defs, problems = contract.load_jvm_step_definitions(runner.steps)
+        assert problems == []
+        files |= {Path(d.source.split(":")[0]).name for d in defs}
+    assert files == {"UpcastSteps.java", "StatusAppendSteps.java", "TransitionSteps.java"}
+    without_jvm = [p for p in contract.check_tree(REAL_FEATURES) if p.severity == "error"]
     assert without_jvm and {p.code for p in without_jvm} == {"BAD_BINDING_DECLARATION"}
-    assert {Path(p.file).relative_to(REAL_FEATURES).parts[0] for p in without_jvm} == {"upcast"}
+    assert {Path(p.file).relative_to(REAL_FEATURES).parts[0] for p in without_jvm} == {
+        "upcast",
+        "status",
+    }
+
+
+# --- JVM runners (#284) ----------------------------------------------------------------------
+
+
+def _runner_tree(tmp_path: Path, runners: list[dict], areas=("a", "b")) -> tuple[Path, Path]:
+    """Two JVM-bound areas built from the jvm_bound fixture, a glue folder with the fixture
+    Java steps, and a registry; returns (features, registry)."""
+    features = tmp_path / "features"
+    for number, area in enumerate(areas, start=1):
+        for source in (FIXTURE_AREAS / "jvm_bound" / "area").rglob("*"):
+            if source.is_file():
+                target = features / area / source.relative_to(FIXTURE_AREAS / "jvm_bound" / "area")
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(source.read_text().replace("AREA-001", f"AREA-00{number}"))
+    glue = tmp_path / "src" / "glue"
+    glue.mkdir(parents=True)
+    (glue / "Steps.java").write_text((FIXTURES / "steps_jvm" / "Steps.java").read_text())
+    registry = tmp_path / "jvm-runners.json"
+    registry.write_text(json.dumps({"runners": runners}))
+    return features, registry
+
+
+def _runner(project: str, areas: list[str], glue: str = "glue") -> dict:
+    return {"project": project, "testSources": "src", "glue": glue, "areas": areas}
+
+
+def _check_runners(tmp_path: Path, runners: list[dict]) -> list:
+    features, registry = _runner_tree(tmp_path, runners)
+    loaded, problems = contract.load_jvm_runners(registry, repo_root=tmp_path)
+    return problems + contract.check_tree(features, {"python": FIXTURE_STEPS}, jvm_runners=loaded)
+
+
+def test_a_runner_binds_the_areas_it_runs(tmp_path: Path) -> None:
+    assert _check_runners(tmp_path, [_runner(":one", ["a", "b"])]) == []
+
+
+def test_a_runner_with_nothing_to_run_is_refused(tmp_path: Path) -> None:
+    """Its Cucumber task would select no scenario and fail the build."""
+    problems = _check_runners(tmp_path, [_runner(":one", ["a", "b"]), _runner(":two", ["c"])])
+    assert _codes(problems) == ["BAD_RUNNER"]
+    assert ":two has no gating" in problems[0].message
+
+
+def test_a_runners_steps_serve_only_its_areas(tmp_path: Path) -> None:
+    """Area b is in no runner: its @jvm scenario would never run, and a's steps are not b's."""
+    problems = _check_runners(tmp_path, [_runner(":one", ["a"])])
+    assert _codes(problems) == ["JVM_SCENARIO_NOT_RUN"] + ["UNBOUND_STEP"] * 3
+    assert {Path(p.file).relative_to(tmp_path / "features").parts[0] for p in problems} == {"b"}
+
+
+@pytest.mark.parametrize(
+    "runners,message",
+    [
+        ([_runner(":one", ["a"]), _runner(":two", ["a/x", "b"])], "overlaps"),
+        ([_runner(":one", ["a", "b"], glue="missing")], "does not exist"),
+        ([_runner("one", ["a", "b"])], "malformed"),
+        ([_runner(":one", ["../a"])], "malformed"),
+    ],
+)
+def test_a_bad_runner_registry_is_refused(tmp_path: Path, runners, message: str) -> None:
+    problems = _check_runners(tmp_path, runners)
+    bad = [p for p in problems if p.code == "BAD_RUNNER"]
+    assert bad and all(message in p.message for p in bad), problems
+
+
+def test_an_unreadable_runner_registry_is_refused(tmp_path: Path) -> None:
+    (tmp_path / "jvm-runners.json").write_text("{")
+    runners, problems = contract.load_jvm_runners(tmp_path / "jvm-runners.json")
+    assert runners == [] and _codes(problems) == ["BAD_RUNNER"]
 
 
 def test_the_cli_reads_the_jvm_steps_by_default(capsys: pytest.CaptureFixture[str]) -> None:
     assert contract.main([]) == 0
     assert "scenario contract: ok" in capsys.readouterr().out
+    explicit = ["--steps", f"python={REAL_FEATURES}", "--jvm-runners", str(REAL_RUNNERS)]
+    assert contract.main(explicit) == 0
+    capsys.readouterr()
     python_only = ["--steps", f"python={REAL_FEATURES}"]
     assert contract.main(python_only) == 1
     assert "BAD_BINDING_DECLARATION" in capsys.readouterr().out
@@ -568,3 +741,92 @@ def test_scenarios_raise_no_unknown_mark_warning() -> None:
         timeout=300,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+# --- the runtime tag hook (tests/scenarios/conftest.py) --------------------------------------
+
+
+def _scenario_conftest() -> ModuleType:
+    path = REAL_FEATURES / "conftest.py"
+    spec = importlib.util.spec_from_file_location("scenarios_root_conftest", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _marks_after(tags: list[str]) -> list[tuple[str, dict]]:
+    hook = _scenario_conftest().pytest_bdd_apply_tag
+
+    def scenario() -> None: ...
+
+    for tag in tags:
+        assert hook(tag, scenario) is True
+    return [(m.name, dict(m.kwargs)) for m in getattr(scenario, "pytestmark", [])]
+
+
+def test_manual_scenario_is_skipped_with_its_reason() -> None:
+    marks = _marks_after(["promise:PR-EVENTS-FIXTURE-001", "manual", "manual-reason:needs-a-peer"])
+    assert marks == [("skip", {"reason": "@manual: needs-a-peer"})]
+
+
+def test_wip_scenario_is_a_non_strict_xfail_and_other_tags_add_no_mark() -> None:
+    assert _marks_after(["wip", "wip-owner:someone", "jvm", "defect:1"]) == [
+        ("xfail", {"reason": "@wip draft scenario", "strict": False})
+    ]
+
+
+_RUNTIME_STEPS = """
+from pytest_bdd import given, scenarios
+
+scenarios(".")
+
+
+@given("a thing")
+def a_thing() -> None: ...
+"""
+
+_RUNTIME_FEATURE = """Feature: Runtime tags
+
+  @manual @manual-reason:needs-a-peer
+  Scenario: Manual
+    Given a thing
+
+  @manual-reason:stray
+  Scenario: Stray reason
+    Given a thing
+
+  @manual
+  Scenario: Manual without a reason
+    Given a thing
+
+  @jvm-only
+  Scenario: Bound by the JVM alone
+    Given a step no python definition binds
+
+  Rule: A rule-level manual tag
+    @manual @manual-reason:rule-level
+    Scenario: Under the rule
+      Given a thing
+"""
+
+
+def test_the_tag_hook_skips_manual_scenarios_in_a_real_pytest_bdd_run(tmp_path: Path) -> None:
+    """Only @manual with its reason skips; a stray reason, or @manual alone, still runs."""
+    (tmp_path / "conftest.py").write_text((REAL_FEATURES / "conftest.py").read_text())
+    (tmp_path / "test_runtime.py").write_text(_RUNTIME_STEPS)
+    (tmp_path / "runtime.feature").write_text(_RUNTIME_FEATURE)
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "--no-cov", "-rA", "-q", "."],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    out = result.stdout
+    assert result.returncode == 0, out + result.stderr
+    assert "@manual: needs-a-peer" in out
+    assert "@manual: rule-level" in out
+    assert "@jvm-only: bound by Cucumber-JVM" in out
+    assert "2 passed, 3 skipped" in out, out
+    assert "@manual: stray" not in out

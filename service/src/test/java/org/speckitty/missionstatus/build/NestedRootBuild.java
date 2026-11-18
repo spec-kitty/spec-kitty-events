@@ -28,9 +28,19 @@ public final class NestedRootBuild {
   private static final List<String> OTHER_PROJECT_SCRIPTS =
       List.of("java/build.gradle.kts", "contracts/build.gradle", "service/command-cli/build.gradle.kts");
 
+  /**
+   * Files the build logic reads at configuration time: the events.scenarios plugin, which java/, event-log and command-cli apply,
+   * reads its Cucumber runner entry from the registry (#270, #284).
+   */
+  private static final List<String> BUILD_INPUT_FILES = List.of("tests/scenarios/jvm-runners.json");
+
   private static final Set<String> BUILD_LOGIC_SKIPPED = Set.of("build", ".gradle", ".kotlin");
 
   private NestedRootBuild() {}
+
+  private static List<String> concat(List<String> first, List<String> second) {
+    return Stream.concat(first.stream(), second.stream()).toList();
+  }
 
   /** Copies the root build inputs from {@code root} into {@code copy} and returns the copy's service project directory (created, empty). */
   public static Path copyRootBuild(Path root, Path copy) throws IOException {
@@ -48,7 +58,7 @@ public final class NestedRootBuild {
         }
       }
     }
-    for (String script : OTHER_PROJECT_SCRIPTS) {
+    for (String script : concat(OTHER_PROJECT_SCRIPTS, BUILD_INPUT_FILES)) {
       Path target = copy.resolve(script);
       Files.createDirectories(target.getParent());
       Files.copy(root.resolve(script), target);

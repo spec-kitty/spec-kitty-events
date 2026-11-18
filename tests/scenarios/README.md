@@ -6,8 +6,9 @@ them. pytest-bdd is the reference binding: it binds every step and runs on every
 of `make test-fast` and the CI suite. Cucumber-JVM binds the `@jvm` subset on the same feature
 files (D3 #199; D4 #270 adds more). Nothing under this folder ships in the wheel.
 
-Run them alone with `uv run pytest --no-cov tests/scenarios`, and the `@jvm` subset with
-`./gradlew :java-binding:scenarios` (JDK 25; part of `verifyAll`, so of `make test-gradle`).
+Run them alone with `uv run pytest --no-cov tests/scenarios`, and the JVM-bound subset with each
+runner's `scenarios` task (see [The JVM binding](#the-jvm-binding); JDK 25; all part of
+`verifyAll`, so of `make test-gradle`).
 
 ## Layout
 
@@ -28,6 +29,7 @@ tests/scenarios/<area>/test_*.py     # binds the area's features (pytest_bdd.sce
 | [`replay/`](replay/README.md) | Folding lifecycle and decision point replay streams to the reducer output they pin, whatever order their rows arrive in | python |
 | [`upcast/`](upcast/README.md) | Reading legacy log rows into the exact CloudEvent bytes their corpus case pins, passing through what cannot be mapped, idempotence, strict use | python, jvm |
 | [`compatibility/`](compatibility/README.md) | The 8.0.0 cutover boundary: `validate_event` accepts what the removed gate refused, the strict profile refuses it with the pinned codes | python |
+| [`status/`](status/README.md) | Appending a status row as its pinned bytes or refusing it, replaying a status diary to its recorded output, the transition parity corpus and `validate_transition`'s edge graph, the structured status actor | python; `APPEND-003` also jvm, `TRANSITION-007` jvm only |
 
 ## Writing a scenario
 
@@ -50,8 +52,11 @@ The vocabulary is closed: any other tag is an `UNKNOWN_TAG` error.
 | `@wip` | The scenario is a draft. Needs `@wip-owner:<handle>` and `@wip-since:<YYYY-MM-DD>`. It runs as a non-strict xfail and does not gate; its unbound steps are reported as `info`. |
 | `@wip-owner:<handle>` | Who owns the draft. `<handle>` matches `[A-Za-z0-9][A-Za-z0-9._-]*`. |
 | `@wip-since:<YYYY-MM-DD>` | The date the scenario was marked `@wip` (a valid date). |
+| `@manual` | A real, specified promise that this repo's CI cannot run automatically: it needs a host, an OS or a peer CI lacks, or an operator-run step. Not for unfinished work (that is `@wip`), and never combined with `@wip`. Needs `@manual-reason:<text>`. It does not gate: pytest-bdd skips it with its reason, its unbound steps are reported as `info`, and its promise still counts in `PROMISES.md` with Binding `manual`. It stays until the environment changes. |
+| `@manual-reason:<text>` | Why CI cannot run the `@manual` scenario. Only with `@manual`, and like it never on an `Examples:` block. `<text>` is non-empty and, as a Gherkin tag, has no spaces (for example `@manual-reason:needs-a-macos-host`). |
 | `@defect:<issue>` | Links a known defect. `<issue>` is a positive integer. |
 | `@jvm` | The binding tag: the scenario is bound by Cucumber-JVM as well, and every step must match exactly one Java step definition. Without a `jvm` step folder it is a `BAD_BINDING_DECLARATION`. |
+| `@jvm-only` | The scenario is bound by Cucumber-JVM **alone**: a promise only the JVM services implement (the mirror of an area bound in Python only; operator ruling on #289). Python needs no step for it, pytest-bdd skips it, and its row's Binding is `jvm`. It never combines with `@jvm` (`JVM_ONLY_WITH_JVM`), and like `@jvm` it is a `BAD_BINDING_DECLARATION` without a `jvm` step folder. |
 
 Tags on a `Feature` or `Rule` apply to every scenario under it; tags on an `Examples:` block
 apply to that block's rows only.
@@ -64,10 +69,20 @@ vocabulary above, enforced by the contract check's `UNKNOWN_TAG` rule, is what s
 ## The JVM binding
 
 Cucumber-JVM (the version core's `acceptance-jvm/` uses, pinned in `gradle/libs.versions.toml`)
-runs from `java/` through Cucumber's own CLI: the `:java-binding:scenarios` task reads every
-feature under this folder in place and runs the scenarios tagged `@jvm` and not `@wip`. Its step
-classes live in `java/src/test/java/`, in the glue package `ai.speckitty.events.cloudevents`; the
-task fails when a scenario fails, a step is undefined, or no scenario runs. A JVM step has the same
+runs through Cucumber's own CLI, once per runner in [`jvm-runners.json`](jvm-runners.json) (#284):
+
+| Runner | Areas | Glue (the step classes) |
+|--------|-------|-------------------------|
+| `:java-binding` | `upcast/` | `ai.speckitty.events.cloudevents` in `java/src/test/java/` |
+| `:event-log` | `status/append/` | `org.speckitty.missionstatus.adapter.out.filesystem.codec` in `service/event-log/src/test/java/` |
+| `:command-cli` | `status/transition/` | `org.speckitty.commandcli.domain.authority.scenarios` in `service/command-cli/src/test/java/` |
+
+The build-logic plugin `events.scenarios` gives each runner's project a `scenarios` task (part of
+`check`, so `verifyAll` and `service-gate` run it). It reads only its areas' features, in place,
+and runs the scenarios tagged `@jvm` or `@jvm-only` and not `@wip` against its glue. The task
+fails when a scenario fails, a step is undefined, or no scenario runs. An area belongs to at most
+one runner, and a new JVM-bound area gets a runner entry before its first `@jvm` tag. Step code
+stays in test sources, never in a service's production sources. A JVM step has the same
 text as its Python twin. Cucumber-JVM ignores the keyword when it matches a step, so two Java
 definitions with the same text are ambiguous even under different annotations.
 
@@ -76,7 +91,9 @@ definitions with the same text are ambiguous even under different annotations.
 `scripts/ci/scenario_contract.py` checks this tree on every PR, without running it and without
 a JDK, through `tests/test_scenario_contract.py` and the required `acceptance` check. By hand:
 `uv run python scripts/ci/scenario_contract.py`, which reads the `python` steps from this folder and
-the `jvm` steps (Cucumber annotations, as source text) from `java/src/test/java/`. It fails when:
+each runner's `jvm` steps (Cucumber annotations, as source text) from its glue package's folder, as
+`jvm-runners.json` names it; a runner's steps serve only its areas, as its Cucumber run does. It
+fails when:
 
 - a feature is outside `<area>/<behaviour>/<behaviour>.feature`, fails to parse, or has no
   scenarios, or a scenario has no steps;
@@ -84,14 +101,21 @@ the `jvm` steps (Cucumber annotations, as source text) from `java/src/test/java/
   claims (an area's `conftest.py` serves only that area, as in pytest-bdd; an `@jvm` scenario is
   matched against the Java step definitions too), or a scenario's first step is not Given, When
   or Then;
+- a gating scenario claims the JVM (`@jvm`, `@jvm-only`) in an area no runner runs
+  (`JVM_SCENARIO_NOT_RUN`), or `jvm-runners.json` is malformed, names a glue package with no
+  folder, gives two runners overlapping areas, or keeps a runner with no gating JVM scenario
+  to run (`BAD_RUNNER`); `@jvm-only` tags an `Examples:` block (`JVM_ONLY_ON_EXAMPLES`);
 - a promise id is missing, malformed or duplicated, or a tag is outside the vocabulary;
 - a `@wip` scenario lacks its owner or start date;
+- a `@manual` scenario lacks a non-empty `@manual-reason:`, or is also `@wip`; a
+  `@manual-reason:` appears without `@manual`; or either tags an `Examples:` block (pytest-bdd
+  turns those into raw marks, so the rows would still run);
 - an area has no `README.md` steps table, or a row's keyword does not match its Group;
 - an area's `PROMISES.md` does not declare `JVM binding: none|partial|full`, gives a promise a
-  Binding other than `python`, `python, jvm` or `@wip`, claims `jvm` while no `jvm` step source
+  Binding other than `python`, `python, jvm`, `jvm`, `@wip` or `manual`, claims `jvm` while no `jvm` step source
   is registered, does not index exactly the promises its scenarios carry (once each, with
   well-formed ids), or has binding claims that disagree (`BINDING_MISMATCH`: a row's Binding
-  must follow its scenario's `@wip` and `@jvm` tags, and `JVM binding` must be `none`, `partial`
+  must follow its scenario's `@wip`, `@manual`, `@jvm` and `@jvm-only` tags, and `JVM binding` must be `none`, `partial`
   or `full` as the gating rows claim `jvm`).
 
 Findings point at the offending line (for a tag, the tag's own line) and are sorted by file and

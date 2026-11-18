@@ -11,19 +11,23 @@ checks, without running anything:
   ``Examples`` row, and tags on an ``Examples`` block apply to that block's rows only);
 * the tag vocabulary of ``tests/scenarios/README.md`` (a closed set: an unknown tag is an error):
   every scenario carries a well-formed ``@promise:PR-EVENTS-<AREA>-NNN``, promise ids are unique
-  across the suite, and a ``@wip`` scenario names its owner and start date;
-* every step of a gating scenario (not ``@wip``) matches exactly one step definition in each
-  binding the scenario claims (``python`` always, ``jvm`` too when tagged ``@jvm``), keyword
+  across the suite, a ``@wip`` scenario names its owner and start date, and a ``@manual``
+  scenario carries a non-empty ``@manual-reason:<text>`` and is never also ``@wip``, a
+  ``@manual-reason:`` never appears without ``@manual``, and neither tags an ``Examples`` block;
+* every step of a gating scenario (neither ``@wip`` nor ``@manual``) matches exactly one step definition in each
+  binding the scenario claims (``python``, plus ``jvm`` when tagged ``@jvm``; ``jvm`` alone when
+  tagged ``@jvm-only``, a promise only the JVM services implement), keyword
   included (pytest-bdd matches Given, When and Then separately; And and But take the keyword
   before them; a first step must be Given, When or Then). A python definition inside the
   features folder serves only the features below its own folder, as pytest-bdd scopes an
-  area's ``conftest.py``. In a ``@wip`` scenario such findings are ``info``;
+  area's ``conftest.py``. In a ``@wip`` or ``@manual`` scenario such findings are ``info``;
 * each area has a ``README.md`` whose ``| Group | Step |`` table is consistent (Arrange and Assume
   rows are ``Given``, Act rows ``When``, Assert rows ``Then``), and a ``PROMISES.md`` that declares
   whether the JVM binding covers the area (``JVM binding: none|partial|full``), gives every
-  promise a Binding (``python``, ``python, jvm`` or ``@wip``), and indexes exactly the promises the
+  promise a Binding (``python``, ``python, jvm``, ``jvm``, ``@wip`` or ``manual``), and indexes exactly the promises the
   area's scenarios carry, once each. The three binding claims must agree
-  (``BINDING_MISMATCH``): a row's Binding follows its scenario's ``@wip`` and ``@jvm`` tags, and
+  (``BINDING_MISMATCH``): a row's Binding follows its scenario's ``@wip``, ``@manual``, ``@jvm``
+  and ``@jvm-only`` tags, and
   ``JVM binding`` is ``none``, ``partial`` or ``full`` as the gating rows claim ``jvm``.
 
 Step definitions are read through :data:`STEP_SOURCES`, a registry keyed by binding name. A
@@ -66,12 +70,13 @@ Exit status is 1 when any ``error`` finding is reported, otherwise 0.
 from __future__ import annotations
 
 import argparse
+import json
 import ast
 import datetime
 import re
 import sys
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Union
 
@@ -79,6 +84,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_FEATURES = REPO_ROOT / "tests" / "scenarios"
 #: Where the Cucumber-JVM step definitions live (read as source; no JDK needed).
 DEFAULT_JVM_STEPS = REPO_ROOT / "java" / "src" / "test" / "java"
+DEFAULT_JVM_RUNNERS = DEFAULT_FEATURES / "jvm-runners.json"
 
 ERROR = "error"
 INFO = "info"
@@ -101,6 +107,16 @@ WIP_MISSING_SINCE = "WIP_MISSING_SINCE"
 BAD_WIP_OWNER = "BAD_WIP_OWNER"
 BAD_WIP_SINCE = "BAD_WIP_SINCE"
 BAD_DEFECT = "BAD_DEFECT"
+MANUAL_MISSING_REASON = "MANUAL_MISSING_REASON"
+BAD_MANUAL_REASON = "BAD_MANUAL_REASON"
+MANUAL_WITH_WIP = "MANUAL_WITH_WIP"
+MANUAL_REASON_WITHOUT_MANUAL = "MANUAL_REASON_WITHOUT_MANUAL"
+MANUAL_ON_EXAMPLES = "MANUAL_ON_EXAMPLES"
+JVM_ONLY_WITH_JVM = "JVM_ONLY_WITH_JVM"
+JVM_ONLY_ON_EXAMPLES = "JVM_ONLY_ON_EXAMPLES"
+# JVM runners (#284)
+BAD_RUNNER = "BAD_RUNNER"
+JVM_SCENARIO_NOT_RUN = "JVM_SCENARIO_NOT_RUN"
 # Steps
 UNBOUND_STEP = "UNBOUND_STEP"
 AMBIGUOUS_STEP = "AMBIGUOUS_STEP"
@@ -119,6 +135,7 @@ INDEXED_PROMISE_UNUSED = "INDEXED_PROMISE_UNUSED"
 
 PYTHON = "python"
 JVM = "jvm"
+JVM_ONLY = "jvm-only"
 
 PROMISE_PATTERN = r"PR-EVENTS-[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]{3}"
 _PROMISE_RE = re.compile(PROMISE_PATTERN)
@@ -151,8 +168,12 @@ JVM_COVERAGE = ("none", "partial", "full")
 PROMISE_BINDINGS: dict[str, tuple[str, ...]] = {
     "python": (PYTHON,),
     "python, jvm": (PYTHON, JVM),
+    "jvm": (JVM,),
     "@wip": (),
+    "manual": (),
 }
+# Bindings of rows whose scenario does not gate: they never count towards ``JVM binding``.
+NON_GATING_BINDINGS = frozenset({"@wip", "manual"})
 
 
 @dataclass(frozen=True, order=True)
@@ -197,6 +218,7 @@ class StepDefinition:
     source: str
     regex: re.Pattern[str]
     path: Path | None = None  # the defining file, for pytest-bdd's conftest scoping
+    areas: tuple[str, ...] | None = None  # a JVM runner's areas: the only features it serves
 
 
 class UnsupportedExpressionError(ValueError):
@@ -373,6 +395,15 @@ class _Reader:
 
     def _on_examples(self, number: int, _stripped: str) -> None:
         tags = self._take_pending()
+        for tag in tags:
+            # pytest-bdd turns Examples tags into raw pytest marks, never through the tag hook,
+            # so a @manual or @jvm-only row would run in Python despite the tag.
+            if tag.name in ("manual", JVM_ONLY) or tag.name.startswith("manual-reason:"):
+                self.error(
+                    MANUAL_ON_EXAMPLES if tag.name != JVM_ONLY else JVM_ONLY_ON_EXAMPLES,
+                    tag.line,
+                    f"@{tag.name} cannot tag an Examples block: tag the Scenario Outline instead",
+                )
         block = self.current
         if block is None or block.kind != "outline":
             self.error(PARSE_ERROR, number, "Examples outside a Scenario Outline")
@@ -532,13 +563,24 @@ _VALUE_RULES: dict[str, tuple[Callable[[str], bool], str, str]] = {
     "wip-owner": (_matches(_HANDLE_RE), BAD_WIP_OWNER, f"a handle matching {_HANDLE_RE.pattern}"),
     "wip-since": (_valid_date, BAD_WIP_SINCE, "a valid date as YYYY-MM-DD"),
     "defect": (_matches(_ISSUE_RE), BAD_DEFECT, "a positive integer issue number"),
+    "manual-reason": (bool, BAD_MANUAL_REASON, "a non-empty reason"),
 }
-_PLAIN_TAGS = frozenset({"wip", JVM})
+_PLAIN_TAGS = frozenset({"wip", "manual", JVM, JVM_ONLY})
+
+
+def is_manual(scenario: Scenario) -> bool:
+    """``@manual``: a specified promise this repo's CI cannot run (a host, OS, peer or
+    operator-run step it lacks). Unlike ``@wip`` it is not unfinished work."""
+    return any(tag.name == "manual" for tag in scenario.tags)
+
+
+def is_wip(scenario: Scenario) -> bool:
+    return any(tag.name == "wip" for tag in scenario.tags)
 
 
 def is_gating(scenario: Scenario) -> bool:
-    """A scenario gates unless it is ``@wip``."""
-    return not any(tag.name == "wip" for tag in scenario.tags)
+    """A scenario gates unless it is ``@wip`` or ``@manual``."""
+    return not (is_wip(scenario) or is_manual(scenario))
 
 
 def _values(scenario: Scenario, prefix: str) -> list[tuple[str, Tag]]:
@@ -607,18 +649,66 @@ def _check_wip(scenario: Scenario) -> list[Problem]:
     return problems
 
 
+def _check_manual(scenario: Scenario) -> list[Problem]:
+    manual = next((tag for tag in scenario.tags if tag.name == "manual"), None)
+    if manual is None:
+        return [
+            _problem(
+                MANUAL_REASON_WITHOUT_MANUAL,
+                scenario.file,
+                tag.line,
+                f"@{tag.name} without @manual: a reason alone must not exempt a scenario",
+            )
+            for _value, tag in _values(scenario, "manual-reason")
+        ]
+    problems: list[Problem] = []
+    if not _values(scenario, "manual-reason"):
+        problems.append(
+            _problem(
+                MANUAL_MISSING_REASON,
+                scenario.file,
+                manual.line,
+                "@manual needs a non-empty @manual-reason:<text>",
+            )
+        )
+    if is_wip(scenario):
+        problems.append(
+            _problem(
+                MANUAL_WITH_WIP,
+                scenario.file,
+                manual.line,
+                "@manual and @wip do not combine: @manual is a finished promise CI cannot run, "
+                "@wip is unfinished work",
+            )
+        )
+    return problems
+
+
 def _check_binding_tags(scenario: Scenario, registered: Sequence[str]) -> list[Problem]:
-    return [
+    problems = [
         _problem(
             BAD_BINDING_DECLARATION,
             scenario.file,
             tag.line,
-            f"@{JVM} claims a JVM binding, but no {JVM!r} step source is registered "
+            f"@{tag.name} claims a JVM binding, but no {JVM!r} step source is registered "
             f"(registered: {', '.join(registered)})",
         )
         for tag in scenario.tags
-        if tag.name == JVM and JVM not in registered
+        if tag.name in (JVM, JVM_ONLY) and JVM not in registered
     ]
+    names = {tag.name for tag in scenario.tags}
+    if {JVM, JVM_ONLY} <= names:
+        only = next(tag for tag in scenario.tags if tag.name == JVM_ONLY)
+        problems.append(
+            _problem(
+                JVM_ONLY_WITH_JVM,
+                scenario.file,
+                only.line,
+                f"@{JVM_ONLY} and @{JVM} contradict: @{JVM} adds the JVM to the python binding, "
+                f"@{JVM_ONLY} binds the JVM alone",
+            )
+        )
+    return problems
 
 
 def validate_tags(scenario: Scenario, registered: Sequence[str] = (PYTHON,)) -> list[Problem]:
@@ -628,6 +718,7 @@ def validate_tags(scenario: Scenario, registered: Sequence[str] = (PYTHON,)) -> 
         problems
         + _check_promise_presence(scenario)
         + _check_wip(scenario)
+        + _check_manual(scenario)
         + _check_binding_tags(scenario, registered)
     )
 
@@ -1095,8 +1186,13 @@ STEP_SOURCES: dict[str, StepSource] = {
 
 
 def claimed_bindings(scenario: Scenario) -> tuple[str, ...]:
-    """``python`` binds every scenario; an ``@jvm`` scenario is bound by the JVM as well."""
-    return (PYTHON, JVM) if any(tag.name == JVM for tag in scenario.tags) else (PYTHON,)
+    """``python`` binds every scenario, an ``@jvm`` one the JVM as well, except a
+    ``@jvm-only`` scenario: a promise only the JVM services implement, bound by the JVM alone
+    (the mirror of an area bound in Python only; operator ruling on #289)."""
+    names = {tag.name for tag in scenario.tags}
+    if JVM_ONLY in names:
+        return (JVM,)
+    return (PYTHON, JVM) if JVM in names else (PYTHON,)
 
 
 def match_steps(
@@ -1377,16 +1473,18 @@ def check_promise_index(
 
 
 def _expected_binding(scenario: Scenario) -> str:
-    if not is_gating(scenario):
+    if is_wip(scenario):
         return "@wip"
-    return "python, jvm" if JVM in claimed_bindings(scenario) else "python"
+    if is_manual(scenario):
+        return "manual"
+    return ", ".join(claimed_bindings(scenario))
 
 
 def _check_binding_consistency(
     area: Path, index: AreaPromises, scenarios: Sequence[Scenario]
 ) -> list[Problem]:
     """The three binding claims agree: each promise row's Binding matches its scenario's tags
-    (``@wip``, ``@jvm``), and the area's ``JVM binding`` matches its rows."""
+    (``@wip``, ``@manual``, ``@jvm``), and the area's ``JVM binding`` matches its rows."""
     path = area / "PROMISES.md"
     problems: list[Problem] = []
     for scenario in scenarios:
@@ -1404,7 +1502,7 @@ def _check_binding_consistency(
                 )
     if index.jvm_declaration is not None:
         line, declared = index.jvm_declaration
-        gating = [b for b in index.bindings.values() if b != "@wip"]
+        gating = [b for b in index.bindings.values() if b not in NON_GATING_BINDINGS]
         jvm_rows = sum(1 for b in gating if JVM in PROMISE_BINDINGS[b])
         if jvm_rows == 0:
             actual = "none"
@@ -1488,20 +1586,132 @@ def check_feature_file(
     )
 
 
+def _in_areas(features_dir: Path, feature: Path, areas: Sequence[str]) -> bool:
+    relative = feature.resolve().relative_to(features_dir.resolve()).as_posix()
+    return any(relative.startswith(area.rstrip("/") + "/") for area in areas)
+
+
 def visible_definitions(
     definitions: Sequence[StepDefinition], features_dir: Path, feature: Path
 ) -> list[StepDefinition]:
-    """The definitions pytest-bdd lets ``feature`` use: one defined inside ``features_dir`` is
-    visible only below its own folder (an area's ``conftest.py`` serves that area, the root
-    ``conftest.py`` every area); one defined outside it, in a separate step folder, serves all."""
+    """The definitions a run of ``feature`` can use: one defined inside ``features_dir`` is
+    visible only below its own folder (pytest-bdd scopes an area's ``conftest.py`` to that area,
+    the root ``conftest.py`` to every area); a JVM runner's definition only in the runner's
+    areas, as its Cucumber run reads only those (#284); any other, from a separate step folder,
+    serves all."""
     root = features_dir.resolve()
     folder = feature.resolve().parent
     visible = []
     for definition in definitions:
+        if definition.areas is not None:
+            if _in_areas(features_dir, feature, definition.areas):
+                visible.append(definition)
+            continue
         home = definition.path.resolve().parent if definition.path is not None else None
         if home is None or not home.is_relative_to(root) or folder.is_relative_to(home):
             visible.append(definition)
     return visible
+
+
+# ---------------------------------------------------------------------------
+# JVM runners (#284): tests/scenarios/jvm-runners.json, shared with the Gradle build
+# ---------------------------------------------------------------------------
+
+_GLUE_RE = re.compile(r"[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*")
+_AREA_RE = re.compile(r"[a-z0-9][a-z0-9_-]*(?:/[a-z0-9][a-z0-9_-]*)*")
+
+
+@dataclass(frozen=True)
+class JvmRunner:
+    """One Cucumber-JVM run: a Gradle project, its glue package and the areas it runs."""
+
+    project: str
+    glue: str
+    steps: Path  # the glue package's folder: the only step definitions the run can find
+    areas: tuple[str, ...]
+    registry: Path | None = None  # the file the runner was read from, for findings
+
+
+def load_jvm_runners(
+    path: Path, repo_root: Path = REPO_ROOT
+) -> tuple[list[JvmRunner], list[Problem]]:
+    """Read the runner registry. A malformed entry, a missing glue folder, or an area two
+    runners share (a scenario must run in exactly one place) is a ``BAD_RUNNER``."""
+
+    def bad(message: str) -> Problem:
+        return _problem(BAD_RUNNER, path, 1, message)
+
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+        entries = document["runners"]
+        assert isinstance(entries, list) and entries
+    except (OSError, ValueError, KeyError, TypeError, AssertionError) as error:
+        return [], [bad(f"unreadable JVM runner registry: {error}")]
+    runners: list[JvmRunner] = []
+    problems: list[Problem] = []
+    owner: dict[str, str] = {}
+    for entry in entries:
+        project = entry.get("project") if isinstance(entry, dict) else None
+        glue = entry.get("glue") if isinstance(entry, dict) else None
+        sources = entry.get("testSources") if isinstance(entry, dict) else None
+        areas = entry.get("areas") if isinstance(entry, dict) else None
+        if not (
+            isinstance(project, str)
+            and project.startswith(":")
+            and isinstance(glue, str)
+            and _GLUE_RE.fullmatch(glue)
+            and isinstance(sources, str)
+            and isinstance(areas, list)
+            and areas
+            and all(isinstance(a, str) and _AREA_RE.fullmatch(a) for a in areas)
+        ):
+            problems.append(bad(f"malformed runner entry {entry!r}"))
+            continue
+        steps = repo_root / sources / glue.replace(".", "/")
+        if not steps.is_dir():
+            problems.append(bad(f"{project}: glue package folder {steps} does not exist"))
+        for area in areas:
+            for other, other_project in owner.items():
+                if area == other or area.startswith(other + "/") or other.startswith(area + "/"):
+                    problems.append(
+                        bad(f"{project} area {area!r} overlaps {other_project} area {other!r}")
+                    )
+            owner[area] = project
+        runners.append(JvmRunner(project, glue, steps, tuple(areas), path))
+    return runners, problems
+
+
+def _runner_definitions(
+    runners: Sequence[JvmRunner], reader: StepSource
+) -> tuple[list[StepDefinition], list[Problem]]:
+    defs: list[StepDefinition] = []
+    problems: list[Problem] = []
+    for runner in runners:
+        if not runner.steps.is_dir():
+            continue
+        found, found_problems = reader(runner.steps)
+        defs += [replace(d, areas=runner.areas) for d in found]
+        problems += found_problems
+    return defs, problems
+
+
+def _check_jvm_runs(
+    features_dir: Path, path: Path, scenarios: Sequence[Scenario], runners: Sequence[JvmRunner]
+) -> list[Problem]:
+    """A gating scenario that claims the JVM must lie in a runner's areas, or it never runs."""
+    if any(_in_areas(features_dir, path, runner.areas) for runner in runners):
+        return []
+    return [
+        _problem(
+            JVM_SCENARIO_NOT_RUN,
+            scenario.file,
+            scenario.line,
+            f"scenario {scenario.name!r} claims the JVM, but no runner in "
+            f"{DEFAULT_JVM_RUNNERS.name} runs its area",
+        )
+        for scenario in scenarios
+        if is_gating(scenario) and JVM in claimed_bindings(scenario)
+    ]
 
 
 def _check_layout(features_dir: Path, path: Path) -> list[Problem]:
@@ -1517,6 +1727,7 @@ def check_tree(
     features_dir: Path,
     step_dirs: StepDirs | None = None,
     sources: Mapping[str, StepSource] = STEP_SOURCES,
+    jvm_runners: Sequence[JvmRunner] | None = None,
 ) -> list[Problem]:
     """Check every area and ``.feature`` file under ``features_dir``.
 
@@ -1524,21 +1735,36 @@ def check_tree(
     by default only the ``python`` step definitions are read, from ``features_dir`` itself. A binding counts as
     registered only when ``sources`` has a reader for it *and* ``step_dirs`` names where its
     step definitions live, so a ``jvm`` claim is never accepted without reading JVM steps.
+    ``jvm_runners`` registers ``jvm`` too: each runner's definitions serve only its areas, and a
+    gating scenario that claims the JVM outside every runner's areas is ``JVM_SCENARIO_NOT_RUN``.
     """
     step_dirs = dict(step_dirs) if step_dirs is not None else {PYTHON: features_dir}
     step_dirs = {binding: value for binding, value in step_dirs.items() if _directories(value)}
     registered = sorted(binding for binding in step_dirs if binding in sources)
     definitions, problems = load_definitions(step_dirs, sources)
+    if jvm_runners is not None and JVM in sources:
+        runner_defs, runner_problems = _runner_definitions(jvm_runners, sources[JVM])
+        definitions += runner_defs
+        problems += runner_problems
+        registered = sorted({*registered, JVM})
     files = sorted(features_dir.rglob("*.feature"))
     if not files:
         problems.append(_problem(NO_FEATURES, features_dir, 1, "no .feature files found"))
     all_scenarios: list[Scenario] = []
     by_area: dict[Path, list[Scenario]] = {}
+    served: set[str] = set()  # runners with at least one gating JVM scenario to run
     for path in files:
         problems += _check_layout(features_dir, path)
         scenarios, parse_problems = parse_feature(path)
         visible = visible_definitions(definitions, features_dir, path)
         problems += parse_problems + _check_scenarios(scenarios, visible, registered)
+        if jvm_runners is not None:
+            problems += _check_jvm_runs(features_dir, path, scenarios, jvm_runners)
+            for runner in jvm_runners:
+                if _in_areas(features_dir, path, runner.areas) and any(
+                    is_gating(s) and JVM in claimed_bindings(s) for s in scenarios
+                ):
+                    served.add(runner.project)
         all_scenarios += scenarios
         area = features_dir / path.relative_to(features_dir).parts[0]
         if area.is_dir():
@@ -1548,9 +1774,22 @@ def check_tree(
         index = check_area_promises(area, registered)
         problems += index.problems + check_promise_index(area, index, by_area[area])
     problems += check_unique_promises(all_scenarios)
+    for runner in jvm_runners or ():
+        if runner.project not in served:
+            problems.append(
+                _problem(
+                    BAD_RUNNER,
+                    runner.registry or features_dir,
+                    1,
+                    f"{runner.project} has no gating @jvm or @jvm-only scenario in {list(runner.areas)}:"
+                    " its Cucumber run would select nothing and fail; remove the entry",
+                )
+            )
     if files and not any(is_gating(s) for s in all_scenarios):
         problems.append(
-            _problem(NO_GATING_SCENARIOS, features_dir, 1, "no scenario gates (all are @wip)")
+            _problem(
+                NO_GATING_SCENARIOS, features_dir, 1, "no scenario gates (all are @wip or @manual)"
+            )
         )
     return sort_problems(problems)
 
@@ -1580,7 +1819,16 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         metavar="BINDING=DIR",
         help=(
             "where a binding's step definitions live; repeat it to give a binding several folders "
-            f"(default: python=<features> jvm={DEFAULT_JVM_STEPS.relative_to(REPO_ROOT)})"
+            "(default: python=<features>, and jvm from the runner registry)"
+        ),
+    )
+    parser.add_argument(
+        "--jvm-runners",
+        type=Path,
+        metavar="FILE",
+        help=(
+            "the JVM runner registry; each runner's steps serve only its areas "
+            f"(default without --steps: {DEFAULT_JVM_RUNNERS.relative_to(REPO_ROOT)})"
         ),
     )
     return parser.parse_args(argv)
@@ -1589,9 +1837,16 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
     step_dirs: dict[str, list[Path]] = {}
-    for binding, directory in args.steps or [(PYTHON, args.features), (JVM, DEFAULT_JVM_STEPS)]:
+    for binding, directory in args.steps or [(PYTHON, args.features)]:
         step_dirs.setdefault(binding, []).append(directory)
-    problems = check_tree(args.features, step_dirs)
+    registry = args.jvm_runners or (None if args.steps else DEFAULT_JVM_RUNNERS)
+    runners: list[JvmRunner] | None = None
+    registry_problems: list[Problem] = []
+    if registry is not None:
+        runners, registry_problems = load_jvm_runners(registry)
+    problems = sort_problems(
+        registry_problems + check_tree(args.features, step_dirs, jvm_runners=runners)
+    )
     if problems:
         print(format_problems(problems))
     errors = sum(1 for p in problems if p.severity == ERROR)
