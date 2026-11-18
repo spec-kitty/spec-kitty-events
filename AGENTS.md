@@ -28,9 +28,9 @@ and the daily CI canary (`ci-pr-lane-canary.yml`) and the daily read-only releas
 (`release-protection-audit.yml`), build and deploy the docs site, and
 publish to PyPI on `v*` tags (`publish-pypi.yml`) or to TestPyPI on manual dispatch
 (`publish-testpypi.yml`). `service.yml` runs the Gradle build (`./gradlew verifyAll`: the Java
-binding, the services under `service/` and the contracts) on `main` pushes that touch the Java,
-Gradle, service, contract or
-producer-contract paths, and on every pull request, where its `detect` job
+binding with its Cucumber-JVM `@jvm` scenarios, the services under `service/` and the contracts)
+on `main` pushes that touch the Java, Gradle, service, contract, producer-contract or
+`tests/scenarios/` paths, and on every pull request, where its `detect` job
 skips the build unless the change touches those paths; through the same workflow,
 `service-release.yml` (`service-v*` tags) builds, attests and publishes the service releases
 ([ADR-0003](./docs/adr/0003-gradle-build-and-service-release-line.md)).
