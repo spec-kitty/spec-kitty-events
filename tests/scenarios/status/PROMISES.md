@@ -7,9 +7,11 @@ JVM binding: none
 
 The services (`service/event-log`, `service/command-cli`) implement status append and the
 transition fold. Their copies of the append and transition promises (`APPEND-003`,
-`TRANSITION-007`) are `@wip` until the `jvm` step source of D3 (#283) lands; the follow-up tags
-them `@jvm` and binds them through `verifyAll` and `service-gate`. No `status/` promise is
-`@manual`.
+`TRANSITION-007`) are `@wip` until the `jvm` step source of D3 (#283) lands. `APPEND-003` can
+then be tagged `@jvm` (its steps bind in both languages). `TRANSITION-007` cannot as the contract
+stands: every gating scenario needs a Python binding, and only the services apply a request to a
+prior log, so it needs a JVM-only binding or a Python reference fold first. No `status/` promise
+is `@manual`.
 
 | Promise | Guarantee | Requirement | Binding |
 |---------|-----------|-------------|---------|
@@ -21,7 +23,7 @@ them `@jvm` and binds them through `verifyAll` and `service-gate`. No `status/` 
 | `PR-EVENTS-STATUS-TRANSITION-001` | Every status-transition parity case conforms to `case.schema.json`. | `conformance/status_transition_parity/`; #270 | python |
 | `PR-EVENTS-STATUS-TRANSITION-002` | Every refusal case pins a code from the closed write-refusal codes and a reason URN from the closed set, or no reason. | `parity_corpus.WRITE_REFUSAL_CODES`, `REASON_URNS`; #270 | python |
 | `PR-EVENTS-STATUS-TRANSITION-003` | Every refusal reason is reached by a case, or `unreachable.json` records why no request can reach it. | `unreachable.json`; #223, #270 | python |
-| `PR-EVENTS-STATUS-TRANSITION-004` | `validate_transition`, unforced and with every guard met, admits exactly the lane edges the corpus accepts from an unforced request. | `status.validate_transition` (11.5.0 core edge graph); #237, #270 | python |
+| `PR-EVENTS-STATUS-TRANSITION-004` | `validate_transition`'s unforced edge check admits exactly the lane edges the corpus accepts from an unforced request. Of those, the full validation refuses only the review-rejection family (`* -> planned`), which the package requires to be forced although core acknowledges it unforced. | `status.validate_transition` (11.5.0 core edge graph); the review-rejection guard (`docs/events/work-and-status.md`); #237, #270 | python |
 | `PR-EVENTS-STATUS-TRANSITION-005` | Every other lane pair (an illegal twin) is refused unforced with an edge violation, and force lifts the edge check for every pair. | `status.validate_transition`; #237, #270 | python |
 | `PR-EVENTS-STATUS-TRANSITION-006` | Every one-request case the corpus refuses as `illegal_transition` asks for a lane pair the edge graph refuses (or a lane outside the vocabulary). | `status.validate_transition`, `Lane`; #270 | python |
 | `PR-EVENTS-STATUS-TRANSITION-007` | The services apply every case's request to its prior log and give the acknowledgement or refusal it pins. | `service/command-cli` and `service/event-log` transition fold and ack bytes; #237, #270 | @wip |

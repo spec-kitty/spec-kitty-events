@@ -33,7 +33,7 @@ promises (`APPEND-003`, `TRANSITION-007`) are `@wip` until the `jvm` step source
 | Act | `When each fixture's row is appended` |
 | Act | `When each stream is reduced in its recorded order` |
 | Act | `When each stream is reduced in reverse and in a shuffled order` |
-| Act | `When every pair of lanes is validated as a transition that meets every guard` |
+| Act | `When every pair of lanes is validated as a transition carrying every guarded field` |
 | Act | `When each case's requested lane pair is validated unforced` |
 | Act | `When each actor is decoded as a status actor` |
 | Assert | `Then every line written is the exact bytes its fixture pins` |
@@ -44,6 +44,7 @@ promises (`APPEND-003`, `TRANSITION-007`) are `@wip` until the `jvm` step source
 | Assert | `Then every refusal pins a write-refusal code and a reason from the closed vocabularies` |
 | Assert | `Then every refusal reason is reached by a case or has its cause recorded as unreachable` |
 | Assert | `Then exactly the edges the corpus accepts pass the unforced edge check` |
+| Assert | `Then of those edges only the review-rejection family is refused unforced, by its force guard` |
 | Assert | `Then every other pair is refused unforced with an edge violation` |
 | Assert | `Then forcing any pair lifts the edge check` |
 | Assert | `Then validate_transition refuses every requested pair` |

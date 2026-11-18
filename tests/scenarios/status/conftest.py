@@ -16,6 +16,7 @@ from importlib import resources
 from typing import Any
 
 import jsonschema
+from pydantic import ValidationError
 from pytest_bdd import given, parsers, then, when
 
 from spec_kitty_events import producer_contract, status_log
@@ -205,7 +206,7 @@ def every_illegal_single_request() -> list[dict[str, Any]]:
         for c in every_refused_parity_case()
         if c["expected"].get("reason") == _ILLEGAL_TRANSITION
         and len(c["request"]["units"]) == 1
-        and c["request"]["units"][0]["rows"][0].get("force") is False
+        and c["request"]["units"][0]["rows"][0].get("force", False) is False
     ]
     assert cases, "no parity case refuses one unforced request as an illegal transition"
     return cases
@@ -251,6 +252,7 @@ class EdgeVerdicts:
     corpus_edges: frozenset[tuple[str, str]]
     unforced: dict[tuple[str, str], list[str]]  # lane pair -> its edge violations
     forced: dict[tuple[str, str], list[str]]
+    unforced_all: dict[tuple[str, str], list[str]]  # lane pair -> every violation
 
 
 def _evidence() -> DoneEvidence:
@@ -262,7 +264,12 @@ def _evidence() -> DoneEvidence:
 
 
 def _payload(from_lane: str, to_lane: str, *, force: bool) -> StatusTransitionPayload:
-    """A payload that meets every guard, so only the edge check can object."""
+    """A payload carrying every field a guard asks for (reason, review_ref, done evidence).
+
+    Guards that depend on the lane pair alone -- the terminal-lane exit and the review-rejection
+    family, both lifted only by force -- can still object; the edge steps judge the edge check
+    (``... is not allowed``) on its own, and one step pins which guards remain.
+    """
     return StatusTransitionPayload(
         mission_slug="m",
         wp_id="WP01",
@@ -277,9 +284,12 @@ def _payload(from_lane: str, to_lane: str, *, force: bool) -> StatusTransitionPa
     )
 
 
+def _violations(from_lane: str, to_lane: str, *, force: bool) -> list[str]:
+    return list(validate_transition(_payload(from_lane, to_lane, force=force)).violations)
+
+
 def _edge_violations(from_lane: str, to_lane: str, *, force: bool) -> list[str]:
-    result = validate_transition(_payload(from_lane, to_lane, force=force))
-    return [v for v in result.violations if _EDGE_VIOLATION in v]
+    return [v for v in _violations(from_lane, to_lane, force=force) if _EDGE_VIOLATION in v]
 
 
 @given(
@@ -293,7 +303,7 @@ def corpus_accepted_edges() -> frozenset[tuple[str, str]]:
 
 
 @when(
-    "every pair of lanes is validated as a transition that meets every guard",
+    "every pair of lanes is validated as a transition carrying every guarded field",
     target_fixture="edge_verdicts",
 )
 def every_lane_pair_validated(corpus_edges: frozenset[tuple[str, str]]) -> EdgeVerdicts:
@@ -302,6 +312,7 @@ def every_lane_pair_validated(corpus_edges: frozenset[tuple[str, str]]) -> EdgeV
         corpus_edges,
         {p: _edge_violations(*p, force=False) for p in pairs},
         {p: _edge_violations(*p, force=True) for p in pairs},
+        {p: _violations(*p, force=False) for p in pairs},
     )
 
 
@@ -312,6 +323,21 @@ def legal_edges_are_the_corpus_edges(edge_verdicts: EdgeVerdicts) -> None:
         f"validate_transition admits {sorted(legal - edge_verdicts.corpus_edges)} beyond the "
         f"corpus and refuses {sorted(edge_verdicts.corpus_edges - legal)} the corpus accepts"
     )
+
+
+@then("of those edges only the review-rejection family is refused unforced, by its force guard")
+def only_review_rejection_needs_force(edge_verdicts: EdgeVerdicts) -> None:
+    """The package requires force=True for the review-rejection family (``* -> planned``
+    rewinds; docs/events/work-and-status.md), although core's write service acknowledges those
+    edges unforced. Every other corpus edge is fully valid once its fields are present."""
+    for pair in sorted(edge_verdicts.corpus_edges):
+        refusals = edge_verdicts.unforced_all[pair]
+        assert all("review-rejection" in v and "force=True" in v for v in refusals), (
+            f"{pair}: refused unforced by {refusals}"
+        )
+    family = {p for p in edge_verdicts.corpus_edges if edge_verdicts.unforced_all[p]}
+    assert family, "no corpus edge is in the review-rejection family"
+    assert {to for _from, to in family} == {Lane.PLANNED.value}, sorted(family)
 
 
 @then("every other pair is refused unforced with an edge violation")
@@ -341,12 +367,13 @@ def each_request_validated(parity_cases: list[dict[str, Any]]) -> list[RequestVe
     for case in parity_cases:
         row = case["request"]["units"][0]["rows"][0]
         pair = (row["from_lane"], row["to_lane"])
-        known = {lane.value for lane in Lane}
-        if not set(pair) <= known:
-            # A lane outside the vocabulary never reaches the edge check: the payload refuses it.
-            refusals = [f"lane outside the vocabulary: {sorted(set(pair) - known)}"]
-        else:
+        try:
             refusals = _edge_violations(*pair, force=False)
+        except ValidationError as refusal:
+            # A lane outside the vocabulary never reaches the edge check: the payload refuses it.
+            known = {lane.value for lane in Lane}
+            assert set(pair) - known, f"{case['id']}: {pair} refused as a payload: {refusal}"
+            refusals = [f"payload refused: lane outside the vocabulary {sorted(set(pair) - known)}"]
         verdicts.append(RequestVerdict(case, pair, refusals))
     return verdicts
 

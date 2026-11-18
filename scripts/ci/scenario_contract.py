@@ -12,7 +12,8 @@ checks, without running anything:
 * the tag vocabulary of ``tests/scenarios/README.md`` (a closed set: an unknown tag is an error):
   every scenario carries a well-formed ``@promise:PR-EVENTS-<AREA>-NNN``, promise ids are unique
   across the suite, a ``@wip`` scenario names its owner and start date, and a ``@manual``
-  scenario carries a non-empty ``@manual-reason:<text>`` and is never also ``@wip``;
+  scenario carries a non-empty ``@manual-reason:<text>`` and is never also ``@wip``, a
+  ``@manual-reason:`` never appears without ``@manual``, and neither tags an ``Examples`` block;
 * every step of a gating scenario (neither ``@wip`` nor ``@manual``) matches exactly one step definition in each
   binding the scenario claims (``python`` always, ``jvm`` too when tagged ``@jvm``), keyword
   included (pytest-bdd matches Given, When and Then separately; And and But take the keyword
@@ -90,6 +91,8 @@ BAD_DEFECT = "BAD_DEFECT"
 MANUAL_MISSING_REASON = "MANUAL_MISSING_REASON"
 BAD_MANUAL_REASON = "BAD_MANUAL_REASON"
 MANUAL_WITH_WIP = "MANUAL_WITH_WIP"
+MANUAL_REASON_WITHOUT_MANUAL = "MANUAL_REASON_WITHOUT_MANUAL"
+MANUAL_ON_EXAMPLES = "MANUAL_ON_EXAMPLES"
 # Steps
 UNBOUND_STEP = "UNBOUND_STEP"
 AMBIGUOUS_STEP = "AMBIGUOUS_STEP"
@@ -365,6 +368,15 @@ class _Reader:
 
     def _on_examples(self, number: int, _stripped: str) -> None:
         tags = self._take_pending()
+        for tag in tags:
+            # pytest-bdd turns Examples tags into raw pytest marks, never through the tag hook,
+            # so a @manual row would run (and gate) despite the tag.
+            if tag.name == "manual" or tag.name.startswith("manual-reason:"):
+                self.error(
+                    MANUAL_ON_EXAMPLES,
+                    tag.line,
+                    f"@{tag.name} cannot tag an Examples block: tag the Scenario Outline instead",
+                )
         block = self.current
         if block is None or block.kind != "outline":
             self.error(PARSE_ERROR, number, "Examples outside a Scenario Outline")
@@ -613,7 +625,15 @@ def _check_wip(scenario: Scenario) -> list[Problem]:
 def _check_manual(scenario: Scenario) -> list[Problem]:
     manual = next((tag for tag in scenario.tags if tag.name == "manual"), None)
     if manual is None:
-        return []
+        return [
+            _problem(
+                MANUAL_REASON_WITHOUT_MANUAL,
+                scenario.file,
+                tag.line,
+                f"@{tag.name} without @manual: a reason alone must not exempt a scenario",
+            )
+            for _value, tag in _values(scenario, "manual-reason")
+        ]
     problems: list[Problem] = []
     if not _values(scenario, "manual-reason"):
         problems.append(

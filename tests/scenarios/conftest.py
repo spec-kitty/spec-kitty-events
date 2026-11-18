@@ -9,8 +9,10 @@ have a runtime effect:
 * ``@wip``: a draft scenario runs as a non-strict ``xfail``, so it is reported but never fails
   the run.
 * ``@manual``: a specified promise this repo's CI cannot run. pytest-bdd hands the hook one tag
-  at a time, so the skip is applied on the ``@manual-reason:<text>`` tag, which carries the
-  reason; the contract check guarantees every ``@manual`` scenario has exactly that tag.
+  at a time, in no fixed order, so the hook records ``@manual`` and ``@manual-reason:<text>`` on
+  the scenario function and applies the skip once both are present. A reason without
+  ``@manual``, or ``@manual`` without a reason, never skips; the contract check refuses both
+  (``MANUAL_REASON_WITHOUT_MANUAL``, ``MANUAL_MISSING_REASON``).
 """
 
 from __future__ import annotations
@@ -20,12 +22,30 @@ from collections.abc import Callable
 import pytest
 
 MANUAL_REASON_PREFIX = "manual-reason:"
+_MANUAL_SEEN = "_spec_kitty_manual"
+_MANUAL_REASONS = "_spec_kitty_manual_reasons"
+_MANUAL_SKIPPED = "_spec_kitty_manual_skipped"
+
+
+def _apply_manual(tag: str, function: Callable[..., object]) -> None:
+    if tag == "manual":
+        setattr(function, _MANUAL_SEEN, True)
+    else:
+        reasons = [*getattr(function, _MANUAL_REASONS, []), tag[len(MANUAL_REASON_PREFIX) :]]
+        setattr(function, _MANUAL_REASONS, reasons)
+    reasons = getattr(function, _MANUAL_REASONS, [])
+    if (
+        getattr(function, _MANUAL_SEEN, False)
+        and reasons
+        and not hasattr(function, _MANUAL_SKIPPED)
+    ):
+        setattr(function, _MANUAL_SKIPPED, True)
+        pytest.mark.skip(reason=f"@manual: {'; '.join(sorted(reasons))}")(function)
 
 
 def pytest_bdd_apply_tag(tag: str, function: Callable[..., object]) -> bool:
     if tag == "wip":
         pytest.mark.xfail(reason="@wip draft scenario", strict=False)(function)
-    elif tag.startswith(MANUAL_REASON_PREFIX):
-        reason = tag[len(MANUAL_REASON_PREFIX) :]
-        pytest.mark.skip(reason=f"@manual: {reason}")(function)
+    elif tag == "manual" or tag.startswith(MANUAL_REASON_PREFIX):
+        _apply_manual(tag, function)
     return True

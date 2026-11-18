@@ -47,7 +47,7 @@ The vocabulary is closed: any other tag is an `UNKNOWN_TAG` error.
 | `@wip-owner:<handle>` | Who owns the draft. `<handle>` matches `[A-Za-z0-9][A-Za-z0-9._-]*`. |
 | `@wip-since:<YYYY-MM-DD>` | The date the scenario was marked `@wip` (a valid date). |
 | `@manual` | A real, specified promise that this repo's CI cannot run automatically: it needs a host, an OS or a peer CI lacks, or an operator-run step. Not for unfinished work (that is `@wip`), and never combined with `@wip`. Needs `@manual-reason:<text>`. It does not gate: pytest-bdd skips it with its reason, its unbound steps are reported as `info`, and its promise still counts in `PROMISES.md` with Binding `manual`. It stays until the environment changes. |
-| `@manual-reason:<text>` | Why CI cannot run the `@manual` scenario. `<text>` is non-empty and, as a Gherkin tag, has no spaces (for example `@manual-reason:needs-a-macos-host`). |
+| `@manual-reason:<text>` | Why CI cannot run the `@manual` scenario. Only with `@manual`, and like it never on an `Examples:` block. `<text>` is non-empty and, as a Gherkin tag, has no spaces (for example `@manual-reason:needs-a-macos-host`). |
 | `@defect:<issue>` | Links a known defect. `<issue>` is a positive integer. |
 | `@jvm` | The binding tag: the scenario is bound by Cucumber-JVM as well. Until D3 or D4 registers a `jvm` step source, it is a `BAD_BINDING_DECLARATION`. |
 
@@ -72,7 +72,9 @@ a JDK, through `tests/test_scenario_contract.py`. By hand:
   step is not Given, When or Then;
 - a promise id is missing, malformed or duplicated, or a tag is outside the vocabulary;
 - a `@wip` scenario lacks its owner or start date;
-- a `@manual` scenario lacks a non-empty `@manual-reason:`, or is also `@wip`;
+- a `@manual` scenario lacks a non-empty `@manual-reason:`, or is also `@wip`; a
+  `@manual-reason:` appears without `@manual`; or either tags an `Examples:` block (pytest-bdd
+  turns those into raw marks, so the rows would still run);
 - an area has no `README.md` steps table, or a row's keyword does not match its Group;
 - an area's `PROMISES.md` does not declare `JVM binding: none|partial|full`, gives a promise a
   Binding other than `python`, `python, jvm`, `@wip` or `manual`, claims `jvm` while no `jvm` step source
