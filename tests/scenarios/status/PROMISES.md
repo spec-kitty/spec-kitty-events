@@ -10,7 +10,12 @@ transition fold, and Cucumber-JVM binds two promises against them through `verif
 `service-gate` (the `:event-log` and `:command-cli` runners of
 [`../jvm-runners.json`](../jvm-runners.json)). `APPEND-003` is bound in both languages.
 `TRANSITION-007` is JVM-only (operator ruling on #289): only the services apply a request to a
-prior log, and there is no Python write fold. No `status/` promise is `@manual`.
+prior log, and there is no Python write fold. By the operator's ruling it covers the
+**domain-layer** parity cases only, through command-cli's authority. The 16 later-layer cases
+(replay classification, log decoding, Mission discovery and the R16 write location, listed with
+their reasons in `service/command-cli/src/test/java/org/speckitty/commandcli/domain/authority/batch/FullParityCorpusTest.java`)
+need the HTTP service; `service/command-cli/src/test/java/org/speckitty/commandcli/adapter/in/http/operations/ProtocolCorpusTest.java`
+runs them over real HTTP, also in `service-gate`. No `status/` promise is `@manual`.
 
 | Promise | Guarantee | Requirement | Binding |
 |---------|-----------|-------------|---------|
