@@ -11,19 +11,21 @@ checks, without running anything:
   ``Examples`` row, and tags on an ``Examples`` block apply to that block's rows only);
 * the tag vocabulary of ``tests/scenarios/README.md`` (a closed set: an unknown tag is an error):
   every scenario carries a well-formed ``@promise:PR-EVENTS-<AREA>-NNN``, promise ids are unique
-  across the suite, and a ``@wip`` scenario names its owner and start date;
-* every step of a gating scenario (not ``@wip``) matches exactly one step definition in each
+  across the suite, a ``@wip`` scenario names its owner and start date, and a ``@manual``
+  scenario carries a non-empty ``@manual-reason:<text>`` and is never also ``@wip``;
+* every step of a gating scenario (neither ``@wip`` nor ``@manual``) matches exactly one step definition in each
   binding the scenario claims (``python`` always, ``jvm`` too when tagged ``@jvm``), keyword
   included (pytest-bdd matches Given, When and Then separately; And and But take the keyword
   before them; a first step must be Given, When or Then). A python definition inside the
   features folder serves only the features below its own folder, as pytest-bdd scopes an
-  area's ``conftest.py``. In a ``@wip`` scenario such findings are ``info``;
+  area's ``conftest.py``. In a ``@wip`` or ``@manual`` scenario such findings are ``info``;
 * each area has a ``README.md`` whose ``| Group | Step |`` table is consistent (Arrange and Assume
   rows are ``Given``, Act rows ``When``, Assert rows ``Then``), and a ``PROMISES.md`` that declares
   whether the JVM binding covers the area (``JVM binding: none|partial|full``), gives every
-  promise a Binding (``python``, ``python, jvm`` or ``@wip``), and indexes exactly the promises the
+  promise a Binding (``python``, ``python, jvm``, ``@wip`` or ``manual``), and indexes exactly the promises the
   area's scenarios carry, once each. The three binding claims must agree
-  (``BINDING_MISMATCH``): a row's Binding follows its scenario's ``@wip`` and ``@jvm`` tags, and
+  (``BINDING_MISMATCH``): a row's Binding follows its scenario's ``@wip``, ``@manual`` and
+  ``@jvm`` tags, and
   ``JVM binding`` is ``none``, ``partial`` or ``full`` as the gating rows claim ``jvm``.
 
 Step definitions are read through :data:`STEP_SOURCES`, a registry keyed by binding name. A
@@ -101,6 +103,9 @@ WIP_MISSING_SINCE = "WIP_MISSING_SINCE"
 BAD_WIP_OWNER = "BAD_WIP_OWNER"
 BAD_WIP_SINCE = "BAD_WIP_SINCE"
 BAD_DEFECT = "BAD_DEFECT"
+MANUAL_MISSING_REASON = "MANUAL_MISSING_REASON"
+BAD_MANUAL_REASON = "BAD_MANUAL_REASON"
+MANUAL_WITH_WIP = "MANUAL_WITH_WIP"
 # Steps
 UNBOUND_STEP = "UNBOUND_STEP"
 AMBIGUOUS_STEP = "AMBIGUOUS_STEP"
@@ -152,7 +157,10 @@ PROMISE_BINDINGS: dict[str, tuple[str, ...]] = {
     "python": (PYTHON,),
     "python, jvm": (PYTHON, JVM),
     "@wip": (),
+    "manual": (),
 }
+# Bindings of rows whose scenario does not gate: they never count towards ``JVM binding``.
+NON_GATING_BINDINGS = frozenset({"@wip", "manual"})
 
 
 @dataclass(frozen=True, order=True)
@@ -532,13 +540,24 @@ _VALUE_RULES: dict[str, tuple[Callable[[str], bool], str, str]] = {
     "wip-owner": (_matches(_HANDLE_RE), BAD_WIP_OWNER, f"a handle matching {_HANDLE_RE.pattern}"),
     "wip-since": (_valid_date, BAD_WIP_SINCE, "a valid date as YYYY-MM-DD"),
     "defect": (_matches(_ISSUE_RE), BAD_DEFECT, "a positive integer issue number"),
+    "manual-reason": (bool, BAD_MANUAL_REASON, "a non-empty reason"),
 }
-_PLAIN_TAGS = frozenset({"wip", JVM})
+_PLAIN_TAGS = frozenset({"wip", "manual", JVM})
+
+
+def is_manual(scenario: Scenario) -> bool:
+    """``@manual``: a specified promise this repo's CI cannot run (a host, OS, peer or
+    operator-run step it lacks). Unlike ``@wip`` it is not unfinished work."""
+    return any(tag.name == "manual" for tag in scenario.tags)
+
+
+def is_wip(scenario: Scenario) -> bool:
+    return any(tag.name == "wip" for tag in scenario.tags)
 
 
 def is_gating(scenario: Scenario) -> bool:
-    """A scenario gates unless it is ``@wip``."""
-    return not any(tag.name == "wip" for tag in scenario.tags)
+    """A scenario gates unless it is ``@wip`` or ``@manual``."""
+    return not (is_wip(scenario) or is_manual(scenario))
 
 
 def _values(scenario: Scenario, prefix: str) -> list[tuple[str, Tag]]:
@@ -607,6 +626,33 @@ def _check_wip(scenario: Scenario) -> list[Problem]:
     return problems
 
 
+def _check_manual(scenario: Scenario) -> list[Problem]:
+    manual = next((tag for tag in scenario.tags if tag.name == "manual"), None)
+    if manual is None:
+        return []
+    problems: list[Problem] = []
+    if not _values(scenario, "manual-reason"):
+        problems.append(
+            _problem(
+                MANUAL_MISSING_REASON,
+                scenario.file,
+                manual.line,
+                "@manual needs a non-empty @manual-reason:<text>",
+            )
+        )
+    if is_wip(scenario):
+        problems.append(
+            _problem(
+                MANUAL_WITH_WIP,
+                scenario.file,
+                manual.line,
+                "@manual and @wip do not combine: @manual is a finished promise CI cannot run, "
+                "@wip is unfinished work",
+            )
+        )
+    return problems
+
+
 def _check_binding_tags(scenario: Scenario, registered: Sequence[str]) -> list[Problem]:
     return [
         _problem(
@@ -628,6 +674,7 @@ def validate_tags(scenario: Scenario, registered: Sequence[str] = (PYTHON,)) -> 
         problems
         + _check_promise_presence(scenario)
         + _check_wip(scenario)
+        + _check_manual(scenario)
         + _check_binding_tags(scenario, registered)
     )
 
@@ -1377,8 +1424,10 @@ def check_promise_index(
 
 
 def _expected_binding(scenario: Scenario) -> str:
-    if not is_gating(scenario):
+    if is_wip(scenario):
         return "@wip"
+    if is_manual(scenario):
+        return "manual"
     return "python, jvm" if JVM in claimed_bindings(scenario) else "python"
 
 
@@ -1386,7 +1435,7 @@ def _check_binding_consistency(
     area: Path, index: AreaPromises, scenarios: Sequence[Scenario]
 ) -> list[Problem]:
     """The three binding claims agree: each promise row's Binding matches its scenario's tags
-    (``@wip``, ``@jvm``), and the area's ``JVM binding`` matches its rows."""
+    (``@wip``, ``@manual``, ``@jvm``), and the area's ``JVM binding`` matches its rows."""
     path = area / "PROMISES.md"
     problems: list[Problem] = []
     for scenario in scenarios:
@@ -1404,7 +1453,7 @@ def _check_binding_consistency(
                 )
     if index.jvm_declaration is not None:
         line, declared = index.jvm_declaration
-        gating = [b for b in index.bindings.values() if b != "@wip"]
+        gating = [b for b in index.bindings.values() if b not in NON_GATING_BINDINGS]
         jvm_rows = sum(1 for b in gating if JVM in PROMISE_BINDINGS[b])
         if jvm_rows == 0:
             actual = "none"
@@ -1550,7 +1599,7 @@ def check_tree(
     problems += check_unique_promises(all_scenarios)
     if files and not any(is_gating(s) for s in all_scenarios):
         problems.append(
-            _problem(NO_GATING_SCENARIOS, features_dir, 1, "no scenario gates (all are @wip)")
+            _problem(NO_GATING_SCENARIOS, features_dir, 1, "no scenario gates (all are @wip or @manual)")
         )
     return sort_problems(problems)
 

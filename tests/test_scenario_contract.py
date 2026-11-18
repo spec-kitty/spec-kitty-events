@@ -79,6 +79,9 @@ EXPECTED_FEATURE_ERRORS = {
     "bad_wip_since.feature": ["BAD_WIP_SINCE"],
     "bad_defect.feature": ["BAD_DEFECT"],
     "jvm_tag.feature": ["BAD_BINDING_DECLARATION"],
+    "manual_missing_reason.feature": ["MANUAL_MISSING_REASON"],
+    "manual_empty_reason.feature": ["BAD_MANUAL_REASON"],
+    "manual_with_wip.feature": ["MANUAL_WITH_WIP"],
 }
 
 
@@ -90,7 +93,11 @@ def test_each_broken_feature_reports_its_rule(name: str, codes: list[str], fixtu
 
 def test_every_feature_fixture_is_expected() -> None:
     on_disk = {p.name for p in FIXTURE_FEATURES.glob("*.feature")}
-    assert on_disk == set(EXPECTED_FEATURE_ERRORS) | {"valid.feature", "wip_unbound.feature"}
+    assert on_disk == set(EXPECTED_FEATURE_ERRORS) | {
+        "valid.feature",
+        "wip_unbound.feature",
+        "manual_valid.feature",
+    }
 
 
 def test_valid_feature_is_clean(fixture_defs) -> None:
@@ -103,6 +110,16 @@ def test_unbound_steps_of_a_wip_scenario_are_information_only(fixture_defs) -> N
     assert _codes(problems, "info") == ["UNBOUND_STEP"]
 
 
+def test_manual_scenario_is_clean_and_does_not_gate(fixture_defs) -> None:
+    """A @manual promise with its reason passes; its unbound step is information only."""
+    path = FIXTURE_FEATURES / "manual_valid.feature"
+    problems = contract.check_feature_file(path, fixture_defs)
+    assert _codes(problems) == []
+    assert _codes(problems, "info") == ["UNBOUND_STEP"]
+    scenarios, _ = contract.parse_feature(path)
+    assert [contract.is_gating(s) for s in scenarios] == [False]
+
+
 # Findings about a tag point at the tag's line, not at the scenario line below it.
 TAG_LINES = {
     "bad_promise.feature": 3,
@@ -112,6 +129,9 @@ TAG_LINES = {
     "wip_missing_owner.feature": 4,
     "bad_wip_since.feature": 4,
     "jvm_tag.feature": 3,
+    "manual_missing_reason.feature": 4,
+    "manual_with_wip.feature": 4,
+    "manual_empty_reason.feature": 4,
 }
 
 
@@ -140,6 +160,7 @@ EXPECTED_AREA_ERRORS = {
     "jvm_bound": ["BAD_BINDING_DECLARATION"] * 3,  # the @jvm tag, the row and the area line
     "bad_promise_binding": ["BAD_BINDING_DECLARATION"],
     "binding_mismatch_wip": ["BINDING_MISMATCH"],
+    "binding_mismatch_manual": ["BINDING_MISMATCH"],
     "promise_not_indexed": ["PROMISE_NOT_INDEXED"],
     "indexed_promise_unused": ["INDEXED_PROMISE_UNUSED"],
     "duplicate_promise_across_files": ["DUPLICATE_PROMISE"],
@@ -165,6 +186,7 @@ def test_every_area_fixture_is_expected() -> None:
         EXPECTED_WITH_JAVA_STEPS
     ) | {
         "valid",
+        "manual_bound",
         "step_from_another_area",
     }
 
@@ -181,6 +203,10 @@ def test_steps_are_scoped_to_their_area_as_pytest_bdd_scopes_conftest() -> None:
 
 def test_valid_area_is_clean() -> None:
     assert _check_area("valid") == []
+
+
+def test_manual_promise_counts_in_promises_with_binding_manual() -> None:
+    assert _check_area("manual_bound") == []
 
 
 def _jvm_reader(definitions):
@@ -568,3 +594,36 @@ def test_scenarios_raise_no_unknown_mark_warning() -> None:
         timeout=300,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+# --- the runtime tag hook (tests/scenarios/conftest.py) --------------------------------------
+
+
+def _scenario_conftest() -> ModuleType:
+    path = REAL_FEATURES / "conftest.py"
+    spec = importlib.util.spec_from_file_location("scenarios_root_conftest", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _marks_after(tags: list[str]) -> list[tuple[str, dict]]:
+    hook = _scenario_conftest().pytest_bdd_apply_tag
+
+    def scenario() -> None: ...
+
+    for tag in tags:
+        assert hook(tag, scenario) is True
+    return [(m.name, dict(m.kwargs)) for m in getattr(scenario, "pytestmark", [])]
+
+
+def test_manual_scenario_is_skipped_with_its_reason() -> None:
+    marks = _marks_after(["promise:PR-EVENTS-FIXTURE-001", "manual", "manual-reason:needs-a-peer"])
+    assert marks == [("skip", {"reason": "@manual: needs-a-peer"})]
+
+
+def test_wip_scenario_is_a_non_strict_xfail_and_other_tags_add_no_mark() -> None:
+    assert _marks_after(["wip", "wip-owner:someone", "jvm", "defect:1"]) == [
+        ("xfail", {"reason": "@wip draft scenario", "strict": False})
+    ]
