@@ -87,6 +87,8 @@ EXPECTED_FEATURE_ERRORS = {
     "manual_reason_without_manual.feature": ["MANUAL_REASON_WITHOUT_MANUAL"],
     "manual_on_examples.feature": ["MANUAL_ON_EXAMPLES"] * 2,  # @manual and its reason
     "jvm_only_tag.feature": ["BAD_BINDING_DECLARATION"],
+    # the Examples tag, and the unregistered jvm claim it gives its row
+    "jvm_only_on_examples.feature": ["BAD_BINDING_DECLARATION", "JVM_ONLY_ON_EXAMPLES"],
     # both tags claim an unregistered jvm, and they contradict each other
     "jvm_only_with_jvm.feature": ["BAD_BINDING_DECLARATION"] * 2 + ["JVM_ONLY_WITH_JVM"],
 }
@@ -643,6 +645,13 @@ def _check_runners(tmp_path: Path, runners: list[dict]) -> list:
 
 def test_a_runner_binds_the_areas_it_runs(tmp_path: Path) -> None:
     assert _check_runners(tmp_path, [_runner(":one", ["a", "b"])]) == []
+
+
+def test_a_runner_with_nothing_to_run_is_refused(tmp_path: Path) -> None:
+    """Its Cucumber task would select no scenario and fail the build."""
+    problems = _check_runners(tmp_path, [_runner(":one", ["a", "b"]), _runner(":two", ["c"])])
+    assert _codes(problems) == ["BAD_RUNNER"]
+    assert ":two has no gating" in problems[0].message
 
 
 def test_a_runners_steps_serve_only_its_areas(tmp_path: Path) -> None:

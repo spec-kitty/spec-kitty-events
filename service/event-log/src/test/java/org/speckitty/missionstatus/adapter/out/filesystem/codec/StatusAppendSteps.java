@@ -39,8 +39,10 @@ public class StatusAppendSteps {
     List<Fixture> found = new ArrayList<>();
     found.addAll(read("valid", true));
     found.addAll(read("invalid", false));
-    assertThat(found.stream().filter(Fixture::valid)).as("valid status_append fixtures").isNotEmpty();
-    assertThat(found.stream().filter(fixture -> !fixture.valid())).as("invalid status_append fixtures").isNotEmpty();
+    // The same floors as StatusAppendFixtureTest, so the scenario never passes on a shrunken corpus.
+    assertThat(found.stream().filter(Fixture::valid).count()).as("valid status_append fixtures").isGreaterThanOrEqualTo(12);
+    assertThat(found.stream().filter(fixture -> !fixture.valid()).count()).as("invalid status_append fixtures")
+        .isGreaterThanOrEqualTo(4);
     fixtures = found;
   }
 

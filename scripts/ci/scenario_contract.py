@@ -113,6 +113,7 @@ MANUAL_WITH_WIP = "MANUAL_WITH_WIP"
 MANUAL_REASON_WITHOUT_MANUAL = "MANUAL_REASON_WITHOUT_MANUAL"
 MANUAL_ON_EXAMPLES = "MANUAL_ON_EXAMPLES"
 JVM_ONLY_WITH_JVM = "JVM_ONLY_WITH_JVM"
+JVM_ONLY_ON_EXAMPLES = "JVM_ONLY_ON_EXAMPLES"
 # JVM runners (#284)
 BAD_RUNNER = "BAD_RUNNER"
 JVM_SCENARIO_NOT_RUN = "JVM_SCENARIO_NOT_RUN"
@@ -396,10 +397,10 @@ class _Reader:
         tags = self._take_pending()
         for tag in tags:
             # pytest-bdd turns Examples tags into raw pytest marks, never through the tag hook,
-            # so a @manual row would run (and gate) despite the tag.
-            if tag.name == "manual" or tag.name.startswith("manual-reason:"):
+            # so a @manual or @jvm-only row would run in Python despite the tag.
+            if tag.name in ("manual", JVM_ONLY) or tag.name.startswith("manual-reason:"):
                 self.error(
-                    MANUAL_ON_EXAMPLES,
+                    MANUAL_ON_EXAMPLES if tag.name != JVM_ONLY else JVM_ONLY_ON_EXAMPLES,
                     tag.line,
                     f"@{tag.name} cannot tag an Examples block: tag the Scenario Outline instead",
                 )
@@ -1628,6 +1629,7 @@ class JvmRunner:
     glue: str
     steps: Path  # the glue package's folder: the only step definitions the run can find
     areas: tuple[str, ...]
+    registry: Path | None = None  # the file the runner was read from, for findings
 
 
 def load_jvm_runners(
@@ -1675,7 +1677,7 @@ def load_jvm_runners(
                         bad(f"{project} area {area!r} overlaps {other_project} area {other!r}")
                     )
             owner[area] = project
-        runners.append(JvmRunner(project, glue, steps, tuple(areas)))
+        runners.append(JvmRunner(project, glue, steps, tuple(areas), path))
     return runners, problems
 
 
@@ -1750,6 +1752,7 @@ def check_tree(
         problems.append(_problem(NO_FEATURES, features_dir, 1, "no .feature files found"))
     all_scenarios: list[Scenario] = []
     by_area: dict[Path, list[Scenario]] = {}
+    served: set[str] = set()  # runners with at least one gating JVM scenario to run
     for path in files:
         problems += _check_layout(features_dir, path)
         scenarios, parse_problems = parse_feature(path)
@@ -1757,6 +1760,11 @@ def check_tree(
         problems += parse_problems + _check_scenarios(scenarios, visible, registered)
         if jvm_runners is not None:
             problems += _check_jvm_runs(features_dir, path, scenarios, jvm_runners)
+            for runner in jvm_runners:
+                if _in_areas(features_dir, path, runner.areas) and any(
+                    is_gating(s) and JVM in claimed_bindings(s) for s in scenarios
+                ):
+                    served.add(runner.project)
         all_scenarios += scenarios
         area = features_dir / path.relative_to(features_dir).parts[0]
         if area.is_dir():
@@ -1766,6 +1774,17 @@ def check_tree(
         index = check_area_promises(area, registered)
         problems += index.problems + check_promise_index(area, index, by_area[area])
     problems += check_unique_promises(all_scenarios)
+    for runner in jvm_runners or ():
+        if runner.project not in served:
+            problems.append(
+                _problem(
+                    BAD_RUNNER,
+                    runner.registry or features_dir,
+                    1,
+                    f"{runner.project} has no gating @jvm or @jvm-only scenario in {list(runner.areas)}:"
+                    " its Cucumber run would select nothing and fail; remove the entry",
+                )
+            )
     if files and not any(is_gating(s) for s in all_scenarios):
         problems.append(
             _problem(

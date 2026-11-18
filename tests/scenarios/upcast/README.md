@@ -18,8 +18,8 @@ Python and in Cucumber-JVM, against the Java `Upcaster`, on the same feature fil
 The Python steps live in `conftest.py` and list the corpus through the test-only
 `tests/support/upcast_corpus.py`. The JVM steps live in
 `java/src/test/java/ai/speckitty/events/cloudevents/UpcastSteps.java` and read the same corpus
-through `-Dupcast.cases`; `./gradlew :java-binding:scenarios` runs every `@jvm` scenario under
-`tests/scenarios/`, as part of `verifyAll`.
+through `-Dupcast.cases`; `./gradlew :java-binding:scenarios` runs the `@jvm` scenarios of this area (its runner entry in
+[`../jvm-runners.json`](../jvm-runners.json)), as part of `verifyAll`.
 
 ## Available steps
 

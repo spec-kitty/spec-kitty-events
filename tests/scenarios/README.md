@@ -6,8 +6,9 @@ them. pytest-bdd is the reference binding: it binds every step and runs on every
 of `make test-fast` and the CI suite. Cucumber-JVM binds the `@jvm` subset on the same feature
 files (D3 #199; D4 #270 adds more). Nothing under this folder ships in the wheel.
 
-Run them alone with `uv run pytest --no-cov tests/scenarios`, and the `@jvm` subset with
-`./gradlew :java-binding:scenarios` (JDK 25; part of `verifyAll`, so of `make test-gradle`).
+Run them alone with `uv run pytest --no-cov tests/scenarios`, and the JVM-bound subset with each
+runner's `scenarios` task (see [The JVM binding](#the-jvm-binding); JDK 25; all part of
+`verifyAll`, so of `make test-gradle`).
 
 ## Layout
 
@@ -102,7 +103,8 @@ fails when:
   or Then;
 - a gating scenario claims the JVM (`@jvm`, `@jvm-only`) in an area no runner runs
   (`JVM_SCENARIO_NOT_RUN`), or `jvm-runners.json` is malformed, names a glue package with no
-  folder, or gives two runners overlapping areas (`BAD_RUNNER`);
+  folder, gives two runners overlapping areas, or keeps a runner with no gating JVM scenario
+  to run (`BAD_RUNNER`); `@jvm-only` tags an `Examples:` block (`JVM_ONLY_ON_EXAMPLES`);
 - a promise id is missing, malformed or duplicated, or a tag is outside the vocabulary;
 - a `@wip` scenario lacks its owner or start date;
 - a `@manual` scenario lacks a non-empty `@manual-reason:`, or is also `@wip`; a

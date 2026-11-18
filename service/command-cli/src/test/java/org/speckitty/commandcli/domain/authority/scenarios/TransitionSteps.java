@@ -8,6 +8,7 @@ import io.cucumber.java.en.When;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.speckitty.commandcli.domain.authority.CorpusAuthorityCases;
 import org.speckitty.commandcli.domain.authority.Judgement;
 import org.speckitty.commandcli.domain.authority.Refusal;
@@ -22,13 +23,26 @@ import org.speckitty.commandcli.domain.authority.Refusal;
 public class TransitionSteps {
   private record Applied(CorpusAuthorityCases.Case testCase, Judgement judgement) {}
 
+  private static final Set<String> REQUIRED_REASONS = Set.of(
+      "unknown_lane", "illegal_transition", "force_requires_actor_and_reason", "actor_required",
+      "implementation_evidence_required", "reason_required", "review_ref_required",
+      "reviewer_approval_required", "review_evidence_invalid", "force_note_required", "done_evidence_incomplete");
+
   private List<CorpusAuthorityCases.Case> cases = List.of();
   private List<Applied> applied = List.of();
 
   @Given("every domain-layer status-transition parity case")
   public void everyDomainLayerParityCase() {
     cases = CorpusAuthorityCases.load();
-    assertThat(cases).as("domain-layer parity cases").isNotEmpty();
+    // The same floors as ParityCorpusTest, so the scenario never passes on a shrunken corpus.
+    long legalEdges = cases.stream()
+        .filter(c -> c.area().equals("lane_machine") && "ack".equals(c.expected().get("result"))).count();
+    assertThat(legalEdges).as("acknowledged lane_machine cases (the legal edges)").isGreaterThanOrEqualTo(29);
+    for (String reason : REQUIRED_REASONS) {
+      assertThat(cases.stream().filter(c -> ("urn:spec-kitty:write-refusal:" + reason).equals(c.expected().get("reason"))).count())
+          .as(reason).isPositive();
+    }
+    assertThat(cases.stream().filter(c -> c.area().equals("stale")).count()).as("stale cases").isPositive();
   }
 
   @When("each case's request is applied to its prior log")

@@ -3,7 +3,7 @@
 // tests/scenarios/jvm-runners.json names, for each Gradle project, its glue package and the scenario areas it runs; the
 // contract check (scripts/ci/scenario_contract.py) reads the same file, so the two cannot disagree. A project that applies
 // this plugin gets a `scenarios` task that reads its areas' feature files in place and runs the scenarios tagged @jvm or
-// @jvm-only (not @wip) against its glue. It runs through Cucumber's own CLI, not a JUnit Platform engine, so Cucumber's
+// @jvm-only (neither @wip nor @manual) against its glue. It runs through Cucumber's own CLI, not a JUnit Platform engine, so Cucumber's
 // engine never meets a module's JUnit platform. The JUnit XML report is the task output; the task fails when a scenario
 // fails, a step is undefined or pending, or no scenario ran (a tag filter that selects nothing must not pass). `check`
 // depends on it, so `verifyAll` and service-gate run it. Each module adds its own system properties to the task.
@@ -47,7 +47,7 @@ val scenarios = tasks.register<JavaExec>("scenarios") {
     systemProperty("cucumber.publish.quiet", "true")
     args(
         "--glue", glue,
-        "--tags", "(@jvm or @jvm-only) and not @wip",
+        "--tags", "(@jvm or @jvm-only) and not @wip and not @manual",
         "--plugin", "summary",
         "--plugin", "junit:${report.get().asFile.absolutePath}",
         "--monochrome",
