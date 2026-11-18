@@ -13,6 +13,8 @@ have a runtime effect:
   the scenario function and applies the skip once both are present. A reason without
   ``@manual``, or ``@manual`` without a reason, never skips; the contract check refuses both
   (``MANUAL_REASON_WITHOUT_MANUAL``, ``MANUAL_MISSING_REASON``).
+* ``@jvm-only``: a promise only the JVM services implement, bound by Cucumber-JVM alone. pytest-bdd
+  has no steps for it, so it is skipped here.
 """
 
 from __future__ import annotations
@@ -48,4 +50,6 @@ def pytest_bdd_apply_tag(tag: str, function: Callable[..., object]) -> bool:
         pytest.mark.xfail(reason="@wip draft scenario", strict=False)(function)
     elif tag == "manual" or tag.startswith(MANUAL_REASON_PREFIX):
         _apply_manual(tag, function)
+    elif tag == "jvm-only":
+        pytest.mark.skip(reason="@jvm-only: bound by Cucumber-JVM, not pytest-bdd")(function)
     return True

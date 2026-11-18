@@ -55,6 +55,7 @@ The vocabulary is closed: any other tag is an `UNKNOWN_TAG` error.
 | `@manual-reason:<text>` | Why CI cannot run the `@manual` scenario. Only with `@manual`, and like it never on an `Examples:` block. `<text>` is non-empty and, as a Gherkin tag, has no spaces (for example `@manual-reason:needs-a-macos-host`). |
 | `@defect:<issue>` | Links a known defect. `<issue>` is a positive integer. |
 | `@jvm` | The binding tag: the scenario is bound by Cucumber-JVM as well, and every step must match exactly one Java step definition. Without a `jvm` step folder it is a `BAD_BINDING_DECLARATION`. |
+| `@jvm-only` | The scenario is bound by Cucumber-JVM **alone**: a promise only the JVM services implement (the mirror of an area bound in Python only; operator ruling on #289). Python needs no step for it, pytest-bdd skips it, and its row's Binding is `jvm`. It never combines with `@jvm` (`JVM_ONLY_WITH_JVM`), and like `@jvm` it is a `BAD_BINDING_DECLARATION` without a `jvm` step folder. |
 
 Tags on a `Feature` or `Rule` apply to every scenario under it; tags on an `Examples:` block
 apply to that block's rows only.
@@ -94,10 +95,10 @@ the `jvm` steps (Cucumber annotations, as source text) from `java/src/test/java/
   turns those into raw marks, so the rows would still run);
 - an area has no `README.md` steps table, or a row's keyword does not match its Group;
 - an area's `PROMISES.md` does not declare `JVM binding: none|partial|full`, gives a promise a
-  Binding other than `python`, `python, jvm`, `@wip` or `manual`, claims `jvm` while no `jvm` step source
+  Binding other than `python`, `python, jvm`, `jvm`, `@wip` or `manual`, claims `jvm` while no `jvm` step source
   is registered, does not index exactly the promises its scenarios carry (once each, with
   well-formed ids), or has binding claims that disagree (`BINDING_MISMATCH`: a row's Binding
-  must follow its scenario's `@wip`, `@manual` and `@jvm` tags, and `JVM binding` must be `none`, `partial`
+  must follow its scenario's `@wip`, `@manual`, `@jvm` and `@jvm-only` tags, and `JVM binding` must be `none`, `partial`
   or `full` as the gating rows claim `jvm`).
 
 Findings point at the offending line (for a tag, the tag's own line) and are sorted by file and

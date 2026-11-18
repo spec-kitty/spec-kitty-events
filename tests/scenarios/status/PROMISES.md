@@ -8,10 +8,11 @@ JVM binding: none
 The services (`service/event-log`, `service/command-cli`) implement status append and the
 transition fold. Their copies of the append and transition promises (`APPEND-003`,
 `TRANSITION-007`) are `@wip` until the `jvm` step source of D3 (#283) lands. `APPEND-003` can
-then be tagged `@jvm` (its steps bind in both languages). `TRANSITION-007` cannot as the contract
-stands: every gating scenario needs a Python binding, and only the services apply a request to a
-prior log, so it needs a JVM-only binding or a Python reference fold first. No `status/` promise
-is `@manual`.
+then be tagged `@jvm` (its steps bind in both languages). `TRANSITION-007` is a JVM-only promise
+(operator ruling on #289): only the services apply a request to a prior log, and there is no
+Python write fold. Once #283 lands it is tagged `@jvm-only`, its Binding becomes `jvm`, and it
+binds against `service/command-cli`'s fold in `service-gate`. Until then a `jvm` claim cannot be
+checked, so its row stays `@wip`. No `status/` promise is `@manual`.
 
 | Promise | Guarantee | Requirement | Binding |
 |---------|-----------|-------------|---------|
@@ -26,7 +27,7 @@ is `@manual`.
 | `PR-EVENTS-STATUS-TRANSITION-004` | `validate_transition`'s unforced edge check admits exactly the lane edges the corpus accepts from an unforced request. Of those, the full validation refuses only the review-rejection family (`* -> planned`), which the package requires to be forced although core acknowledges it unforced. | `status.validate_transition` (11.5.0 core edge graph); the review-rejection guard (`docs/events/work-and-status.md`); #237, #270 | python |
 | `PR-EVENTS-STATUS-TRANSITION-005` | Every other lane pair (an illegal twin) is refused unforced with an edge violation, and force lifts the edge check for every pair. | `status.validate_transition`; #237, #270 | python |
 | `PR-EVENTS-STATUS-TRANSITION-006` | Every one-request case the corpus refuses as `illegal_transition` asks for a lane pair the edge graph refuses (or a lane outside the vocabulary). | `status.validate_transition`, `Lane`; #270 | python |
-| `PR-EVENTS-STATUS-TRANSITION-007` | The services apply every case's request to its prior log and give the acknowledgement or refusal it pins. | `service/command-cli` and `service/event-log` transition fold and ack bytes; #237, #270 | @wip |
+| `PR-EVENTS-STATUS-TRANSITION-007` | The services apply every case's request to its prior log and give the acknowledgement or refusal it pins. JVM-only: `jvm` once bound (#283). | `service/command-cli` and `service/event-log` transition fold and ack bytes; #237, #270 | @wip |
 | `PR-EVENTS-STATUS-ACTOR-001` | Every four-key structured status actor a fixture accepts decodes to itself, and the `actorbinding` schema accepts it too. | `diary.decode_actor`; producer contract `actorbinding`; #263, #270 | python |
 | `PR-EVENTS-STATUS-ACTOR-002` | Every five-key structured status actor (`profile_source`) a fixture accepts decodes to itself, and the schema accepts it too. | `diary.decode_actor`; #263, #270 | python |
 | `PR-EVENTS-STATUS-ACTOR-003` | A `profile_source` that is null while `profile` is set, or set while `profile` is null, is refused by the decoder and the schema. | `diary.decode_actor`; fixtures with `violation: profile_source_nullness`; #263, #270 | python |

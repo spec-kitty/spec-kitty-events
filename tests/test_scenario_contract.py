@@ -11,6 +11,7 @@ import ast
 import dataclasses
 import importlib.util
 import random
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -84,6 +85,9 @@ EXPECTED_FEATURE_ERRORS = {
     "manual_with_wip.feature": ["MANUAL_WITH_WIP"],
     "manual_reason_without_manual.feature": ["MANUAL_REASON_WITHOUT_MANUAL"],
     "manual_on_examples.feature": ["MANUAL_ON_EXAMPLES"] * 2,  # @manual and its reason
+    "jvm_only_tag.feature": ["BAD_BINDING_DECLARATION"],
+    # both tags claim an unregistered jvm, and they contradict each other
+    "jvm_only_with_jvm.feature": ["BAD_BINDING_DECLARATION"] * 2 + ["JVM_ONLY_WITH_JVM"],
 }
 
 
@@ -191,6 +195,7 @@ def test_every_area_fixture_is_expected() -> None:
         "valid",
         "manual_bound",
         "manual_jvm_full",
+        "jvm_only_bound",
         "step_from_another_area",
     }
 
@@ -225,6 +230,8 @@ def _jvm_reader(definitions):
 # Rules that only bite once a jvm step source is registered (D3 #199 / D4 #270).
 EXPECTED_WITH_JVM = {
     "binding_mismatch_jvm_coverage": ["BINDING_MISMATCH"],
+    "binding_mismatch_jvm_only": ["BINDING_MISMATCH"],  # a @jvm-only row says python, jvm
+    "jvm_only_unbound": ["UNBOUND_STEP"],  # the jvm binds no step of a @jvm-only scenario
 }
 
 
@@ -234,6 +241,28 @@ def _check_with_jvm(name: str, jvm_definitions) -> list:
         {"python": FIXTURE_STEPS, "jvm": FIXTURE_STEPS},
         sources={**contract.STEP_SOURCES, "jvm": _jvm_reader(jvm_definitions)},
     )
+
+
+def _jvm_only_definition():
+    text = "only the jvm binds this"
+    return contract.StepDefinition(
+        binding="python",  # _jvm_reader re-labels every definition as jvm
+        keyword="Given",
+        expression=text,
+        source="Steps.java:1",
+        regex=re.compile(re.escape(text)),
+    )
+
+
+def test_a_jvm_only_promise_is_bound_by_the_jvm_alone(fixture_defs) -> None:
+    """Python has no step for it, yet the area is clean: the JVM alone binds a @jvm-only
+    scenario, its row says jvm, and it makes the area's JVM binding full."""
+    assert not any(d.regex.fullmatch("only the jvm binds this") for d in fixture_defs)
+    assert _check_with_jvm("jvm_only_bound", [*fixture_defs, _jvm_only_definition()]) == []
+    scenarios, _ = contract.parse_feature(
+        FIXTURE_AREAS / "jvm_only_bound" / "area" / "behaviour" / "behaviour.feature"
+    )
+    assert [contract.claimed_bindings(s) for s in scenarios] == [("jvm",)]
 
 
 def test_manual_rows_never_count_towards_jvm_coverage(fixture_defs) -> None:
@@ -676,6 +705,10 @@ _RUNTIME_FEATURE = """Feature: Runtime tags
   Scenario: Manual without a reason
     Given a thing
 
+  @jvm-only
+  Scenario: Bound by the JVM alone
+    Given a step no python definition binds
+
   Rule: A rule-level manual tag
     @manual @manual-reason:rule-level
     Scenario: Under the rule
@@ -699,5 +732,6 @@ def test_the_tag_hook_skips_manual_scenarios_in_a_real_pytest_bdd_run(tmp_path: 
     assert result.returncode == 0, out + result.stderr
     assert "@manual: needs-a-peer" in out
     assert "@manual: rule-level" in out
-    assert "2 passed, 2 skipped" in out, out
+    assert "@jvm-only: bound by Cucumber-JVM" in out
+    assert "2 passed, 3 skipped" in out, out
     assert "@manual: stray" not in out
