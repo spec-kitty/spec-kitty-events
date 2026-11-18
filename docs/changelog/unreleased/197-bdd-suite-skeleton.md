@@ -17,6 +17,8 @@ section: Added
     read through a registry keyed by binding name; until D3 (#199) or D4 (#270) adds a `jvm`
     source, any `jvm` claim is a `BAD_BINDING_DECLARATION`. Every rule has a broken fixture
     under `tests/fixtures/scenario_contract/`.
+  - The required `acceptance` check runs the contract check and the scenarios as named steps
+    on every PR, since `ci.yml`'s `suite` is label-gated and not required.
   - The class-taxonomy fixture lister and the eight-class envelope verdict are now shared,
     test-only helpers in `tests/support/`, used by the conformance class, determinism and
     strict-journal tests as well as the scenarios.

@@ -188,6 +188,24 @@ def test_single_job_gates_are_pausable_on_prs_only() -> None:
     assert condition == f"github.event_name != 'pull_request' || {PAUSE_GUARD}"
 
 
+def test_acceptance_runs_the_scenario_contract_and_the_scenarios_before_pytest() -> None:
+    """#197: the required, ungated, JDK-free check runs both, whatever ci.yml's label gate does."""
+    job = _load(ACCEPTANCE)["jobs"]["acceptance"]
+    names = [s.get("name") for s in job["steps"]]
+    contract = _step(ACCEPTANCE, "acceptance", "Check the scenario contract")
+    scenarios = _step(ACCEPTANCE, "acceptance", "Run the BDD scenarios")
+    assert contract["run"].strip() == "python scripts/ci/scenario_contract.py"
+    assert scenarios["run"].split()[:2] == ["pytest", "tests/scenarios"]
+    assert "error::pytest.PytestUnknownMarkWarning" in scenarios["run"]
+    for step in (contract, scenarios):
+        assert "if" not in step and "continue-on-error" not in step
+    assert names.index("Install test and build tooling") < names.index(
+        "Check the scenario contract"
+    )
+    assert names.index("Run the BDD scenarios") < names.index("Run pytest")
+    assert "runs-on" in job and "java" not in str(job).lower()
+
+
 def test_harness_gate_is_pausable_and_skips_fork_prs_only() -> None:
     # #95: a fork PR has no secrets, so the gate skips (a skipped job satisfies a required
     # check) and fork-pr-harness-deferred reports it; tests/test_cross_repo_harness_workflow.py
