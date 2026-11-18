@@ -23,6 +23,7 @@ tests/scenarios/<area>/test_*.py     # binds the area's features (pytest_bdd.sce
 | Area | Covers | Binding |
 |------|--------|---------|
 | [`envelope/`](envelope/README.md) | Accepting canonical envelopes, refusing invalid ones with the code their fixture pins, the strict journal profile failing closed on an unknown event type, resolving legacy lanes | python |
+| [`status/`](status/README.md) | Appending a status row as its pinned bytes or refusing it, replaying a status diary to its recorded output, the transition parity corpus and `validate_transition`'s edge graph, the structured status actor | python (the services' copies `@wip` until #283) |
 
 ## Writing a scenario
 

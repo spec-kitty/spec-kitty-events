@@ -1283,7 +1283,9 @@ def check_tree(
     problems += check_unique_promises(all_scenarios)
     if files and not any(is_gating(s) for s in all_scenarios):
         problems.append(
-            _problem(NO_GATING_SCENARIOS, features_dir, 1, "no scenario gates (all are @wip or @manual)")
+            _problem(
+                NO_GATING_SCENARIOS, features_dir, 1, "no scenario gates (all are @wip or @manual)"
+            )
         )
     return sort_problems(problems)
 
