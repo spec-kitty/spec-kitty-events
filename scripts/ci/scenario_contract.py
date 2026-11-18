@@ -15,7 +15,8 @@ checks, without running anything:
   scenario carries a non-empty ``@manual-reason:<text>`` and is never also ``@wip``, a
   ``@manual-reason:`` never appears without ``@manual``, and neither tags an ``Examples`` block;
 * every step of a gating scenario (neither ``@wip`` nor ``@manual``) matches exactly one step definition in each
-  binding the scenario claims (``python`` always, ``jvm`` too when tagged ``@jvm``), keyword
+  binding the scenario claims (``python``, plus ``jvm`` when tagged ``@jvm``; ``jvm`` alone when
+  tagged ``@jvm-only``, a promise only the JVM services implement), keyword
   included (pytest-bdd matches Given, When and Then separately; And and But take the keyword
   before them; a first step must be Given, When or Then). A python definition inside the
   features folder serves only the features below its own folder, as pytest-bdd scopes an
@@ -23,10 +24,10 @@ checks, without running anything:
 * each area has a ``README.md`` whose ``| Group | Step |`` table is consistent (Arrange and Assume
   rows are ``Given``, Act rows ``When``, Assert rows ``Then``), and a ``PROMISES.md`` that declares
   whether the JVM binding covers the area (``JVM binding: none|partial|full``), gives every
-  promise a Binding (``python``, ``python, jvm``, ``@wip`` or ``manual``), and indexes exactly the promises the
+  promise a Binding (``python``, ``python, jvm``, ``jvm``, ``@wip`` or ``manual``), and indexes exactly the promises the
   area's scenarios carry, once each. The three binding claims must agree
-  (``BINDING_MISMATCH``): a row's Binding follows its scenario's ``@wip``, ``@manual`` and
-  ``@jvm`` tags, and
+  (``BINDING_MISMATCH``): a row's Binding follows its scenario's ``@wip``, ``@manual``, ``@jvm``
+  and ``@jvm-only`` tags, and
   ``JVM binding`` is ``none``, ``partial`` or ``full`` as the gating rows claim ``jvm``.
 
 Step definitions are read through :data:`STEP_SOURCES`, a registry keyed by binding name. A
@@ -93,6 +94,7 @@ BAD_MANUAL_REASON = "BAD_MANUAL_REASON"
 MANUAL_WITH_WIP = "MANUAL_WITH_WIP"
 MANUAL_REASON_WITHOUT_MANUAL = "MANUAL_REASON_WITHOUT_MANUAL"
 MANUAL_ON_EXAMPLES = "MANUAL_ON_EXAMPLES"
+JVM_ONLY_WITH_JVM = "JVM_ONLY_WITH_JVM"
 # Steps
 UNBOUND_STEP = "UNBOUND_STEP"
 AMBIGUOUS_STEP = "AMBIGUOUS_STEP"
@@ -111,6 +113,7 @@ INDEXED_PROMISE_UNUSED = "INDEXED_PROMISE_UNUSED"
 
 PYTHON = "python"
 JVM = "jvm"
+JVM_ONLY = "jvm-only"
 
 PROMISE_PATTERN = r"PR-EVENTS-[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-[0-9]{3}"
 _PROMISE_RE = re.compile(PROMISE_PATTERN)
@@ -143,6 +146,7 @@ JVM_COVERAGE = ("none", "partial", "full")
 PROMISE_BINDINGS: dict[str, tuple[str, ...]] = {
     "python": (PYTHON,),
     "python, jvm": (PYTHON, JVM),
+    "jvm": (JVM,),
     "@wip": (),
     "manual": (),
 }
@@ -538,7 +542,7 @@ _VALUE_RULES: dict[str, tuple[Callable[[str], bool], str, str]] = {
     "defect": (_matches(_ISSUE_RE), BAD_DEFECT, "a positive integer issue number"),
     "manual-reason": (bool, BAD_MANUAL_REASON, "a non-empty reason"),
 }
-_PLAIN_TAGS = frozenset({"wip", "manual", JVM})
+_PLAIN_TAGS = frozenset({"wip", "manual", JVM, JVM_ONLY})
 
 
 def is_manual(scenario: Scenario) -> bool:
@@ -658,17 +662,30 @@ def _check_manual(scenario: Scenario) -> list[Problem]:
 
 
 def _check_binding_tags(scenario: Scenario, registered: Sequence[str]) -> list[Problem]:
-    return [
+    problems = [
         _problem(
             BAD_BINDING_DECLARATION,
             scenario.file,
             tag.line,
-            f"@{JVM} claims a JVM binding, but no {JVM!r} step source is registered "
+            f"@{tag.name} claims a JVM binding, but no {JVM!r} step source is registered "
             f"(registered: {', '.join(registered)})",
         )
         for tag in scenario.tags
-        if tag.name == JVM and JVM not in registered
+        if tag.name in (JVM, JVM_ONLY) and JVM not in registered
     ]
+    names = {tag.name for tag in scenario.tags}
+    if {JVM, JVM_ONLY} <= names:
+        only = next(tag for tag in scenario.tags if tag.name == JVM_ONLY)
+        problems.append(
+            _problem(
+                JVM_ONLY_WITH_JVM,
+                scenario.file,
+                only.line,
+                f"@{JVM_ONLY} and @{JVM} contradict: @{JVM} adds the JVM to the python binding, "
+                f"@{JVM_ONLY} binds the JVM alone",
+            )
+        )
+    return problems
 
 
 def validate_tags(scenario: Scenario, registered: Sequence[str] = (PYTHON,)) -> list[Problem]:
@@ -856,8 +873,13 @@ STEP_SOURCES: dict[str, StepSource] = {PYTHON: load_python_step_definitions}
 
 
 def claimed_bindings(scenario: Scenario) -> tuple[str, ...]:
-    """``python`` binds every scenario; an ``@jvm`` scenario is bound by the JVM as well."""
-    return (PYTHON, JVM) if any(tag.name == JVM for tag in scenario.tags) else (PYTHON,)
+    """``python`` binds every scenario, an ``@jvm`` one the JVM as well, except a
+    ``@jvm-only`` scenario: a promise only the JVM services implement, bound by the JVM alone
+    (the mirror of an area bound in Python only; operator ruling on #289)."""
+    names = {tag.name for tag in scenario.tags}
+    if JVM_ONLY in names:
+        return (JVM,)
+    return (PYTHON, JVM) if JVM in names else (PYTHON,)
 
 
 def match_steps(
@@ -1142,7 +1164,7 @@ def _expected_binding(scenario: Scenario) -> str:
         return "@wip"
     if is_manual(scenario):
         return "manual"
-    return "python, jvm" if JVM in claimed_bindings(scenario) else "python"
+    return ", ".join(claimed_bindings(scenario))
 
 
 def _check_binding_consistency(

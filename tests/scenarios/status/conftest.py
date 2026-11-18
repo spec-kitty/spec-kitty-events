@@ -390,8 +390,8 @@ def every_request_refused(request_verdicts: list[RequestVerdict]) -> None:
 # --- status/transition: the services (JVM; the Python package has no write service) ---------
 # "each case's request is applied to its prior log" and "every outcome is the acknowledgement or
 # refusal its case pins" are deliberately unbound here: only service/command-cli and
-# service/event-log apply a request to a log. PR-EVENTS-STATUS-TRANSITION-007 is @wip until the
-# jvm step source (#283) lands and binds it.
+# service/event-log apply a request to a log. PR-EVENTS-STATUS-TRANSITION-007 is JVM-only
+# (operator ruling on #289): @wip until the jvm step source (#283) lands, then @jvm-only.
 
 # --- status/actor ---------------------------------------------------------------------------
 

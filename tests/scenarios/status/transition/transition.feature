@@ -7,8 +7,9 @@
 #   review-rejection family (* -> planned) needs force=True in the package, while the corpus
 #   acknowledges those edges unforced. TRANSITION-004 pins that, from the data.
 # - PR-EVENTS-STATUS-TRANSITION-007 applies a request to a prior log, which only the services
-#   (service/command-cli, service/event-log) do. It is @wip until the jvm step source (#283)
-#   lands; its two last steps have no Python binding (see PROMISES.md).
+#   (service/command-cli, service/event-log) do, so it is JVM-only (operator ruling on #289).
+#   It is @wip until the jvm step source (#283) lands; then it is tagged @jvm-only and bound
+#   against command-cli's fold. Its two last steps have no Python binding, by design.
 # - Promises are indexed in tests/scenarios/status/PROMISES.md.
 
 Feature: A status transition is acknowledged or refused as the parity corpus pins

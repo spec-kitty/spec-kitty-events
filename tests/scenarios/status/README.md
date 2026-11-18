@@ -54,6 +54,7 @@ promises (`APPEND-003`, `TRANSITION-007`) are `@wip` until the `jvm` step source
 
 Every selection fails when it is empty, so a scenario never passes on nothing.
 
-Not bound in Python (only the services apply a request to a prior log; `TRANSITION-007`, `@wip`):
+Not bound in Python (only the services apply a request to a prior log; `TRANSITION-007` is a
+JVM-only promise, `@wip` until #283 lands, then `@jvm-only`):
 `When each case's request is applied to its prior log`,
 `Then every outcome is the acknowledgement or refusal its case pins`.
