@@ -70,12 +70,13 @@ Exit status is 1 when any ``error`` finding is reported, otherwise 0.
 from __future__ import annotations
 
 import argparse
+import json
 import ast
 import datetime
 import re
 import sys
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Union
 
@@ -83,6 +84,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_FEATURES = REPO_ROOT / "tests" / "scenarios"
 #: Where the Cucumber-JVM step definitions live (read as source; no JDK needed).
 DEFAULT_JVM_STEPS = REPO_ROOT / "java" / "src" / "test" / "java"
+DEFAULT_JVM_RUNNERS = DEFAULT_FEATURES / "jvm-runners.json"
 
 ERROR = "error"
 INFO = "info"
@@ -111,6 +113,9 @@ MANUAL_WITH_WIP = "MANUAL_WITH_WIP"
 MANUAL_REASON_WITHOUT_MANUAL = "MANUAL_REASON_WITHOUT_MANUAL"
 MANUAL_ON_EXAMPLES = "MANUAL_ON_EXAMPLES"
 JVM_ONLY_WITH_JVM = "JVM_ONLY_WITH_JVM"
+# JVM runners (#284)
+BAD_RUNNER = "BAD_RUNNER"
+JVM_SCENARIO_NOT_RUN = "JVM_SCENARIO_NOT_RUN"
 # Steps
 UNBOUND_STEP = "UNBOUND_STEP"
 AMBIGUOUS_STEP = "AMBIGUOUS_STEP"
@@ -212,6 +217,7 @@ class StepDefinition:
     source: str
     regex: re.Pattern[str]
     path: Path | None = None  # the defining file, for pytest-bdd's conftest scoping
+    areas: tuple[str, ...] | None = None  # a JVM runner's areas: the only features it serves
 
 
 class UnsupportedExpressionError(ValueError):
@@ -1579,20 +1585,131 @@ def check_feature_file(
     )
 
 
+def _in_areas(features_dir: Path, feature: Path, areas: Sequence[str]) -> bool:
+    relative = feature.resolve().relative_to(features_dir.resolve()).as_posix()
+    return any(relative.startswith(area.rstrip("/") + "/") for area in areas)
+
+
 def visible_definitions(
     definitions: Sequence[StepDefinition], features_dir: Path, feature: Path
 ) -> list[StepDefinition]:
-    """The definitions pytest-bdd lets ``feature`` use: one defined inside ``features_dir`` is
-    visible only below its own folder (an area's ``conftest.py`` serves that area, the root
-    ``conftest.py`` every area); one defined outside it, in a separate step folder, serves all."""
+    """The definitions a run of ``feature`` can use: one defined inside ``features_dir`` is
+    visible only below its own folder (pytest-bdd scopes an area's ``conftest.py`` to that area,
+    the root ``conftest.py`` to every area); a JVM runner's definition only in the runner's
+    areas, as its Cucumber run reads only those (#284); any other, from a separate step folder,
+    serves all."""
     root = features_dir.resolve()
     folder = feature.resolve().parent
     visible = []
     for definition in definitions:
+        if definition.areas is not None:
+            if _in_areas(features_dir, feature, definition.areas):
+                visible.append(definition)
+            continue
         home = definition.path.resolve().parent if definition.path is not None else None
         if home is None or not home.is_relative_to(root) or folder.is_relative_to(home):
             visible.append(definition)
     return visible
+
+
+# ---------------------------------------------------------------------------
+# JVM runners (#284): tests/scenarios/jvm-runners.json, shared with the Gradle build
+# ---------------------------------------------------------------------------
+
+_GLUE_RE = re.compile(r"[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*")
+_AREA_RE = re.compile(r"[a-z0-9][a-z0-9_-]*(?:/[a-z0-9][a-z0-9_-]*)*")
+
+
+@dataclass(frozen=True)
+class JvmRunner:
+    """One Cucumber-JVM run: a Gradle project, its glue package and the areas it runs."""
+
+    project: str
+    glue: str
+    steps: Path  # the glue package's folder: the only step definitions the run can find
+    areas: tuple[str, ...]
+
+
+def load_jvm_runners(
+    path: Path, repo_root: Path = REPO_ROOT
+) -> tuple[list[JvmRunner], list[Problem]]:
+    """Read the runner registry. A malformed entry, a missing glue folder, or an area two
+    runners share (a scenario must run in exactly one place) is a ``BAD_RUNNER``."""
+
+    def bad(message: str) -> Problem:
+        return _problem(BAD_RUNNER, path, 1, message)
+
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+        entries = document["runners"]
+        assert isinstance(entries, list) and entries
+    except (OSError, ValueError, KeyError, TypeError, AssertionError) as error:
+        return [], [bad(f"unreadable JVM runner registry: {error}")]
+    runners: list[JvmRunner] = []
+    problems: list[Problem] = []
+    owner: dict[str, str] = {}
+    for entry in entries:
+        project = entry.get("project") if isinstance(entry, dict) else None
+        glue = entry.get("glue") if isinstance(entry, dict) else None
+        sources = entry.get("testSources") if isinstance(entry, dict) else None
+        areas = entry.get("areas") if isinstance(entry, dict) else None
+        if not (
+            isinstance(project, str)
+            and project.startswith(":")
+            and isinstance(glue, str)
+            and _GLUE_RE.fullmatch(glue)
+            and isinstance(sources, str)
+            and isinstance(areas, list)
+            and areas
+            and all(isinstance(a, str) and _AREA_RE.fullmatch(a) for a in areas)
+        ):
+            problems.append(bad(f"malformed runner entry {entry!r}"))
+            continue
+        steps = repo_root / sources / glue.replace(".", "/")
+        if not steps.is_dir():
+            problems.append(bad(f"{project}: glue package folder {steps} does not exist"))
+        for area in areas:
+            for other, other_project in owner.items():
+                if area == other or area.startswith(other + "/") or other.startswith(area + "/"):
+                    problems.append(
+                        bad(f"{project} area {area!r} overlaps {other_project} area {other!r}")
+                    )
+            owner[area] = project
+        runners.append(JvmRunner(project, glue, steps, tuple(areas)))
+    return runners, problems
+
+
+def _runner_definitions(
+    runners: Sequence[JvmRunner], reader: StepSource
+) -> tuple[list[StepDefinition], list[Problem]]:
+    defs: list[StepDefinition] = []
+    problems: list[Problem] = []
+    for runner in runners:
+        if not runner.steps.is_dir():
+            continue
+        found, found_problems = reader(runner.steps)
+        defs += [replace(d, areas=runner.areas) for d in found]
+        problems += found_problems
+    return defs, problems
+
+
+def _check_jvm_runs(
+    features_dir: Path, path: Path, scenarios: Sequence[Scenario], runners: Sequence[JvmRunner]
+) -> list[Problem]:
+    """A gating scenario that claims the JVM must lie in a runner's areas, or it never runs."""
+    if any(_in_areas(features_dir, path, runner.areas) for runner in runners):
+        return []
+    return [
+        _problem(
+            JVM_SCENARIO_NOT_RUN,
+            scenario.file,
+            scenario.line,
+            f"scenario {scenario.name!r} claims the JVM, but no runner in "
+            f"{DEFAULT_JVM_RUNNERS.name} runs its area",
+        )
+        for scenario in scenarios
+        if is_gating(scenario) and JVM in claimed_bindings(scenario)
+    ]
 
 
 def _check_layout(features_dir: Path, path: Path) -> list[Problem]:
@@ -1608,6 +1725,7 @@ def check_tree(
     features_dir: Path,
     step_dirs: StepDirs | None = None,
     sources: Mapping[str, StepSource] = STEP_SOURCES,
+    jvm_runners: Sequence[JvmRunner] | None = None,
 ) -> list[Problem]:
     """Check every area and ``.feature`` file under ``features_dir``.
 
@@ -1615,11 +1733,18 @@ def check_tree(
     by default only the ``python`` step definitions are read, from ``features_dir`` itself. A binding counts as
     registered only when ``sources`` has a reader for it *and* ``step_dirs`` names where its
     step definitions live, so a ``jvm`` claim is never accepted without reading JVM steps.
+    ``jvm_runners`` registers ``jvm`` too: each runner's definitions serve only its areas, and a
+    gating scenario that claims the JVM outside every runner's areas is ``JVM_SCENARIO_NOT_RUN``.
     """
     step_dirs = dict(step_dirs) if step_dirs is not None else {PYTHON: features_dir}
     step_dirs = {binding: value for binding, value in step_dirs.items() if _directories(value)}
     registered = sorted(binding for binding in step_dirs if binding in sources)
     definitions, problems = load_definitions(step_dirs, sources)
+    if jvm_runners is not None and JVM in sources:
+        runner_defs, runner_problems = _runner_definitions(jvm_runners, sources[JVM])
+        definitions += runner_defs
+        problems += runner_problems
+        registered = sorted({*registered, JVM})
     files = sorted(features_dir.rglob("*.feature"))
     if not files:
         problems.append(_problem(NO_FEATURES, features_dir, 1, "no .feature files found"))
@@ -1630,6 +1755,8 @@ def check_tree(
         scenarios, parse_problems = parse_feature(path)
         visible = visible_definitions(definitions, features_dir, path)
         problems += parse_problems + _check_scenarios(scenarios, visible, registered)
+        if jvm_runners is not None:
+            problems += _check_jvm_runs(features_dir, path, scenarios, jvm_runners)
         all_scenarios += scenarios
         area = features_dir / path.relative_to(features_dir).parts[0]
         if area.is_dir():
@@ -1673,7 +1800,16 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         metavar="BINDING=DIR",
         help=(
             "where a binding's step definitions live; repeat it to give a binding several folders "
-            f"(default: python=<features> jvm={DEFAULT_JVM_STEPS.relative_to(REPO_ROOT)})"
+            "(default: python=<features>, and jvm from the runner registry)"
+        ),
+    )
+    parser.add_argument(
+        "--jvm-runners",
+        type=Path,
+        metavar="FILE",
+        help=(
+            "the JVM runner registry; each runner's steps serve only its areas "
+            f"(default without --steps: {DEFAULT_JVM_RUNNERS.relative_to(REPO_ROOT)})"
         ),
     )
     return parser.parse_args(argv)
@@ -1682,9 +1818,16 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
     step_dirs: dict[str, list[Path]] = {}
-    for binding, directory in args.steps or [(PYTHON, args.features), (JVM, DEFAULT_JVM_STEPS)]:
+    for binding, directory in args.steps or [(PYTHON, args.features)]:
         step_dirs.setdefault(binding, []).append(directory)
-    problems = check_tree(args.features, step_dirs)
+    registry = args.jvm_runners or (None if args.steps else DEFAULT_JVM_RUNNERS)
+    runners: list[JvmRunner] | None = None
+    registry_problems: list[Problem] = []
+    if registry is not None:
+        runners, registry_problems = load_jvm_runners(registry)
+    problems = sort_problems(
+        registry_problems + check_tree(args.features, step_dirs, jvm_runners=runners)
+    )
     if problems:
         print(format_problems(problems))
     errors = sum(1 for p in problems if p.severity == ERROR)

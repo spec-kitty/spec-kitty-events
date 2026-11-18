@@ -28,7 +28,7 @@ tests/scenarios/<area>/test_*.py     # binds the area's features (pytest_bdd.sce
 | [`replay/`](replay/README.md) | Folding lifecycle and decision point replay streams to the reducer output they pin, whatever order their rows arrive in | python |
 | [`upcast/`](upcast/README.md) | Reading legacy log rows into the exact CloudEvent bytes their corpus case pins, passing through what cannot be mapped, idempotence, strict use | python, jvm |
 | [`compatibility/`](compatibility/README.md) | The 8.0.0 cutover boundary: `validate_event` accepts what the removed gate refused, the strict profile refuses it with the pinned codes | python |
-| [`status/`](status/README.md) | Appending a status row as its pinned bytes or refusing it, replaying a status diary to its recorded output, the transition parity corpus and `validate_transition`'s edge graph, the structured status actor | python (the services' copies `@wip` until #283) |
+| [`status/`](status/README.md) | Appending a status row as its pinned bytes or refusing it, replaying a status diary to its recorded output, the transition parity corpus and `validate_transition`'s edge graph, the structured status actor | python; `APPEND-003` also jvm, `TRANSITION-007` jvm only |
 
 ## Writing a scenario
 
@@ -68,10 +68,20 @@ vocabulary above, enforced by the contract check's `UNKNOWN_TAG` rule, is what s
 ## The JVM binding
 
 Cucumber-JVM (the version core's `acceptance-jvm/` uses, pinned in `gradle/libs.versions.toml`)
-runs from `java/` through Cucumber's own CLI: the `:java-binding:scenarios` task reads every
-feature under this folder in place and runs the scenarios tagged `@jvm` and not `@wip`. Its step
-classes live in `java/src/test/java/`, in the glue package `ai.speckitty.events.cloudevents`; the
-task fails when a scenario fails, a step is undefined, or no scenario runs. A JVM step has the same
+runs through Cucumber's own CLI, once per runner in [`jvm-runners.json`](jvm-runners.json) (#284):
+
+| Runner | Areas | Glue (the step classes) |
+|--------|-------|-------------------------|
+| `:java-binding` | `upcast/` | `ai.speckitty.events.cloudevents` in `java/src/test/java/` |
+| `:event-log` | `status/append/` | `org.speckitty.missionstatus.adapter.out.filesystem.codec` in `service/event-log/src/test/java/` |
+| `:command-cli` | `status/transition/` | `org.speckitty.commandcli.domain.authority.scenarios` in `service/command-cli/src/test/java/` |
+
+The build-logic plugin `events.scenarios` gives each runner's project a `scenarios` task (part of
+`check`, so `verifyAll` and `service-gate` run it). It reads only its areas' features, in place,
+and runs the scenarios tagged `@jvm` or `@jvm-only` and not `@wip` against its glue. The task
+fails when a scenario fails, a step is undefined, or no scenario runs. An area belongs to at most
+one runner, and a new JVM-bound area gets a runner entry before its first `@jvm` tag. Step code
+stays in test sources, never in a service's production sources. A JVM step has the same
 text as its Python twin. Cucumber-JVM ignores the keyword when it matches a step, so two Java
 definitions with the same text are ambiguous even under different annotations.
 
@@ -80,7 +90,9 @@ definitions with the same text are ambiguous even under different annotations.
 `scripts/ci/scenario_contract.py` checks this tree on every PR, without running it and without
 a JDK, through `tests/test_scenario_contract.py` and the required `acceptance` check. By hand:
 `uv run python scripts/ci/scenario_contract.py`, which reads the `python` steps from this folder and
-the `jvm` steps (Cucumber annotations, as source text) from `java/src/test/java/`. It fails when:
+each runner's `jvm` steps (Cucumber annotations, as source text) from its glue package's folder, as
+`jvm-runners.json` names it; a runner's steps serve only its areas, as its Cucumber run does. It
+fails when:
 
 - a feature is outside `<area>/<behaviour>/<behaviour>.feature`, fails to parse, or has no
   scenarios, or a scenario has no steps;
@@ -88,6 +100,9 @@ the `jvm` steps (Cucumber annotations, as source text) from `java/src/test/java/
   claims (an area's `conftest.py` serves only that area, as in pytest-bdd; an `@jvm` scenario is
   matched against the Java step definitions too), or a scenario's first step is not Given, When
   or Then;
+- a gating scenario claims the JVM (`@jvm`, `@jvm-only`) in an area no runner runs
+  (`JVM_SCENARIO_NOT_RUN`), or `jvm-runners.json` is malformed, names a glue package with no
+  folder, or gives two runners overlapping areas (`BAD_RUNNER`);
 - a promise id is missing, malformed or duplicated, or a tag is outside the vocabulary;
 - a `@wip` scenario lacks its owner or start date;
 - a `@manual` scenario lacks a non-empty `@manual-reason:`, or is also `@wip`; a

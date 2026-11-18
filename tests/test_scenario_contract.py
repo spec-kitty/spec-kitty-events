@@ -10,6 +10,7 @@ from __future__ import annotations
 import ast
 import dataclasses
 import importlib.util
+import json
 import random
 import re
 import subprocess
@@ -566,33 +567,118 @@ def _non_gating_scenario_lines() -> set[tuple[str, int]]:
     return lines
 
 
+REAL_RUNNERS = REAL_FEATURES / "jvm-runners.json"
+
+
+def _real_runners() -> list:
+    runners, problems = contract.load_jvm_runners(REAL_RUNNERS)
+    assert problems == []
+    return runners
+
+
 def test_real_tree_is_clean_and_binds_through_python() -> None:
-    problems = contract.check_tree(REAL_FEATURES, {"python": REAL_FEATURES, "jvm": REAL_JVM_STEPS})
-    assert _codes(problems) == []
-    # The only findings are info about steps of non-gating scenarios: the services' @wip
-    # promises (#270) whose steps only the jvm source will bind.
-    info = [p for p in problems if p.severity == "info"]
-    assert {p.code for p in info} <= {"UNBOUND_STEP"}
-    assert {(p.file, p.line) for p in info} <= _non_gating_scenario_lines()
+    problems = contract.check_tree(
+        REAL_FEATURES, {"python": REAL_FEATURES}, jvm_runners=_real_runners()
+    )
+    assert problems == []
     defs, problems = contract.load_python_step_definitions(REAL_FEATURES)
     assert problems == []
     assert {d.binding for d in defs} == {"python"}
     assert any(p.parent.name == "envelope" for p in REAL_FEATURES.glob("*/README.md"))
 
 
-def test_real_jvm_scenarios_bind_through_the_java_steps() -> None:
-    """#199: the upcast/ area is bound by Cucumber-JVM; without the Java steps it fails."""
-    defs, problems = contract.load_jvm_step_definitions(REAL_JVM_STEPS)
-    assert problems == []
-    assert {Path(d.source.split(":")[0]).name for d in defs} == {"UpcastSteps.java"}
+def test_real_jvm_scenarios_bind_through_each_runners_java_steps() -> None:
+    """#199, #270, #284: each runner's glue folder holds its step classes; without them the
+    JVM-bound areas (upcast/, status/) fail."""
+    runners = _real_runners()
+    assert {r.project: r.areas for r in runners} == {
+        ":java-binding": ("upcast",),
+        ":event-log": ("status/append",),
+        ":command-cli": ("status/transition",),
+    }
+    files = set()
+    for runner in runners:
+        defs, problems = contract.load_jvm_step_definitions(runner.steps)
+        assert problems == []
+        files |= {Path(d.source.split(":")[0]).name for d in defs}
+    assert files == {"UpcastSteps.java", "StatusAppendSteps.java", "TransitionSteps.java"}
     without_jvm = [p for p in contract.check_tree(REAL_FEATURES) if p.severity == "error"]
     assert without_jvm and {p.code for p in without_jvm} == {"BAD_BINDING_DECLARATION"}
-    assert {Path(p.file).relative_to(REAL_FEATURES).parts[0] for p in without_jvm} == {"upcast"}
+    assert {Path(p.file).relative_to(REAL_FEATURES).parts[0] for p in without_jvm} == {
+        "upcast",
+        "status",
+    }
+
+
+# --- JVM runners (#284) ----------------------------------------------------------------------
+
+
+def _runner_tree(tmp_path: Path, runners: list[dict], areas=("a", "b")) -> tuple[Path, Path]:
+    """Two JVM-bound areas built from the jvm_bound fixture, a glue folder with the fixture
+    Java steps, and a registry; returns (features, registry)."""
+    features = tmp_path / "features"
+    for number, area in enumerate(areas, start=1):
+        for source in (FIXTURE_AREAS / "jvm_bound" / "area").rglob("*"):
+            if source.is_file():
+                target = features / area / source.relative_to(FIXTURE_AREAS / "jvm_bound" / "area")
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(source.read_text().replace("AREA-001", f"AREA-00{number}"))
+    glue = tmp_path / "src" / "glue"
+    glue.mkdir(parents=True)
+    (glue / "Steps.java").write_text((FIXTURES / "steps_jvm" / "Steps.java").read_text())
+    registry = tmp_path / "jvm-runners.json"
+    registry.write_text(json.dumps({"runners": runners}))
+    return features, registry
+
+
+def _runner(project: str, areas: list[str], glue: str = "glue") -> dict:
+    return {"project": project, "testSources": "src", "glue": glue, "areas": areas}
+
+
+def _check_runners(tmp_path: Path, runners: list[dict]) -> list:
+    features, registry = _runner_tree(tmp_path, runners)
+    loaded, problems = contract.load_jvm_runners(registry, repo_root=tmp_path)
+    return problems + contract.check_tree(features, {"python": FIXTURE_STEPS}, jvm_runners=loaded)
+
+
+def test_a_runner_binds_the_areas_it_runs(tmp_path: Path) -> None:
+    assert _check_runners(tmp_path, [_runner(":one", ["a", "b"])]) == []
+
+
+def test_a_runners_steps_serve_only_its_areas(tmp_path: Path) -> None:
+    """Area b is in no runner: its @jvm scenario would never run, and a's steps are not b's."""
+    problems = _check_runners(tmp_path, [_runner(":one", ["a"])])
+    assert _codes(problems) == ["JVM_SCENARIO_NOT_RUN"] + ["UNBOUND_STEP"] * 3
+    assert {Path(p.file).relative_to(tmp_path / "features").parts[0] for p in problems} == {"b"}
+
+
+@pytest.mark.parametrize(
+    "runners,message",
+    [
+        ([_runner(":one", ["a"]), _runner(":two", ["a/x", "b"])], "overlaps"),
+        ([_runner(":one", ["a", "b"], glue="missing")], "does not exist"),
+        ([_runner("one", ["a", "b"])], "malformed"),
+        ([_runner(":one", ["../a"])], "malformed"),
+    ],
+)
+def test_a_bad_runner_registry_is_refused(tmp_path: Path, runners, message: str) -> None:
+    problems = _check_runners(tmp_path, runners)
+    bad = [p for p in problems if p.code == "BAD_RUNNER"]
+    assert bad and all(message in p.message for p in bad), problems
+
+
+def test_an_unreadable_runner_registry_is_refused(tmp_path: Path) -> None:
+    (tmp_path / "jvm-runners.json").write_text("{")
+    runners, problems = contract.load_jvm_runners(tmp_path / "jvm-runners.json")
+    assert runners == [] and _codes(problems) == ["BAD_RUNNER"]
 
 
 def test_the_cli_reads_the_jvm_steps_by_default(capsys: pytest.CaptureFixture[str]) -> None:
     assert contract.main([]) == 0
     assert "scenario contract: ok" in capsys.readouterr().out
+    explicit = ["--steps", f"python={REAL_FEATURES}", "--jvm-runners", str(REAL_RUNNERS)]
+    assert contract.main(explicit) == 0
+    capsys.readouterr()
     python_only = ["--steps", f"python={REAL_FEATURES}"]
     assert contract.main(python_only) == 1
     assert "BAD_BINDING_DECLARATION" in capsys.readouterr().out

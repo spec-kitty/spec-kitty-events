@@ -1,0 +1,23 @@
+{
+  "comment": "The Cucumber-JVM runners (#199, #270, #284): each Gradle project runs the @jvm and @jvm-only scenarios of its areas, with the steps of its glue package. The build-logic plugin events.scenarios and scripts/ci/scenario_contract.py both read this file, so a runner's areas, glue and step folder are stated once.",
+  "runners": [
+    {
+      "project": ":java-binding",
+      "testSources": "java/src/test/java",
+      "glue": "ai.speckitty.events.cloudevents",
+      "areas": ["upcast"]
+    },
+    {
+      "project": ":event-log",
+      "testSources": "service/event-log/src/test/java",
+      "glue": "org.speckitty.missionstatus.adapter.out.filesystem.codec",
+      "areas": ["status/append"]
+    },
+    {
+      "project": ":command-cli",
+      "testSources": "service/command-cli/src/test/java",
+      "glue": "org.speckitty.commandcli.domain.authority.scenarios",
+      "areas": ["status/transition"]
+    }
+  ]
+}

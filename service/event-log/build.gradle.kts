@@ -12,6 +12,8 @@ plugins {
     `java-library`
     `java-test-fixtures`
     id("io.spring.dependency-management")
+    // Cucumber-JVM over its BDD scenarios (tests/scenarios/jvm-runners.json: status/append; #270).
+    id("events.scenarios")
 }
 
 dependencyManagement {
@@ -32,6 +34,7 @@ dependencies {
     testImplementation(libs.archunit.junit5)
     // Test-only: the boundary test plants a data-binding dependency to prove the codec rule refuses it.
     testImplementation(libs.jackson.databind.bootmanaged)
+    testImplementation(libs.cucumber.java)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
@@ -68,4 +71,11 @@ tasks.named<Test>("test") {
     systemProperty("eventLog.statusAppendFixtures", statusAppendFixtures.absolutePath)
     // The ledger lock calls flock(2) through the FFM API (a restricted method); without this the JDK warns on every run.
     jvmArgs("--enable-native-access=ALL-UNNAMED")
+}
+
+// The status/append scenarios read the same normative documents as StatusAppendFixtureTest (#270).
+tasks.named<JavaExec>("scenarios") {
+    val statusAppendFixtures = rootProject.file("src/spec_kitty_events/conformance/fixtures/status_append")
+    inputs.dir(statusAppendFixtures).withPathSensitivity(org.gradle.api.tasks.PathSensitivity.RELATIVE)
+    systemProperty("eventLog.statusAppendFixtures", statusAppendFixtures.absolutePath)
 }

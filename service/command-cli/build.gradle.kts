@@ -19,6 +19,8 @@ plugins {
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
     alias(libs.plugins.graalvm.native)
+    // Cucumber-JVM over its BDD scenarios (tests/scenarios/jvm-runners.json: status/transition; #270).
+    id("events.scenarios")
 }
 
 // Guard: the native image needs Spring AOT (see service/build.gradle.kts and the root build).
@@ -42,6 +44,7 @@ dependencies {
     testImplementation(libs.archunit.junit5)
     testImplementation(libs.json.schema.validator)
     testImplementation(testFixtures(project(":event-log")))
+    testImplementation(libs.cucumber.java)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
@@ -324,4 +327,12 @@ val jacocoScopeCheck = tasks.register("jacocoScopeCheck") {
 
 tasks.named("check") {
     dependsOn("nativeTagJvmTest", processTest, benchmarkTest, "jacocoTestCoverageVerification", "jacocoScopeCheck")
+}
+
+// The status/transition scenario reads the parity corpus in place, found from the working directory as CorpusCases does (#270).
+tasks.named<JavaExec>("scenarios") {
+    val corpus = rootProject.file("src/spec_kitty_events/conformance/status_transition_parity")
+    inputs.dir(corpus).withPathSensitivity(org.gradle.api.tasks.PathSensitivity.RELATIVE)
+    workingDir = projectDir
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }

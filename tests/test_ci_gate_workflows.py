@@ -194,10 +194,11 @@ def test_acceptance_runs_the_scenario_contract_and_the_scenarios_before_pytest()
     names = [s.get("name") for s in job["steps"]]
     contract = _step(ACCEPTANCE, "acceptance", "Check the scenario contract")
     scenarios = _step(ACCEPTANCE, "acceptance", "Run the BDD scenarios")
-    # #199: both step sources, read as source text; the jvm one needs no JDK.
+    # #199, #284: both step sources, read as source text; the jvm ones (one per runner in the
+    # registry, each scoped to its areas) need no JDK.
     assert contract["run"].strip() == (
         "python scripts/ci/scenario_contract.py"
-        " --steps python=tests/scenarios --steps jvm=java/src/test/java"
+        " --steps python=tests/scenarios --jvm-runners tests/scenarios/jvm-runners.json"
     )
     assert scenarios["run"].split()[:2] == ["pytest", "tests/scenarios"]
     assert "error::pytest.PytestUnknownMarkWarning" in scenarios["run"]

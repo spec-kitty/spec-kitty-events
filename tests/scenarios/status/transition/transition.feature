@@ -7,9 +7,10 @@
 #   review-rejection family (* -> planned) needs force=True in the package, while the corpus
 #   acknowledges those edges unforced. TRANSITION-004 pins that, from the data.
 # - PR-EVENTS-STATUS-TRANSITION-007 applies a request to a prior log, which only the services
-#   (service/command-cli, service/event-log) do, so it is JVM-only (operator ruling on #289).
-#   It is @wip until the jvm step source (#283) lands; then it is tagged @jvm-only and bound
-#   against command-cli's fold. Its two last steps have no Python binding, by design.
+#   (service/command-cli, service/event-log) do, so it is JVM-only (operator ruling on #289): bound
+#   by Cucumber-JVM against command-cli's authority (TransitionSteps.java; the :command-cli runner
+#   of tests/scenarios/jvm-runners.json), over the domain-layer cases. The later-layer cases
+#   (replay, log decoding, Mission discovery) need the HTTP service: ProtocolCorpusTest runs them.
 # - Promises are indexed in tests/scenarios/status/PROMISES.md.
 
 Feature: A status transition is acknowledged or refused as the parity corpus pins
@@ -52,9 +53,8 @@ Feature: A status transition is acknowledged or refused as the parity corpus pin
     When each case's requested lane pair is validated unforced
     Then validate_transition refuses every requested pair
 
-  @promise:PR-EVENTS-STATUS-TRANSITION-007
-  @wip @wip-owner:stijn-dejongh @wip-since:2026-11-18
+  @promise:PR-EVENTS-STATUS-TRANSITION-007 @jvm-only
   Scenario: The services acknowledge or refuse every request as its case pins
-    Given every status-transition parity case
+    Given every domain-layer status-transition parity case
     When each case's request is applied to its prior log
     Then every outcome is the acknowledgement or refusal its case pins

@@ -14,8 +14,9 @@ Driven by `conformance/fixtures/status_append/`, the manifest's `status_diary/re
 | `transition/` | The parity corpus's schema, refusal vocabularies and reachability; the edge graph's legal edges and illegal twins |
 | `actor/` | The 4-key and 5-key structured status actor, and its invalid combinations |
 
-The fixture listers are the test-only `tests/support/status_fixtures.py`. The services'
-promises (`APPEND-003`, `TRANSITION-007`) are `@wip` until the `jvm` step source (#283) lands.
+The fixture listers are the test-only `tests/support/status_fixtures.py`. Cucumber-JVM binds
+`APPEND-003` (`@jvm`, against `service/event-log`) and `TRANSITION-007` (`@jvm-only`, against
+`service/command-cli`); their Java steps are `StatusAppendSteps.java` and `TransitionSteps.java`.
 
 ## Available steps
 
@@ -54,7 +55,7 @@ promises (`APPEND-003`, `TRANSITION-007`) are `@wip` until the `jvm` step source
 
 Every selection fails when it is empty, so a scenario never passes on nothing.
 
-Not bound in Python (only the services apply a request to a prior log; `TRANSITION-007` is a
-JVM-only promise, `@wip` until #283 lands, then `@jvm-only`):
+Bound in Java only (`TRANSITION-007` is `@jvm-only`: only the services apply a request to a prior
+log): `Given every domain-layer status-transition parity case`,
 `When each case's request is applied to its prior log`,
 `Then every outcome is the acknowledgement or refusal its case pins`.
