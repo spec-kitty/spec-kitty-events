@@ -518,10 +518,25 @@ def test_findings_are_deduplicated_and_sorted_in_a_stable_order(tmp_path: Path) 
 # --- the real tree and the CLI ---------------------------------------------------------------
 
 
+def _non_gating_scenario_lines() -> set[tuple[str, int]]:
+    """(file, step line) of every step of a @wip or @manual scenario in the real tree."""
+    lines: set[tuple[str, int]] = set()
+    for path in REAL_FEATURES.rglob("*.feature"):
+        scenarios, _ = contract.parse_feature(path)
+        for scenario in scenarios:
+            if not contract.is_gating(scenario):
+                lines |= {(str(path), step.line) for step in scenario.steps}
+    return lines
+
+
 def test_real_tree_is_clean_and_binds_through_python() -> None:
-    assert (
-        contract.check_tree(REAL_FEATURES, {"python": REAL_FEATURES, "jvm": REAL_JVM_STEPS}) == []
-    )
+    problems = contract.check_tree(REAL_FEATURES, {"python": REAL_FEATURES, "jvm": REAL_JVM_STEPS})
+    assert _codes(problems) == []
+    # The only findings are info about steps of non-gating scenarios: the services' @wip
+    # promises (#270) whose steps only the jvm source will bind.
+    info = [p for p in problems if p.severity == "info"]
+    assert {p.code for p in info} <= {"UNBOUND_STEP"}
+    assert {(p.file, p.line) for p in info} <= _non_gating_scenario_lines()
     defs, problems = contract.load_python_step_definitions(REAL_FEATURES)
     assert problems == []
     assert {d.binding for d in defs} == {"python"}

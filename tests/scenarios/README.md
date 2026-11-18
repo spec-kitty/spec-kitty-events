@@ -28,6 +28,7 @@ tests/scenarios/<area>/test_*.py     # binds the area's features (pytest_bdd.sce
 | [`replay/`](replay/README.md) | Folding lifecycle and decision point replay streams to the reducer output they pin, whatever order their rows arrive in | python |
 | [`upcast/`](upcast/README.md) | Reading legacy log rows into the exact CloudEvent bytes their corpus case pins, passing through what cannot be mapped, idempotence, strict use | python, jvm |
 | [`compatibility/`](compatibility/README.md) | The 8.0.0 cutover boundary: `validate_event` accepts what the removed gate refused, the strict profile refuses it with the pinned codes | python |
+| [`status/`](status/README.md) | Appending a status row as its pinned bytes or refusing it, replaying a status diary to its recorded output, the transition parity corpus and `validate_transition`'s edge graph, the structured status actor | python (the services' copies `@wip` until #283) |
 
 ## Writing a scenario
 
