@@ -57,11 +57,14 @@ final class TransitionFold {
   private static void noteClaimWriters(Transition event, Map<String, Object> state, Set<String> written,
       Map<String, Map<String, ClaimWrite>> writers) {
     Map<String, ClaimWrite> marks = writers.computeIfAbsent(event.wpId(), ignored -> new HashMap<>());
+    if (event.seed()) {
+      // A seed restates, it does not claim: once it rewrites a claim slot no real claim owns the triple, so the whole record goes.
+      if (written.stream().anyMatch(CLAIM_RELEASE_SLOTS::contains)) marks.clear();
+      return;
+    }
     String id = event.row().get("event_id") instanceof String text ? text : null;
     for (String slot : written) {
-      if (CLAIM_RELEASE_SLOTS.contains(slot) && event.seed()) {
-        marks.remove(slot); // a seed restates, it does not claim: it records no writer
-      } else if (CLAIM_RELEASE_SLOTS.contains(slot) && state.containsKey(slot)) {
+      if (CLAIM_RELEASE_SLOTS.contains(slot) && state.containsKey(slot)) {
         marks.put(slot, new ClaimWrite(event.at(), id, state.get(slot)));
       }
     }

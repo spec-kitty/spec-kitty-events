@@ -1809,13 +1809,17 @@ def _note_claim_writers(
     """Record *event* as the writer of each claim slot in *written*; forget slots *state* no longer holds.
 
     A reconstruction seed's write is a best-effort restatement, not a claim, so
-    it records no writer: a release keeps only what a real claim wrote.
+    it records no writer, and once it rewrites any claim slot no real claim owns
+    the triple any more: the WP's whole record is dropped, so a release keeps
+    either a real claim's whole triple or nothing (never half of one).
     """
     marks = writers.setdefault(event.wp_id, {})
+    if _is_reconstruction_seed(event):
+        if any(slot in _CLAIM_RELEASE_SLOTS for slot in written):
+            marks.clear()
+        return
     for slot in written:
-        if slot in _CLAIM_RELEASE_SLOTS and _is_reconstruction_seed(event):
-            marks.pop(slot, None)
-        elif slot in _CLAIM_RELEASE_SLOTS and slot in state:
+        if slot in _CLAIM_RELEASE_SLOTS and slot in state:
             event_id = event.event_id if isinstance(event.event_id, str) else None
             marks[slot] = (str(event.at), event_id, state[slot])
     for slot in [name for name in marks if name not in state]:
