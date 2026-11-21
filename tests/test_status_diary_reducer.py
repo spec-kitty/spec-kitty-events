@@ -2693,3 +2693,113 @@ class TestClaimReleaseOrdering:
         assert wp["lane"] == "claimed"
         assert wp["agent"] == "codex"
         assert wp["shell_pid"] == 222
+
+    def test_release_after_a_claim_clears_it(self) -> None:
+        rows = _reclaim_after_release()
+        rows.append(_release(_ulid(6), _t(6)))
+        wp = _wp(rows)
+        assert wp["lane"] == "claimed"
+        assert wp["agent"] is None
+        assert wp["shell_pid"] is None
+        assert wp["shell_pid_created_at"] is None
+
+    def test_release_with_no_later_claim_clears_the_earlier_claim(self) -> None:
+        wp = _wp(_reclaim_after_release()[:4])
+        assert wp["lane"] == "planned"
+        assert wp["agent"] is None
+        assert wp["shell_pid"] is None
+
+    def test_two_releases_before_the_later_claim_keep_it(self) -> None:
+        rows = [*_reclaim_after_release(), _release(_ulid(7), _t(4))]
+        wp = _wp(rows)
+        assert (wp["agent"], wp["shell_pid"]) == ("codex", 222)
+
+    def test_two_releases_bracketing_the_later_claim_clear_it(self) -> None:
+        rows = [*_reclaim_after_release(), _release(_ulid(6), _t(6))]
+        rows.insert(0, _release(_ulid(7), _t(2)))
+        wp = _wp(rows)
+        assert (wp["agent"], wp["shell_pid"]) == (None, None)
+
+    def test_release_clears_slots_the_later_claim_did_not_write(self) -> None:
+        """The re-claim brings no pid: the earlier claim's pid is still released."""
+        rows = _reclaim_after_release()
+        rows[-1] = _claim(_ulid(5), _t(5), actor="codex", meta={"agent": "codex"})
+        wp = _wp(rows)
+        assert (wp["agent"], wp["shell_pid"]) == ("codex", None)
+
+    def test_release_keeps_the_later_claims_baseline_and_drops_the_earlier_one(self) -> None:
+        rows = _reclaim_after_release()
+        rows[0] = _claim(_ulid(1), _t(1), meta={"agent": "claude", "shell_pid_created_at": "1.5"})
+        wp = _wp(rows)
+        assert wp["shell_pid_created_at"] is None
+        rows[-1] = _claim(
+            _ulid(5), _t(5), actor="codex", meta={"agent": "codex", "shell_pid_created_at": "9.5"}
+        )
+        assert _wp(rows)["shell_pid_created_at"] == "9.5"
+
+    def test_a_later_claim_owns_the_whole_triple_over_the_releasing_delta(self) -> None:
+        """A replant in a release the later claim overtook never mixes with that claim's triple."""
+        rows = _reclaim_after_release()
+        rows[-1] = _claim(
+            _ulid(5),
+            _t(5),
+            actor="codex",
+            meta={"agent": "codex", "shell_pid": 222, "shell_pid_created_at": "9.5"},
+        )
+        for replant in ({"agent": "gemini"}, {"shell_pid": 333}):
+            rows[3] = _release(_ulid(4), _t(4), **replant)
+            wp = _wp(rows)
+            assert (wp["agent"], wp["shell_pid"], wp["shell_pid_created_at"]) == (
+                "codex",
+                222,
+                "9.5",
+            ), replant
+
+    def test_a_replant_in_a_release_no_claim_overtook_still_wins(self) -> None:
+        rows = _reclaim_after_release()[:3]
+        rows.append(_release(_ulid(4), _t(4), agent="gemini"))
+        assert (_wp(rows)["agent"], _wp(rows)["shell_pid"]) == ("gemini", None)
+        rows = [*_reclaim_after_release(), _release(_ulid(6), _t(6), agent="gemini")]
+        assert (_wp(rows)["agent"], _wp(rows)["shell_pid"]) == ("gemini", None)
+
+    def test_an_earlier_replant_released_before_the_later_claim_yields_the_claim(self) -> None:
+        rows = [*_reclaim_after_release(), _annotation(_ulid(8), at=_t(3), delta={"agent": "x"})]
+        assert _wp(rows)["agent"] == "codex"
+
+    def test_equal_at_release_and_claim_order_by_event_id(self) -> None:
+        rows = _reclaim_after_release()
+        rows[3] = _release(_ulid(4), _t(5))  # _ulid(4) < _ulid(5): release before the claim
+        assert _wp(rows)["agent"] == "codex"
+        rows[3] = _release(_ulid(9), _t(5))  # _ulid(9) > _ulid(5): release after the claim
+        assert _wp(rows)["agent"] is None
+
+    def test_a_seed_restatement_after_the_release_does_not_overtake_it(self) -> None:
+        """A seed restates, it does not claim: a real release before it still clears the triple."""
+        rows = [
+            _row(_ulid(1), from_lane="planned", to_lane="claimed", at=_t(1)),
+            _to_in_progress(_ulid(2), _t(2)),
+            _release(_ulid(3), _t(3)),
+            _seed_claim(_late_seed_id(4), _t(4)),
+        ]
+        wp = _wp(rows)
+        assert wp["lane"] == "in_progress"
+        assert (wp["agent"], wp["shell_pid"]) == (None, None)
+
+    @pytest.mark.parametrize("claim_id", [None, 7])
+    def test_a_non_string_claim_id_on_the_releases_at_orders_before_it(self, claim_id: Any) -> None:
+        """On an equal ``at`` only a string id is compared; any other id never overtakes the release."""
+        rows = _reclaim_after_release()
+        rows[3] = _release(_ulid(4), _t(5))
+        rows[-1]["event_id"] = claim_id
+        assert _wp(rows)["agent"] is None
+        rows[3] = _release(_ulid(4), _t(4))
+        assert _wp(rows)["agent"] == "codex"
+
+    def test_order_independent(self) -> None:
+        rows = [*_reclaim_after_release(), _release(_ulid(7), _t(4))]
+        expected = reduce(rows).to_dict()
+        rng = random.Random(7794)
+        for _ in range(10):
+            shuffled = rows[:]
+            rng.shuffle(shuffled)
+            assert reduce(shuffled).to_dict() == expected

@@ -52,8 +52,9 @@ public final class WriteFold {
     }
     List<Transition> unique = EventOrdering.dedup(transitions);
     List<Transition> ordered = EventOrdering.order(unique);
-    Map<String, Map<String, Object>> states = TransitionFold.fold(ordered);
-    AnnotationFold.apply(states, annotations);
+    Map<String, Map<String, TransitionFold.ClaimWrite>> claimWriters = new LinkedHashMap<>();
+    Map<String, Map<String, Object>> states = TransitionFold.fold(ordered, claimWriters);
+    AnnotationFold.apply(states, annotations, claimWriters);
     StateProjections.apply(states, transitions);
     Map<String, WpWriteState> result = new LinkedHashMap<>();
     states.forEach((wpId, state) -> result.put(wpId, stateView(state, transitionWps.contains(wpId))));
