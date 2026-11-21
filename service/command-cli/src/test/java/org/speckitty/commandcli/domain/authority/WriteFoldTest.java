@@ -283,6 +283,30 @@ class WriteFoldTest {
     assertThat(claimed.of("WP01").agent()).isEqualTo("seed-agent");
   }
 
+  // ---- claim release vs a later claim: a release never erases what a later claim set (spec-kitty/spec-kitty#7794) ----------
+
+  private static Map<String, Object> step(String id, String from, String to, String day, Map<String, Object> claim) {
+    Map<String, Object> row = AuthorityFixtures.row(from, to);
+    row.put("event_id", id);
+    row.put("at", "2026-01-" + day + "T00:00:00+00:00");
+    if (claim != null) row.put("policy_metadata", claim);
+    return row;
+  }
+
+  @Test
+  void aReleaseStampedBeforeALaterClaimKeepsThatClaimsSlots() {
+    FoldView folded = WriteFold.fold(List.of(
+        step("01J00000000000000000000001", "planned", "claimed", "01", Map.of("agent", "claude", "shell_pid", 111)),
+        step("01J00000000000000000000002", "claimed", "in_progress", "02", null),
+        step("01J00000000000000000000003", "in_progress", "planned", "03", null),
+        annotation("WP01", delta(Map.of("release_runtime_claim", true))),
+        step("01J00000000000000000000005", "planned", "claimed", "05", Map.of("agent", "codex", "shell_pid", 222))));
+    WpWriteState state = folded.of("WP01");
+    assertThat(state.lane()).isEqualTo(Lane.CLAIMED);
+    assertThat(state.agent()).isEqualTo("codex");
+    assertThat(state.slot("shell_pid")).isEqualTo(222);
+  }
+
   // ---- event ids: core keeps the raw scalar, deduplicates by Python equality and orders ties with Python's < --------------------
 
   private static Map<String, Object> plannedWithId(Object eventId, String at) {

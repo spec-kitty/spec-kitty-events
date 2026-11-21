@@ -2660,3 +2660,36 @@ class TestSeedVsSeedUnchanged:
     @pytest.mark.parametrize(("rows", "exp"), _case_params(_SEED_VS_SEED))
     def test_seed_vs_seed(self, rows: list[dict[str, Any]], exp: tuple[Any, ...]) -> None:
         _assert_outcome(rows, exp)
+
+
+# ── Claim release vs a later claim (spec-kitty/spec-kitty#7794) ──────────────
+
+
+def _release(eid: str, at: str, **extra: Any) -> dict[str, Any]:
+    return _annotation(eid, at=at, delta={"release_runtime_claim": True, **extra})
+
+
+def _reclaim_after_release() -> list[dict[str, Any]]:
+    """claim(claude, 111) t1 -> in_progress t2 -> planned t3 -> release t4 -> claim(codex, 222) t5."""
+    return [
+        _claim(_ulid(1), _t(1), meta={"agent": "claude", "shell_pid": 111}),
+        _to_in_progress(_ulid(2), _t(2)),
+        _row(_ulid(3), from_lane="in_progress", to_lane="planned", at=_t(3)),
+        _release(_ulid(4), _t(4)),
+        _claim(_ulid(5), _t(5), actor="codex", meta={"agent": "codex", "shell_pid": 222}),
+    ]
+
+
+class TestClaimReleaseOrdering:
+    """A release annotation never erases the slots a LATER claim set (spec-kitty/spec-kitty#7794).
+
+    Annotations fold in a pass after every transition, so before the fix a
+    ``release_runtime_claim`` stamped before a re-claim cleared that re-claim's
+    ``agent``/``shell_pid`` as if it had come after it.
+    """
+
+    def test_release_before_a_later_claim_keeps_the_claim(self) -> None:
+        wp = _wp(_reclaim_after_release())
+        assert wp["lane"] == "claimed"
+        assert wp["agent"] == "codex"
+        assert wp["shell_pid"] == 222
