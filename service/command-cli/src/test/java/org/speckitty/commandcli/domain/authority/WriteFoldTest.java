@@ -380,6 +380,20 @@ class WriteFoldTest {
   }
 
   @Test
+  void anAppliedSeedAfterTheLaterClaimLeavesNoHalfTriple() {
+    List<Map<String, Object>> rows = reclaim(Map.of("release_runtime_claim", true), "04", "01J00000000000000000000004");
+    rows.set(4, step("01J00000000000000000000005", "planned", "claimed", "05", Map.of("agent", "codex", "shell_pid", 222)));
+    rows.add(step("01J00000000000000000000006", "claimed", "planned", "06", null));
+    Map<String, Object> seed = step("01JZZZZZ000000000000000007", "planned", "claimed", "07", Map.of("agent", "seed-agent"));
+    seed.put("actor", "migration:seed");
+    rows.add(seed);
+    WpWriteState state = WriteFold.fold(rows).of("WP01");
+    assertThat(state.lane()).isEqualTo(Lane.CLAIMED);
+    assertThat(state.agent()).isNull();
+    assertThat(state.slot("shell_pid")).isNull();
+  }
+
+  @Test
   void aNonStringClaimIdOnTheReleasesAtOrdersBeforeIt() {
     for (Object id : java.util.Arrays.asList(null, java.math.BigInteger.valueOf(7), 1e16)) {
       List<Map<String, Object>> rows = reclaim(Map.of("release_runtime_claim", true), "05", "01J00000000000000000000004");
