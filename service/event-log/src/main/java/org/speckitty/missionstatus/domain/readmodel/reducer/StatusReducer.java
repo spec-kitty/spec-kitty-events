@@ -58,9 +58,14 @@ public final class StatusReducer {
    * {@code decision_significance} models, a producer-registry row and the {@code cloudevents} package, none of which this class reads.
    * Every conformance golden is byte-identical under 11.3.0; only the manifest's {@code specKittyEventsVersion} moved.
    *
-   * <p>The 10.5.1 lift is ported at this pin (spec-kitty-events#170, which took over spec-kitty#6268): {@code diary.py} is byte-identical
-   * between the 11.3.0 release and the unreleased package on {@code main}, so 11.3.0 stays the released oracle the goldens are generated with (operator ruling on #170).
-   * The {@code interleaved/clock-ahead-approval-departure} golden pins the lift in both languages.
+   * <p>The 10.5.1 lift is ported at this pin (spec-kitty-events#170, which took over spec-kitty#6268): {@code diary.py} was byte-identical
+   * between the 11.3.0 release and the unreleased package on {@code main} at that time, so 11.3.0 stays the released oracle the goldens are
+   * generated with (operator ruling on #170). The {@code interleaved/clock-ahead-approval-departure} golden pins the lift in both languages.
+   *
+   * <p>{@code diary.py} on {@code main} has since moved past 11.3.0 in two places outside the ordering, precedence and lane fold ported
+   * here: the structured-actor decode ({@code decode_actor}'s {@code profile_source}, #263) and the annotation pass's claim slots
+   * (spec-kitty/spec-kitty#7794: a {@code release_runtime_claim} no longer erases the claim slots a later {@code planned -> claimed} wrote;
+   * this class serves no claim slot). The pin stays.
    */
   public static final String PORTED_EVENTS_VERSION = "11.3.0";
 
