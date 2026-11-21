@@ -2795,6 +2795,20 @@ class TestClaimReleaseOrdering:
         rows[3] = _release(_ulid(4), _t(4))
         assert _wp(rows)["agent"] == "codex"
 
+    def test_an_applied_seed_after_the_later_claim_leaves_no_half_triple(self) -> None:
+        """A seed rewriting part of the later claim's triple drops the whole claim record (#299 review)."""
+        rows = [
+            *_reclaim_after_release(),
+            _row(_ulid(6), from_lane="claimed", to_lane="planned", at=_t(6)),
+            _seed_claim(_late_seed_id(7), _t(7), meta={"agent": "seed-agent"}),
+        ]
+        wp = _wp(rows)
+        assert wp["lane"] == "claimed"
+        assert (wp["agent"], wp["shell_pid"]) == (None, None)
+        without_release = [row for row in rows if row.get("kind") != ANNOTATION_KIND]
+        wp = _wp(without_release)
+        assert (wp["agent"], wp["shell_pid"]) == ("seed-agent", 222)
+
     def test_order_independent(self) -> None:
         rows = [*_reclaim_after_release(), _release(_ulid(7), _t(4))]
         expected = reduce(rows).to_dict()
