@@ -837,7 +837,8 @@ class InnerStateChanged:
     never traverse the FSM: it bypasses transition validation and never
     increments ``force_count``. The reducer folds its typed
     :class:`WPInnerStateDelta` into the per-WP runtime slots in a dedicated
-    post-transition pass.
+    post-transition pass (a ``release_runtime_claim`` alone is ordered against
+    the claims, see :func:`reduce_parsed` step 4).
     """
 
     event_id: str  # ULID
@@ -1384,7 +1385,11 @@ def _wp_state_from_event(
     return state
 
 
-def _apply_annotation_delta(state: dict[str, Any], delta: WPInnerStateDelta) -> None:
+def _apply_annotation_delta(
+    state: dict[str, Any],
+    delta: WPInnerStateDelta,
+    later_claim: Mapping[str, Any] | None = None,
+) -> None:
     """Fold a typed :class:`WPInnerStateDelta` into a per-WP snapshot dict.
 
     **Claim release (``release_runtime_claim``) is applied FIRST, before the
@@ -1404,6 +1409,18 @@ def _apply_annotation_delta(state: dict[str, Any], delta: WPInnerStateDelta) -> 
     the same rollback move) win over the release: the loop below overwrites
     whatever the release just cleared whenever the delta also carries a
     present, non-empty value for that slot.
+
+    **A release never erases a LATER claim** (spec-kitty/spec-kitty#7794).
+    Annotations fold after every transition, so a release stamped BEFORE a
+    re-claim (``planned -> claimed``) would otherwise clear the slots that
+    re-claim's sidecar wrote. ``later_claim`` carries, per claim-triple slot,
+    the value a real (non-seed) transition ordered after this annotation wrote
+    (see :func:`_later_claim_writes`); the release restores those slots to that
+    value instead of clearing them, and clears only the rest. When any slot is
+    restored, the later claim owns the whole triple: the delta's own replants of
+    the claim triple are skipped too, so the triple never pairs this delta's
+    agent or pid with the later claim's (the mixed-claimant hazard). The
+    delta's other slots fold as usual.
 
     Per-field merge rules (only present delta fields are applied; absent
     fields leave the slot untouched):
@@ -1447,9 +1464,13 @@ def _apply_annotation_delta(state: dict[str, Any], delta: WPInnerStateDelta) -> 
     Never increments ``force_count``.
     """
     if delta.release_runtime_claim:
+        kept = later_claim or {}
         for name in _CLAIM_RELEASE_SLOTS:
-            state[name] = None
+            state[name] = kept.get(name)
+    overtaken = bool(delta.release_runtime_claim and later_claim)
     for name in _REPLACE_SLOTS:
+        if overtaken and name in _CLAIM_RELEASE_SLOTS:
+            continue
         value = getattr(delta, name)
         # Empty strings are a no-op for string replace-slots: ``""`` must
         # never clobber a real recorded value. ``value != ""`` keeps the
@@ -1727,7 +1748,9 @@ def _record_applied_event(
     prov.seed -= wrote
 
 
-def _fold_losing_seed(event: StatusEvent, state: dict[str, Any], prov: _SlotProvenance) -> None:
+def _fold_losing_seed(
+    event: StatusEvent, state: dict[str, Any], prov: _SlotProvenance
+) -> list[str]:
     """Fold the payload of a seed that lost on continuity into *state* (spec-kitty#6058).
 
     A reconstruction seed is minted to preserve a WP's historical claim
@@ -1744,8 +1767,9 @@ def _fold_losing_seed(event: StatusEvent, state: dict[str, Any], prov: _SlotProv
     ``None`` over an absent slot). The seed's ``shell_pid_created_at`` is also
     withheld while a real event owns ``shell_pid`` (I3, order-independent with
     the void in :func:`_record_applied_event`). The lane-setter slots are never
-    touched.
+    touched. Returns the claim slots it wrote.
     """
+    written: list[str] = []
     for slot, value in _claim_sidecar_writes(event).items():
         if slot in prov.real:
             continue
@@ -1753,20 +1777,67 @@ def _fold_losing_seed(event: StatusEvent, state: dict[str, Any], prov: _SlotProv
             continue
         state[slot] = value
         prov.seed.add(slot)
+        written.append(slot)
     if event.review_result is not None and _VERDICT_SLOT not in prov.real:
         state[_VERDICT_SLOT] = event.review_result.to_dict()
         prov.seed.add(_VERDICT_SLOT)
+    return written
 
 
-def _fold_transitions(sorted_events: list[StatusEvent]) -> dict[str, dict[str, Any]]:
+#: Per WP, per claim-triple slot: the ``at`` and string ``event_id`` (``None``
+#: when the id is not a string) of the transition whose write holds the slot
+#: after the transition fold, and the value it wrote.
+_ClaimWriters: TypeAlias = dict[str, dict[str, tuple[str, str | None, Any]]]
+
+
+def _transition_after(at: str, event_id: str | None, annotation: InnerStateChanged) -> bool:
+    """Whether a transition at ``(at, event_id)`` orders after *annotation*.
+
+    The reducer's ``(at, event_id)`` key. On an equal ``at`` only a string
+    transition id is compared with the annotation's ULID; a hand-written id that
+    is not a string (``None``, a number) counts as ordering before it, so the
+    answer never depends on how a non-string id would spell (and never raises).
+    """
+    if at != annotation.at:
+        return at > annotation.at
+    return event_id is not None and event_id > annotation.event_id
+
+
+def _note_claim_writers(
+    event: StatusEvent, state: dict[str, Any], written: Iterable[str], writers: _ClaimWriters
+) -> None:
+    """Record *event* as the writer of each claim slot in *written*; forget slots *state* no longer holds.
+
+    A reconstruction seed's write is a best-effort restatement, not a claim, so
+    it records no writer: a release keeps only what a real claim wrote.
+    """
+    marks = writers.setdefault(event.wp_id, {})
+    for slot in written:
+        if slot in _CLAIM_RELEASE_SLOTS and _is_reconstruction_seed(event):
+            marks.pop(slot, None)
+        elif slot in _CLAIM_RELEASE_SLOTS and slot in state:
+            event_id = event.event_id if isinstance(event.event_id, str) else None
+            marks[slot] = (str(event.at), event_id, state[slot])
+    for slot in [name for name in marks if name not in state]:
+        del marks[slot]
+
+
+def _fold_transitions(
+    sorted_events: list[StatusEvent],
+) -> tuple[dict[str, dict[str, Any]], _ClaimWriters]:
     """Fold sorted transitions into per-WP state with rollback-aware precedence.
 
     A reconstruction seed dropped on from_lane continuity (arm ii) folds its
     unwritten payload (:func:`_fold_losing_seed`); one dropped by a same-``at``
     rollback (arm i) contributes nothing.
+
+    Also returns, per WP, the transition that wrote each claim-triple slot in
+    force, so the annotation pass can keep a release from erasing a later claim
+    (:func:`_later_claim_writes`, spec-kitty/spec-kitty#7794).
     """
     wp_states: dict[str, dict[str, Any]] = {}
     provenance: dict[str, _SlotProvenance] = {}
+    writers: _ClaimWriters = {}
     for event in sorted_events:
         current = wp_states.get(event.wp_id)
         prov = provenance.setdefault(event.wp_id, _SlotProvenance())
@@ -1775,13 +1846,35 @@ def _fold_transitions(sorted_events: list[StatusEvent]) -> dict[str, dict[str, A
             new_state = _wp_state_from_event(event, current)
             _record_applied_event(event, new_state, prov)
             wp_states[event.wp_id] = new_state
+            _note_claim_writers(event, new_state, _claim_sidecar_writes(event), writers)
         elif (
             verdict is _Arbitration.LOST_ON_CONTINUITY
             and current is not None
             and _is_reconstruction_seed(event)
         ):
-            _fold_losing_seed(event, current, prov)
-    return wp_states
+            _note_claim_writers(event, current, _fold_losing_seed(event, current, prov), writers)
+    return wp_states, writers
+
+
+def _later_claim_writes(
+    writers: _ClaimWriters, annotation: InnerStateChanged
+) -> dict[str, Any] | None:
+    """The claim slots a transition ordered after *annotation* wrote, for a release to keep.
+
+    ``None`` unless *annotation* releases the claim. Transition and annotation
+    are compared by their stored ``(at, event_id)``, the key both folds sort by;
+    a transition's lifted sort ``at`` (:func:`_order_transitions`) is not used,
+    because the lift corrects a skewed approval's clock, not the clock the
+    claim and the annotation share.
+    """
+    if not annotation.delta.release_runtime_claim:
+        return None
+    marks = writers.get(annotation.wp_id, {})
+    return {
+        slot: value
+        for slot, (at, event_id, value) in marks.items()
+        if _transition_after(at, event_id, annotation)
+    }
 
 
 def _approved_departure_sort_at(events: list[StatusEvent]) -> dict[str, str]:
@@ -2135,9 +2228,15 @@ def reduce_parsed(
        has written (see the module docstring)
     4. Fold **all annotations** in a dedicated post-transition pass, applying
        the per-field ``WPInnerStateDelta`` merge. A same-``at`` transition can
-       never clobber an annotation slot; annotations never bump ``force_count``.
-       This pass is a single O(annotations) walk keyed by ``wp_id`` -- it does
-       NOT re-scan the transition list.
+       never clobber an annotation slot, except the claim triple of a release
+       below; annotations never bump ``force_count``. This pass is a single
+       O(annotations) walk keyed by ``wp_id`` -- it does NOT re-scan the
+       transition list. One exception to "after every transition": a
+       ``release_runtime_claim`` never erases a claim slot that a real
+       transition ordered after it by ``(at, event_id)`` wrote -- a release
+       stamped before a re-claim keeps the re-claim's slots, and that re-claim
+       then owns the whole triple over the release delta's own replants
+       (spec-kitty/spec-kitty#7794)
     5. Build summary counts for the active/display lanes (lanes in
        ``NON_DISPLAY_LANES`` -- currently ``GENESIS`` and ``UNINITIALIZED`` --
        are excluded; neither ever appears as the current lane of a
@@ -2176,12 +2275,15 @@ def reduce_parsed(
     # An annotation-only stream has no transition to source the slug from.
     mission_slug = safe_mission_slug(sorted_events[0].mission_slug, "") if sorted_events else ""
 
-    wp_states = _fold_transitions(sorted_events)
+    wp_states, claim_writers = _fold_transitions(sorted_events)
 
     # Step 4: Annotation post-pass (event-kind partition -- folded AFTER every
     # transition, never interleaved by timestamp). A single O(annotations) walk
     # keyed by wp_id; it does NOT re-scan the transition list. An annotation for
     # a wp_id with no prior transition materialises a runtime-only WP entry.
+    # The one ordered exception: a ``release_runtime_claim`` keeps each claim
+    # slot a transition after it by ``(at, event_id)`` wrote, read from the
+    # writers the transition fold recorded (spec-kitty/spec-kitty#7794).
     #
     # Sort by ``(at, event_id)`` -- the SAME key as the transition pass (Step 2) --
     # so two annotations touching the same field resolve by timestamp, not by
@@ -2193,7 +2295,9 @@ def reduce_parsed(
         if wp_state is None:
             wp_state = _runtime_only_wp_state(annotation.actor)
             wp_states[annotation.wp_id] = wp_state
-        _apply_annotation_delta(wp_state, annotation.delta)
+        _apply_annotation_delta(
+            wp_state, annotation.delta, _later_claim_writes(claim_writers, annotation)
+        )
 
     # Step 5: Build summary counts for the active/display lanes.
     # Lanes in NON_DISPLAY_LANES (GENESIS, UNINITIALIZED) are excluded --

@@ -20,9 +20,22 @@ final class TransitionFold {
   /** Internal slot: the {@link TransitionId} of the event that set the lane in force (absent slot = no setter). */
   static final String SETTER = "__setter";
 
+  /** The claim-triple slots a {@code release_runtime_claim} clears. */
+  static final List<String> CLAIM_RELEASE_SLOTS = List.of("agent", "shell_pid", "shell_pid_created_at");
+
+  /**
+   * The transition write holding a claim slot after the fold: its {@code at}, its {@code event_id} when that is a string (else
+   * {@code null}: core never compares a non-string id with an annotation's), and the value it wrote.
+   */
+  record ClaimWrite(String at, String id, Object value) {}
+
   private TransitionFold() {}
 
-  static Map<String, Map<String, Object>> fold(List<Transition> events) {
+  /**
+   * Core's {@code _fold_transitions}; {@code writers} receives, per WP, the transition that wrote each claim slot in force, so the
+   * annotation pass keeps a release from erasing a later claim (spec-kitty/spec-kitty#7794).
+   */
+  static Map<String, Map<String, Object>> fold(List<Transition> events, Map<String, Map<String, ClaimWrite>> writers) {
     Map<String, Map<String, Object>> states = new LinkedHashMap<>();
     Map<String, Provenance> provenance = new HashMap<>();
     for (Transition event : events) {
@@ -33,11 +46,26 @@ final class TransitionFold {
         Map<String, Object> next = stateFrom(event, current);
         recordApplied(event, next, slots);
         states.put(event.wpId(), next);
+        noteClaimWriters(event, next, claimWrites(event).keySet(), writers);
       } else if (verdict == Verdict.LOST_ON_CONTINUITY && current != null && event.seed()) {
-        foldLosingSeed(event, current, slots);
+        noteClaimWriters(event, current, foldLosingSeed(event, current, slots), writers);
       }
     }
     return states;
+  }
+
+  private static void noteClaimWriters(Transition event, Map<String, Object> state, Set<String> written,
+      Map<String, Map<String, ClaimWrite>> writers) {
+    Map<String, ClaimWrite> marks = writers.computeIfAbsent(event.wpId(), ignored -> new HashMap<>());
+    String id = event.row().get("event_id") instanceof String text ? text : null;
+    for (String slot : written) {
+      if (CLAIM_RELEASE_SLOTS.contains(slot) && event.seed()) {
+        marks.remove(slot); // a seed restates, it does not claim: it records no writer
+      } else if (CLAIM_RELEASE_SLOTS.contains(slot) && state.containsKey(slot)) {
+        marks.put(slot, new ClaimWrite(event.at(), id, state.get(slot)));
+      }
+    }
+    marks.keySet().removeIf(slot -> !state.containsKey(slot));
   }
 
   private static Map<String, Object> stateFrom(Transition event, Map<String, Object> previous) {
@@ -148,17 +176,20 @@ final class TransitionFold {
     provenance.seed.removeAll(writes);
   }
 
-  private static void foldLosingSeed(Transition event, Map<String, Object> state, Provenance provenance) {
+  private static Set<String> foldLosingSeed(Transition event, Map<String, Object> state, Provenance provenance) {
+    Set<String> written = new HashSet<>();
     claimWrites(event).forEach((slot, value) -> {
       if (!provenance.real.contains(slot) && !(slot.equals("shell_pid_created_at") && provenance.real.contains("shell_pid"))) {
         state.put(slot, value);
         provenance.seed.add(slot);
+        written.add(slot);
       }
     });
     if (event.reviewResult() != null && !provenance.real.contains("review_result")) {
       state.put("review_result", event.reviewResult());
       provenance.seed.add("review_result");
     }
+    return written;
   }
 
   private enum Verdict { APPLY, LOST_TO_ROLLBACK, LOST_ON_CONTINUITY }
