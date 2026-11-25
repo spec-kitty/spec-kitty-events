@@ -2,7 +2,7 @@
 title: Work and Status Events
 description: The work-package lane-transition family and the append-only status diary reducer that together track where every work package sits on the kanban board.
 doc_status: active
-updated: 2026-11-13T00:00:00Z
+updated: 2026-11-25T00:00:00Z
 type: Integration
 kind: Reference
 related:
@@ -110,6 +110,8 @@ deltas. The result is a `State` — `mission_slug`, `materialized_at`,
 `event_count`, `last_event_id`, a `work_packages` map and a `summary` of lane
 counts — which serializes via `to_dict()` to the exact `status.json` shape
 (minus the CLI-side `retrospective` attachment).
+
+A `release_runtime_claim` annotation is the exception to the annotations-after-transitions order. It never clears claim slots that a claim transition ordered after it by `(at, event_id)` wrote, and that later claim owns the whole `agent`, `shell_pid` and `shell_pid_created_at` triple. A release ordered after the claim, or with no later claim, clears as before.
 
 **Durability.** The diary is the durable, append-only source of truth for
 work-package state; it is never rewritten, and rows for event types the reducer

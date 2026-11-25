@@ -1,0 +1,17 @@
+{
+  "case": "status_diary_claim_release_order.006",
+  "group": "diary",
+  "origin": "conformance/fixtures/status_diary/replay/status_diary_claim_release_order.jsonl:6",
+  "notes": "A status.events.jsonl line, read with the Mission id from context.",
+  "context": {
+    "missionid": "01J0000000000000000000RP01"
+  },
+  "line": "{\"actor\": \"claude\", \"at\": \"2026-11-25T10:00:06+00:00\", \"event_id\": \"01JAAAA0000000000000009006\", \"evidence\": null, \"execution_mode\": \"worktree\", \"force\": false, \"from_lane\": \"planned\", \"mission_slug\": \"299-claim-release-order\", \"policy_metadata\": {\"agent\": \"claude\", \"shell_pid\": 333}, \"reason\": null, \"review_ref\": null, \"to_lane\": \"claimed\", \"wp_id\": \"WP02\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"claude\",\"data\":{\"evidence\":null,\"force\":false,\"from_lane\":\"planned\",\"policy_metadata\":{\"agent\":\"claude\",\"shell_pid\":333},\"reason\":null,\"review_ref\":null,\"to_lane\":\"claimed\"},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:lane.transitioned.v1\",\"executionmode\":\"worktree\",\"id\":\"01JAAAA0000000000000009006\",\"missionid\":\"01J0000000000000000000RP01\",\"missionslug\":\"299-claim-release-order\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000RP01\",\"specversion\":\"1.0\",\"subject\":\"WP02\",\"time\":\"2026-11-25T10:00:06+00:00\",\"type\":\"ai.spec-kitty.lane.transitioned.v1\"}",
+    "valid": true
+  }
+}

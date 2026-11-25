@@ -1,6 +1,7 @@
 package org.speckitty.commandcli.domain.authority;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -8,18 +9,36 @@ import java.util.Map;
 import org.speckitty.commandcli.domain.authority.WriteFold.AnnotationRow;
 import org.speckitty.missionstatus.domain.model.CodePoints;
 
-/** Annotation post-pass: sorted independently and folded after every transition. */
+/**
+ * Annotation post-pass: sorted independently and folded after every transition, except that a {@code release_runtime_claim} never
+ * erases a claim slot a transition ordered after it wrote (spec-kitty/spec-kitty#7794).
+ */
 final class AnnotationFold {
   private static final List<String> REPLACE_SLOTS = List.of("shell_pid", "shell_pid_created_at", "agent", "assignee",
       "role", "agent_profile", "agent_profile_version", "model", "provider");
 
   private AnnotationFold() {}
 
-  static void apply(Map<String, Map<String, Object>> states, List<AnnotationRow> annotations) {
+  static void apply(Map<String, Map<String, Object>> states, List<AnnotationRow> annotations,
+      Map<String, Map<String, TransitionFold.ClaimWrite>> claimWriters) {
     annotations.stream().sorted(AnnotationFold::compare).forEach(annotation -> {
       Map<String, Object> state = states.computeIfAbsent(annotation.wpId(), ignored -> runtimeOnly(annotation.actor()));
-      applyDelta(state, annotation.delta());
+      applyDelta(state, annotation.delta(), laterClaim(annotation, claimWriters.getOrDefault(annotation.wpId(), Map.of())));
     });
+  }
+
+  /**
+   * Core's {@code _later_claim_writes}: the claim slots a transition after the annotation by stored {@code (at, event_id)} wrote. On an
+   * equal {@code at} only a string transition id is compared ({@code _transition_after}); any other id orders before the annotation.
+   */
+  private static Map<String, Object> laterClaim(AnnotationRow annotation, Map<String, TransitionFold.ClaimWrite> writers) {
+    Map<String, Object> kept = new HashMap<>();
+    writers.forEach((slot, write) -> {
+      int at = CodePoints.compare(write.at(), annotation.at());
+      boolean after = at != 0 ? at > 0 : write.id() != null && CodePoints.compare(write.id(), annotation.id()) > 0;
+      if (after) kept.put(slot, write.value());
+    });
+    return kept;
   }
 
   private static int compare(AnnotationRow left, AnnotationRow right) {
@@ -38,11 +57,14 @@ final class AnnotationFold {
     return state;
   }
 
-  private static void applyDelta(Map<String, Object> state, Map<String, Object> delta) {
+  private static void applyDelta(Map<String, Object> state, Map<String, Object> delta, Map<String, Object> laterClaim) {
     if (Boolean.TRUE.equals(delta.get("release_runtime_claim"))) {
-      for (String slot : List.of("agent", "shell_pid", "shell_pid_created_at")) state.put(slot, null);
+      for (String slot : TransitionFold.CLAIM_RELEASE_SLOTS) state.put(slot, laterClaim.get(slot));
     }
+    // A later claim that overtook the release owns the whole triple over the delta's own replants (core's ``overtaken``).
+    boolean overtaken = Boolean.TRUE.equals(delta.get("release_runtime_claim")) && !laterClaim.isEmpty();
     for (String slot : REPLACE_SLOTS) {
+      if (overtaken && TransitionFold.CLAIM_RELEASE_SLOTS.contains(slot)) continue;
       Object value = delta.get(slot);
       if (value != null && !value.equals("")) state.put(slot, value);
     }

@@ -3080,6 +3080,24 @@
       "min_version": "11.5.0"
     },
     {
+      "id": "status-diary-replay-claim-release-order",
+      "path": "status_diary/replay/status_diary_claim_release_order.jsonl",
+      "fixture_type": "replay_stream",
+      "event_type": "mixed",
+      "expected_result": "valid",
+      "notes": "A release_runtime_claim annotation stamped before a later re-claim (WP01) leaves that claim's agent and shell_pid; one stamped after its claim (WP02) clears it (spec-kitty#7794)",
+      "min_version": "11.5.0"
+    },
+    {
+      "id": "status-diary-replay-claim-release-order-output",
+      "path": "status_diary/replay/status_diary_claim_release_order_output.json",
+      "fixture_type": "reducer_output",
+      "event_type": "State",
+      "expected_result": "valid",
+      "notes": "Golden reduce() output for status_diary_claim_release_order.jsonl: WP01 is claimed by codex/222, WP02 is released to agent=None",
+      "min_version": "11.5.0"
+    },
+    {
       "id": "status-diary-replay-seed-lane-authority",
       "path": "status_diary/replay/status_diary_seed_lane_authority.jsonl",
       "fixture_type": "replay_stream",
