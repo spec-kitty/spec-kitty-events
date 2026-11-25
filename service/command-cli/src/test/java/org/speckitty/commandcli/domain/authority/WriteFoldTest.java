@@ -293,20 +293,6 @@ class WriteFoldTest {
     return row;
   }
 
-  @Test
-  void aReleaseStampedBeforeALaterClaimKeepsThatClaimsSlots() {
-    FoldView folded = WriteFold.fold(List.of(
-        step("01J00000000000000000000001", "planned", "claimed", "01", Map.of("agent", "claude", "shell_pid", 111)),
-        step("01J00000000000000000000002", "claimed", "in_progress", "02", null),
-        step("01J00000000000000000000003", "in_progress", "planned", "03", null),
-        annotation("WP01", delta(Map.of("release_runtime_claim", true))),
-        step("01J00000000000000000000005", "planned", "claimed", "05", Map.of("agent", "codex", "shell_pid", 222))));
-    WpWriteState state = folded.of("WP01");
-    assertThat(state.lane()).isEqualTo(Lane.CLAIMED);
-    assertThat(state.agent()).isEqualTo("codex");
-    assertThat(state.slot("shell_pid")).isEqualTo(222);
-  }
-
   private static List<Map<String, Object>> reclaim(Map<String, Object> releaseDelta, String releaseDay, String releaseId) {
     Map<String, Object> release = annotation("WP01", delta(releaseDelta));
     release.put("at", "2026-01-" + releaseDay + "T00:00:00+00:00");

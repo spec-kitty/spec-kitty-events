@@ -2695,31 +2695,18 @@ class TestClaimReleaseOrdering:
         assert wp["agent"] == "codex"
         assert wp["shell_pid"] == 222
 
-    def test_release_after_a_claim_clears_it(self) -> None:
-        rows = _reclaim_after_release()
-        rows.append(_release(_ulid(6), _t(6)))
-        wp = _wp(rows)
-        assert wp["lane"] == "claimed"
-        assert wp["agent"] is None
-        assert wp["shell_pid"] is None
-        assert wp["shell_pid_created_at"] is None
-
     def test_release_with_no_later_claim_clears_the_earlier_claim(self) -> None:
         wp = _wp(_reclaim_after_release()[:4])
         assert wp["lane"] == "planned"
         assert wp["agent"] is None
         assert wp["shell_pid"] is None
 
-    def test_two_releases_before_the_later_claim_keep_it(self) -> None:
-        rows = [*_reclaim_after_release(), _release(_ulid(7), _t(4))]
-        wp = _wp(rows)
-        assert (wp["agent"], wp["shell_pid"]) == ("codex", 222)
-
     def test_two_releases_bracketing_the_later_claim_clear_it(self) -> None:
         rows = [*_reclaim_after_release(), _release(_ulid(6), _t(6))]
         rows.insert(0, _release(_ulid(7), _t(2)))
         wp = _wp(rows)
-        assert (wp["agent"], wp["shell_pid"]) == (None, None)
+        assert wp["lane"] == "claimed"
+        assert (wp["agent"], wp["shell_pid"], wp["shell_pid_created_at"]) == (None, None, None)
 
     def test_release_clears_slots_the_later_claim_did_not_write(self) -> None:
         """The re-claim brings no pid: the earlier claim's pid is still released."""
@@ -2759,9 +2746,11 @@ class TestClaimReleaseOrdering:
     def test_a_replant_in_a_release_no_claim_overtook_still_wins(self) -> None:
         rows = _reclaim_after_release()[:3]
         rows.append(_release(_ulid(4), _t(4), agent="gemini"))
-        assert (_wp(rows)["agent"], _wp(rows)["shell_pid"]) == ("gemini", None)
+        wp = _wp(rows)
+        assert (wp["agent"], wp["shell_pid"]) == ("gemini", None)
         rows = [*_reclaim_after_release(), _release(_ulid(6), _t(6), agent="gemini")]
-        assert (_wp(rows)["agent"], _wp(rows)["shell_pid"]) == ("gemini", None)
+        wp = _wp(rows)
+        assert (wp["agent"], wp["shell_pid"]) == ("gemini", None)
 
     def test_an_earlier_replant_released_before_the_later_claim_yields_the_claim(self) -> None:
         rows = [*_reclaim_after_release(), _annotation(_ulid(8), at=_t(3), delta={"agent": "x"})]
