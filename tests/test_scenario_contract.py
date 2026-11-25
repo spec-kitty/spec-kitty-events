@@ -428,6 +428,13 @@ def test_a_binding_may_read_several_step_folders(tmp_path: Path) -> None:
             ["x percent", "2. percent", "1. percent", "1e5 percent", "1.5E+3 percent"],
         ),
         ("{double} and {bigdecimal}", ["1.5E-3 and 7"], ["1. and 7"]),
+        # the float look-ahead scans the rest of the step text: an empty float matches when a
+        # digit follows anywhere later, as in Cucumber
+        ("{float} percent", [], [" percent"]),
+        ("a {float} b {int}", ["a  b 3"], ["a  b x"]),
+        # Java's whitespace: a no-break space is text, an em space is whitespace (#285)
+        ("a\u00a0b/c", ["a\u00a0b", "c"], ["a\u00a0c"]),
+        ("a\u2003b/c", ["a\u2003b", "a\u2003c"], ["c"]),
         ("a {word} b", ["a x-y b"], ["a x y b"]),
         ("all of {}", ["all of anything at all", "all of "], []),
         ("a cucumber(s)", ["a cucumber", "a cucumbers"], ["a cucumberss"]),
@@ -478,7 +485,10 @@ def test_cucumber_expressions_translate_to_full_match_regexes(
         "(b)/a",
         # empty, nested and alternating optionals; an empty alternative at either end
         "a () b",
-        "a ((b)) c",
+        "a ((b)c) d",
+        "(" * 400 + "a" + ")" * 400,
+        # a no-break space is not Java whitespace, so it cannot be escaped
+        "a\\\u00a0b",
         "a (b/c)",
         "a/ b",
         "/a b",
@@ -793,7 +803,7 @@ BROKEN_BUILDS = {
     ),
     "projectDir not a file literal": (
         _write("settings.gradle.kts", 'include(":one")\nproject(":one").projectDir = rootDir\n'),
-        "unrecognised projectDir",
+        "in a form this check cannot read",
     ),
     "no settings file": (_remove("settings.gradle.kts"), "cannot read the Gradle settings"),
     "no build file": (_remove("one/build.gradle.kts"), "found 0"),

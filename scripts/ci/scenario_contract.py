@@ -1152,7 +1152,7 @@ class _CucumberParser:
 
     def parse(self) -> list[_Node]:
         parsers = (self.alternation, self.optional, self.parameter, self.text)
-        consumed, nodes = self.until(parsers, 1, _END_OF_LINE)
+        _consumed, nodes = self.until(parsers, 1, _END_OF_LINE)
         return nodes
 
     def until(
@@ -1164,7 +1164,7 @@ class _CucumberParser:
                 consumed, found = parser(index)
                 if consumed:
                     break
-            else:  # pragma: no cover - every token is text to the text parser
+            else:  # a defensive stop, as in Cucumber: the text parser takes every other token
                 raise self.fail("no parser for a token")
             index += consumed
             nodes += found
@@ -1279,7 +1279,12 @@ def cucumber_expression_to_regex(expression: str) -> re.Pattern[str]:
             raise UnsupportedExpressionError(
                 f"regular expression {expression!r} does not compile as a Python regex: {exc}"
             ) from exc
-    nodes = _CucumberParser(expression).parse()
+    try:
+        nodes = _CucumberParser(expression).parse()
+    except RecursionError as exc:  # hundreds of nested optionals, which Cucumber refuses anyway
+        raise UnsupportedExpressionError(
+            f"step expression {expression!r} nests optionals too deeply"
+        ) from exc
     return re.compile("".join(_rewrite(node, expression) for node in nodes))
 
 
@@ -1816,8 +1821,10 @@ def gradle_projects(settings: Path) -> tuple[dict[str, Path], list[str]]:
     """The projects ``settings`` includes, each with its directory (relative to the settings
     folder), and the reasons it could not be read. Comments are blanked out first, so an
     ``include`` or ``projectDir`` in a comment counts for nothing. A project directory is the
-    path with ``:`` as ``/`` unless ``project(":x").projectDir = file("dir")`` moves it; any other
-    ``projectDir`` form is refused rather than guessed (#295)."""
+    path with ``:`` as ``/`` unless ``project(":x").projectDir = file("dir")`` moves it; a
+    ``project(...).projectDir = <anything else>`` is refused rather than guessed (#295). Other
+    forms (``project(":x").apply { projectDir = ... }``, ``findProject``) are not read: the
+    check knows this repository's settings forms, not all of Gradle's."""
     try:
         text = strip_java_comments(settings.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError) as error:
@@ -1832,7 +1839,10 @@ def gradle_projects(settings: Path) -> tuple[dict[str, Path], list[str]]:
         path, value = _gradle_path(match.group(1)), match.group(2).strip()
         directory = _FILE_CALL_RE.fullmatch(value)
         if directory is None:
-            reasons.append(f"{settings.name}: unrecognised projectDir for {path}: {value!r}")
+            reasons.append(
+                f"{settings} sets the projectDir of {path} in a form this check cannot read "
+                f'({value!r}); use project(...).projectDir = file("<dir>")'
+            )
         elif path in projects:
             projects[path] = Path(directory.group(1))
     return projects, reasons
