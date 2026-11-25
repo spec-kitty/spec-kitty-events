@@ -1,0 +1,41 @@
+{
+  "event_count": 5,
+  "last_event_id": "01JAAAA0000000000000009006",
+  "materialized_at": "2026-11-25T10:00:06+00:00",
+  "mission_number": "299",
+  "mission_slug": "299-claim-release-order",
+  "mission_type": "software-dev",
+  "summary": {
+    "approved": 0,
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 2,
+    "done": 0,
+    "for_review": 0,
+    "in_progress": 0,
+    "in_review": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "codex",
+      "agent": "codex",
+      "force_count": 0,
+      "lane": "claimed",
+      "last_event_id": "01JAAAA0000000000000009005",
+      "last_transition_at": "2026-11-25T10:00:05+00:00",
+      "shell_pid": 222,
+      "shell_pid_created_at": null
+    },
+    "WP02": {
+      "actor": "claude",
+      "agent": null,
+      "force_count": 0,
+      "lane": "claimed",
+      "last_event_id": "01JAAAA0000000000000009006",
+      "last_transition_at": "2026-11-25T10:00:06+00:00",
+      "shell_pid": null,
+      "shell_pid_created_at": null
+    }
+  }
+}
