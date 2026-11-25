@@ -208,11 +208,14 @@ def test_acceptance_runs_the_scenario_contract_and_the_scenarios_before_pytest()
         "Check the scenario contract"
     )
     assert names.index("Run the BDD scenarios") < names.index("Run pytest")
-    # No JDK in this job: the jvm step source is read as text, never compiled or run.
+    # No JDK in this job: the jvm step source is read as text, never compiled or run. The job
+    # names java/src/test/java, so "java" alone cannot be forbidden; "java " (a `java -jar`)
+    # and "sdk" (SDKMAN) can (#288).
     assert "runs-on" in job
     for step in job["steps"]:
         assert "setup-java" not in step.get("uses", "")
-        assert not any(tool in step.get("run", "") for tool in ("gradle", "javac", "mvn"))
+        run = step.get("run", "")
+        assert not any(tool in run for tool in ("gradle", "javac", "mvn", "java ", "sdk"))
 
 
 def test_harness_gate_is_pausable_and_skips_fork_prs_only() -> None:
