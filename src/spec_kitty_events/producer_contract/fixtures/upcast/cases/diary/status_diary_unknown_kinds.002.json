@@ -4,7 +4,7 @@
   "origin": "conformance/fixtures/status_diary/replay/status_diary_unknown_kinds.jsonl:2",
   "notes": "A status.events.jsonl line, read with the Mission id from context.",
   "context": {
-    "missionid": "01J0000000000000000000RP08"
+    "missionid": "01J0000000000000000000RP09"
   },
   "line": "{\"event_id\": \"future-1\", \"event_type\": \"SomeFutureProtocolEventV99\", \"mission_slug\": \"041-reducer-unification\", \"payload\": {\"anything\": true}}",
   "expected": {

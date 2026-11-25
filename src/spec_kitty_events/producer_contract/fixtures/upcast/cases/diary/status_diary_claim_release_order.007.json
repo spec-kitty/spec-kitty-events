@@ -1,0 +1,17 @@
+{
+  "case": "status_diary_claim_release_order.007",
+  "group": "diary",
+  "origin": "conformance/fixtures/status_diary/replay/status_diary_claim_release_order.jsonl:7",
+  "notes": "A status.events.jsonl line, read with the Mission id from context.",
+  "context": {
+    "missionid": "01J0000000000000000000RP01"
+  },
+  "line": "{\"actor\": \"claude\", \"at\": \"2026-11-25T10:00:07+00:00\", \"delta\": {\"release_runtime_claim\": true}, \"event_id\": \"01JAAAA0000000000000009007\", \"kind\": \"annotation\", \"wp_id\": \"WP02\"}",
+  "expected": {
+    "outcome": "mapped",
+    "form": "flat",
+    "codes": [],
+    "golden": "{\"actor\":\"claude\",\"data\":{\"delta\":{\"release_runtime_claim\":true}},\"datacontenttype\":\"application/json\",\"dataschema\":\"urn:ai.spec-kitty:schema:wp.innerstate.changed.v1\",\"id\":\"01JAAAA0000000000000009007\",\"missionid\":\"01J0000000000000000000RP01\",\"schemaversion\":\"4.0.0\",\"source\":\"/spec-kitty/missions/01J0000000000000000000RP01\",\"specversion\":\"1.0\",\"subject\":\"WP02\",\"time\":\"2026-11-25T10:00:07+00:00\",\"type\":\"ai.spec-kitty.wp.innerstate.changed.v1\"}",
+    "valid": true
+  }
+}
