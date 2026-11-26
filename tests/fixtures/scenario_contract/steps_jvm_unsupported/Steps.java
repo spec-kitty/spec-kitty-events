@@ -20,8 +20,8 @@ public class Steps {
     @Given("^an unbalanced (regex$")
     public void badRegex() {}
 
-    @Given("an unmatched } brace")
-    public void unmatchedBrace() {}
+    @Given("an unclosed { brace")
+    public void unclosedBrace() {}
 
     @Given("an alternation of {int}/{float}")
     public void parameterInAlternation(int a) {}

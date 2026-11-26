@@ -12,8 +12,11 @@ checks, without running anything:
 * the tag vocabulary of ``tests/scenarios/README.md`` (a closed set: an unknown tag is an error):
   every scenario carries a well-formed ``@promise:PR-EVENTS-<AREA>-NNN``, promise ids are unique
   across the suite, a ``@wip`` scenario names its owner and start date, and a ``@manual``
-  scenario carries a non-empty ``@manual-reason:<text>`` and is never also ``@wip``, a
-  ``@manual-reason:`` never appears without ``@manual``, and neither tags an ``Examples`` block;
+  scenario carries a non-empty ``@manual-reason:<text>`` and is never also ``@wip``, ``@jvm``
+  or ``@jvm-only`` (``MANUAL_WITH_JVM``, #291), a ``@manual-reason:`` never appears without
+  ``@manual``; none of ``@manual``, ``@manual-reason:``, ``@jvm-only``, ``@wip``,
+  ``@wip-owner:`` and ``@wip-since:`` tags an ``Examples`` block (pytest-bdd turns those tags
+  into raw marks, never through its tag hook; ``WIP_ON_EXAMPLES``, #290);
 * every step of a gating scenario (neither ``@wip`` nor ``@manual``) matches exactly one step definition in each
   binding the scenario claims (``python``, plus ``jvm`` when tagged ``@jvm``; ``jvm`` alone when
   tagged ``@jvm-only``, a promise only the JVM services implement), keyword
@@ -37,8 +40,12 @@ binding counts as registered only when it has both a reader there and a step fol
 annotations, read from ``*.java`` source as text, never compiled; spec-kitty-events#199). A
 ``jvm`` claim -- an ``@jvm`` tag, a ``JVM binding`` other than ``none``, a ``python, jvm`` promise
 row -- without a ``jvm`` step folder is a ``BAD_BINDING_DECLARATION``; with one, every step of an
-``@jvm`` scenario must match exactly one Java step definition. By default the CLI reads
-``python`` from the features folder and ``jvm`` from ``java/src/test/java``.
+``@jvm`` scenario must match exactly one Java step definition. By default the CLI and
+:func:`check_tree` read the same sources (:func:`default_bindings`, #288): ``python`` from the
+features folder and, for the real tree, ``jvm`` from each runner of
+``tests/scenarios/jvm-runners.json``. Each runner is checked against the Gradle build too
+(#295): its project is included in ``settings.gradle.kts``, its ``testSources`` lie in the
+project's directory, and the project's build file applies ``id("events.scenarios")``.
 
 Findings about a tag point at the line of that tag, not the scenario line. Findings are
 de-duplicated and sorted by file, line, code and message.
@@ -47,10 +54,11 @@ Known limits of the jvm step reader: only ``@Given``, ``@When``, ``@Then``, ``@A
 (simple or qualified) are read, with one single-line string literal as the argument (``value =``
 allowed); comments are blanked out first. The expression is a regular expression when it starts
 with ``^``, ends with ``$`` or is wrapped in ``/``, and otherwise a Cucumber expression with the
-built-in parameter types, plain ``(optional)`` text and whitespace-bounded ``a/b`` alternation.
+built-in parameter types, read by a port of cucumber-expressions 17.1.0's tokenizer, parser and
+regex rewrite, with its refusals (#285).
 Cucumber-JVM ignores the keyword when matching, so a JVM definition matches any keyword. A
-concatenated or constant argument, a text block, a custom ``@ParameterType`` or a regex Python
-cannot compile is an ``UNSUPPORTED_EXPRESSION``.
+concatenated or constant argument, a text block, a custom ``@ParameterType``, an expression
+Cucumber refuses or a regex Python cannot compile is an ``UNSUPPORTED_EXPRESSION``.
 
 Known limits of the python step reader: only ``@given``, ``@when``, ``@then`` and ``@step``
 decorators are read, with the step text as a string literal, ``parsers.parse("...")`` (fields
@@ -62,7 +70,8 @@ Usage::
 
     python scripts/ci/scenario_contract.py [--features DIR] [--steps BINDING=DIR ...]
 
-(``--steps`` replaces both defaults: give ``python`` too when giving ``jvm``.)
+(``--steps`` replaces both defaults: give ``python`` too when giving ``jvm``. The default JVM
+runner registry is read only for the real tree, not for another ``--features`` folder.)
 
 Exit status is 1 when any ``error`` finding is reported, otherwise 0.
 """
@@ -75,6 +84,7 @@ import ast
 import datetime
 import re
 import sys
+import unicodedata
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -112,6 +122,8 @@ BAD_MANUAL_REASON = "BAD_MANUAL_REASON"
 MANUAL_WITH_WIP = "MANUAL_WITH_WIP"
 MANUAL_REASON_WITHOUT_MANUAL = "MANUAL_REASON_WITHOUT_MANUAL"
 MANUAL_ON_EXAMPLES = "MANUAL_ON_EXAMPLES"
+MANUAL_WITH_JVM = "MANUAL_WITH_JVM"
+WIP_ON_EXAMPLES = "WIP_ON_EXAMPLES"
 JVM_ONLY_WITH_JVM = "JVM_ONLY_WITH_JVM"
 JVM_ONLY_ON_EXAMPLES = "JVM_ONLY_ON_EXAMPLES"
 # JVM runners (#284)
@@ -256,6 +268,17 @@ def _split_cells(line: str) -> list[str]:
     return [cell.strip().replace("\\|", "|") for cell in _CELL_SPLIT_RE.split(inner)]
 
 
+#: Tags refused on an ``Examples:`` block, by name (the part before a ``:``), with the code.
+_EXAMPLES_REFUSALS = {
+    "manual": MANUAL_ON_EXAMPLES,
+    "manual-reason": MANUAL_ON_EXAMPLES,
+    JVM_ONLY: JVM_ONLY_ON_EXAMPLES,
+    "wip": WIP_ON_EXAMPLES,
+    "wip-owner": WIP_ON_EXAMPLES,
+    "wip-since": WIP_ON_EXAMPLES,
+}
+
+
 class _Reader:
     """Line-based Gherkin subset reader. One instance reads one file."""
 
@@ -397,10 +420,12 @@ class _Reader:
         tags = self._take_pending()
         for tag in tags:
             # pytest-bdd turns Examples tags into raw pytest marks, never through the tag hook,
-            # so a @manual or @jvm-only row would run in Python despite the tag.
-            if tag.name in ("manual", JVM_ONLY) or tag.name.startswith("manual-reason:"):
+            # so a @manual or @jvm-only row would run in Python despite the tag, and a @wip row
+            # would fail instead of running as a non-strict xfail (#290).
+            code = _EXAMPLES_REFUSALS.get(tag.name.partition(":")[0])
+            if code is not None:
                 self.error(
-                    MANUAL_ON_EXAMPLES if tag.name != JVM_ONLY else JVM_ONLY_ON_EXAMPLES,
+                    code,
                     tag.line,
                     f"@{tag.name} cannot tag an Examples block: tag the Scenario Outline instead",
                 )
@@ -681,6 +706,17 @@ def _check_manual(scenario: Scenario) -> list[Problem]:
                 "@wip is unfinished work",
             )
         )
+    jvm = sorted({tag.name for tag in scenario.tags if tag.name in (JVM, JVM_ONLY)})
+    if jvm:
+        problems.append(
+            _problem(
+                MANUAL_WITH_JVM,
+                scenario.file,
+                manual.line,
+                f"@manual and {' '.join('@' + name for name in jvm)} do not combine: "
+                "a @manual scenario runs in no binding, so it claims none (#291)",
+            )
+        )
     return problems
 
 
@@ -914,7 +950,9 @@ _UNICODE_ESCAPE_RE = re.compile(r"u+([0-9a-fA-F]{4})")
 #: Cucumber's built-in parameter types (cucumber-expressions), as regexes. A custom
 #: ``@ParameterType`` is not modelled: a step using one is an ``UNSUPPORTED_EXPRESSION``.
 _INT_PATTERN = r"(?:-?\d+)|(?:\d+)"
-_FLOAT_PATTERN = r"[-+]?(?:\d+(?:[.,]\d*)?|[.,]\d+)(?:[eE][-+]?\d+)?"
+#: ParameterTypeRegistry's float regex for Locale.ENGLISH (decimal ``.``, group ``,``, exponent
+#: ``E``). Its look-ahead scans the rest of the step text, as in Cucumber, not only the parameter.
+_FLOAT_PATTERN = r"(?=.*\d.*)[-+]?(?:\d+(?:[,]?\d+)*)*(?:[.](?=\d.*))?\d*(?:\d+[E]-?\d+)?"
 _CUCUMBER_PARAMETERS = {
     "int": _INT_PATTERN,
     "byte": _INT_PATTERN,
@@ -1022,69 +1060,212 @@ def _java_string_literal(text: str, index: int) -> tuple[str, int] | None:
     return None
 
 
-def _cucumber_text(chunk: str, expression: str, *, parameters: bool) -> str:
-    """One whitespace-free piece of a Cucumber expression (no alternation) as a regex."""
-    parts: list[str] = []
-    index = 0
-    while index < len(chunk):
-        char = chunk[index]
-        if char == "\\" and index + 1 < len(chunk):
-            parts.append(re.escape(chunk[index + 1]))
-            index += 2
-        elif char == "{" and parameters:
-            end = chunk.find("}", index)
-            name = chunk[index + 1 : end] if end != -1 else None
-            if name is None or name not in _CUCUMBER_PARAMETERS:
-                raise UnsupportedExpressionError(
-                    f"parameter {chunk[index : end + 1] if end != -1 else chunk[index:]!r} in step "
-                    f"expression {expression!r} is not a built-in Cucumber parameter type"
-                )
-            parts.append(f"({_CUCUMBER_PARAMETERS[name]})")
-            index = end + 1
-        elif char == "(":
-            end = chunk.find(")", index)
-            inner = chunk[index + 1 : end] if end != -1 else ""
-            if end == -1 or not inner or any(c in inner for c in "({/\\"):
-                raise UnsupportedExpressionError(
-                    f"optional text in step expression {expression!r} is not supported here; "
-                    "use plain (text) without nesting, parameters, alternation or escapes"
-                )
-            parts.append(f"(?:{re.escape(inner)})?")
-            index = end + 1
-        elif char in "{})":
-            raise UnsupportedExpressionError(
-                f"unmatched {char!r} in step expression {expression!r}; escape it with a backslash"
-            )
-        else:
-            parts.append(re.escape(char))
-            index += 1
-    return "".join(parts)
+# A port of cucumber-expressions 17.1.0 (CucumberExpressionTokenizer, CucumberExpressionParser and
+# CucumberExpression.rewriteToRegex; the version gradle/verification-metadata.xml pins), so the
+# check refuses what Cucumber refuses and matches what it matches (#285).
+_WHITE_SPACE, _TEXT, _ALTERNATION = "whitespace", "text", "/"
+_BEGIN_PARAMETER, _END_PARAMETER, _BEGIN_OPTIONAL, _END_OPTIONAL = "{", "}", "(", ")"
+_START_OF_LINE, _END_OF_LINE = "^", "$"
+_JAVA_NON_WHITESPACE_SPACES = frozenset("\u00a0\u2007\u202f")
 
 
-def _split_unescaped(chunk: str, separator: str) -> list[str]:
-    pieces, current, index = [], [], 0
-    while index < len(chunk):
-        if chunk[index] == "\\" and index + 1 < len(chunk):
-            current.append(chunk[index : index + 2])
-            index += 2
-        elif chunk[index] == separator:
-            pieces.append("".join(current))
-            current = []
-            index += 1
+def _is_java_whitespace(char: str) -> bool:
+    """``Character.isWhitespace``: the ASCII controls, and Unicode separators except no-break."""
+    if char in "\t\n\x0b\x0c\r\x1c\x1d\x1e\x1f":
+        return True
+    return unicodedata.category(char) in ("Zs", "Zl", "Zp") and (
+        char not in _JAVA_NON_WHITESPACE_SPACES
+    )
+
+
+@dataclass(frozen=True)
+class _Token:
+    kind: str
+    text: str
+
+
+@dataclass(frozen=True)
+class _Node:
+    kind: str  # "text", "parameter", "optional", "alternation", "alternative"
+    text: str = ""
+    nodes: tuple[_Node, ...] = ()
+
+
+def _token_kind(char: str) -> str:
+    if _is_java_whitespace(char):
+        return _WHITE_SPACE
+    return char if char in "/{}()" else _TEXT
+
+
+def _tokenize(expression: str) -> list[_Token]:
+    """Tokens between a start and an end of line. A backslash makes the next character text,
+    and only whitespace and ``\\ / { } ( )`` can be escaped; runs of text or whitespace merge."""
+    tokens = [_Token(_START_OF_LINE, "")]
+    kind: str | None = None
+    buffer: list[str] = []
+    escaped = False
+    for char in expression:
+        if not escaped and char == "\\":
+            escaped = True
+            continue
+        if escaped:
+            if not (_is_java_whitespace(char) or char in "\\/{}()"):
+                raise UnsupportedExpressionError(
+                    f"step expression {expression!r} escapes {char!r}: only whitespace and "
+                    "\\ / { } ( ) can be escaped"
+                )
+            current = _TEXT
         else:
-            current.append(chunk[index])
-            index += 1
-    pieces.append("".join(current))
-    return pieces
+            current = _token_kind(char)
+        escaped = False
+        if buffer and not (current == kind and current in (_TEXT, _WHITE_SPACE)):
+            tokens.append(_Token(kind or _TEXT, "".join(buffer)))
+            buffer = []
+        kind = current
+        buffer.append(char)
+    if escaped:
+        raise UnsupportedExpressionError(
+            f"step expression {expression!r} ends with a backslash: the end of line cannot be escaped"
+        )
+    if buffer:
+        tokens.append(_Token(kind or _TEXT, "".join(buffer)))
+    tokens.append(_Token(_END_OF_LINE, ""))
+    return tokens
+
+
+class _CucumberParser:
+    """``cucumber-expression := ( alternation | optional | parameter | text )*``"""
+
+    def __init__(self, expression: str) -> None:
+        self.expression = expression
+        self.tokens = _tokenize(expression)
+
+    def fail(self, message: str) -> UnsupportedExpressionError:
+        return UnsupportedExpressionError(f"step expression {self.expression!r}: {message}")
+
+    def at(self, index: int, *kinds: str) -> bool:
+        if index < 0:
+            return _START_OF_LINE in kinds
+        if index >= len(self.tokens):
+            return _END_OF_LINE in kinds
+        return self.tokens[index].kind in kinds
+
+    def parse(self) -> list[_Node]:
+        parsers = (self.alternation, self.optional, self.parameter, self.text)
+        _consumed, nodes = self.until(parsers, 1, _END_OF_LINE)
+        return nodes
+
+    def until(
+        self, parsers: Sequence[Callable[[int], tuple[int, list[_Node]]]], start: int, *ends: str
+    ) -> tuple[int, list[_Node]]:
+        index, nodes = start, []
+        while index < len(self.tokens) and not self.at(index, *ends):
+            for parser in parsers:
+                consumed, found = parser(index)
+                if consumed:
+                    break
+            else:  # a defensive stop, as in Cucumber: the text parser takes every other token
+                raise self.fail("no parser for a token")
+            index += consumed
+            nodes += found
+        return index - start, nodes
+
+    def between(
+        self,
+        kind: str,
+        begin: str,
+        end: str,
+        parsers: Sequence[Callable[[int], tuple[int, list[_Node]]]],
+        index: int,
+    ) -> tuple[int, list[_Node]]:
+        if not self.at(index, begin):
+            return 0, []
+        consumed, nodes = self.until(parsers, index + 1, end, _END_OF_LINE)
+        close = index + 1 + consumed
+        if not self.at(close, end):
+            raise self.fail(f"{begin!r} is never closed by {end!r}; escape it with a backslash")
+        text = "".join(node.text for node in nodes) if kind == "parameter" else ""
+        return close + 1 - index, [_Node(kind, text, tuple(nodes))]
+
+    def text(self, index: int) -> tuple[int, list[_Node]]:
+        token = self.tokens[index]
+        if token.kind in (_WHITE_SPACE, _TEXT, _END_PARAMETER, _END_OPTIONAL):
+            return 1, [_Node("text", token.text)]
+        if token.kind == _ALTERNATION:
+            raise self.fail("alternation is not allowed in an optional")
+        return 0, []
+
+    def name(self, index: int) -> tuple[int, list[_Node]]:
+        token = self.tokens[index]
+        if token.kind in (_WHITE_SPACE, _TEXT):
+            return 1, [_Node("text", token.text)]
+        raise self.fail(f"{token.text!r} is not allowed in a parameter type name")
+
+    def parameter(self, index: int) -> tuple[int, list[_Node]]:
+        return self.between("parameter", _BEGIN_PARAMETER, _END_PARAMETER, (self.name,), index)
+
+    def optional(self, index: int) -> tuple[int, list[_Node]]:
+        parsers = (self.optional, self.parameter, self.text)
+        return self.between("optional", _BEGIN_OPTIONAL, _END_OPTIONAL, parsers, index)
+
+    def separator(self, index: int) -> tuple[int, list[_Node]]:
+        return (1, [_Node("alternative")]) if self.at(index, _ALTERNATION) else (0, [])
+
+    def alternation(self, index: int) -> tuple[int, list[_Node]]:
+        """Bounded on the left by the start of line, whitespace or ``}``, on the right by
+        whitespace, the end of line or ``{``."""
+        if not self.at(index - 1, _START_OF_LINE, _WHITE_SPACE, _END_PARAMETER):
+            return 0, []
+        parsers = (self.separator, self.optional, self.parameter, self.text)
+        consumed, nodes = self.until(parsers, index, _WHITE_SPACE, _END_OF_LINE, _BEGIN_PARAMETER)
+        if not any(node.kind == "alternative" and not node.nodes for node in nodes):
+            return 0, []
+        alternatives: list[list[_Node]] = [[]]
+        for node in nodes:
+            if node.kind == "alternative" and not node.nodes:
+                alternatives.append([])
+            else:
+                alternatives[-1].append(node)
+        branches = tuple(_Node("alternative", "", tuple(branch)) for branch in alternatives)
+        return consumed, [_Node("alternation", "", branches)]
+
+
+def _rewrite(node: _Node, expression: str) -> str:
+    def fail(message: str) -> UnsupportedExpressionError:
+        return UnsupportedExpressionError(f"step expression {expression!r}: {message}")
+
+    if node.kind == "text":
+        return re.escape(node.text)
+    if node.kind == "parameter":
+        if node.text not in _CUCUMBER_PARAMETERS:
+            raise fail(f"{{{node.text}}} is not a built-in Cucumber parameter type")
+        return f"({_CUCUMBER_PARAMETERS[node.text]})"
+    if node.kind == "optional":
+        if any(child.kind == "parameter" for child in node.nodes):
+            raise fail("a parameter is not allowed in an optional")
+        if any(child.kind == "optional" for child in node.nodes):
+            raise fail("an optional is not allowed in an optional")
+        if not any(child.kind == "text" for child in node.nodes):
+            raise fail("an optional may not be empty")
+        return "(?:" + "".join(_rewrite(child, expression) for child in node.nodes) + ")?"
+    if node.kind == "alternation":
+        for alternative in node.nodes:
+            if not alternative.nodes:
+                raise fail("an alternative may not be empty")
+            if not any(child.kind == "text" for child in alternative.nodes):
+                raise fail("an alternative may not exclusively contain optionals")
+        return "(?:" + "|".join(_rewrite(alt, expression) for alt in node.nodes) + ")"
+    return "".join(_rewrite(child, expression) for child in node.nodes)  # an alternative
 
 
 def cucumber_expression_to_regex(expression: str) -> re.Pattern[str]:
     """Translate a Cucumber-JVM step expression to a regex; use ``fullmatch`` on step text.
 
-    As cucumber-expressions decides: an expression that starts with ``^`` or ends with ``$``, or
-    is wrapped in ``/``, is a regular expression; anything else is a Cucumber expression with the
-    built-in parameter types, ``(optional)`` text and ``a/b`` alternation (bounded by whitespace).
-    Matching is case-sensitive, as in Cucumber.
+    As cucumber-expressions 17.1.0 decides: an expression that starts with ``^`` or ends with
+    ``$``, or is wrapped in ``/``, is a regular expression; anything else is a Cucumber
+    expression with the built-in parameter types, ``(optional)`` text and ``a/b`` alternation,
+    tokenized, parsed and rewritten as Cucumber does it, with the same refusals. Matching is
+    case-sensitive, as in Cucumber.
     """
     regex_source: str | None = None
     if expression.startswith("^") or expression.endswith("$"):
@@ -1098,23 +1279,13 @@ def cucumber_expression_to_regex(expression: str) -> re.Pattern[str]:
             raise UnsupportedExpressionError(
                 f"regular expression {expression!r} does not compile as a Python regex: {exc}"
             ) from exc
-    parts: list[str] = []
-    for chunk in re.split(r"(\s+)", expression):
-        if not chunk or chunk.isspace():
-            parts.append(re.escape(chunk))
-            continue
-        alternatives = _split_unescaped(chunk, "/")
-        if len(alternatives) == 1:
-            parts.append(_cucumber_text(chunk, expression, parameters=True))
-            continue
-        if not all(alternatives) or any("{" in a.replace("\\{", "") for a in alternatives):
-            raise UnsupportedExpressionError(
-                f"alternation in step expression {expression!r} needs non-empty alternatives "
-                "without parameters"
-            )
-        branches = [_cucumber_text(a, expression, parameters=False) for a in alternatives]
-        parts.append(f"(?:{'|'.join(branches)})")
-    return re.compile("".join(parts))
+    try:
+        nodes = _CucumberParser(expression).parse()
+    except RecursionError as exc:  # hundreds of nested optionals, which Cucumber refuses anyway
+        raise UnsupportedExpressionError(
+            f"step expression {expression!r} nests optionals too deeply"
+        ) from exc
+    return re.compile("".join(_rewrite(node, expression) for node in nodes))
 
 
 def _jvm_definitions_in(path: Path) -> tuple[list[StepDefinition], list[Problem], bool]:
@@ -1632,11 +1803,93 @@ class JvmRunner:
     registry: Path | None = None  # the file the runner was read from, for findings
 
 
+_INCLUDE_RE = re.compile(r"\binclude(?![\w$])\s*(?:\(([^)]*)\)|([^\n]*))")
+_PROJECT_DIR_RE = re.compile(
+    r"\bproject\s*\(\s*[\"']([^\"']+)[\"']\s*\)\s*\.\s*projectDir\s*=\s*([^\n;]*)"
+)
+_FILE_CALL_RE = re.compile(r"file\s*\(\s*[\"']([^\"'$]+)[\"']\s*\)")
+_STRING_ARG_RE = re.compile(r"[\"']([^\"']+)[\"']")
+_SCENARIOS_PLUGIN_RE = re.compile(r"\bid\s*\(?\s*[\"']events\.scenarios[\"']\s*\)?")
+SCENARIOS_PLUGIN = "events.scenarios"
+
+
+def _gradle_path(name: str) -> str:
+    return name if name.startswith(":") else f":{name}"
+
+
+def gradle_projects(settings: Path) -> tuple[dict[str, Path], list[str]]:
+    """The projects ``settings`` includes, each with its directory (relative to the settings
+    folder), and the reasons it could not be read. Comments are blanked out first, so an
+    ``include`` or ``projectDir`` in a comment counts for nothing. A project directory is the
+    path with ``:`` as ``/`` unless ``project(":x").projectDir = file("dir")`` moves it; a
+    ``project(...).projectDir = <anything else>`` is refused rather than guessed (#295). Other
+    forms (``project(":x").apply { projectDir = ... }``, ``findProject``) are not read: the
+    check knows this repository's settings forms, not all of Gradle's."""
+    try:
+        text = strip_java_comments(settings.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError) as error:
+        return {}, [f"cannot read the Gradle settings {settings}: {error}"]
+    projects: dict[str, Path] = {}
+    for match in _INCLUDE_RE.finditer(text):
+        for name in _STRING_ARG_RE.findall(match.group(1) or match.group(2) or ""):
+            path = _gradle_path(name)
+            projects[path] = Path(*path.strip(":").split(":"))
+    reasons: list[str] = []
+    for match in _PROJECT_DIR_RE.finditer(text):
+        path, value = _gradle_path(match.group(1)), match.group(2).strip()
+        directory = _FILE_CALL_RE.fullmatch(value)
+        if directory is None:
+            reasons.append(
+                f"{settings} sets the projectDir of {path} in a form this check cannot read "
+                f'({value!r}); use project(...).projectDir = file("<dir>")'
+            )
+        elif path in projects:
+            projects[path] = Path(directory.group(1))
+    return projects, reasons
+
+
+def _applies_scenarios_plugin(project_dir: Path) -> str | None:
+    """``None`` when the project's build file applies ``id("events.scenarios")``, else why not."""
+    builds = [project_dir / name for name in ("build.gradle.kts", "build.gradle")]
+    present = [build for build in builds if build.is_file()]
+    if len(present) != 1:
+        return f"needs exactly one build file in {project_dir}, found {len(present)}"
+    try:
+        text = strip_java_comments(present[0].read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError) as error:
+        return f"cannot read {present[0]}: {error}"
+    if _SCENARIOS_PLUGIN_RE.search(text) is None:
+        return f'{present[0]} does not apply id("{SCENARIOS_PLUGIN}")'
+    return None
+
+
+def _check_against_build(
+    project: str, sources: str, repo_root: Path, settings: Path, projects: Mapping[str, Path]
+) -> list[str]:
+    """#295: the entry's project is in the build, its test sources sit in that project, and the
+    project applies the plugin that gives it its ``scenarios`` task."""
+    if project not in projects:
+        return [f"{project} is not included in {settings.name}"]
+    project_dir = (settings.parent / projects[project]).resolve()
+    reasons = []
+    if not (repo_root / sources).resolve().is_relative_to(project_dir):
+        reasons.append(
+            f"{project}: testSources {sources!r} is not under its directory {project_dir}"
+        )
+    problem = _applies_scenarios_plugin(project_dir)
+    if problem is not None:
+        reasons.append(f"{project}: {problem}")
+    return reasons
+
+
 def load_jvm_runners(
-    path: Path, repo_root: Path = REPO_ROOT
+    path: Path, repo_root: Path = REPO_ROOT, settings: Path | None = None
 ) -> tuple[list[JvmRunner], list[Problem]]:
     """Read the runner registry. A malformed entry, a missing glue folder, or an area two
-    runners share (a scenario must run in exactly one place) is a ``BAD_RUNNER``."""
+    runners share (a scenario must run in exactly one place) is a ``BAD_RUNNER``; so is an entry
+    the Gradle build would not run (#295): its project is not included in ``settings``
+    (default ``<repo_root>/settings.gradle.kts``), its ``testSources`` lie outside the project's
+    directory, or the project's build file does not apply ``id("events.scenarios")``."""
 
     def bad(message: str) -> Problem:
         return _problem(BAD_RUNNER, path, 1, message)
@@ -1648,7 +1901,9 @@ def load_jvm_runners(
     except (OSError, ValueError, KeyError, TypeError, AssertionError) as error:
         return [], [bad(f"unreadable JVM runner registry: {error}")]
     runners: list[JvmRunner] = []
-    problems: list[Problem] = []
+    settings = settings if settings is not None else repo_root / "settings.gradle.kts"
+    projects, reasons = gradle_projects(settings)
+    problems: list[Problem] = [bad(reason) for reason in reasons]
     owner: dict[str, str] = {}
     for entry in entries:
         project = entry.get("project") if isinstance(entry, dict) else None
@@ -1667,6 +1922,11 @@ def load_jvm_runners(
         ):
             problems.append(bad(f"malformed runner entry {entry!r}"))
             continue
+        if projects or not reasons:  # an unreadable settings file is reported once, above
+            problems += [
+                bad(reason)
+                for reason in _check_against_build(project, sources, repo_root, settings, projects)
+            ]
         steps = repo_root / sources / glue.replace(".", "/")
         if not steps.is_dir():
             problems.append(bad(f"{project}: glue package folder {steps} does not exist"))
@@ -1723,6 +1983,20 @@ def _check_layout(features_dir: Path, path: Path) -> list[Problem]:
     ]
 
 
+def default_bindings(
+    features_dir: Path,
+) -> tuple[dict[str, list[Path]], list[JvmRunner] | None, list[Problem]]:
+    """The step sources :func:`check_tree` and the CLI read when given none (#288): ``python``
+    from ``features_dir``, and for the real tree (``tests/scenarios``) the ``jvm`` runners of
+    ``jvm-runners.json`` as well, with the registry's own findings. Another tree, a fixture,
+    gets ``python`` alone: the real runners' areas are not in it."""
+    step_dirs = {PYTHON: [features_dir]}
+    if features_dir.resolve() != DEFAULT_FEATURES.resolve():
+        return step_dirs, None, []
+    runners, problems = load_jvm_runners(DEFAULT_JVM_RUNNERS)
+    return step_dirs, runners, problems
+
+
 def check_tree(
     features_dir: Path,
     step_dirs: StepDirs | None = None,
@@ -1731,17 +2005,23 @@ def check_tree(
 ) -> list[Problem]:
     """Check every area and ``.feature`` file under ``features_dir``.
 
-    ``step_dirs`` maps a binding name to the directory (or directories) its step source reads;
-    by default only the ``python`` step definitions are read, from ``features_dir`` itself. A binding counts as
+    ``step_dirs`` maps a binding name to the directory (or directories) its step source reads.
+    Given neither ``step_dirs`` nor ``jvm_runners``, the defaults are the CLI's
+    (:func:`default_bindings`): ``python`` from ``features_dir`` itself, plus, for the real tree
+    only, the runners of ``jvm-runners.json`` and that registry's findings. A binding counts as
     registered only when ``sources`` has a reader for it *and* ``step_dirs`` names where its
     step definitions live, so a ``jvm`` claim is never accepted without reading JVM steps.
     ``jvm_runners`` registers ``jvm`` too: each runner's definitions serve only its areas, and a
     gating scenario that claims the JVM outside every runner's areas is ``JVM_SCENARIO_NOT_RUN``.
     """
+    registry_problems: list[Problem] = []
+    if step_dirs is None and jvm_runners is None:
+        step_dirs, jvm_runners, registry_problems = default_bindings(features_dir)
     step_dirs = dict(step_dirs) if step_dirs is not None else {PYTHON: features_dir}
     step_dirs = {binding: value for binding, value in step_dirs.items() if _directories(value)}
     registered = sorted(binding for binding in step_dirs if binding in sources)
     definitions, problems = load_definitions(step_dirs, sources)
+    problems += registry_problems
     if jvm_runners is not None and JVM in sources:
         runner_defs, runner_problems = _runner_definitions(jvm_runners, sources[JVM])
         definitions += runner_defs
@@ -1819,7 +2099,7 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         metavar="BINDING=DIR",
         help=(
             "where a binding's step definitions live; repeat it to give a binding several folders "
-            "(default: python=<features>, and jvm from the runner registry)"
+            "(default: python=<features>, and for the real tree jvm from the runner registry)"
         ),
     )
     parser.add_argument(
@@ -1828,7 +2108,8 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         metavar="FILE",
         help=(
             "the JVM runner registry; each runner's steps serve only its areas "
-            f"(default without --steps: {DEFAULT_JVM_RUNNERS.relative_to(REPO_ROOT)})"
+            "(default without --steps, for the real tree only: "
+            f"{DEFAULT_JVM_RUNNERS.relative_to(REPO_ROOT)})"
         ),
     )
     return parser.parse_args(argv)
@@ -1836,17 +2117,19 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
-    step_dirs: dict[str, list[Path]] = {}
-    for binding, directory in args.steps or [(PYTHON, args.features)]:
-        step_dirs.setdefault(binding, []).append(directory)
-    registry = args.jvm_runners or (None if args.steps else DEFAULT_JVM_RUNNERS)
-    runners: list[JvmRunner] | None = None
-    registry_problems: list[Problem] = []
-    if registry is not None:
-        runners, registry_problems = load_jvm_runners(registry)
-    problems = sort_problems(
-        registry_problems + check_tree(args.features, step_dirs, jvm_runners=runners)
-    )
+    if args.steps is None and args.jvm_runners is None:
+        problems = check_tree(args.features)  # the defaults: default_bindings()
+    else:
+        step_dirs: dict[str, list[Path]] = {}
+        for binding, directory in args.steps or [(PYTHON, args.features)]:
+            step_dirs.setdefault(binding, []).append(directory)
+        runners: list[JvmRunner] | None = None
+        registry_problems: list[Problem] = []
+        if args.jvm_runners is not None:
+            runners, registry_problems = load_jvm_runners(args.jvm_runners)
+        problems = sort_problems(
+            registry_problems + check_tree(args.features, step_dirs, jvm_runners=runners)
+        )
     if problems:
         print(format_problems(problems))
     errors = sum(1 for p in problems if p.severity == ERROR)

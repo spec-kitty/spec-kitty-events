@@ -1,10 +1,13 @@
 """pytest-bdd wiring shared by every scenario area (spec-kitty-events#197, #276).
 
 Gherkin tags are contract metadata, checked by ``scripts/ci/scenario_contract.py`` against the
-closed vocabulary in ``tests/scenarios/README.md``. They are not turned into pytest marks, so
-no ``PytestUnknownMarkWarning`` can arise from them; ``tests/test_scenario_contract.py`` runs
-this tree under ``-W error::pytest.PytestUnknownMarkWarning`` to keep it that way. Two tags
-have a runtime effect:
+closed vocabulary in ``tests/scenarios/README.md``. Scenario, Feature and Rule tags reach the
+hook below and are not turned into pytest marks, so no ``PytestUnknownMarkWarning`` can arise
+from them; ``tests/test_scenario_contract.py`` runs this tree under
+``-W error::pytest.PytestUnknownMarkWarning`` to keep it that way. An ``Examples:`` block's tags
+never reach the hook (pytest-bdd turns them into raw marks), so the contract check refuses the
+ones below there (``WIP_ON_EXAMPLES``, ``MANUAL_ON_EXAMPLES``, ``JVM_ONLY_ON_EXAMPLES``). Three
+tags have a runtime effect:
 
 * ``@wip``: a draft scenario runs as a non-strict ``xfail``, so it is reported but never fails
   the run.

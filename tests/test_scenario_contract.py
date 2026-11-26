@@ -86,6 +86,10 @@ EXPECTED_FEATURE_ERRORS = {
     "manual_with_wip.feature": ["MANUAL_WITH_WIP"],
     "manual_reason_without_manual.feature": ["MANUAL_REASON_WITHOUT_MANUAL"],
     "manual_on_examples.feature": ["MANUAL_ON_EXAMPLES"] * 2,  # @manual and its reason
+    "wip_on_examples.feature": ["WIP_ON_EXAMPLES"] * 3,  # @wip, its owner and its date (#290)
+    # the unregistered jvm claim, and @manual refusing any jvm claim (#291)
+    "manual_with_jvm.feature": ["BAD_BINDING_DECLARATION", "MANUAL_WITH_JVM"],
+    "manual_with_jvm_only.feature": ["BAD_BINDING_DECLARATION", "MANUAL_WITH_JVM"],
     "jvm_only_tag.feature": ["BAD_BINDING_DECLARATION"],
     # the Examples tag, and the unregistered jvm claim it gives its row
     "jvm_only_on_examples.feature": ["BAD_BINDING_DECLARATION", "JVM_ONLY_ON_EXAMPLES"],
@@ -127,6 +131,25 @@ def test_manual_scenario_is_clean_and_does_not_gate(fixture_defs) -> None:
     assert _codes(problems, "info") == ["UNBOUND_STEP"]
     scenarios, _ = contract.parse_feature(path)
     assert [contract.is_gating(s) for s in scenarios] == [False]
+
+
+@pytest.mark.parametrize("name", ["manual_with_jvm.feature", "manual_with_jvm_only.feature"])
+def test_manual_with_a_jvm_claim_is_refused_at_the_manual_tag(name: str, fixture_defs) -> None:
+    """#291: with jvm registered, MANUAL_WITH_JVM is the only finding, on the @manual line."""
+    problems = contract.check_feature_file(
+        FIXTURE_FEATURES / name, fixture_defs, registered=("python", "jvm")
+    )
+    assert [(p.code, p.line) for p in problems if p.severity == "error"] == [("MANUAL_WITH_JVM", 5)]
+
+
+def test_wip_on_examples_is_refused_at_each_tag_line(fixture_defs) -> None:
+    """#290: pytest-bdd turns Examples tags into raw marks, so the row would fail, not xfail."""
+    problems = contract.check_feature_file(
+        FIXTURE_FEATURES / "wip_on_examples.feature", fixture_defs
+    )
+    assert [(p.code, p.line) for p in problems if p.severity == "error"] == [
+        ("WIP_ON_EXAMPLES", 7)
+    ] * 3
 
 
 # Findings about a tag point at the tag's line, not at the scenario line below it.
@@ -390,7 +413,28 @@ def test_a_binding_may_read_several_step_folders(tmp_path: Path) -> None:
         ("a thing", ["a thing"], ["a  thing", "A thing", "a thing!"]),
         ("the group {string}", ['the group "cli"', "the group 'cli'"], ['the group "a" or "b"']),
         ("{int} cases", ["12 cases", "-3 cases"], ["1.5 cases", "x cases"]),
-        ("{float} percent", ["1.5 percent", "2 percent", ".5 percent"], ["x percent"]),
+        # #285: Cucumber's float regex (Locale.ENGLISH): no bare trailing point, an upper-case
+        # exponent only, a comma groups thousands
+        (
+            "{float} percent",
+            [
+                "1.5 percent",
+                "2 percent",
+                ".5 percent",
+                "-1.5 percent",
+                "1,000.5 percent",
+                "1E5 percent",
+            ],
+            ["x percent", "2. percent", "1. percent", "1e5 percent", "1.5E+3 percent"],
+        ),
+        ("{double} and {bigdecimal}", ["1.5E-3 and 7"], ["1. and 7"]),
+        # the float look-ahead scans the rest of the step text: an empty float matches when a
+        # digit follows anywhere later, as in Cucumber
+        ("{float} percent", [], [" percent"]),
+        ("a {float} b {int}", ["a  b 3"], ["a  b x"]),
+        # Java's whitespace: a no-break space is text, an em space is whitespace (#285)
+        ("a\u00a0b/c", ["a\u00a0b", "c"], ["a\u00a0c"]),
+        ("a\u2003b/c", ["a\u2003b", "a\u2003c"], ["c"]),
         ("a {word} b", ["a x-y b"], ["a x y b"]),
         ("all of {}", ["all of anything at all", "all of "], []),
         ("a cucumber(s)", ["a cucumber", "a cucumbers"], ["a cucumberss"]),
@@ -400,6 +444,18 @@ def test_a_binding_may_read_several_step_folders(tmp_path: Path) -> None:
             ["an escaped (paren) and {brace} and a/b"],
             [],
         ),
+        # #285: whitespace inside an optional, escapes inside an optional, escaped whitespace
+        ("a (b c)", ["a b c", "a "], ["a b", "a c"]),
+        (r"a (\(x\))", ["a (x)", "a "], ["a x"]),
+        (r"a\ b", ["a b"], [r"a\ b"]),
+        (r"x/y\ z", ["x", "y z"], ["x z", "y"]),
+        (r"a \\ b", ["a \\ b"], ["a  b"]),
+        # an alternative may hold an optional; alternation is bounded by { and } too
+        ("a/b(s)", ["a", "b", "bs"], ["as"]),
+        ("{int}st/nd", ["1st", "2nd"], ["3rd"]),
+        ("a/b{int}", ["a1", "b2"], ["ab1"]),
+        # an unmatched ) or } is text
+        ("a) and b}", ["a) and b}"], []),
         ("^a (regex) of (\\d+)$", ["a regex of 12"], ["a (regex) of 12"]),
         ("/wrapped (\\w+)/", ["wrapped word"], ["/wrapped word/"]),
     ],
@@ -414,7 +470,29 @@ def test_cucumber_expressions_translate_to_full_match_regexes(
 
 @pytest.mark.parametrize(
     "expression",
-    ["a {color}", "a } b", "a ( b", "an (opt{int})", "x/{int}", "a//b", "^(unbalanced$"],
+    [
+        "a {color}",
+        "a { b",
+        "a ( b",
+        "an (opt{int})",
+        "x/{int}",
+        "a//b",
+        "^(unbalanced$",
+        # #285: an illegal escape, a trailing backslash, an alternative that is only optionals
+        r"a \x b",
+        "a b\\",
+        "a/(b) c",
+        "(b)/a",
+        # empty, nested and alternating optionals; an empty alternative at either end
+        "a () b",
+        "a ((b)c) d",
+        "(" * 400 + "a" + ")" * 400,
+        # a no-break space is not Java whitespace, so it cannot be escaped
+        "a\\\u00a0b",
+        "a (b/c)",
+        "a/ b",
+        "/a b",
+    ],
 )
 def test_unsupported_cucumber_expressions_are_refused(expression: str) -> None:
     with pytest.raises(contract.UnsupportedExpressionError):
@@ -440,11 +518,13 @@ def test_strip_java_comments_keeps_literals_and_line_numbers(source: str, expect
 
 def test_java_string_escapes_are_decoded_before_translation(tmp_path: Path) -> None:
     (tmp_path / "Steps.java").write_text(
-        '@Given("a \\"quoted\\" tab\\there \\u00e9 \\101 \\\\") void s() {}\n', "utf-8"
+        '@Given("a \\"quoted\\" tab\\there \\u00e9 \\101 \\\\\\\\") void s() {}\n', "utf-8"
     )
     (definition,), problems = contract.load_jvm_step_definitions(tmp_path)
     assert problems == []
-    assert definition.expression == 'a "quoted" tab\there \u00e9 A \\'
+    # the Java literal's \\\\ is the expression's \\, Cucumber's escaped backslash (#285)
+    assert definition.expression == 'a "quoted" tab\there \u00e9 A \\\\'
+    assert definition.regex.fullmatch('a "quoted" tab\there \u00e9 A \\')
 
 
 # --- step sources ----------------------------------------------------------------------------
@@ -527,16 +607,17 @@ Feature: Outline
       | value |
       | one   |
 
-    @wip
+    @defect:197
     Examples:
       | value |
       | two   |
 """
+    # @wip would do here too for the reader, but the check refuses it on Examples (#290).
     scenarios, problems = contract.parse_feature_text(text, "outline.feature")
     assert problems == []
     assert [[t.name for t in s.tags] for s in scenarios] == [
         ["promise:PR-EVENTS-FIXTURE-001"],
-        ["promise:PR-EVENTS-FIXTURE-001", "wip"],
+        ["promise:PR-EVENTS-FIXTURE-001", "defect:197"],
     ]
 
 
@@ -604,7 +685,8 @@ def test_real_jvm_scenarios_bind_through_each_runners_java_steps() -> None:
         assert problems == []
         files |= {Path(d.source.split(":")[0]).name for d in defs}
     assert files == {"UpcastSteps.java", "StatusAppendSteps.java", "TransitionSteps.java"}
-    without_jvm = [p for p in contract.check_tree(REAL_FEATURES) if p.severity == "error"]
+    python_only = contract.check_tree(REAL_FEATURES, {"python": REAL_FEATURES})
+    without_jvm = [p for p in python_only if p.severity == "error"]
     assert without_jvm and {p.code for p in without_jvm} == {"BAD_BINDING_DECLARATION"}
     assert {Path(p.file).relative_to(REAL_FEATURES).parts[0] for p in without_jvm} == {
         "upcast",
@@ -616,8 +698,10 @@ def test_real_jvm_scenarios_bind_through_each_runners_java_steps() -> None:
 
 
 def _runner_tree(tmp_path: Path, runners: list[dict], areas=("a", "b")) -> tuple[Path, Path]:
-    """Two JVM-bound areas built from the jvm_bound fixture, a glue folder with the fixture
-    Java steps, and a registry; returns (features, registry)."""
+    """Two JVM-bound areas built from the jvm_bound fixture, a Gradle build that includes each
+    runner's project (``:one`` lives in ``one/``) with a build file applying the scenarios plugin,
+    the fixture Java steps in each project's glue folder, and a registry; returns (features,
+    registry). A test breaks one piece of it to prove each #295 rule."""
     features = tmp_path / "features"
     for number, area in enumerate(areas, start=1):
         for source in (FIXTURE_AREAS / "jvm_bound" / "area").rglob("*"):
@@ -625,20 +709,31 @@ def _runner_tree(tmp_path: Path, runners: list[dict], areas=("a", "b")) -> tuple
                 target = features / area / source.relative_to(FIXTURE_AREAS / "jvm_bound" / "area")
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(source.read_text().replace("AREA-001", f"AREA-00{number}"))
-    glue = tmp_path / "src" / "glue"
-    glue.mkdir(parents=True)
-    (glue / "Steps.java").write_text((FIXTURES / "steps_jvm" / "Steps.java").read_text())
+    includes = []
+    for runner in runners:
+        project = str(runner.get("project", ""))
+        includes.append(f'include("{project}")')
+        glue = tmp_path / str(runner.get("testSources", "")) / "glue"
+        glue.mkdir(parents=True, exist_ok=True)
+        (glue / "Steps.java").write_text((FIXTURES / "steps_jvm" / "Steps.java").read_text())
+        build = tmp_path / project.strip(":") / "build.gradle.kts"
+        build.parent.mkdir(parents=True, exist_ok=True)
+        build.write_text('plugins {\n    id("events.scenarios")\n}\n')
+    (tmp_path / "settings.gradle.kts").write_text("\n".join(includes) + "\n")
     registry = tmp_path / "jvm-runners.json"
     registry.write_text(json.dumps({"runners": runners}))
     return features, registry
 
 
 def _runner(project: str, areas: list[str], glue: str = "glue") -> dict:
-    return {"project": project, "testSources": "src", "glue": glue, "areas": areas}
+    sources = f"{project.strip(':')}/src/test/java"
+    return {"project": project, "testSources": sources, "glue": glue, "areas": areas}
 
 
-def _check_runners(tmp_path: Path, runners: list[dict]) -> list:
+def _check_runners(tmp_path: Path, runners: list[dict], breaks=None) -> list:
     features, registry = _runner_tree(tmp_path, runners)
+    if breaks is not None:
+        breaks(tmp_path)
     loaded, problems = contract.load_jvm_runners(registry, repo_root=tmp_path)
     return problems + contract.check_tree(features, {"python": FIXTURE_STEPS}, jvm_runners=loaded)
 
@@ -676,6 +771,101 @@ def test_a_bad_runner_registry_is_refused(tmp_path: Path, runners, message: str)
     assert bad and all(message in p.message for p in bad), problems
 
 
+def _write(relative: str, text: str):
+    def breaks(root: Path) -> None:
+        (root / relative).parent.mkdir(parents=True, exist_ok=True)
+        (root / relative).write_text(text)
+
+    return breaks
+
+
+def _remove(relative: str):
+    return lambda root: (root / relative).unlink()
+
+
+# #295: an entry the Gradle build would not run is refused, one broken build per rule.
+BROKEN_BUILDS = {
+    "not included": (_write("settings.gradle.kts", 'include(":other")\n'), "is not included"),
+    "included in a comment only": (
+        _write("settings.gradle.kts", '// include(":one")\n/* include(":one") */\n'),
+        "is not included",
+    ),
+    "includeBuild is not include": (
+        _write("settings.gradle.kts", 'includeBuild("one")\n'),
+        "is not included",
+    ),
+    "projectDir moves the project away": (
+        _write(
+            "settings.gradle.kts",
+            'include(":one")\nproject(":one").projectDir = file("elsewhere")\n',
+        ),
+        "is not under its directory",
+    ),
+    "projectDir not a file literal": (
+        _write("settings.gradle.kts", 'include(":one")\nproject(":one").projectDir = rootDir\n'),
+        "in a form this check cannot read",
+    ),
+    "no settings file": (_remove("settings.gradle.kts"), "cannot read the Gradle settings"),
+    "no build file": (_remove("one/build.gradle.kts"), "found 0"),
+    "two build files": (
+        _write("one/build.gradle", "plugins { id 'events.scenarios' }\n"),
+        "found 2",
+    ),
+    "plugin not applied": (
+        _write("one/build.gradle.kts", 'plugins {\n    id("events.java-base")\n}\n'),
+        'does not apply id("events.scenarios")',
+    ),
+    "plugin named in a comment only": (
+        _write("one/build.gradle.kts", '// id("events.scenarios")\nplugins { `java-library` }\n'),
+        'does not apply id("events.scenarios")',
+    ),
+}
+
+
+@pytest.mark.parametrize("case", sorted(BROKEN_BUILDS))
+def test_a_runner_the_gradle_build_would_not_run_is_refused(tmp_path: Path, case: str) -> None:
+    breaks, message = BROKEN_BUILDS[case]
+    problems = _check_runners(tmp_path, [_runner(":one", ["a", "b"])], breaks)
+    bad = [p for p in problems if p.code == "BAD_RUNNER"]
+    assert bad and any(message in p.message for p in bad), problems
+
+
+def test_test_sources_outside_the_project_are_refused(tmp_path: Path) -> None:
+    """#295: a testSources that points at another module's folder holding the same glue."""
+    runner = _runner(":one", ["a", "b"]) | {"testSources": "two/src/test/java"}
+    problems = _check_runners(tmp_path, [runner])
+    assert _codes(problems) == ["BAD_RUNNER"]
+    assert "is not under its directory" in problems[0].message
+
+
+@pytest.mark.parametrize(
+    "settings",
+    [
+        'include(":one", ":other")\n',
+        "include ':one'\n",
+        'include("one")\nproject(":one").projectDir = file("one")\n',
+        'rootProject.name = "x"\ninclude(":one") // the runner\n',
+    ],
+)
+def test_the_gradle_settings_forms_in_use_are_read(tmp_path: Path, settings: str) -> None:
+    assert (
+        _check_runners(
+            tmp_path, [_runner(":one", ["a", "b"])], _write("settings.gradle.kts", settings)
+        )
+        == []
+    )
+
+
+def test_the_real_registry_matches_the_real_build() -> None:
+    projects, reasons = contract.gradle_projects(REPO_ROOT / "settings.gradle.kts")
+    assert reasons == []
+    assert {r.project: projects[r.project] for r in _real_runners()} == {
+        ":java-binding": Path("java"),
+        ":event-log": Path("service/event-log"),
+        ":command-cli": Path("service/command-cli"),
+    }
+
+
 def test_an_unreadable_runner_registry_is_refused(tmp_path: Path) -> None:
     (tmp_path / "jvm-runners.json").write_text("{")
     runners, problems = contract.load_jvm_runners(tmp_path / "jvm-runners.json")
@@ -691,6 +881,32 @@ def test_the_cli_reads_the_jvm_steps_by_default(capsys: pytest.CaptureFixture[st
     python_only = ["--steps", f"python={REAL_FEATURES}"]
     assert contract.main(python_only) == 1
     assert "BAD_BINDING_DECLARATION" in capsys.readouterr().out
+
+
+def test_check_tree_defaults_are_the_clis(capsys: pytest.CaptureFixture[str]) -> None:
+    """#288: with no step sources, check_tree reads what the CLI reads: python plus, for the
+    real tree, the JVM runner registry."""
+    assert contract.check_tree(REAL_FEATURES) == []
+    runners, problems = contract.load_jvm_runners(REAL_RUNNERS)
+    explicit = contract.check_tree(REAL_FEATURES, {"python": REAL_FEATURES}, jvm_runners=runners)
+    assert contract.check_tree(REAL_FEATURES) == contract.sort_problems(problems + explicit)
+    step_dirs, loaded, registry_problems = contract.default_bindings(REAL_FEATURES)
+    assert step_dirs == {"python": [REAL_FEATURES]} and loaded == runners
+    assert registry_problems == []
+
+
+def test_a_fixture_tree_does_not_get_the_real_runners(capsys: pytest.CaptureFixture[str]) -> None:
+    """#288: the real registry's areas are not in a fixture tree, so neither check_tree's
+    defaults nor the CLI's --features load it (it would report every runner as idle)."""
+    assert contract.default_bindings(FIXTURE_AREAS / "valid") == (
+        {"python": [FIXTURE_AREAS / "valid"]},
+        None,
+        [],
+    )
+    tree = FIXTURE_AREAS / "step_from_another_area"
+    assert contract.check_tree(tree) == contract.check_tree(tree, {"python": tree})
+    assert contract.main(["--features", str(FIXTURE_AREAS / "manual_bound")]) == 1
+    assert "BAD_RUNNER" not in capsys.readouterr().out
 
 
 def test_cli_exit_codes(capsys: pytest.CaptureFixture[str]) -> None:
