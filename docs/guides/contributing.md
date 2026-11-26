@@ -2,7 +2,7 @@
 title: Contributing
 description: How a change lands in spec-kitty-events — the one-issue-one-branch-one-PR flow, the tests and conformance gate to run, and the adversarial review.
 doc_status: active
-updated: 2026-11-13T00:00:00Z
+updated: 2026-11-25T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -79,6 +79,12 @@ The harness has not tested the fork's change, so a maintainer runs it before mer
 
 The conformance gate is the packaged contract other repos consume; the in-repo suite does not
 collect it, so run it explicitly on every PR.
+
+The Gradle build (`make test-java`, `make test-gradle`, `./gradlew verifyAll`) needs JDK 25 and a
+Python 3.10+ interpreter on `PATH` as `python3`: each Cucumber-JVM `scenarios` task asks
+`scripts/ci/scenario_contract.py --jvm-count` how many `@jvm` scenarios it must run (standard
+library only, #286). Pass `-Pscenarios.python=<exe>` where the interpreter has another name, such
+as `python` on Windows.
 
 ## Nightly SonarCloud scan
 

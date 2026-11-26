@@ -3826,6 +3826,15 @@
       "fixture_type": "ledger_append"
     },
     {
+      "id": "ledger-append-invalid-payload-existing-ledger",
+      "path": "ledger_append/invalid/invalid_payload_existing_ledger.json",
+      "expected_result": "invalid",
+      "event_type": "MissionReopened",
+      "notes": "Payload failing model validation is refused over a non-empty, well-formed ledger, which is left byte-identical (#279)",
+      "min_version": "11.5.0",
+      "fixture_type": "ledger_append"
+    },
+    {
       "id": "ledger-append-old-shape-glossary-record",
       "path": "ledger_append/invalid/old_shape_glossary_record.json",
       "expected_result": "invalid",

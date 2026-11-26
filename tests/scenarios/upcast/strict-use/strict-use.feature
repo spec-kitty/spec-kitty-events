@@ -1,6 +1,7 @@
 # Maintainer notes (not part of the behaviour description):
 # - Strict use raises the first code a case pins; a row that is already a CloudEvent
-#   (ALREADY_CLOUDEVENT) is never refused.
+#   (ALREADY_CLOUDEVENT) is never refused. Only the edge group pins that code, so its row is
+#   what runs the exemption; test_upcast_scenarios.py fails if no listed group pins it (#287).
 # - Promises are indexed in tests/scenarios/upcast/PROMISES.md.
 
 Feature: Strict use refuses a row with the first code its case pins
@@ -22,3 +23,5 @@ Feature: Strict use refuses a row with the first code its case pins
       | cli         |
       | conformance |
       | diary       |
+      | edge        |
+      | transport   |

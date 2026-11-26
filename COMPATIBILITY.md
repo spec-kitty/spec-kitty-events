@@ -146,6 +146,22 @@ services (`service-v*`) mirror core's decoder at `service/core-pin.json` and kee
 own gate (`command-cli` refuses to write the 5-key actor, `event-log` reads only the
 4-key one); they move on their own line.
 
+### Also in 11.5.0: a `ledger_append` refusal over an existing ledger (additive)
+
+New fixture: `ledger_append/invalid/invalid_payload_existing_ledger.json` (manifest id
+`ledger-append-invalid-payload-existing-ledger`, `min_version` `11.5.0`, the release that adds it;
+the behaviour it pins has held since `append_event` shipped in `10.8.0`). It appends the
+`invalid_payload` input over the well-formed ledger `{"prior": 1}\n` and pins
+`LedgerValidationError` with the ledger left byte-identical (#279). Until now every validation
+refusal started from an absent file, so a binding that opened, truncated or rewrote the ledger
+before validating passed them all. The packaged runner `test_ledger_append` also checks each
+document's keys against the fixture README and that every `LedgerTornTailError` document carries
+a torn ledger (#280).
+
+**Release classification.** Additive: no validator, schema or accept/reject boundary moves, and
+the Python reference already behaves this way. A second binding that writes before it validates
+now fails the new document; that is the contract it was already held to.
+
 ### Adopting 11.5.0
 
 - **Writers and replayers of status events:** audit moves out of `for_review` other than
@@ -159,7 +175,8 @@ own gate (`command-cli` refuses to write the 5-key actor, `event-log` reads only
   ones; the Java binding has no transition validator and is unaffected beyond its version.
   Also register the #263 fixtures listed above (seven producer rows, the
   `status-diary-replay-with-profile-source` pair and the eleven upcast corpus cases); the Java
-  binding runs the corpus cases.
+  binding runs the corpus cases. A `ledger_append` binding registers
+  `ledger-append-invalid-payload-existing-ledger` (#279).
 
 ## `11.4.0` — the events-side write core: status-row encoding and status-transition parity (minor)
 

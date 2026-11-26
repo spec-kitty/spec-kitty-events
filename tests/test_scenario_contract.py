@@ -866,6 +866,36 @@ def test_the_real_registry_matches_the_real_build() -> None:
     }
 
 
+def test_a_runners_count_expands_outline_rows_and_follows_examples_tags(tmp_path: Path) -> None:
+    """The Gradle scenarios task asserts Cucumber ran exactly ``--jvm-count`` scenarios (#286).
+    Cucumber runs one pickle per outline row, and a row whose Examples block is not tagged for
+    the JVM is not selected: the count must agree on both."""
+    features, registry = _runner_tree(tmp_path, [_runner(":one", ["a"])], areas=("a",))
+    (features / "a" / "rows").mkdir()
+    (features / "a" / "rows" / "rows.feature").write_text(
+        "Feature: Rows\n\n"
+        "  @promise:PR-EVENTS-AREA-009\n"
+        "  Scenario Outline: Row <n>\n"
+        "    Given a thing\n    When it happens\n    Then it holds\n\n"
+        "    @jvm\n    Examples:\n      | n |\n      | 1 |\n      | 2 |\n\n"
+        "    Examples:\n      | n |\n      | 3 |\n"
+    )
+    (runner,), problems = contract.load_jvm_runners(registry, repo_root=tmp_path)
+    assert problems == []
+    # the fixture area's own @jvm scenario, plus the two @jvm rows; the untagged row runs in Python only
+    assert contract.jvm_scenario_count(features, runner) == 3
+
+
+def test_the_cli_prints_each_runners_count(capsys: pytest.CaptureFixture[str]) -> None:
+    """What each Gradle scenarios task asserts: one line, a positive integer, exit 0. The real
+    counts are not pinned here: a pinned number is the shared counter --jvm-count replaces."""
+    for project in (":java-binding", ":event-log", ":command-cli"):
+        assert contract.main(["--jvm-count", project]) == 0
+        assert int(capsys.readouterr().out.strip()) > 0
+    assert contract.main(["--jvm-count", ":no-such-runner"]) == 1
+    assert "no runner ':no-such-runner'" in capsys.readouterr().err
+
+
 def test_an_unreadable_runner_registry_is_refused(tmp_path: Path) -> None:
     (tmp_path / "jvm-runners.json").write_text("{")
     runners, problems = contract.load_jvm_runners(tmp_path / "jvm-runners.json")

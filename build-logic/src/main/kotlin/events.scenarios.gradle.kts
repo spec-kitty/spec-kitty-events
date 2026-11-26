@@ -5,8 +5,17 @@
 // this plugin gets a `scenarios` task that reads its areas' feature files in place and runs the scenarios tagged @jvm or
 // @jvm-only (neither @wip nor @manual) against its glue. It runs through Cucumber's own CLI, not a JUnit Platform engine, so Cucumber's
 // engine never meets a module's JUnit platform. The JUnit XML report is the task output; the task fails when a scenario
-// fails, a step is undefined or pending, or no scenario ran (a tag filter that selects nothing must not pass). `check`
-// depends on it, so `verifyAll` and service-gate run it. Each module adds its own system properties to the task.
+// fails, a step is undefined or pending, or the number of scenarios that ran differs from what the @jvm/@jvm-only tags
+// select (#286): `python3 scripts/ci/scenario_contract.py --jvm-count <project>`, the contract check's own parser
+// (outline rows counted one each), so no count is kept by hand for two parallel PRs to bump to the same wrong value.
+// `-Pscenarios.python=<exe>` names another interpreter (the script needs only the standard library). `check` depends
+// on the task, so `verifyAll` and service-gate run it. Each module adds its own system properties to the task.
+//
+// Cucumber's CLI Main applies its arguments last (cucumber-core 7.20.1 Main.run builds them over the system properties,
+// which are built over the environment, which is built over cucumber.properties), so the --tags, feature paths and
+// --glue below win over any CUCUMBER_* variable or cucumber.* property. Settings the CLI does not pass, such as
+// cucumber.execution.limit or cucumber.execution.dry-run, would still narrow the run: the task drops every cucumber
+// environment variable before it starts (they are no declared input), and the count check fails any run they narrow.
 plugins {
     java
 }
@@ -22,6 +31,7 @@ val runner: Map<String, Any> = run {
         ?: throw GradleException("${project.path}: no single runner entry in ${registryFile.asFile}")
 }
 val glue = runner["glue"] as String
+val contractScript: RegularFile = rootProject.layout.projectDirectory.file("scripts/ci/scenario_contract.py")
 
 @Suppress("UNCHECKED_CAST")
 val areas = runner["areas"] as List<String>
@@ -42,6 +52,14 @@ val scenarios = tasks.register<JavaExec>("scenarios") {
     description = "Runs the @jvm and @jvm-only BDD scenarios of $areas with Cucumber-JVM (spec-kitty-events#270)."
     val report = layout.buildDirectory.file("test-results/scenarios/cucumber.xml")
     val ranAreas = areas.joinToString() // a plain value: doLast may not reach the script object
+    // Plain values for doLast, which may not reach the script object (configuration cache).
+    val countCommand = listOf(
+        providers.gradleProperty("scenarios.python").getOrElse("python3"),
+        contractScript.asFile.absolutePath,
+        "--features", scenarioRoot.asFile.absolutePath,
+        "--jvm-runners", registryFile.asFile.absolutePath,
+        "--jvm-count", project.path,
+    )
     classpath = sourceSets["test"].runtimeClasspath
     mainClass = "io.cucumber.core.cli.Main"
     systemProperty("cucumber.publish.quiet", "true")
@@ -58,18 +76,35 @@ val scenarios = tasks.register<JavaExec>("scenarios") {
         dirs.set(roots.map { it.asFile.absolutePath })
     })
     inputs.file(registryFile).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("runners")
+    inputs.file(contractScript).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("countScript")
     outputs.file(report).withPropertyName("report")
+    doFirst {
+        // CUCUMBER_FILTER_TAGS, cucumber.filter.tags and cucumber_filter_tags are all read from the environment (#286).
+        val cucumberVariable = Regex("(?i)^cucumber[._]")
+        (this as JavaExec).environment.keys.removeIf { cucumberVariable.containsMatchIn(it) }
+    }
     doLast {
         val xml = report.get().asFile.readText()
         val suite = Regex("""<testsuite\b[^>]*>""").find(xml)?.value
             ?: throw GradleException("Cucumber wrote no <testsuite> to ${report.get().asFile}")
         fun count(name: String): Int = Regex("""\b$name="(\d+)"""").find(suite)?.groupValues?.get(1)?.toInt() ?: 0
         val ran = count("tests")
-        val notPassed = count("failures") + count("errors") + count("skipped")
-        if (ran == 0 || notPassed != 0) {
-            throw GradleException("Cucumber-JVM: $ran scenario(s), $notPassed not passed; see ${report.get().asFile}")
+        val counter = try {
+            ProcessBuilder(countCommand).redirectErrorStream(true).start()
+        } catch (e: java.io.IOException) {
+            throw GradleException("Cannot run ${countCommand.first()} for the scenario count (-Pscenarios.python=<exe>)", e)
         }
-        logger.lifecycle("Cucumber-JVM: $ran scenario(s) of $ranAreas passed")
+        val counted = counter.inputStream.bufferedReader().readText().trim()
+        val expected = counted.toIntOrNull()?.takeIf { counter.waitFor() == 0 && it > 0 }
+            ?: throw GradleException("${countCommand.joinToString(" ")} did not print a positive scenario count: $counted")
+        val notPassed = count("failures") + count("errors") + count("skipped")
+        if (ran != expected || notPassed != 0) {
+            throw GradleException(
+                "Cucumber-JVM: $ran scenario(s) ran, $expected expected from the @jvm tags (scenario_contract.py --jvm-count), " +
+                    "$notPassed not passed; see ${report.get().asFile}",
+            )
+        }
+        logger.lifecycle("Cucumber-JVM: $ran of $expected scenario(s) of $ranAreas passed (count asserted)")
     }
 }
 

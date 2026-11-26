@@ -33,6 +33,15 @@ def _selected(fixture_class: str) -> list[dict[str, Any]]:
     )
     selected = load_ledger_append_cases()
     assert selected, f"the fixture class {fixture_class!r} holds no fixture"
+    for case in selected:
+        # A torn tail is a non-empty ledger whose last byte is not LF (PR-EVENTS-LEDGER-003):
+        # checked here, the one path every selection step loads through (#280). The packaged
+        # runner repeats the check (conformance/test_ledger_append.py), for consumers.
+        if case.get("expected_error") == "LedgerTornTailError":
+            existing = case.get("existing_ledger")
+            assert existing and not existing.endswith("\n"), (
+                f"{case['id']} pins LedgerTornTailError over {existing!r}, not a torn ledger"
+            )
     return selected
 
 

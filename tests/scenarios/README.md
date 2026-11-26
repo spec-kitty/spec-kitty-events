@@ -87,7 +87,14 @@ runs through Cucumber's own CLI, once per runner in [`jvm-runners.json`](jvm-run
 The build-logic plugin `events.scenarios` gives each runner's project a `scenarios` task (part of
 `check`, so `verifyAll` and `service-gate` run it). It reads only its areas' features, in place,
 and runs the scenarios tagged `@jvm` or `@jvm-only` and neither `@wip` nor `@manual` against its glue. The task
-fails when a scenario fails, a step is undefined, or no scenario runs. An area belongs to at most
+fails when a scenario fails, a step is undefined, or the number of scenarios that ran differs from
+what the tags select: `python3 scripts/ci/scenario_contract.py --jvm-count <project>`, the contract
+check's own parser, with outline rows counted one each (#286). The count is derived on every run,
+never kept by hand, so parallel PRs that add `@jvm` scenarios cannot race on it;
+`-Pscenarios.python=<exe>` names another interpreter. The task drops every `CUCUMBER_*` (and `cucumber.*`) environment
+variable before it starts; its `--tags`, feature paths and `--glue` are CLI arguments, which
+Cucumber's CLI applies over the environment, system properties and `cucumber.properties`, and the
+count check fails any run another setting (such as `cucumber.execution.limit`) narrows. An area belongs to at most
 one runner, and a new JVM-bound area gets a runner entry before its first `@jvm` tag. Step code
 stays in test sources, never in a service's production sources. A JVM step has the same
 text as its Python twin. Cucumber-JVM ignores the keyword when it matches a step, so two Java
