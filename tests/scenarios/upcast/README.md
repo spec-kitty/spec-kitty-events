@@ -3,8 +3,8 @@
 How a legacy log row is read into a CloudEvent: mapped to the exact golden its case pins, passed
 through unchanged with the codes that say why, read again without a byte changing, and refused in
 strict use with the first code it pins. Driven by the upcast corpus,
-`spec_kitty_events/producer_contract/fixtures/upcast/cases/`, groups `cli`, `conformance` and
-`diary` (the contract is section 9 of `docs/architecture/cloudevents-envelope.md`). Bound in
+`spec_kitty_events/producer_contract/fixtures/upcast/cases/`, groups `cli`, `conformance`,
+`diary`, `edge` and `transport` (the contract is section 9 of `docs/architecture/cloudevents-envelope.md`). Bound in
 Python and in Cucumber-JVM, against the Java `Upcaster`, on the same feature files. Promises:
 [`PROMISES.md`](PROMISES.md).
 

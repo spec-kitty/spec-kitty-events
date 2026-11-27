@@ -26,7 +26,7 @@ class _Unregistered(BaseModel):
     """Stands in for the model name a document uses for "not a registered payload model"."""
 
 
-def build_input(case: dict[str, Any]) -> object:
+def build_input(case: dict[str, Any]) -> persistence.LedgerInput:
     """The append input a document describes, by its ``input_kind``.
 
     ``nan_field`` names a top-level ``input`` key whose value becomes an IEEE-754 NaN (JSON
@@ -65,7 +65,7 @@ def append_case(case: dict[str, Any], workdir: Path) -> AppendOutcome:
         ledger.write_bytes(prior)
     refusal = None
     try:
-        persistence.append_event(build_input(case), ledger)  # type: ignore[arg-type]
+        persistence.append_event(build_input(case), ledger)
     except persistence.LedgerAppendError as error:
         refusal = type(error).__name__
     after = ledger.read_bytes() if ledger.exists() else None

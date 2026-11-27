@@ -36,4 +36,6 @@ Each document is registered in `../manifest.json` with `"fixture_type": "ledger_
 
 A refusal raises before anything is written. The ledger must end up byte-identical to
 `existing_ledger`, or still absent. A non-empty ledger whose last byte is not `\n` is
-refused (`LedgerTornTailError`).
+refused (`LedgerTornTailError`). The refusal documents cover both starting points: an absent
+file, and a well-formed, non-empty ledger (`invalid_payload_existing_ledger.json`, #279), so a
+binding that opens or truncates the file before it validates fails a document.

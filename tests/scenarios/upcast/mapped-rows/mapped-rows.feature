@@ -35,3 +35,19 @@ Feature: A legacy row maps to the CloudEvent its case pins
     Then every result has the outcome, form and codes its case pins
     And every mapped row's canonical bytes equal its golden
     And every golden's read-profile validity is the one its case pins
+
+  @promise:PR-EVENTS-UPCAST-008 @jvm
+  Scenario: Every mapped edge case maps to its golden CloudEvent
+    Given every case of the group "edge" pinned as "mapped"
+    When each case's line is upcast with its caller context
+    Then every result has the outcome, form and codes its case pins
+    And every mapped row's canonical bytes equal its golden
+    And every golden's read-profile validity is the one its case pins
+
+  @promise:PR-EVENTS-UPCAST-009 @jvm
+  Scenario: Every transport envelope of a producer type maps to its golden CloudEvent
+    Given every case of the group "transport" pinned as "mapped"
+    When each case's line is upcast with its caller context
+    Then every result has the outcome, form and codes its case pins
+    And every mapped row's canonical bytes equal its golden
+    And every golden's read-profile validity is the one its case pins

@@ -1955,6 +1955,20 @@ def _runner_definitions(
     return defs, problems
 
 
+def jvm_scenario_count(features_dir: Path, runner: JvmRunner) -> int:
+    """The scenarios ``runner``'s Cucumber run selects: the gating scenarios of its areas that
+    claim the JVM (``@jvm`` or ``@jvm-only``, neither ``@wip`` nor ``@manual``), each outline row
+    counted once, as Cucumber runs one pickle per row. Its Gradle task fails unless exactly this
+    many ran (#286); it asks ``--jvm-count`` rather than keeping a count in the registry, which
+    two parallel PRs could bump to the same wrong value without a merge conflict."""
+    count = 0
+    for path in sorted(features_dir.rglob("*.feature")):
+        if _in_areas(features_dir, path, runner.areas):
+            scenarios, _ = parse_feature(path)
+            count += sum(1 for s in scenarios if is_gating(s) and JVM in claimed_bindings(s))
+    return count
+
+
 def _check_jvm_runs(
     features_dir: Path, path: Path, scenarios: Sequence[Scenario], runners: Sequence[JvmRunner]
 ) -> list[Problem]:
@@ -2112,11 +2126,40 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
             f"{DEFAULT_JVM_RUNNERS.relative_to(REPO_ROOT)})"
         ),
     )
+    parser.add_argument(
+        "--jvm-count",
+        metavar="PROJECT",
+        help=(
+            "print the number of scenarios the named runner's Cucumber run selects (outline rows "
+            "counted one each) and exit; the Gradle scenarios task asserts it ran exactly that many"
+        ),
+    )
     return parser.parse_args(argv)
+
+
+def _print_jvm_count(
+    features_dir: Path,
+    runners: list[JvmRunner] | None,
+    registry_problems: list[Problem],
+    project: str,
+) -> int:
+    if registry_problems:
+        print(format_problems(registry_problems), file=sys.stderr)
+        return 1
+    runner = next((r for r in runners or () if r.project == project), None)
+    if runner is None:
+        print(f"no runner {project!r} in the JVM runner registry", file=sys.stderr)
+        return 1
+    print(jvm_scenario_count(features_dir, runner))
+    return 0
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
+    if args.jvm_count is not None:
+        # The Gradle scenarios task's count (#286): only the registry, never the step sources.
+        registry, read_problems = load_jvm_runners(args.jvm_runners or DEFAULT_JVM_RUNNERS)
+        return _print_jvm_count(args.features, registry, read_problems, args.jvm_count)
     if args.steps is None and args.jvm_runners is None:
         problems = check_tree(args.features)  # the defaults: default_bindings()
     else:

@@ -21,3 +21,5 @@ Feature: Upcasting a golden CloudEvent again changes nothing
       | cli         |
       | conformance |
       | diary       |
+      | edge        |
+      | transport   |

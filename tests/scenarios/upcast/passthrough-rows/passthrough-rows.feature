@@ -1,7 +1,7 @@
 # Maintainer notes (not part of the behaviour description):
 # - A pass-through case pins the issue codes that explain why the row was not mapped; the
 #   steps check the codes against that pin and never restate them.
-# - The cli group pins no pass-through case, so it has no scenario here.
+# - The cli and transport groups pin no pass-through case, so they have no scenario here.
 # - Promises are indexed in tests/scenarios/upcast/PROMISES.md.
 
 Feature: A row the upcaster cannot map passes through unchanged with its pinned codes
@@ -22,6 +22,13 @@ Feature: A row the upcaster cannot map passes through unchanged with its pinned 
   @promise:PR-EVENTS-UPCAST-005 @jvm
   Scenario: Every unrecognised status-diary line is left as it was
     Given every case of the group "diary" pinned as "passthrough"
+    When each case's line is upcast with its caller context
+    Then every result has the outcome, form and codes its case pins
+    And every passed-through line is left as it was
+
+  @promise:PR-EVENTS-UPCAST-010 @jvm
+  Scenario: Every edge case the upcaster cannot map is left as it was
+    Given every case of the group "edge" pinned as "passthrough"
     When each case's line is upcast with its caller context
     Then every result has the outcome, form and codes its case pins
     And every passed-through line is left as it was
